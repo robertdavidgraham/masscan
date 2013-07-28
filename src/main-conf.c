@@ -81,19 +81,6 @@ masscan_echo(struct Masscan *masscan)
 
     printf("rate = %10.2f\n", masscan->max_rate);
     printf("adapter = %s\n", masscan->ifname);
-    printf("adapter.ip = %u.%u.%u.%u\n", 
-            (masscan->adapter_ip>>24)&0xFF,
-            (masscan->adapter_ip>>16)&0xFF,
-            (masscan->adapter_ip>> 8)&0xFF,
-            (masscan->adapter_ip>> 0)&0xFF
-            );
-    printf("adapter.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
-            masscan->adapter_mac[0],
-            masscan->adapter_mac[1],
-            masscan->adapter_mac[2],
-            masscan->adapter_mac[3],
-            masscan->adapter_mac[4],
-            masscan->adapter_mac[5]);
     printf("router.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->router_mac[0],
             masscan->router_mac[1],
@@ -280,7 +267,7 @@ int parse_mac_address(const char *text, unsigned char *mac)
         x |= hexval(c);
         text++;
 
-        mac[i] = x;
+        mac[i] = (unsigned char)x;
 
         if (ispunct(*text & 0xFF))
             text++;
@@ -443,6 +430,10 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     else if (EQUALS("echo", name)) {
         masscan_echo(masscan);
         exit(1);
+    }
+    else if (EQUALS("selftest", name) || EQUALS("self-test", name)) {
+        masscan->op = Operation_Selftest;
+        return;
     } else {
         fprintf(stderr, "CONF: unknown config option: %s=%s\n", name, value);
     }
@@ -451,8 +442,9 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 static int
 is_singleton(const char *name)
 {
-    if (EQUALS("echo", name))
-        return 1;
+    if (EQUALS("echo", name)) return 1;
+    if (EQUALS("selftest", name)) return 1;
+    if (EQUALS("self-test", name)) return 1;
     return 0;
 }
 
@@ -518,6 +510,13 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             const char *arg;
 
 			switch (argv[i][1]) {
+			case 'c':
+				if (argv[i][2])
+					arg = argv[i]+2;
+				else
+					arg = argv[++i];
+                masscan_read_config_file(masscan, arg);
+                break;
 
             case 'v':
                 {

@@ -25,4 +25,8 @@ rawsock_send_probe(
     unsigned ip, unsigned port,
     struct TcpPacket *pkt);
 
+unsigned rawsock_get_adapter_ip(const char *ifname);
+void rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
+
+
 #endif

@@ -107,7 +107,7 @@ port_usleep(uint64_t waitTime)
     } while((time2-time1) < waitTime);
     */
 
-    uint64_t start, stop;
+    uint64_t start;
 
     start = port_gettime();
 

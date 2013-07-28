@@ -14,7 +14,7 @@ static unsigned char packet_template[] =
 	"\x08\x00"		/* Etenrent type: IPv4 */
 	"\x45"			/* IP type */
 	"\x00"
-	"\x28\x00"		/* total length = 40 bytes */
+	"\x00\x28"		/* total length = 40 bytes */
 	"\x00\x00"		/* identification */
 	"\x00\x00"		/* fragmentation flags */
 	"\xFF\x06"		/* TTL=255, proto=TCP */

@@ -29,7 +29,7 @@ throttler_next_batch(struct Throttler *throttler, uint64_t count)
     double new_rate;
 
     if (packets_sent < 1.01)
-        return throttler->max_batch;
+        return (uint64_t)throttler->max_batch;
 
     /* BOUNDARY CASE: if the elapsed time is zero, or very small, we
      * get confused. Therefore, handle this case specially */
@@ -72,7 +72,7 @@ throttler_next_batch(struct Throttler *throttler, uint64_t count)
             }
 
             /* wait a bit */
-            x = waittime * 1000000.0;
+            x = (unsigned)waittime * 1000000.0;
 
             x1 = port_gettime();
             port_usleep(x);

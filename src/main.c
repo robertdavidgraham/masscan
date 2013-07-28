@@ -27,6 +27,9 @@ main_scan(struct Masscan *masscan)
 	uint64_t count_ports;
 	uint64_t i;
     clock_t scan_start, scan_stop;
+    unsigned adapter_ip;
+    unsigned char adapter_mac[6];
+
 
     /*
      * Initialize the transmit adapter
@@ -35,14 +38,37 @@ main_scan(struct Masscan *masscan)
     if (masscan->adapter == 0) {
         fprintf(stderr, "adapter[%s]: failed\n", masscan->ifname);
     }
+    adapter_ip = masscan->adapter_ip;
+    if (adapter_ip == 0) {
+        adapter_ip = rawsock_get_adapter_ip(masscan->ifname);
+        fprintf(stderr, "info: auto-detect: adapter-ip=%u.%u.%u.%u\n",
+            (adapter_ip>>24)&0xFF,
+            (adapter_ip>>16)&0xFF,
+            (adapter_ip>> 8)&0xFF,
+            (adapter_ip>> 0)&0xFF
+            );
+    }
+    memcpy(adapter_mac, masscan->adapter_mac, 6);
+    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
+        rawsock_get_adapter_mac(masscan->ifname, adapter_mac);
+        fprintf(stderr, "info: auto-detect: adapter-mac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+            adapter_mac[0],
+            adapter_mac[1],
+            adapter_mac[2],
+            adapter_mac[3],
+            adapter_mac[4],
+            adapter_mac[5]
+            );
+    }
+
 
 	
     /*
 	 * Initialize the TCP packet template.
 	 */
 	tcp_init_packet(pkt,
-        masscan->adapter_ip,
-        masscan->adapter_mac,
+        adapter_ip,
+        adapter_mac,
         masscan->router_mac);
 
 	
@@ -163,7 +189,7 @@ int main(int argc, char *argv[])
 	 * Read in the configuration from the command-line. We are looking for
      * either options or a list of IPv4 address ranges.
 	 */
-    masscan->max_rate = 10000.0; /* initialize: max rate 1000 packets-per-second */
+    masscan->max_rate = 1000.0; /* initialize: max rate 1000 packets-per-second */
 	masscan_command_line(masscan, argc, argv);
 
 

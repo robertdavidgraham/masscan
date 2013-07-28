@@ -6,6 +6,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <pcap.h>
 
@@ -16,7 +17,15 @@
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
 #define snprintf _snprintf
-#else
+#elif defined(__linux__)
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+
 struct pcap_send_queue;
 typedef struct pcap_send_queue pcap_send_queue;
 pcap_send_queue *pcap_sendqueue_alloc(size_t size) {return 0;}
@@ -26,6 +35,7 @@ void pcap_sendqueue_destroy(pcap_send_queue *queue) {;}
 int pcap_sendqueue_queue(pcap_send_queue *queue,
     const struct pcap_pkthdr *pkt_header,
     const unsigned char *pkt_data) {return 0;}
+#else
 #endif
 
 struct Adapter
@@ -239,6 +249,9 @@ rawsock_send_probe(
 	hdr.len = pkt->length;
 	hdr.caplen = pkt->length;
 
+    if (pkt->length < 60)
+        pkt->length = 60;
+
 	tcp_set_target(pkt, ip, port);
 	if (sendq == 0)
 		x = pcap_sendpacket(pcap, pkt->packet, pkt->length);
@@ -340,4 +353,78 @@ int
 rawsock_selftest()
 {
     return 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+rawsock_get_adapter_ip(const char *ifname)
+{
+#if defined(WIN32)
+    ifname;
+    return 0;
+#elif defined(__linux__)
+    int fd;
+    struct ifreq ifr;
+    struct sockaddr_in *sin;
+    struct sockaddr *sa;
+    int x;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
+
+    x = ioctl(fd, SIOCGIFADDR, &ifr);
+    if (x < 0) {
+        perror("ioctl");
+        close(fd);
+        return 0;
+    } 
+
+    close(fd);
+
+    sa = &ifr.ifr_addr;
+    sin = (struct sockaddr_in *)sa;
+    return ntohl(sin->sin_addr.s_addr);
+#else
+#error undefined adapter ip
+#endif
+
+}
+
+
+void
+rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
+{
+#if defined(WIN32)
+    ifname;mac;
+    return;
+#elif defined(__linux__)
+    int fd;
+    int x;
+    struct ifreq ifr;
+ 
+  
+    fd = socket(AF_INET, SOCK_STREAM, 0); 
+    if(fd < 0){ 
+        perror("socket");
+        goto end;
+    } 
+  
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
+    x = ioctl(fd, SIOCGIFHWADDR, (char *)&ifr);
+    if (x < 0) {
+        perror("ioctl");
+        goto end;
+    } 
+  
+    memcpy(mac, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
+
+end:
+    close(fd);  
+#else
+#error undefined adapter ip
+#endif
+
 }
