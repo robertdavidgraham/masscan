@@ -26,7 +26,12 @@ rawsock_send_probe(
     struct TcpPacket *pkt);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);
-void rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
+int rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
 
+int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4);
+
+const char *rawsock_win_name(const char *ifname);
+
+int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs);
 
 #endif

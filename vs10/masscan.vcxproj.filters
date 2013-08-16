@@ -48,6 +48,18 @@
     <ClCompile Include="..\src\main-throttle.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\string_s.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getroute.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getmac.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -80,9 +92,13 @@
     <ClInclude Include="..\src\main-throttle.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\string_s.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
     <None Include="..\LICENSE" />
+    <None Include="..\Makefile" />
   </ItemGroup>
 </Project>

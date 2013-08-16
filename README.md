@@ -1,15 +1,17 @@
 # MASSCAN: Mass IPv4 port scanner
 
-This is a port scanner with the following features:
-* very large ranges (like the entire Internet or 10.x.x.x)
-* very fast (millions of packets/second)
-* randomization of port/IP combo
-* stateless
-* kill list (easily avoid certain ranges)
+This is a port scanner. It spews out packets at a high rate, then catches any
+responses asynchronously. Because it's asynchronous, it's a lot faster than 
+''nmap'' -- and a lot less feature rich.
 
-This port scanner has the following limitations:
-* only tests if port is open/closed, no banner checking
-* only 'raw' packet support
+The intent is to be a 48-bit scanner -- scanning all ports (16-bits) on all
+IPv4 addresses (32-bits). It's also useful on smaller problems, such as the
+10.x.x.x address space within a company.
+
+It randomizes the IPv4+port combination, whereas nmap only randomizes the
+IPv4 address. This is so that we can send out 10-million packet per second
+when scanning the entire Internet, but the owner of a Class C network will
+only see 1 packet per second comming in.
 
 
 # Building
@@ -29,13 +31,12 @@ On Windows, use the VisualStudio 2010 project.
 
 The project contains a built-in self-test:
 
-	$ masscan --selftest
+	$ make regress
+	masscan --selftest
 	selftest: success!
 
-If the self-test succeeds, you'll get a simple success message, and the
-program returns the value of 0 if you want to script it. Otherwise, it'll
-print an error message indicating which module failed, and return a 1
-as the code.
+If the self-test fails, the program returns an exit code of '1' and an
+error message particular to which module and subtest failed.
 
 The regression test is completely offline: it doesn't send any packets.
 It's just testing the invidual units within the program. I plan to create

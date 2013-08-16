@@ -3,7 +3,7 @@ LIBS = -lrt -lpcap -lm
 INCLUDES = -I.
 DEFINES = 
 CC = gcc
-CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -Wstrict-aliasing=2 -O3 -rdynamic
+CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -rdynamic
 .SUFFIXES: .c .cpp
 
 tmp/%.o: src/%.c
@@ -19,4 +19,10 @@ clean:
 	rm tmp/*.o
 	rm bin/masscan
 
+regress: bin/masscan
+	bin/masscan --selftest
+
+install: bin/masscan
+	echo "No install, binary is bin/masscan"
+	
 default: bin/masscan

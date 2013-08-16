@@ -246,12 +246,22 @@ has_factors_in_common(uint64_t c, PRIMEFACTORS factors)
 /****************************************************************************
  * Given a range, calculate some possible constants for the LCG algorithm
  * for randomizing the order of the array.
+ * @parm m
+ *      The range for which we'll be finding random numbers. If we are
+ *      looking for random numbers between [0..100), this number will
+ *      be 100.
+ * @parm a
+ *      The LCG 'a' constant that will be the result of this function.
+ * @param c
+ *      The LCG 'c' constant that will be the result of this function. This
+ *      should be set to 0 on the input to this function, or a suggested
+ *      value.
  ****************************************************************************/
 void
-lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *out_c, int is_debug)
+lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_debug)
 {
 	uint64_t a;
-	uint64_t c = *out_c;
+	uint64_t c = *inout_c;
     double elapsed = 0.0; /* Benchmark of 'sieve' algorithm */
     PRIMEFACTORS factors; /* List of prime factors of 'm' */
 	PRIMEFACTORS non_factors;
@@ -347,7 +357,7 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *out_c, int is_deb
 	}
 
 	*out_a = a;
-	*out_c = c;
+	*inout_c = c;
 }
 
 /***************************************************************************
@@ -355,6 +365,23 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *out_c, int is_deb
 int
 randlcg_selftest()
 {
-    /* todo */
-    return 0; /*success*/
+
+    int is_success;
+    uint64_t m, a, c;
+
+
+    m = 3015 * 3;
+    a = 0;
+    c = 0;
+
+    lcg_calculate_constants(m, &a, &c, 0);
+
+    is_success = lcg_verify(a, c, m, m);
+
+    if (!is_success) {
+        fprintf(stderr, "LCG: randomization failed\n");
+        return 1; /*fail*/
+    } else {
+        return 0; /*success*/
+    }
 }

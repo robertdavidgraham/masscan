@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "masscan.h"
 #include "rand-lcg.h"
 #include "tcpkt.h"
@@ -60,6 +59,7 @@ main_scan(struct Masscan *masscan)
             adapter_mac[5]
             );
     }
+
 
 
 	
@@ -213,7 +213,51 @@ int main(int argc, char *argv[])
          * THIS IS THE NORMAL THING
          */
         return main_scan(masscan);
-        
+
+    case Operation_DebugIF:
+        {
+            int err;
+            unsigned ipv4 = 0;
+            unsigned char mac[6] = {0,0,0,0,0,0};
+
+            /* Name */
+            printf("if = %s\n", masscan->ifname);
+
+            /* IP address */
+            ipv4 = rawsock_get_adapter_ip(masscan->ifname);
+            if (ipv4 == 0) {
+                fprintf(stderr, "get-ip: returned err\n");
+            } else {
+                printf("ip = %u.%u.%u.%u\n", 
+                    (unsigned char)(ipv4>>24),
+                    (unsigned char)(ipv4>>16),
+                    (unsigned char)(ipv4>>8),
+                    (unsigned char)(ipv4>>0));
+            }
+
+            /* MAC address */
+            err = rawsock_get_adapter_mac(masscan->ifname, mac);
+            if (err) {
+                fprintf(stderr, "get-adapter-mac: returned err=%d\n", err);
+            } else {
+                printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n", 
+                    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            }
+
+            /* Gateway IP */
+            err = rawsock_get_default_gateway(masscan->ifname, &ipv4);
+            if (err) {
+                fprintf(stderr, "get-default-gateway: returned err=%d\n", err);
+            } else {
+                printf("gateway = %u.%u.%u.%u\n", 
+                    (unsigned char)(ipv4>>24),
+                    (unsigned char)(ipv4>>16),
+                    (unsigned char)(ipv4>>8),
+                    (unsigned char)(ipv4>>0));
+            }
+        }
+        return 0;
+
     case Operation_Selftest:
         /*
          * Do a regression test of all the significant units
@@ -231,7 +275,7 @@ int main(int argc, char *argv[])
                 return 1;
             } else {
                 fprintf(stderr, "selftest: success!\n");
-                return 1;
+                return 0;
             }
         }
         break;

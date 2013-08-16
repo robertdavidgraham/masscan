@@ -4,20 +4,12 @@
 	Configuration parameters can be read either from the command-line
 	or a configuration file.
 */
-
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "masscan.h"
 #include "ranges.h"
+#include "string_s.h"
 
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#ifdef WIN32
-#define snprintf _snprintf
-#endif
 
 extern int verbosity; /* logger.c */
 
@@ -169,9 +161,11 @@ masscan_echo(struct Masscan *masscan)
 void ranges_from_file(struct RangeList *ranges, const char *filename)
 {
     FILE *fp;
+    errno_t err;
 
-    fp = fopen(filename, "rt");
-    if (fp == NULL) {
+
+    err = fopen_s(&fp, filename, "rt");
+    if (err) {
         perror(filename);
         exit(1); /* HARD EXIT: because if it's an exclusion file, we don't 
                   * want to continue. We don't want ANY chance of
@@ -290,7 +284,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         if (masscan->ifname[0]) {
             fprintf(stderr, "CONF: overwriting \"adapter=%s\"\n", masscan->ifname);
         }
-		snprintf(masscan->ifname, sizeof(masscan->ifname), "%s", value);
+		sprintf_s(masscan->ifname, sizeof(masscan->ifname), "%s", value);
     }
     else if (EQUALS("adapter-ip", name) || EQUALS("adapter.ip", name) || EQUALS("adapterip", name)) {
 			struct Range range;
@@ -426,6 +420,11 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     }
     else if (EQUALS("includefile", name) || EQUALS("include-file", name) || EQUALS("include.file", name)) {
         ranges_from_file(&masscan->targets, value);
+    }
+    else if (EQUALS("debug", name)) {
+        if (EQUALS("if", value)) {
+            masscan->op = Operation_DebugIF;
+        }
     }
     else if (EQUALS("echo", name)) {
         masscan_echo(masscan);
@@ -576,10 +575,11 @@ trim(char *line)
 void masscan_read_config_file(struct Masscan *masscan, const char *filename)
 {
     FILE *fp;
+    errno_t err;
     char line[65536];
 
-    fp = fopen(filename, "rt");
-    if (fp == NULL) {
+    err = fopen_s(&fp, filename, "rt");
+    if (err) {
         perror(filename);
         exit(1);
     }

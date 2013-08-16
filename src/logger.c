@@ -1,12 +1,12 @@
 /*
-    log messages to console, spending on verbose level
+    log messages to console, depending on verbose level
 */
 #include "logger.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 
-int verbosity = 0;
+int verbosity = 0; /* yea! a global variable!! */
 
 void vLOG(int level, const char *fmt, va_list marker)
 {

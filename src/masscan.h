@@ -13,6 +13,7 @@ enum {
 	Operation_List_Adapters = 1,
     Operation_Selftest = 2,
     Operation_Scan = 3, /* this is what you expect */
+    Operation_DebugIF = 4,
 };
 
 struct Masscan

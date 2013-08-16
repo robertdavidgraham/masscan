@@ -72,7 +72,7 @@ throttler_next_batch(struct Throttler *throttler, uint64_t count)
             }
 
             /* wait a bit */
-            x = (unsigned)waittime * 1000000.0;
+            x = (unsigned)(waittime * 1000000.0);
 
             x1 = port_gettime();
             port_usleep(x);

@@ -1,12 +1,9 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "rawsock.h"
 #include "tcpkt.h"
 #include "logger.h"
 
-#include <time.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "string_s.h"
+
 
 #include <pcap.h>
 
@@ -16,7 +13,7 @@
 #pragma comment(lib, "packet.lib")
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
-#define snprintf _snprintf
+
 #elif defined(__linux__)
 #include <unistd.h>
 #include <sys/types.h>
@@ -53,17 +50,6 @@ struct AdapterNames
 
 struct AdapterNames adapter_names[64];
 unsigned adapter_name_count = 0;
-
-	/*
-	 * Translate the adapter name into a raw adapter name
-	 */
-/*
-	for (i=0; i<adapter_name_count; i++) {
-		if (_stricmp(adapter_names[i].easy_name, masscan->ifname) == 0) {
-			snprintf(masscan->ifname, sizeof(masscan->ifname), "%s", adapter_names[i].hard_name);
-		}
-	}
-*/
 
 
 /***************************************************************************
@@ -122,15 +108,15 @@ rawsock_init()
 				char *name = (char*)malloc(name_len);
 				size_t addr_len = pAdapter->AddressLength * 3 + 1;
 				char *addr = (char*)malloc(addr_len);
-				snprintf(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+				sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
 				
 				//printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
 				//printf("\tAdapter Addr: \t");
 				for (i = 0; i < pAdapter->AddressLength; i++) {
 					if (i == (pAdapter->AddressLength - 1))
-						snprintf(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
+						sprintf_s(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
 					else
-						snprintf(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
+						sprintf_s(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
 				}
 				//printf("%s  ->  %s\n", addr, name);
 				adapter_names[adapter_name_count].easy_name = addr;
@@ -145,8 +131,8 @@ rawsock_init()
 				char *name = (char*)malloc(name_len);
 				size_t addr_len = strlen(pAdapter->IpAddressList.IpAddress.String) + 1;
 				char *addr = (char*)malloc(addr_len);
-				snprintf(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
-				snprintf(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);				
+				sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+				sprintf_s(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);				
 				//printf("%s  ->  %s\n", addr, name);
 				adapter_names[adapter_name_count].easy_name = addr;
 				adapter_names[adapter_name_count].hard_name = name;
@@ -299,6 +285,19 @@ is_numeric_index(const char *ifname)
     return result;
 }
 
+const char *rawsock_win_name(const char *ifname)
+{
+    if (is_numeric_index(ifname)) {
+        const char *new_adapter_name;
+        
+        new_adapter_name = adapter_from_index(atoi(ifname));
+        if (new_adapter_name)
+            return new_adapter_name;
+    }
+
+    return ifname;
+}
+
 /***************************************************************************
  ***************************************************************************/
 struct Adapter *
@@ -347,84 +346,27 @@ rawsock_init_adapter(const char *adapter_name)
     return adapter;
 }
 
+
+
+/***************************************************************************
+ * for testing when two Windows adapters have the same name. Sometimes
+ * the \Device\NPF_ string is prepended, sometimes not.
+ ***************************************************************************/
+int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs)
+{
+    if (memcmp(lhs, "\\Device\\NPF_", 12) == 0)
+        lhs += 12;
+    if (memcmp(rhs, "\\Device\\NPF_", 12) == 0)
+        rhs += 12;
+    return strcmp(lhs, rhs) == 0;
+}
+
 /***************************************************************************
  ***************************************************************************/
 int
 rawsock_selftest()
 {
+
     return 0;
 }
 
-/***************************************************************************
- ***************************************************************************/
-unsigned
-rawsock_get_adapter_ip(const char *ifname)
-{
-#if defined(WIN32)
-    ifname;
-    return 0;
-#elif defined(__linux__)
-    int fd;
-    struct ifreq ifr;
-    struct sockaddr_in *sin;
-    struct sockaddr *sa;
-    int x;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
-
-    x = ioctl(fd, SIOCGIFADDR, &ifr);
-    if (x < 0) {
-        perror("ioctl");
-        close(fd);
-        return 0;
-    } 
-
-    close(fd);
-
-    sa = &ifr.ifr_addr;
-    sin = (struct sockaddr_in *)sa;
-    return ntohl(sin->sin_addr.s_addr);
-#else
-#error undefined adapter ip
-#endif
-
-}
-
-
-void
-rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
-{
-#if defined(WIN32)
-    ifname;mac;
-    return;
-#elif defined(__linux__)
-    int fd;
-    int x;
-    struct ifreq ifr;
- 
-  
-    fd = socket(AF_INET, SOCK_STREAM, 0); 
-    if(fd < 0){ 
-        perror("socket");
-        goto end;
-    } 
-  
-    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
-    x = ioctl(fd, SIOCGIFHWADDR, (char *)&ifr);
-    if (x < 0) {
-        perror("ioctl");
-        goto end;
-    } 
-  
-    memcpy(mac, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
-
-end:
-    close(fd);  
-#else
-#error undefined adapter ip
-#endif
-
-}

@@ -31,7 +31,11 @@
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
     <ClCompile Include="..\src\ranges.c" />
+    <ClCompile Include="..\src\rawsock-getip.c" />
+    <ClCompile Include="..\src\rawsock-getmac.c" />
+    <ClCompile Include="..\src\rawsock-getroute.c" />
     <ClCompile Include="..\src\rawsock.c" />
+    <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\tcpkt.c" />
   </ItemGroup>
   <ItemGroup>
@@ -44,10 +48,12 @@
     <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\ranges.h" />
     <ClInclude Include="..\src\rawsock.h" />
+    <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\tcpkt.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" />
+    <None Include="..\Makefile" />
     <None Include="..\README.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
