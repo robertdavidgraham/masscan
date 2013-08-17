@@ -1,5 +1,5 @@
 
-LIBS = -lrt -lpcap -lm
+LIBS = -lpcap -lm
 INCLUDES = -I.
 DEFINES = 
 CC = gcc
@@ -13,7 +13,7 @@ SRC = $(wildcard src/*.c)
 OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC))))) 
 
 bin/masscan: $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ) -lm $(LIBS) -lstdc++
+	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)
 
 clean:
 	rm tmp/*.o

@@ -10,7 +10,101 @@
 #include "ranges.h" /*for parsing IPv4 addresses */
 
 
-#if defined(__linux__)
+#if defined(__APPLE__)
+#include <unistd.h>
+#include <sys/socket.h>
+#include <net/route.h>
+#include <netinet/in.h>
+
+int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
+{
+    int fd;
+    int seq = time(0);
+    int err;
+    struct rt_msghdr *rtm;
+    size_t sizeof_buffer;
+    
+    
+    /*
+     * Requests/responses from the kernel are done with an "rt_msghdr"
+     * structure followed by an array of "sockaddr" structures.
+     */
+    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in) * sizeof(int)*8;
+    rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
+
+    
+    /*
+     * Create a socket for querying the kernel 
+     */
+    fd = socket(PF_ROUTE, SOCK_RAW, 0);
+    if (fd <= 0) {
+        perror("socket(PF_ROUTE)");
+        free(rtm);
+        return errno;
+    }
+    
+
+    /*
+     * Format and send request to kernel 
+     */
+    memset(rtm, 0, sizeof_buffer);
+    rtm->rtm_msglen = sizeof_buffer;
+    rtm->rtm_type = RTM_GET;
+    rtm->rtm_flags = RTF_UP | RTF_GATEWAY;
+    rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_seq = seq;
+    rtm->rtm_addrs = RTA_DST | RTA_NETMASK;
+    
+    err = write(fd, (char *)rtm, sizeof_buffer);
+    if (err) {
+        perror("write(RTM_GET)");
+        close(fd);
+        free(rtm);
+        return -1;
+    }
+
+    /*
+     * Read responses until we find one that belongs to us
+     */
+    for (;;) {
+        err = read(fd, (char *)rtm, sizeof_buffer);
+        if (err <= 0)
+            break;
+        if (rtm->rtm_seq != seq)
+            continue;
+        if (rtm->rtm_pid != getpid())
+            continue;
+        
+    }
+    close(fd);
+    
+    /*
+     * Parse our data
+     */
+    {
+        int i;
+        struct sockaddr *sa;
+        
+        /* Addresses start right in buffer after RTM structure */
+        sa = (struct sockaddr *)(rtm + 1);
+        
+        for (i=1; i; i *= 2) {
+            if (i == RTA_GATEWAY) {
+                /* FOUND IT!! copy the address and return */
+                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+                *ipv4 = ntohl(sin->sin_addr.s_addr);
+                free(rtm);
+                return 0;
+            }
+            sa++;
+        }
+    }
+    
+    free(rtm);
+    return -1;
+}
+
+#elif defined(__linux__)
 #include <netinet/in.h>
 #include <net/if.h>
 #include <stdio.h>

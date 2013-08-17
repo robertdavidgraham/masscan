@@ -4,6 +4,9 @@
 	This is for the "safe" clib functions, where things like "strcpy()" is 
 	replaced with a safer version of the function, like "strcpy_s()". Since
 	these things are non-standard, compilers deal with them differently.
+ 
+ Reference:
+ http://msdn.microsoft.com/en-us/library/bb288454.aspx
 */
 #ifndef STRCPY_S
 #define STRCPY_S
@@ -13,15 +16,37 @@
 #include <string.h>
 #include <time.h>
 
+#undef strcpy
 #define strcpy      STRCPY_FUNCTION_IS_BAD
-#define strcat      STRCAT_FUNCTION_IS_BAD
+
 #undef strncpy
 #define strncpy     STRNCPY_FUNCTION_IS_BAD
+
+#undef strcat
+#define strcat      STRCAT_FUNCTION_IS_BAD
+
+#undef strncat
+#define strncat     STRNCAT_FUNCTION_IS_BAD
+
+#undef sprintf
 #define sprintf     SPRINTF_FUNCTION_IS_BAD
+
+#undef vsprintf
 #define vsprintf    VSPRINTF_FUNCTION_IS_BAD
+
+#undef strtok
 #define strtok      STRTOK_FUNCTION_IS_BAD
+
+#undef gets
 #define gets        GETS_FUNCTION_IS_BAD
+
+#undef scanf
 #define scanf       SCANF_FUNCTION_IS_BAD
+
+#undef sscanf
+#define sscanf      SSCANF_FUNCTION_IS_BAD
+
+#undef itoa
 #define itoa        ITOA_FUNCTION_IS_BAD
 
 #if defined(_MSC_VER) && (_MSC_VER == 1600)

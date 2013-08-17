@@ -20,7 +20,7 @@
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
 
-#elif defined(__linux__)
+#elif defined(__GNUC__)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>

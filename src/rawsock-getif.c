@@ -9,8 +9,12 @@
 
 #include "ranges.h" /*for parsing IPv4 addresses */
 
-
-#if defined(__linux__)
+#if defined(__APPLE__)
+int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
+{
+    return -1;
+}
+#elif defined(__linux__)
 #include <netinet/in.h>
 #include <net/if.h>
 #include <stdio.h>

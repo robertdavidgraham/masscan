@@ -8,6 +8,11 @@
     time. In other words, if you put the system to sleep and wake it
     up a day later, this function should see no change, since time
     wasn't elapsing while the system was asleep.
+ 
+    Reference:
+    http://www.python.org/dev/peps/pep-0418/#monotonic-clocks
+    http://www.brain-dump.org/blog/entry/107
+ 
 */
 #include "pixie-timer.h"
 
@@ -15,9 +20,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifndef WIN32
-#include <unistd.h>
-#endif
 
 #if defined(WIN32)
 #include <Windows.h>
@@ -125,7 +127,9 @@ port_usleep(uint64_t waitTime)
     while (port_gettime() - start < waitTime)
         ;
 }
-#else
+#elif defined(CLOCK_MONOTONIC)
+#include <unistd.h>
+
 void port_usleep(uint64_t microseconds)
 {
     usleep(microseconds);
@@ -136,14 +140,30 @@ port_gettime()
     int x;
     struct timespec tv;
 
+#ifdef CLOCK_MONOTONIC_RAW
+    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
+#else
     x = clock_gettime(CLOCK_MONOTONIC, &tv);
+#endif
     if (x != 0) {
         printf("clock_gettime() err %d\n", errno);
     }
 
     return tv.tv_sec * 1000000 + tv.tv_nsec/1000;
 }
+#elif defined(__MACH__) /* works for Apple */
+#include <unistd.h>
+#include <mach/mach_time.h>
 
+void port_usleep(uint64_t microseconds)
+{
+    usleep(microseconds);
+}
+uint64_t
+port_gettime()
+{
+    return mach_absolute_time()/1000;
+}
 #endif
 
 int port_time_selftest()

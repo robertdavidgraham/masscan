@@ -6,7 +6,13 @@
 #include "rawsock.h"
 #include "string_s.h"
 
-#if defined(__linux__)
+#if defined(__APPLE__)
+int
+rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
+{
+    return -1;
+}
+#elif defined(__linux__)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
