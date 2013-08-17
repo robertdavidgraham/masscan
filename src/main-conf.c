@@ -2,7 +2,7 @@
 	Read in the configuration for MASSCAN.
 
 	Configuration parameters can be read either from the command-line
-	or a configuration file.
+	or a configuration file. Parameters have the same name in both.
 */
 #include "masscan.h"
 #include "ranges.h"

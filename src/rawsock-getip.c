@@ -1,3 +1,9 @@
+/*
+    retrieve IPv4 address of the named network interface/adapter
+    like "eth0"
+
+    This works on both Linux and Windows.
+*/
 #include "rawsock.h"
 #include "string_s.h"
 #include "ranges.h" /*for parsing IPv4 addresses */

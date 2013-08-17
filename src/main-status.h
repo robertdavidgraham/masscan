@@ -6,7 +6,7 @@
 struct Status
 {
     struct {
-        clock_t clock;
+        uint64_t clock;
         time_t time;
         uint64_t count;
     } last;

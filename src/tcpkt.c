@@ -2,6 +2,10 @@
 
     Construct a TCP packet based upon a template.
 
+    The (eventual) idea of this module is to make this scanner extensible
+    by providing an arbitrary packet template. Thus, the of this module
+    is to take an existing packet template, parse it, then make 
+    appropriate changes.
 */
 #include "tcpkt.h"
 

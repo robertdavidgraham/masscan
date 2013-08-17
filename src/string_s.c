@@ -1,3 +1,11 @@
+/*
+    safe C library functions
+
+    This upgrades unsafe C functions like "strcpy()" to safer equivelents,
+    like "strcpy_s()".
+
+    NOTE: This is for maintaining a policy of "no unsafe functions"
+*/
 #include "string_s.h"
 #include <errno.h>
 #include <ctype.h>

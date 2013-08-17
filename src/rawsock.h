@@ -3,8 +3,10 @@
 */
 #ifndef RAWSOCK_H
 #define RAWSOCK_H
+#include <stdio.h>
 struct Adapter;
 struct TcpPacket;
+
 
 /**
  * @return
@@ -12,6 +14,7 @@ struct TcpPacket;
  *      0 on success
  */
 int rawsock_selftest();
+int rawsock_selftest_if(const char *ifname);
 
 void rawsock_init();
 
@@ -29,9 +32,28 @@ unsigned rawsock_get_adapter_ip(const char *ifname);
 int rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
 
 int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4);
+int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname);
 
 const char *rawsock_win_name(const char *ifname);
 
 int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs);
+
+int rawsock_send_packet(
+    struct Adapter *adapter,
+    const unsigned char *packet,
+    unsigned length);
+
+int rawsock_recv_packet(
+    struct Adapter *adapter,
+    unsigned *length,
+    unsigned *secs,
+    unsigned *usecs,
+    const unsigned char **packet);
+
+int arp_resolve_sync(struct Adapter *adapter, 
+    unsigned my_ipv4, const unsigned char *my_mac_address,
+    unsigned your_ipv4, unsigned char *your_mac_address);
+
+void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac);
 
 #endif

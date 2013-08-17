@@ -1,5 +1,15 @@
+/*
+    for printing the status to the command-line roughly once per second
+
+    the complication is that we cann't afford a "time" check for each
+    packet, since it's a system call, so we try to keep a rough 
+    approximation of when to print a status.
+
+*/
 #include "main-status.h"
+#include "port-timer.h"
 #include <stdio.h>
+#include <string.h>
 
 
 /***************************************************************************
@@ -11,8 +21,7 @@ void
 status_print(struct Status *status, uint64_t count, uint64_t max_count)
 {
     double elapsed;
-    clock_t now;
-    unsigned i;
+    uint64_t now;
                 
     /* speed up or slow down how often we report so that we get about 
      * 1-second between reports */
@@ -28,16 +37,25 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
         status->last.time = t;
     }
 
-	now = clock();
-	elapsed = ((double)now - (double)status->last.clock)/(double)CLOCKS_PER_SEC;
+    if (count <= status->last.count)
+        return;
+
+
+	now = port_gettime();
+	elapsed = ((double)now - (double)status->last.clock)/(double)1000000.0;
+    if (elapsed == 0)
+        return;
 	status->last.clock = now;
 
-	status->charcount = printf("rate = %5.3f-kilaprobes/sec  %5.3f%% done      \n", 
+	status->charcount = printf("rate = %5.3f-kilaprobes/sec  %5.3f%% done         \r", 
                     ((double)(count - status->last.count)*1.0/elapsed)/1000.0, 
-                    (double)(count*100.0/max_count));
+                    (double)(count*100.0/max_count)
+                    );
+    fflush(stdout);
     status->last.count = count;
-    for (i=0; i<status->charcount; i++)
+    /*for (i=0; i<status->charcount; i++)
         putc('\b', stdout);
+    printf("x\b");*/
 }
 
 /***************************************************************************
@@ -59,8 +77,9 @@ status_finish(struct Status *status)
 void
 status_start(struct Status *status)
 {
+    memset(status, 0, sizeof(*status));
    	status->last.clock = clock();
     status->last.time = time(0);
     status->last.count = 0;
-    status->timer = 0x7f;
+    status->timer = 0x1;
 }

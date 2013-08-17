@@ -1,3 +1,14 @@
+/*
+    portability: time
+
+    Since this program runs on both Linux and Windows, I need a portable
+    way to get a high-resolution timer.
+
+    NOTE: The time I'm looking for is "elapsed time" not "wall clock"
+    time. In other words, if you put the system to sleep and wake it
+    up a day later, this function should see no change, since time
+    wasn't elapsing while the system was asleep.
+*/
 #include "port-timer.h"
 
 #include <time.h>
@@ -134,3 +145,24 @@ port_gettime()
 }
 
 #endif
+
+int port_time_selftest()
+{
+    static const uint64_t duration = 123456;
+    uint64_t start, stop, elapsed;
+    
+
+    start = port_gettime();
+    port_usleep(duration);
+    stop = port_gettime();
+    elapsed = stop - start;
+
+    if (elapsed < 0.9*duration || 1.1*duration < elapsed) {
+        /* I wonder how often this will fail just because the process
+         * gets swapped out, but I'm leaving it in to see if people notice */
+        fprintf(stderr, "timing error, long delay\n");
+        return 1;
+    }
+    
+    return 0;
+}

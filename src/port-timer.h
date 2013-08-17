@@ -12,6 +12,8 @@ uint64_t port_gettime();
  */
 void port_usleep(uint64_t usec);
 
+int port_time_selftest();
+
 
 
 

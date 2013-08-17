@@ -1,3 +1,10 @@
+/*
+
+    main
+
+    This includes the main() function, as well as the inner loop of the
+    scan function.
+*/
 #include "masscan.h"
 #include "rand-lcg.h"
 #include "tcpkt.h"
@@ -5,6 +12,7 @@
 #include "logger.h"
 #include "main-status.h"
 #include "main-throttle.h"
+#include "port-timer.h"
 
 #include <string.h>
 #include <time.h>
@@ -28,29 +36,53 @@ main_scan(struct Masscan *masscan)
     clock_t scan_start, scan_stop;
     unsigned adapter_ip;
     unsigned char adapter_mac[6];
+    unsigned char router_mac[6];
+    char *ifname;
+    char ifname2[256];
 
 
     /*
      * Initialize the transmit adapter
      */
-    masscan->adapter = rawsock_init_adapter(masscan->ifname);
+    if (masscan->ifname && masscan->ifname[0])
+        ifname = masscan->ifname;
+    else {
+        /* no adapter specified, so find a default one */
+        int err;
+        err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
+        if (err) {
+            fprintf(stderr, "FAIL: could not determine default interface\n");
+            fprintf(stderr, "FAIL:... use --interface parameter to configure which interface to use\n");
+            return -1;
+        } else {
+            LOG(2, "auto-detected: interface=%s\n", ifname2);
+        }
+        ifname = ifname2;
+        
+    }
+    masscan->adapter = rawsock_init_adapter(ifname);
     if (masscan->adapter == 0) {
-        fprintf(stderr, "adapter[%s]: failed\n", masscan->ifname);
+        fprintf(stderr, "adapter[%s]: failed\n", ifname);
     }
     adapter_ip = masscan->adapter_ip;
     if (adapter_ip == 0) {
-        adapter_ip = rawsock_get_adapter_ip(masscan->ifname);
-        fprintf(stderr, "info: auto-detect: adapter-ip=%u.%u.%u.%u\n",
+        adapter_ip = rawsock_get_adapter_ip(ifname);
+        LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
             (adapter_ip>>24)&0xFF,
             (adapter_ip>>16)&0xFF,
             (adapter_ip>> 8)&0xFF,
             (adapter_ip>> 0)&0xFF
             );
     }
+    if (adapter_ip == 0) {
+        fprintf(stderr, "FAIL: failed to detect IP of interface: \"%s\"\n", ifname);
+        fprintf(stderr, "FAIL:... Can set source IP with --adapter-ip parameter\n");
+        return -1;
+    }
     memcpy(adapter_mac, masscan->adapter_mac, 6);
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-        rawsock_get_adapter_mac(masscan->ifname, adapter_mac);
-        fprintf(stderr, "info: auto-detect: adapter-mac=%02x:%02x:%02x:%02x:%02x:%02x\n",
+        rawsock_get_adapter_mac(ifname, adapter_mac);
+        LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
             adapter_mac[0],
             adapter_mac[1],
             adapter_mac[2],
@@ -59,9 +91,56 @@ main_scan(struct Masscan *masscan)
             adapter_mac[5]
             );
     }
+    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
+        fprintf(stderr, "FAIL: failed to detect MAC address of interface: \"%s\"\n", ifname);
+        fprintf(stderr, "FAIL:... Can set source MAC with --adapter-mac parameter\n");
+        return -1;
+    }
+
+    memcpy(router_mac, masscan->router_mac, 6);
+    if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
+        unsigned router_ipv4;
+        int err;
+
+        err = rawsock_get_default_gateway(ifname, &router_ipv4);
+        if (err == 0) {
+            LOG(2, "auto-detected: router-ip=%u.%u.%u.%u\n",
+                (router_ipv4>>24)&0xFF,
+                (router_ipv4>>16)&0xFF,
+                (router_ipv4>> 8)&0xFF,
+                (router_ipv4>> 0)&0xFF
+                );
+
+            err = arp_resolve_sync(
+                    masscan->adapter,
+                    adapter_ip,
+                    adapter_mac,
+                    router_ipv4,
+                    router_mac);
+
+            if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
+                LOG(2, "auto-detected: router-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
+                    router_mac[0],
+                    router_mac[1],
+                    router_mac[2],
+                    router_mac[3],
+                    router_mac[4],
+                    router_mac[5]
+                    );
+            }
+        }
+    }
+    if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
+        fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
+        fprintf(stderr, "FAIL:... Can set router with --router-mac parameter\n");
+        return -1;
+    }
 
 
-
+    /*
+     * Ignore transmits
+     */
+    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
 	
     /*
 	 * Initialize the TCP packet template.
@@ -69,7 +148,7 @@ main_scan(struct Masscan *masscan)
 	tcp_init_packet(pkt,
         adapter_ip,
         adapter_mac,
-        masscan->router_mac);
+        router_mac);
 
 	
     /*
@@ -77,14 +156,16 @@ main_scan(struct Masscan *masscan)
 	 */
 	count_ips = rangelist_count(&masscan->targets);
 	if (count_ips == 0) {
-		fprintf(stderr, "no IPv4 ranges were specified\n");
+		fprintf(stderr, "FAIL: no IPv4 ranges were specified\n");
 		return 1;
-	}
+	} else
+        LOG(2, "range = %u IP addresses\n", count_ips);
 	count_ports = rangelist_count(&masscan->ports);
 	if (count_ports == 0) {
-		fprintf(stderr, "no ports were specified, use \"-p<port>\"\n");
+		fprintf(stderr, "FAIL: no ports were specified, use \"-p<port>\"\n");
 		return 1;
-	}
+	} else
+        LOG(2, "range = %u ports\n", count_ports);
 
 	/*
      * Initialize LCG translator
@@ -97,6 +178,11 @@ main_scan(struct Masscan *masscan)
 		&masscan->lcg.a,
 		&masscan->lcg.c,
 		0);
+    LOG(2, "lcg-constants = a(%lu) c(%lu) m(%lu)\n", 
+		masscan->lcg.a,
+		masscan->lcg.c,
+		masscan->lcg.m
+        );
 
 
 	/*
@@ -189,7 +275,7 @@ int main(int argc, char *argv[])
 	 * Read in the configuration from the command-line. We are looking for
      * either options or a list of IPv4 address ranges.
 	 */
-    masscan->max_rate = 1000.0; /* initialize: max rate 1000 packets-per-second */
+    masscan->max_rate = 100.0; /* initialize: max rate = hundred packets-per-second */
 	masscan_command_line(masscan, argc, argv);
 
 
@@ -201,7 +287,7 @@ int main(int argc, char *argv[])
 	case Operation_Default:
         /* Print usage info and exit */
         masscan_usage();
-		return 0;
+		break;
 
 	case Operation_List_Adapters:
         /* List the network adapters we might want to use for scanning */
@@ -215,47 +301,7 @@ int main(int argc, char *argv[])
         return main_scan(masscan);
 
     case Operation_DebugIF:
-        {
-            int err;
-            unsigned ipv4 = 0;
-            unsigned char mac[6] = {0,0,0,0,0,0};
-
-            /* Name */
-            printf("if = %s\n", masscan->ifname);
-
-            /* IP address */
-            ipv4 = rawsock_get_adapter_ip(masscan->ifname);
-            if (ipv4 == 0) {
-                fprintf(stderr, "get-ip: returned err\n");
-            } else {
-                printf("ip = %u.%u.%u.%u\n", 
-                    (unsigned char)(ipv4>>24),
-                    (unsigned char)(ipv4>>16),
-                    (unsigned char)(ipv4>>8),
-                    (unsigned char)(ipv4>>0));
-            }
-
-            /* MAC address */
-            err = rawsock_get_adapter_mac(masscan->ifname, mac);
-            if (err) {
-                fprintf(stderr, "get-adapter-mac: returned err=%d\n", err);
-            } else {
-                printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n", 
-                    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-            }
-
-            /* Gateway IP */
-            err = rawsock_get_default_gateway(masscan->ifname, &ipv4);
-            if (err) {
-                fprintf(stderr, "get-default-gateway: returned err=%d\n", err);
-            } else {
-                printf("gateway = %u.%u.%u.%u\n", 
-                    (unsigned char)(ipv4>>24),
-                    (unsigned char)(ipv4>>16),
-                    (unsigned char)(ipv4>>8),
-                    (unsigned char)(ipv4>>0));
-            }
-        }
+        rawsock_selftest_if(masscan->ifname);
         return 0;
 
     case Operation_Selftest:
@@ -268,6 +314,7 @@ int main(int argc, char *argv[])
             x += randlcg_selftest();
             x += tcpkt_selftest();
             x += ranges_selftest();
+            x += port_time_selftest();
 
             if (x != 0) {
                 /* one of the selftests failed, so return error */

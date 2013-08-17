@@ -1,3 +1,8 @@
+/*
+    get MAC address of named network interface/adapter like "eth0"
+
+    This works on both Windows and linux
+*/
 #include "rawsock.h"
 #include "string_s.h"
 

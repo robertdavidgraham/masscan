@@ -6,9 +6,14 @@ struct Throttler
 {
     double max_rate;
     double current_rate;
-    double max_batch;
-    uint64_t last_count;
-    uint64_t last_timestamp;
+    double batch_size;
+   
+    unsigned index;
+    
+    struct {
+        uint64_t timestamp;
+        uint64_t packet_count;
+    } buckets[256];
 };
 
 

@@ -31,6 +31,8 @@
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
     <ClCompile Include="..\src\ranges.c" />
+    <ClCompile Include="..\src\rawsock-arp.c" />
+    <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
     <ClCompile Include="..\src\rawsock-getmac.c" />
     <ClCompile Include="..\src\rawsock-getroute.c" />

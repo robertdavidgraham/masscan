@@ -1,3 +1,6 @@
+/*
+    for tracking IP/port ranges
+*/
 #include "ranges.h"
 
 #include <assert.h>
@@ -257,6 +260,12 @@ rangelist_count(struct RangeList *targets)
 
 
 /***************************************************************************
+ * Get's the indexed port/address.
+ *
+ * Note that this requires a search of all the ranges. Currently, this is
+ * done by a learn search of the ranges. This needs to change, because
+ * once we start adding in a lot of "exclude ranges", the address space
+ * will get fragmented, and the linear search will take too long.
  ***************************************************************************/
 unsigned
 rangelist_pick(struct RangeList *targets, uint64_t index)
@@ -275,7 +284,9 @@ rangelist_pick(struct RangeList *targets, uint64_t index)
 	return 0;
 }
 
+
 /***************************************************************************
+ * Called during "make regress" to run a regression test over this module.
  ***************************************************************************/
 int
 ranges_selftest()

@@ -115,18 +115,15 @@ static int parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
 }
 
 
-int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
+int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 {
     int fd;
     struct nlmsghdr *nlMsg;
     char msgBuf[16384];
     int len;
     int msgSeq = 0;
+    unsigned ipv4 = 0;
 
-    /*
-     * Set to zero, in case we cannot find it
-     */
-    *ipv4 = 0;
 
     /* 
      * Create 'netlink' socket to query kernel 
@@ -183,16 +180,17 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         if (err != 0)
             continue;
 
-        /* make sure we match the desired network interface */
-        if (ifname && strcmp(rtInfo->ifName, ifname) != 0)
-            continue;
 
         /* make sure destination = 0.0.0.0 for "default route" */
         if (rtInfo->dstAddr.s_addr != 0)
             continue;
 
         /* found the gateway! */
-        *ipv4 = ntohl(rtInfo->gateWay.s_addr);
+        ipv4 = ntohl(rtInfo->gateWay.s_addr);
+        if (ipv4 == 0)
+            continue;
+
+        strcpy_s(ifname, sizeof_ifname, rtInfo->ifName);
     }
 
     close(fd);
@@ -210,18 +208,12 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 
 
 
-int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
+int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 {
     PIP_ADAPTER_INFO pAdapterInfo;
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD err;
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
-
-    /*
-     * Translate numeric index (if it exists) to real name
-     */
-    ifname = rawsock_win_name(ifname);
-    //printf("------ %s -----\n", ifname);
 
     /*
      * Allocate a proper sized buffer
@@ -258,62 +250,13 @@ again:
     for (   pAdapter = pAdapterInfo;
             pAdapter;
             pAdapter = pAdapter->Next) {
-        if (rawsock_is_adapter_names_equal(pAdapter->AdapterName, ifname))
-            break;
-    }
+        unsigned ipv4 = 0;
 
-    if (pAdapter) {
-        //printf("\tComboIndex: \t%d\n", pAdapter->ComboIndex);
-        //printf("\tAdapter Name: \t%s\n", pAdapter->AdapterName);
-        //printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
+        if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
+            continue;
 
 
-        //printf("\tAdapter Addr: \t");
-        /*for (i = 0; i < pAdapter->AddressLength; i++) {
-            if (i == (pAdapter->AddressLength - 1))
-                printf("%.2X\n", (int) pAdapter->Address[i]);
-            else
-                printf("%.2X-", (int) pAdapter->Address[i]);
-        }*/
-        //printf("\tIndex: \t%d\n", pAdapter->Index);
-        //printf("\tType: \t");
-        switch (pAdapter->Type) {
-        case MIB_IF_TYPE_OTHER:
-            //printf("Other\n");
-            break;
-        case MIB_IF_TYPE_ETHERNET:
-            //printf("Ethernet\n");
-            break;
-        case MIB_IF_TYPE_TOKENRING:
-            //printf("Token Ring\n");
-            break;
-        case MIB_IF_TYPE_FDDI:
-            //printf("FDDI\n");
-            break;
-        case MIB_IF_TYPE_PPP:
-            //printf("PPP\n");
-            break;
-        case MIB_IF_TYPE_LOOPBACK:
-            //printf("Lookback\n");
-            break;
-        case MIB_IF_TYPE_SLIP:
-            //printf("Slip\n");
-            break;
-        default:
-            //printf("Unknown type %ld\n", pAdapter->Type);
-            break;
-        }
-
-        //printf("\tIP Address: \t%s\n", pAdapter->IpAddressList.IpAddress.String);
-        //printf("\tIP Mask: \t%s\n", pAdapter->IpAddressList.IpMask.String);
-
-/*typedef struct _IP_ADDR_STRING {
-    struct _IP_ADDR_STRING* Next;
-    IP_ADDRESS_STRING IpAddress;
-    IP_MASK_STRING IpMask;
-    DWORD Context;
-} IP_ADDR_STRING, *PIP_ADDR_STRING;*/
-
+        /* See if this adapter has a default-route/gateway configured */
         {
             const IP_ADDR_STRING *addr;
 
@@ -324,15 +267,20 @@ again:
 
                 range = range_parse_ipv4(addr->IpAddress.String, 0, 0);
                 if (range.begin != 0 && range.begin == range.end) {
-                    *ipv4 = range.begin;
+                    ipv4 = range.begin;
+                    break;
                 }
-
-
             }
         }
 
+        /*
+         * When we reach the first adapter with an IP address, then
+         * we'll use that one 
+         */
+        if (ipv4) {
+            sprintf_s(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);
+        }
 
-        //printf("\n");
     }
     if (pAdapterInfo)
         free(pAdapterInfo);

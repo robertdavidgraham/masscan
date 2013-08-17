@@ -1,6 +1,7 @@
 /*
-    This is DJB's code, with a few modifications, such as making it
-    work with Microsoft's compiler on Windows
+    This is DJB's code for calculating primes, with a few modifications,
+    such as making it work with Microsoft's compiler on Windows, and
+    getting rid of warnings.
 */
 #include "rand-primegen.h"
 
