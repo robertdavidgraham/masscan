@@ -1,5 +1,5 @@
 
-LIBS = -lpcap -lm
+LIBS = -lpcap -lm -lrt
 INCLUDES = -I.
 DEFINES = 
 CC = gcc
