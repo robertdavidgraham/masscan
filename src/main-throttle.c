@@ -13,7 +13,7 @@
     of the desired thousand packets/second.
 */
 #include "main-throttle.h"
-#include "port-timer.h"
+#include "pixie-timer.h"
 #include "logger.h"
 #include <string.h>
 #include <stdio.h>

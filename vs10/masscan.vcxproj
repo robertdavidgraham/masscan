@@ -27,7 +27,9 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">include</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\src\port-timer.c" />
+    <ClCompile Include="..\src\pixie-threads.c" />
+    <ClCompile Include="..\src\pixie-timer.c" />
+    <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
     <ClCompile Include="..\src\ranges.c" />
@@ -45,7 +47,9 @@
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />
-    <ClInclude Include="..\src\port-timer.h" />
+    <ClInclude Include="..\src\pixie-threads.h" />
+    <ClInclude Include="..\src\pixie-timer.h" />
+    <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\ranges.h" />

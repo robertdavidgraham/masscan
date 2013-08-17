@@ -9,7 +9,7 @@
     up a day later, this function should see no change, since time
     wasn't elapsing while the system was asleep.
 */
-#include "port-timer.h"
+#include "pixie-timer.h"
 
 #include <time.h>
 #include <stdio.h>

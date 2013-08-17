@@ -13,7 +13,7 @@
 #include "main-status.h"
 #include "main-throttle.h"
 
-#include "port-timer.h"         /* portable time functions */
+#include "pixie-timer.h"         /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
 #include "proto-preprocess.h"   /* quick parse of packets */
 

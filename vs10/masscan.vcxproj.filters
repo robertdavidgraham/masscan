@@ -39,9 +39,6 @@
     <ClCompile Include="..\src\ranges.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\port-timer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\main-status.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -64,6 +61,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rawsock-getif.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-threads.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-preprocess.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-timer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,9 +95,6 @@
     <ClInclude Include="..\src\logger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\port-timer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\main-status.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -99,6 +102,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\string_s.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-threads.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-preprocess.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-timer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
