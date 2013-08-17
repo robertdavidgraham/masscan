@@ -73,6 +73,19 @@ masscan_echo(struct Masscan *masscan)
 
     printf("rate = %10.2f\n", masscan->max_rate);
     printf("adapter = %s\n", masscan->ifname);
+    printf("adapter-ip = %u.%u.%u.%u\n", 
+        (masscan->adapter_ip>>24)&0xFF,
+        (masscan->adapter_ip>>16)&0xFF,
+        (masscan->adapter_ip>> 8)&0xFF,
+        (masscan->adapter_ip>> 0)&0xFF
+        );
+    printf("adapter.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
+            masscan->adapter_mac[0],
+            masscan->adapter_mac[1],
+            masscan->adapter_mac[2],
+            masscan->adapter_mac[3],
+            masscan->adapter_mac[4],
+            masscan->adapter_mac[5]);
     printf("router.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->router_mac[0],
             masscan->router_mac[1],

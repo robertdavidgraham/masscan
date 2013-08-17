@@ -12,13 +12,86 @@
 #include "logger.h"
 #include "main-status.h"
 #include "main-throttle.h"
-#include "port-timer.h"
+
+#include "port-timer.h"         /* portable time functions */
+#include "pixie-threads.h"      /* portable threads */
+#include "proto-preprocess.h"   /* quick parse of packets */
 
 #include <string.h>
 #include <time.h>
 
 
 
+/***************************************************************************
+ * This thread spews packets as fast as it can
+ ***************************************************************************/
+void scanning_thread(void *v)
+{
+    uint64_t i;
+    struct Masscan *masscan = (struct Masscan *)v;
+	uint64_t index = 0;
+	uint64_t a = masscan->lcg.a;
+	uint64_t c = masscan->lcg.c;
+	uint64_t m = masscan->lcg.m;
+    uint64_t count_ips = rangelist_count(&masscan->targets);
+	struct Status status;
+    struct Throttler throttler;
+    struct TcpPacket *pkt_template = masscan->pkt_template;
+        
+    status_start(&status);
+    throttler_start(&throttler, masscan->max_rate);
+
+    /*
+     * the main loop
+     */
+	for (i=0; i<masscan->lcg.m; ) {
+        uint64_t batch_size;
+
+
+        /*
+         * do a batch of many packets at a time
+         */
+        batch_size = throttler_next_batch(&throttler, i);
+        while (batch_size && i < m) {
+			unsigned ip;
+			unsigned port;
+
+            batch_size--;
+
+			/* randomize the index
+             *  index = lcg_rand(index, a, c, m); */
+			index = (index * a + c) % m;
+
+			/* Pick the IPv4 address pointed to by this index */
+			ip = rangelist_pick(&masscan->targets, index%count_ips);
+			port = rangelist_pick(&masscan->ports, index/count_ips);
+
+            /* Send the probe */
+			rawsock_send_probe(masscan->adapter, ip, port, pkt_template);
+
+            i++;
+
+            /* 
+             * update screen about once per second with statistics,
+             * namely packets/second.
+             */
+			if ((i & status.timer) == status.timer) 
+                status_print(&status, i, m);
+        }
+	}
+
+    /*
+     * We are done, so wait for 10 seconds before exiting
+     */
+    {
+        unsigned j;
+        for (j=0; j<10; j++) {
+            status_print(&status, i++, m);
+            port_usleep(1000000);
+        }
+    }
+    masscan->is_done = 1;
+}
 
 
 
@@ -26,15 +99,14 @@
  * Do the scan. This is the main function of the program.
  * Called from main()
  ***************************************************************************/
-int
+static int
 main_scan(struct Masscan *masscan)
 {
 	struct TcpPacket pkt[1];
 	uint64_t count_ips;
 	uint64_t count_ports;
-	uint64_t i;
-    clock_t scan_start, scan_stop;
     unsigned adapter_ip;
+    unsigned adapter_port;
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
     char *ifname;
@@ -52,7 +124,7 @@ main_scan(struct Masscan *masscan)
         err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
         if (err) {
             fprintf(stderr, "FAIL: could not determine default interface\n");
-            fprintf(stderr, "FAIL:... use --interface parameter to configure which interface to use\n");
+            fprintf(stderr, "FAIL:... try \"--interface ethX\"\n");
             return -1;
         } else {
             LOG(2, "auto-detected: interface=%s\n", ifname2);
@@ -63,6 +135,7 @@ main_scan(struct Masscan *masscan)
     masscan->adapter = rawsock_init_adapter(ifname);
     if (masscan->adapter == 0) {
         fprintf(stderr, "adapter[%s]: failed\n", ifname);
+        return -1;
     }
     adapter_ip = masscan->adapter_ip;
     if (adapter_ip == 0) {
@@ -76,7 +149,7 @@ main_scan(struct Masscan *masscan)
     }
     if (adapter_ip == 0) {
         fprintf(stderr, "FAIL: failed to detect IP of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... Can set source IP with --adapter-ip parameter\n");
+        fprintf(stderr, "FAIL:... try \"--adapter-ip 192.168.100.5\"\n");
         return -1;
     }
     memcpy(adapter_mac, masscan->adapter_mac, 6);
@@ -93,7 +166,7 @@ main_scan(struct Masscan *masscan)
     }
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect MAC address of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... Can set source MAC with --adapter-mac parameter\n");
+        fprintf(stderr, "FAIL:... try \"--adapter-mac 00-11-22-33-44\"\n");
         return -1;
     }
 
@@ -132,7 +205,7 @@ main_scan(struct Masscan *masscan)
     }
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... Can set router with --router-mac parameter\n");
+        fprintf(stderr, "FAIL:... try \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
 
@@ -149,6 +222,8 @@ main_scan(struct Masscan *masscan)
         adapter_ip,
         adapter_mac,
         router_mac);
+    masscan->pkt_template = pkt;
+    adapter_port = tcpkt_get_source_port(pkt);
 
 	
     /*
@@ -178,82 +253,99 @@ main_scan(struct Masscan *masscan)
 		&masscan->lcg.a,
 		&masscan->lcg.c,
 		0);
-    LOG(2, "lcg-constants = a(%lu) c(%lu) m(%lu)\n", 
+    LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n", 
 		masscan->lcg.a,
 		masscan->lcg.c,
 		masscan->lcg.m
         );
 
 
-	/*
-	 * Now start grabbing random values from the range
-	 */
-    scan_start = clock();
-	{
-		uint64_t index = 0;
-		uint64_t a = masscan->lcg.a;
-		uint64_t c = masscan->lcg.c;
-		uint64_t m = masscan->lcg.m;
-		struct Status status;
-        struct Throttler throttler;
-        
-        status_start(&status);
-        throttler_start(&throttler, masscan->max_rate);
-
-        /*
-         * the main loop
-         */
-		for (i=0; i<masscan->lcg.m; ) {
-            uint64_t batch_size;
-
-
-            /*
-             * do a batch of many packets at a time
-             */
-            batch_size = throttler_next_batch(&throttler, i);
-            while (batch_size && i < m) {
-			    unsigned ip;
-			    unsigned port;
-
-                batch_size--;
-
-			    /* randomize the index
-			     *  index = lcg_rand(index, a, c, m); */
-			    index = (index * a + c) % m;
-
-			    /* Pick the IPv4 address pointed to by this index */
-			    ip = rangelist_pick(&masscan->targets, index%count_ips);
-			    port = rangelist_pick(&masscan->ports, index/count_ips);
-
-                /* Send the probe */
-			    rawsock_send_probe(masscan->adapter, ip, port, pkt);
-
-                i++;
-
-                /* 
-                 * update screen about once per second with statistics,
-                 * namely packets/second.
-                 */
-			    if ((i & status.timer) == status.timer) 
-                    status_print(&status, i, m);
-            }
-		}
-
-        status_finish(&status);
-    }
-    scan_stop = clock();
-
+    /*
+     * Start the scanning thread
+     */
+    pixie_begin_thread(scanning_thread, 0, masscan);
 
     /*
-     * Print final statustics, like how long it took and how fast it went
+     * Receive packets
      */
-    {
-		double elapsed = ((double)scan_stop - (double)scan_start)/(double)CLOCKS_PER_SEC;
+    while (!masscan->is_done) {
+        unsigned length;
+        unsigned secs;
+        unsigned usecs;
+        const unsigned char *px;
+        int err;
+        unsigned x;
+        struct PreprocessedInfo parsed;
+        unsigned dst;
+        unsigned src;
 
-		printf("rate = %5.3f-megaprobes/sec  100%% done\n", ((double)masscan->lcg.m/elapsed)/1000000.0);
-		printf("elapsed = %-1.0f-seconds\n", elapsed);
-		printf("probes = %llu-probes (%5.3f-million)\n", masscan->lcg.m, (double)masscan->lcg.m/1000000.0);
-	}
+
+        err = rawsock_recv_packet(
+                    masscan->adapter,
+                    &length,
+                    &secs,
+                    &usecs,
+                    &px);
+
+        if (err != 0)
+            continue;
+
+
+        /*
+         * handle packet
+         */
+        x = preprocess_frame(px, length, 1, &parsed);
+        if (!x)
+            continue; /* corrupt packet */
+
+        /* verify: my IP address */
+        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
+            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
+        if (adapter_ip != dst)
+            continue;
+
+        /* OOPS: handle arp instead */
+        if (parsed.found == FOUND_ARP) {
+            LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
+            arp_response(masscan->adapter, adapter_ip, adapter_mac, px, length);
+            continue;
+        }
+
+        /* verify: TCP */
+        if (parsed.found != FOUND_TCP)
+            continue;
+
+        /* verify: SYN-ACK */
+        if ((px[parsed.transport_offset+13] & 0x12) != 0x12)
+            continue;
+
+        /* verify: my IP address */
+        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
+            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
+        if (adapter_ip != dst)
+            continue;
+
+        /* verify: my port number */
+        if (adapter_port != parsed.port_dst)
+            continue;
+
+
+        /*
+         * XXXX
+         * TODO: add lots more verification, such as coming from one of
+         * our sending port numbers, and having the right seqno/ackno
+         * fields set.
+         */
+        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
+            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+        printf("found: %u.%u.%u.%u on port %u                      \n",
+            (src>>24)&0xFF,
+            (src>>16)&0xFF,
+            (src>> 8)&0xFF,
+            (src>> 0)&0xFF,
+            parsed.port_src);
+    }
+
 
     return 0;
 }
@@ -262,7 +354,7 @@ main_scan(struct Masscan *masscan)
  ***************************************************************************/
 int main(int argc, char *argv[])
 {
-	struct Masscan masscan[1];
+    struct Masscan masscan[1];
 
 	memset(masscan, 0, sizeof(*masscan));
 

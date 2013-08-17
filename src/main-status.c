@@ -11,6 +11,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef UNUSEDPARM
+#ifdef _MSC_VER
+#define UNUSEDPARM(x) x
+#else
+#define UNUSEDPARM(x)
+#endif
+#endif
 
 /***************************************************************************
  * Print a status message about once-per-second to the command-line. This
@@ -47,15 +54,12 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
         return;
 	status->last.clock = now;
 
-	status->charcount = printf("rate = %5.3f-kilaprobes/sec  %5.3f%% done         \r", 
+	fprintf(stderr, "rate = %5.3f-kilaprobes/sec  %5.3f%% done         \r", 
                     ((double)(count - status->last.count)*1.0/elapsed)/1000.0, 
                     (double)(count*100.0/max_count)
                     );
-    fflush(stdout);
+    fflush(stderr);
     status->last.count = count;
-    /*for (i=0; i<status->charcount; i++)
-        putc('\b', stdout);
-    printf("x\b");*/
 }
 
 /***************************************************************************
@@ -63,13 +67,7 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
 void
 status_finish(struct Status *status)
 {
-    unsigned i;
-
-    /* blank out the status line */
-    for (i=0; i<status->charcount; i++)
-        putc(' ', stdout);
-    for (i=0; i<status->charcount; i++)
-        putc('\b', stdout);
+    UNUSEDPARM(status);
 }
 
 /***************************************************************************

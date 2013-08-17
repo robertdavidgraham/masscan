@@ -90,6 +90,8 @@ int arp_resolve_sync(struct Adapter *adapter,
     time_t start;
     struct ARP_IncomingRequest response;
 
+    memset(&response, 0, sizeof(response));
+
     /* zero out bytes in packet to avoid leaking stuff */
     memset(arp_packet, 0, sizeof(arp_packet));
 
@@ -195,4 +197,76 @@ int arp_resolve_sync(struct Adapter *adapter,
     }
 
     return 1;
+}
+
+/****************************************************************************
+ ****************************************************************************/
+int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *my_mac,
+    const unsigned char *px, unsigned length)
+{
+    unsigned char arp_packet[64];
+    struct ARP_IncomingRequest request;
+
+    memset(&request, 0, sizeof(request));
+
+    /* zero out bytes in packet to avoid leaking stuff */
+    memset(arp_packet, 0, sizeof(arp_packet));
+
+
+    /*
+     * Parse the response as an ARP packet
+     */
+    proto_arp_parse(&request, px, 14, length);
+
+    /* Is this an ARP packet? */
+    if (!request.is_valid) {
+        LOG(2, "arp: etype=0x%04x, not ARP\n", px[12]*256 + px[13]);
+        return -1;
+    }
+
+    /* Is this an ARP "request"? */
+    if (request.opcode != 1) {
+        LOG(2, "arp: opcode=%u, not request(1)\n", request.opcode);
+        return -1;
+    }
+
+    /* Is this response directed at us? */
+    if (request.ip_dst != my_ip) {
+        LOG(2, "arp: dst=%08x, not my ip 0x%08x\n", request.ip_dst, my_ip);
+        return -1;
+    }
+
+    /*
+     * Create the response packet
+     */
+    memcpy(arp_packet +  0, request.mac_src, 6);
+    memcpy(arp_packet +  6, my_mac, 6);
+    memcpy(arp_packet + 12, "\x08\x06", 2);
+
+    memcpy(arp_packet + 14, 
+            "\x00\x01" /* hardware = Ethernet */
+            "\x08\x00" /* protocol = IPv4 */
+            "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
+            "\x00\x02" /* opcode = reply(2) */
+            , 8);
+
+    memcpy(arp_packet + 22, my_mac, 6);
+    arp_packet[28] = (unsigned char)(my_ip >> 24);
+    arp_packet[29] = (unsigned char)(my_ip >> 16);
+    arp_packet[30] = (unsigned char)(my_ip >>  8);
+    arp_packet[31] = (unsigned char)(my_ip >>  0);
+    
+    memcpy(arp_packet + 32, request.mac_src, 6);
+    arp_packet[38] = (unsigned char)(request.ip_src >> 24);
+    arp_packet[39] = (unsigned char)(request.ip_src >> 16);
+    arp_packet[40] = (unsigned char)(request.ip_src >>  8);
+    arp_packet[41] = (unsigned char)(request.ip_src >>  0);
+
+
+    /*
+     * Now transmit the packet
+     */
+    rawsock_send_packet(adapter, arp_packet, 60);
+
+    return 0;
 }

@@ -7,6 +7,7 @@
 #include "ranges.h"
 
 struct Adapter;
+struct TcpPacket;
 
 enum {
 	Operation_Default = 0,  /* nothing specified, so print usage */
@@ -62,6 +63,17 @@ struct Masscan
      * Maximum rate, in packets-per-second
      */
     double max_rate;
+
+    /**
+     * The packet template we are current using
+     */
+    struct TcpPacket *pkt_template;
+
+    /** 
+     * Are we there yet? The scanning thread sets this to 1 when its done.
+     * The receive thread will wait a bit after this, then exit.
+     */
+    unsigned is_done;
 };
 
 

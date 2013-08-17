@@ -1,0 +1,49 @@
+/* Copyright: (c) 2009-2010 by Robert David Graham
+** License: This code is private to the author, and you do not 
+** have a license to run it, or own a copy, unless given 
+** a license personally by the author. This is 
+** explained in the LICENSE file at the root of the project. 
+**/
+#ifndef PREPROCESS_H
+#define PREPROCESS_H
+
+enum {
+    FOUND_NOTHING=0,
+    FOUND_ETHERNET,
+    FOUND_IPV4,
+    FOUND_IPV6,
+    FOUND_ICMP,
+    FOUND_TCP,
+    FOUND_UDP,
+    FOUND_DNS,
+    FOUND_IPV6_HOP,
+    FOUND_8021Q,
+    FOUND_MPLS,
+    FOUND_WIFI_DATA,
+    FOUND_WIFI,
+    FOUND_RADIOTAP,
+    FOUND_PRISM,
+    FOUND_LLC,
+    FOUND_ARP,
+};
+struct PreprocessedInfo {
+    const unsigned char *mac_src;
+    const unsigned char *mac_dst;
+    const unsigned char *mac_bss;
+	unsigned ip_offset;		/* 14 for normal Ethernet */
+    unsigned ip_version;    /* 4 or 6 */
+    unsigned ip_protocol;   /* 6 for TCP, 11 for UDP */
+    const unsigned char *ip_src;
+    const unsigned char *ip_dst;
+	unsigned transport_offset;	/* 34 for normal Ethernet */
+    unsigned port_src;
+    unsigned port_dst;
+
+    int found;
+    int found_offset;
+};
+
+unsigned 
+preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, struct PreprocessedInfo *info);
+
+#endif

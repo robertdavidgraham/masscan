@@ -32,5 +32,10 @@ tcp_init_packet(struct TcpPacket *pkt,
 void
 tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port);
 
+unsigned
+tcpkt_get_source_port(struct TcpPacket *pkt);
+
+void
+tcpkt_set_source_port(struct TcpPacket *pkt, unsigned port);
 
 #endif

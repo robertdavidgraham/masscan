@@ -454,7 +454,7 @@ rawsock_init_adapter(const char *adapter_name)
 	 * Create a send queue for faster transmits
 	 */
 #if defined(WIN32)
-	adapter->sendq = pcap_sendqueue_alloc(65536);
+	adapter->sendq = 0; //pcap_sendqueue_alloc(65536);
 #else
     adapter->sendq = 0;
 #endif

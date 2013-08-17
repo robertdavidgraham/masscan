@@ -8,6 +8,7 @@
     appropriate changes.
 */
 #include "tcpkt.h"
+#include "proto-preprocess.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -171,6 +172,35 @@ tcp_init_packet(struct TcpPacket *pkt,
 	pkt->checksum_tcp = xsum;
 
 }
+
+/***************************************************************************
+ * Retrieve the source-port of the packet. We parse this from the packet
+ * because while the source-port can be configured separately, we usually
+ * get a raw packet template.
+ ***************************************************************************/
+unsigned
+tcpkt_get_source_port(struct TcpPacket *pkt)
+{
+    const unsigned char *px = pkt->packet;
+    unsigned offset = pkt->offset_tcp;
+
+    return px[offset+0]<<8 | px[offset+1]<<0;
+}
+
+/***************************************************************************
+ * Overwrites the source-port field in the packet template.
+ ***************************************************************************/
+void
+tcpkt_set_source_port(struct TcpPacket *pkt, unsigned port)
+{
+    unsigned char *px = pkt->packet;
+    unsigned offset = pkt->offset_tcp;
+
+    px[offset+0] = (unsigned char)(port>>8);
+    px[offset+1] = (unsigned char)(port>>0);
+}
+
+
 
 /***************************************************************************
  ***************************************************************************/
