@@ -1,5 +1,6 @@
 #ifndef MASSCAN_H
 #define MASSCAN_H
+#include "string_s.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -10,11 +11,21 @@ struct Adapter;
 struct TcpPacket;
 
 enum {
-	Operation_Default = 0,  /* nothing specified, so print usage */
+	Operation_Default = 0,      /* nothing specified, so print usage */
 	Operation_List_Adapters = 1,
     Operation_Selftest = 2,
-    Operation_Scan = 3, /* this is what you expect */
+    Operation_Scan = 3,         /* this is what you expect */
     Operation_DebugIF = 4,
+    Operation_ListScan = 5,
+};
+
+enum OutpuFormat {
+    Output_Interactive = 0,
+    Output_Normal,
+    Output_XML,
+    Output_ScriptKiddie,
+    Output_Grepable,
+    Output_All
 };
 
 struct Masscan
@@ -32,6 +43,7 @@ struct Masscan
     struct Adapter *adapter;
 
     unsigned adapter_ip;
+    unsigned adapter_port;
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
 
@@ -60,9 +72,29 @@ struct Masscan
 	} lcg;
 
     /**
-     * Maximum rate, in packets-per-second
+     * Maximum rate, in packets-per-second (--rate parameter)
      */
     double max_rate;
+
+    /**
+     * Number of retries (--retries or --max-retries parameter)
+     */
+    unsigned retries;
+
+    struct {
+        unsigned data_length; /* number of bytes to randomly append */
+        unsigned ttl; /* starting IP TTL field */
+        unsigned badsum; /* bad TCP/UDP/SCTP checksum */
+
+        /* ouput options */
+        unsigned packet_trace:1; /* print transmit messages */
+        unsigned reason; /* print reason port is open, which is redundant for us */
+        unsigned format; /* see enum OutputFormat */
+        unsigned append; /* append instead of clobber file */
+        char datadir[256];
+        char filename[256];
+        char stylesheet[256];
+    } nmap;
 
     /**
      * The packet template we are current using

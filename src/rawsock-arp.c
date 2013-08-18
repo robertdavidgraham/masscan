@@ -92,7 +92,8 @@ int arp_resolve_sync(struct Adapter *adapter,
 
     memset(&response, 0, sizeof(response));
 
-    /* zero out bytes in packet to avoid leaking stuff */
+    /* zero out bytes in packet to avoid leaking stuff in the padding
+     * (ARP is 42 byte packet, Ethernet is 60 byte minimum) */
     memset(arp_packet, 0, sizeof(arp_packet));
 
     /*
@@ -181,7 +182,7 @@ int arp_resolve_sync(struct Adapter *adapter,
         if (memcmp(response.mac_dst, my_mac_address, 6) != 0)
             continue;
 
-        /* Is this droid we are looking for? */
+        /* Is this the droid we are looking for? */
         if (response.ip_src != your_ipv4) {
             LOG(2, "arp: target=%08x, not desired 0x%08x\n", response.ip_src, your_ipv4);
             continue;

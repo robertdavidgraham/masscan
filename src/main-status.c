@@ -44,21 +44,35 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
         status->last.time = t;
     }
 
+    /* If nothing's changed, then stop here, because otherwise we'll
+     * be dividing by zero or something */
     if (count <= status->last.count)
         return;
 
 
+    /* Get the time. NOTE: this is CLOCK_MONOTONIC_RAW on Linux, not
+     * wall-clock time. */
 	now = port_gettime();
 	elapsed = ((double)now - (double)status->last.clock)/(double)1000000.0;
     if (elapsed == 0)
         return;
 	status->last.clock = now;
 
-	fprintf(stderr, "rate = %5.3f-kilaprobes/sec  %5.3f%% done         \r", 
-                    ((double)(count - status->last.count)*1.0/elapsed)/1000.0, 
-                    (double)(count*100.0/max_count)
-                    );
-    fflush(stderr);
+    /*
+     * Print the message to <stderr> so that <stdout> can be redirected
+     * to a file (<stdout> reports what systems were found).
+     */
+    {
+        double rate = ((double)(count - status->last.count)*1.0/elapsed);
+        double percent_done = (double)(count*100.0/max_count);
+        /* (%u-days %02u:%02u:%02u remaining) */
+	    fprintf(stderr, "rate = %5.3f-kpps: About %5.2f%% done;      \r", 
+                        rate/1000.0, 
+                        percent_done
+                        );
+        fflush(stderr);
+    }
+    
     status->last.count = count;
 }
 

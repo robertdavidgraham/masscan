@@ -1,5 +1,24 @@
 
+SYS := $(shell gcc -dumpmachine)
+
+
+ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt
+endif
+
+ifneq (, $(findstring darwin, $(SYS)))
+LIBS = -lpcap -lm
+endif
+
+ifneq (, $(findstring mingw, $(SYS)))
+LIBS = -lwpcap
+endif
+
+ifneq (, $(findstring cygwin, $(SYS)))
+LIBS = -lwpcap
+endif
+
+
 INCLUDES = -I.
 DEFINES = 
 CC = gcc

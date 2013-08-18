@@ -3,17 +3,18 @@
     main
 
     This includes the main() function, as well as the inner loop of the
-    scan function.
+    scan function 'scanning_thread()'.
 */
 #include "masscan.h"
-#include "rand-lcg.h"
-#include "tcpkt.h"
-#include "rawsock.h"
-#include "logger.h"
-#include "main-status.h"
-#include "main-throttle.h"
 
-#include "pixie-timer.h"         /* portable time functions */
+#include "rand-lcg.h"           /* the LCG randomization func */
+#include "tcpkt.h"              /* packet template, that we use to send */
+#include "rawsock.h"            /* api on top of Linux, Windows, Mac OS X*/
+#include "logger.h"             /* adjust with -v command-line opt */
+#include "main-status.h"        /* printf() regular status updates */
+#include "main-throttle.h"      /* rate limit */
+
+#include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
 #include "proto-preprocess.h"   /* quick parse of packets */
 
@@ -24,12 +25,16 @@
 
 /***************************************************************************
  * This thread spews packets as fast as it can
+ *
+ *      THIS IS WHERE ALL THE EXCITEMENT HAPPENS!!!!
+ *      90% of CPU cycles are in the function.
+ *
  ***************************************************************************/
-void scanning_thread(void *v)
+static void
+scanning_thread(void *v)
 {
     uint64_t i;
     struct Masscan *masscan = (struct Masscan *)v;
-	uint64_t index = 0;
 	uint64_t a = masscan->lcg.a;
 	uint64_t c = masscan->lcg.c;
 	uint64_t m = masscan->lcg.m;
@@ -37,9 +42,20 @@ void scanning_thread(void *v)
 	struct Status status;
     struct Throttler throttler;
     struct TcpPacket *pkt_template = masscan->pkt_template;
-        
+   	uint64_t index;
+    unsigned packet_trace = masscan->nmap.packet_trace;
+    double timestamp_start;
+
     status_start(&status);
     throttler_start(&throttler, masscan->max_rate);
+
+    timestamp_start = 1.0 * port_gettime() / 1000000.0;
+
+
+    /*
+     * Seed the LCG so that it does a different scan every time.
+     */
+    index = time(0) % masscan->lcg.m;
 
     /*
      * the main loop
@@ -47,9 +63,11 @@ void scanning_thread(void *v)
 	for (i=0; i<masscan->lcg.m; ) {
         uint64_t batch_size;
 
-
         /*
-         * do a batch of many packets at a time
+         * Do a batch of many packets at a time. That because per-packet
+         * throttling is expensive at 10-million pps, so we reduce the 
+         * per-packet cost by doing batches. At slower rates, the batch
+         * size will always be one.
          */
         batch_size = throttler_next_batch(&throttler, i);
         while (batch_size && i < m) {
@@ -69,7 +87,9 @@ void scanning_thread(void *v)
             /* Send the probe */
 			rawsock_send_probe(masscan->adapter, ip, port, pkt_template);
 
+
             i++;
+
 
             /* 
              * update screen about once per second with statistics,
@@ -77,6 +97,10 @@ void scanning_thread(void *v)
              */
 			if ((i & status.timer) == status.timer) 
                 status_print(&status, i, m);
+
+            /* Print packet if debugging */
+            if (packet_trace)
+                tcpkt_trace(pkt_template, ip, port, timestamp_start);
         }
 	}
 
@@ -90,31 +114,38 @@ void scanning_thread(void *v)
             port_usleep(1000000);
         }
     }
+
+    /* Tell the other it's time to exit the program */
     masscan->is_done = 1;
 }
 
 
-
 /***************************************************************************
- * Do the scan. This is the main function of the program.
- * Called from main()
+ * Initialize the network adapter.
+ * 
+ * This requires finding things like our IP address, MAC address, and router
+ * MAC address. The user could configure these things manually instead.
+ *
+ * Note that we don't update the "static" configuration with the discovered
+ * values, but instead return them as the "running" configuration. That's
+ * so if we pause and resume a scan, autodiscovered values don't get saved
+ * in the configuration file.
  ***************************************************************************/
 static int
-main_scan(struct Masscan *masscan)
+initialize(struct Masscan *masscan,
+    unsigned *r_adapter_ip,
+    unsigned char *adapter_mac,
+    unsigned char *router_mac)
 {
-	struct TcpPacket pkt[1];
-	uint64_t count_ips;
-	uint64_t count_ports;
-    unsigned adapter_ip;
-    unsigned adapter_port;
-    unsigned char adapter_mac[6];
-    unsigned char router_mac[6];
     char *ifname;
     char ifname2[256];
 
-
     /*
-     * Initialize the transmit adapter
+     * ADAPTER/NETWORK-INTERFACE
+     *
+     * If no network interface was configured, we need to go hunt down
+     * the best Interface to use. We do this by choosing the first 
+     * interface with a "default route" (aka. "gateway") defined
      */
     if (masscan->ifname && masscan->ifname[0])
         ifname = masscan->ifname;
@@ -132,26 +163,37 @@ main_scan(struct Masscan *masscan)
         ifname = ifname2;
         
     }
-    masscan->adapter = rawsock_init_adapter(ifname);
-    if (masscan->adapter == 0) {
-        fprintf(stderr, "adapter[%s]: failed\n", ifname);
-        return -1;
-    }
-    adapter_ip = masscan->adapter_ip;
-    if (adapter_ip == 0) {
-        adapter_ip = rawsock_get_adapter_ip(ifname);
+
+    /*
+     * IP ADDRESS
+     *
+     * We need to figure out that IP address to send packets from. This
+     * is done by queryin the adapter (or configured by user). If the 
+     * adapter doesn't have one, then the user must configure one.
+     */
+    *r_adapter_ip = masscan->adapter_ip;
+    if (*r_adapter_ip == 0) {
+        *r_adapter_ip = rawsock_get_adapter_ip(ifname);
         LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
-            (adapter_ip>>24)&0xFF,
-            (adapter_ip>>16)&0xFF,
-            (adapter_ip>> 8)&0xFF,
-            (adapter_ip>> 0)&0xFF
+            (*r_adapter_ip>>24)&0xFF,
+            (*r_adapter_ip>>16)&0xFF,
+            (*r_adapter_ip>> 8)&0xFF,
+            (*r_adapter_ip>> 0)&0xFF
             );
     }
-    if (adapter_ip == 0) {
+    if (*r_adapter_ip == 0) {
         fprintf(stderr, "FAIL: failed to detect IP of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try \"--adapter-ip 192.168.100.5\"\n");
+        fprintf(stderr, "FAIL:... try something like \"--adapter-ip 192.168.100.5\"\n");
         return -1;
     }
+
+    /*
+     * MAC ADDRESS
+     *
+     * This is the address we send packets from. It actually doesn't really
+     * matter what this address is, but to be a "responsible" citizen we
+     * try to use the hardware address in the network card.
+     */
     memcpy(adapter_mac, masscan->adapter_mac, 6);
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
         rawsock_get_adapter_mac(ifname, adapter_mac);
@@ -166,10 +208,33 @@ main_scan(struct Masscan *masscan)
     }
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect MAC address of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try \"--adapter-mac 00-11-22-33-44\"\n");
+        fprintf(stderr, "FAIL:... try something like \"--adapter-mac 00-11-22-33-44\"\n");
         return -1;
     }
 
+    /*
+     * START ADAPTER
+     *
+     * Once we've figured out which adapter to use, we now need to 
+     * turn it on.
+     */
+    masscan->adapter = rawsock_init_adapter(ifname);
+    if (masscan->adapter == 0) {
+        fprintf(stderr, "adapter[%s].init: failed\n", ifname);
+        return -1;
+    }
+    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+
+    /*
+     * ROUTER MAC ADDRESS
+     * 
+     * NOTE: this is one of the least understood aspects of the code. We must
+     * send packets to the local router, which means the MAC address (not
+     * IP address) of the router.
+     * 
+     * Note: in order to ARP the router, we need to first enable the libpcap
+     * code above.
+     */
     memcpy(router_mac, masscan->router_mac, 6);
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         unsigned router_ipv4;
@@ -186,7 +251,7 @@ main_scan(struct Masscan *masscan)
 
             err = arp_resolve_sync(
                     masscan->adapter,
-                    adapter_ip,
+                    *r_adapter_ip,
                     adapter_mac,
                     router_ipv4,
                     router_mac);
@@ -205,24 +270,62 @@ main_scan(struct Masscan *masscan)
     }
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try \"--router-mac 66-55-44-33-22-11\"\n");
+        fprintf(stderr, "FAIL:... try something like \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
 
+    return 0;
+}
 
+/***************************************************************************
+ * Start the scan. This is the main function of the program.
+ * Called from main()
+ ***************************************************************************/
+static int
+main_scan(struct Masscan *masscan)
+{
+	struct TcpPacket pkt[1];
+	uint64_t count_ips;
+	uint64_t count_ports;
+    unsigned adapter_ip = 0;
+    unsigned adapter_port;
+    unsigned char adapter_mac[6];
+    unsigned char router_mac[6];
+    int err;
+    
     /*
-     * Ignore transmits
+     * Turn the adapter on, and get the running configuration
      */
-    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+    err = initialize(   masscan,
+                        &adapter_ip,
+                        adapter_mac,
+                        router_mac);
+    if (err != 0)
+        return err;
 	
     /*
-	 * Initialize the TCP packet template.
+	 * Initialize the TCP packet template. The way this works is that we parse
+     * an existing TCP packet, and use that as the template for scanning. Then,
+     * we adjust the template with additional features, such as the IP address
+     * and so on.
 	 */
 	tcp_init_packet(pkt,
         adapter_ip,
         adapter_mac,
         router_mac);
     masscan->pkt_template = pkt;
+
+    /*
+     * Reconfigure the packet template according to command-line options
+     */
+    if (masscan->adapter_port < 0x10000)
+        tcpkt_set_source_port(pkt, masscan->adapter_port);
+    if (masscan->nmap.ttl)
+        tcpkt_set_ttl(pkt, masscan->nmap.ttl);
+    
+    /*
+     * Read back what we've set
+     */
     adapter_port = tcpkt_get_source_port(pkt);
 
 	
@@ -242,10 +345,14 @@ main_scan(struct Masscan *masscan)
 	} else
         LOG(2, "range = %u ports\n", count_ports);
 
-	/*
+    fprintf(stderr, "Scanning %u hosts [%u ports/host]\n",
+        (unsigned)count_ips, (unsigned)count_ports);
+	
+    /*
      * Initialize LCG translator
      *
-	 * This can take a couple seconds on a slow CPU
+	 * This can take a couple seconds on a slow CPU. We have to find all the
+     * primes out to 2^24 when doing large ranges.
 	 */
 	masscan->lcg.m = count_ips * count_ports;
 	lcg_calculate_constants(
@@ -261,12 +368,15 @@ main_scan(struct Masscan *masscan)
 
 
     /*
-     * Start the scanning thread
+     * Start the scanning thread.
+     * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
+     * RATE OF SPEED.
      */
     pixie_begin_thread(scanning_thread, 0, masscan);
 
     /*
-     * Receive packets
+     * Receive packets. This is where we catch any responses and print
+     * them to the terminal.
      */
     while (!masscan->is_done) {
         unsigned length;
@@ -329,7 +439,6 @@ main_scan(struct Masscan *masscan)
         if (adapter_port != parsed.port_dst)
             continue;
 
-
         /*
          * XXXX
          * TODO: add lots more verification, such as coming from one of
@@ -338,12 +447,15 @@ main_scan(struct Masscan *masscan)
          */
         src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
-        printf("found: %u.%u.%u.%u on port %u                      \n",
-            (src>>24)&0xFF,
-            (src>>16)&0xFF,
-            (src>> 8)&0xFF,
-            (src>> 0)&0xFF,
-            parsed.port_src);
+        if (masscan->nmap.format == Output_Interactive) {
+            printf("Discovered open port %u/tcp on %u.%u.%u.%u                          \n",
+                parsed.port_src,
+                (src>>24)&0xFF,
+                (src>>16)&0xFF,
+                (src>> 8)&0xFF,
+                (src>> 0)&0xFF
+                );
+        }
     }
 
 
@@ -355,6 +467,17 @@ main_scan(struct Masscan *masscan)
 int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
+
+    {
+        char buffer[80];
+        time_t now  = time(0);
+        struct tm x;
+
+        gmtime_s(&x, &now);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
+        fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
+    }
+
 
 	memset(masscan, 0, sizeof(*masscan));
 
@@ -368,7 +491,26 @@ int main(int argc, char *argv[])
      * either options or a list of IPv4 address ranges.
 	 */
     masscan->max_rate = 100.0; /* initialize: max rate = hundred packets-per-second */
-	masscan_command_line(masscan, argc, argv);
+    masscan->adapter_port = 0x10000; /* value not set */
+	
+    masscan_command_line(masscan, argc, argv);
+
+    /*
+     * Apply excludes
+     */
+    {
+        unsigned i;
+
+        for (i=0; i<masscan->exclude_ip.count; i++) {
+            struct Range range = masscan->exclude_ip.list[i];
+            rangelist_remove_range(&masscan->targets, range.begin, range.end);
+        }
+
+        for (i=0; i<masscan->exclude_port.count; i++) {
+            struct Range range = masscan->exclude_port.list[i];
+            rangelist_remove_range(&masscan->ports, range.begin, range.end);
+        }
+    }
 
 
     /*
@@ -381,16 +523,18 @@ int main(int argc, char *argv[])
         masscan_usage();
 		break;
 
-	case Operation_List_Adapters:
-        /* List the network adapters we might want to use for scanning */
-		rawsock_list_adapters();
-		break;
-
     case Operation_Scan:
         /*
          * THIS IS THE NORMAL THING
          */
+        fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v\n");
+        fprintf(stderr, "Initiating SYN Stealth Scan\n");
         return main_scan(masscan);
+
+	case Operation_List_Adapters:
+        /* List the network adapters we might want to use for scanning */
+		rawsock_list_adapters();
+		break;
 
     case Operation_DebugIF:
         rawsock_selftest_if(masscan->ifname);

@@ -77,6 +77,24 @@ errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src)
     return 0;
 }
 
+errno_t localtime_s(struct tm* _tm, const time_t *time)
+{
+    struct tm *x;
+
+    x = localtime(time);
+    memcpy(_tm, x, sizeof(*_tm));
+
+    return 0;
+}
+errno_t gmtime_s(struct tm* _tm, const time_t *time)
+{
+    struct tm *x;
+
+    x = gmtime(time);
+    memcpy(_tm, x, sizeof(*_tm));
+
+    return 0;
+}
 #endif
 
 

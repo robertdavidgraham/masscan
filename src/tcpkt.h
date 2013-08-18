@@ -29,13 +29,14 @@ tcp_init_packet(struct TcpPacket *pkt,
     unsigned char *mac_souce,
     unsigned char *mac_dest);
 
-void
-tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port);
+void tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port);
 
-unsigned
-tcpkt_get_source_port(struct TcpPacket *pkt);
+void tcpkt_trace(struct TcpPacket *pkt, unsigned ip, unsigned port, double timestamp_start);
 
-void
-tcpkt_set_source_port(struct TcpPacket *pkt, unsigned port);
+unsigned tcpkt_get_source_port(struct TcpPacket *pkt);
+unsigned tcpkt_get_source_ip(struct TcpPacket *pkt);
+
+void tcpkt_set_source_port(struct TcpPacket *pkt, unsigned port);
+void tcpkt_set_ttl(struct TcpPacket *pkt, unsigned ttl);
 
 #endif

@@ -1,6 +1,10 @@
 /*
 
-    rate calculations for the packets
+    Rate-limit/throttler: stops us from transmiting too fast.
+
+    We can send packets at millions of packets/second. This will
+    melt most networks. Therefore, we need to throttle or rate-limit
+    how fast we go.
 
     Since we are sending packet at a rate of 10-million-per-second, we
     the calculations need to be done in a light-weight manner. For one
@@ -21,7 +25,8 @@
 
 /***************************************************************************
  ***************************************************************************/
-void throttler_start(struct Throttler *throttler, double max_rate)
+void
+throttler_start(struct Throttler *throttler, double max_rate)
 {
     unsigned i;
 
@@ -62,8 +67,15 @@ throttler_next_batch(struct Throttler *throttler, uint64_t packet_count)
     
 again:
 
+    /* NOTE: this uses CLOCK_MONOTONIC_RAW on Linux, so the timstamp doesn't
+     * move forward when the machine is suspended */
     timestamp = port_gettime();
 
+
+    /*
+     * We record that last 256 buckets, and average the rate over all of
+     * them.
+     */
     index = (throttler->index) & 0xFF;
     throttler->buckets[index].timestamp = timestamp;
     throttler->buckets[index].packet_count = packet_count;
@@ -72,9 +84,28 @@ again:
     old_timestamp = throttler->buckets[index].timestamp;
     old_packet_count = throttler->buckets[index].packet_count;
 
+    /*
+     * If the delay is more than 1-second, then we should reset the system
+     * in order to avoid transmittting too fast.
+     */
+    if (timestamp - old_timestamp > 1000000) {
+        //throttler_start(throttler, throttler->max_rate);
+        throttler->batch_size = 1;
+        goto again;
+    }
 
+    /*
+     * Calculate the recent rate.
+     * NOTE: this isn't the rate "since start", but only the "recent" rate.
+     * That's so that if the system pauses for a while, we don't flood the 
+     * network trying to catch up.
+     */
     current_rate = 1.0*(packet_count - old_packet_count)/((timestamp - old_timestamp)/1000000.0);
 
+    /*
+     * If we've been going too fast, then <pause> for a moment, then
+     * try again.
+     */
     if (current_rate > max_rate) {
         double waittime;
 
@@ -90,6 +121,14 @@ again:
         goto again;
     }
 
+    /*
+     * Calculate how many packets are needed to catch up again to the current
+     * rate, and return that.
+     * 
+     * NOTE: this is almost always going to have the value of 1 (one). Only at 
+     * very high speeds (above 100,000 packets/second) will this value get
+     * larger.
+     */
     throttler->batch_size *= 1.005;
     if (throttler->batch_size > 10000)
         throttler->batch_size = 10000;

@@ -2,7 +2,14 @@
 	Read in the configuration for MASSCAN.
 
 	Configuration parameters can be read either from the command-line
-	or a configuration file. Parameters have the same name in both.
+	or a configuration file. Long parameters of the --xxxx variety have
+    the same name in both.
+
+    Most of the code in this module is for 'nmap' options we don't support.
+    That's because we support some 'nmap' options, and I wanted to give
+    more feedback for some of them why they don't work as expected, such
+    as reminding people that this is an asynchronous scanner.
+
 */
 #include "masscan.h"
 #include "ranges.h"
@@ -18,10 +25,8 @@ extern int verbosity; /* logger.c */
 void masscan_usage(void)
 {
     printf("usage:\n");
-    printf("masscan -T\n");
-    printf(" run an offline regression test (no transmit)\n");
     printf("masscan --echo\n");
-    printf(" view current configuration\n");
+    printf(" view default configuration\n");
     printf("masscan -c mass.conf -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
     printf(" scan some web ports on 10.x.x.x at 10kpps\n");
 	exit(1);
@@ -239,7 +244,9 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
     fclose(fp);
 }
 
-unsigned
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
 hexval(char c)
 {
     if ('0' <= c && c <= '9')
@@ -251,7 +258,10 @@ hexval(char c)
     return 0xFF;
 }
 
-int parse_mac_address(const char *text, unsigned char *mac)
+/***************************************************************************
+ ***************************************************************************/
+static int
+parse_mac_address(const char *text, unsigned char *mac)
 {
     unsigned i;
 
@@ -285,6 +295,8 @@ int parse_mac_address(const char *text, unsigned char *mac)
 
 
 /***************************************************************************
+ * Called either from the "command-line" parser when it sees a --parm,
+ * or from the "config-file" parser for normal options.
  ***************************************************************************/
 void
 masscan_set_parameter(struct Masscan *masscan, const char *name, const char *value)
@@ -309,8 +321,14 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 			}
 
             masscan->adapter_ip = range.begin;
-    }
-    else if (EQUALS("adapter-mac", name) || EQUALS("adapter.mac", name) || EQUALS("adaptermac", name)) {
+    } else if (EQUALS("adapter-port", name) || EQUALS("adapterport", name)) {
+        unsigned x = strtoul(value, 0, 0);
+        if (x > 65535) {
+            fprintf(stderr, "error: %s=<n>: expected number less than 1000\n", name);
+        } else {
+            masscan->adapter_port = x;
+        }
+    } else if (EQUALS("adapter-mac", name) || EQUALS("adapter.mac", name) || EQUALS("adaptermac", name) || EQUALS("spoof-mac", name)) {
         unsigned char mac[6];
 
         if (parse_mac_address(value, mac) != 0) {
@@ -427,36 +445,178 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 				offset++; /* skip comma */
 		}
       	masscan->op = Operation_Scan;
-    }
-    else if (EQUALS("excludefile", name) || EQUALS("exclude-file", name) || EQUALS("exclude.file", name)) {
-        ranges_from_file(&masscan->exclude_ip, value);
-    }
-    else if (EQUALS("includefile", name) || EQUALS("include-file", name) || EQUALS("include.file", name)) {
-        ranges_from_file(&masscan->targets, value);
-    }
-    else if (EQUALS("debug", name)) {
+    } else if (EQUALS("append-output", name)) {
+        masscan->nmap.append = 1;
+    } else if (EQUALS("badsum", name)) {
+        masscan->nmap.badsum = 1;
+    } else if (EQUALS("datadir", name)) {
+        strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
+    } else if (EQUALS("data-length", name)) {
+        unsigned x = strtoul(value, 0, 0);
+        if (x >= 1514 - 14 - 40) {
+            fprintf(stderr, "error: %s=<n>: expected number less than 1500\n", name);
+        } else {
+            masscan->nmap.data_length = x;
+        }
+    } else if (EQUALS("debug", name)) {
         if (EQUALS("if", value)) {
             masscan->op = Operation_DebugIF;
         }
-    }
-    else if (EQUALS("echo", name)) {
+    } else if (EQUALS("dns-servers", name)) {
+        fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
+        exit(1);
+    } else if (EQUALS("echo", name)) {
         masscan_echo(masscan);
         exit(1);
-    }
-    else if (EQUALS("selftest", name) || EQUALS("self-test", name)) {
+    } else if (EQUALS("excludefile", name) || EQUALS("exclude-file", name) || EQUALS("exclude.file", name)) {
+        ranges_from_file(&masscan->exclude_ip, value);
+    } else if (EQUALS("host-timeout", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
+        exit(1);
+    } else if (EQUALS("iflist", name)) {
+		masscan->op = Operation_List_Adapters;
+    } else if (EQUALS("includefile", name) || EQUALS("include-file", name) || EQUALS("include.file", name)) {
+        ranges_from_file(&masscan->targets, value);
+    } else if (EQUALS("ip-options", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
+        exit(1);
+    } else if (EQUALS("log-errors", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
+        exit(1);
+    } else if (EQUALS("max-retries", name)) {
+        masscan_set_parameter(masscan, "retries", value);
+    } else if (EQUALS("max-rate", name)) {
+        masscan_set_parameter(masscan, "rate", value);
+    } else if (EQUALS("min-hostgroup", name) || EQUALS("max-hostgroup", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: we randomize all the groups!\n", name);
+        exit(1);
+    } else if (EQUALS("min-parallelism", name) || EQUALS("max-parallelism", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: we all the parallel!\n", name);
+        exit(1);
+    } else if (EQUALS("min-rtt-timeout", name) || EQUALS("max-rtt-timeout", name) || EQUALS("initial-rtt-timeout", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: we are asychronous, so no timeouts, no RTT tracking!\n", name);
+        exit(1);
+    } else if (EQUALS("min-rate", name)) {
+        fprintf(stderr, "nmap(%s): unsupported, we go as fast as --max-rate allows\n", name);
+        /* no exit here, since it's just info */
+    } else if (EQUALS("mtu", name)) {
+        fprintf(stderr, "nmap(%s): fragmentation not yet supported\n", name);
+        exit(1);
+    } else if (EQUALS("open", name)) {
+        /* This is the default behavior */
+    } else if (EQUALS("osscan-limit", name)) {
+        fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("osscan-guess", name)) {
+        fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("packet-trace", name)) {
+        masscan->nmap.packet_trace = 1;
+    } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("port-ratio", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("randomize-hosts", name)) {
+        /* already do that */
+        ;
+    } else if (EQUALS("reason", name)) {
+        masscan->nmap.reason = 1;
+    } else if (EQUALS("release-memory", name)) {
+        fprintf(stderr, "nmap(%s): this is our default option\n", name);
+    } else if (EQUALS("resume", name)) {
+        fprintf(stderr, "nmap(%s): unsupported now, but we'll fix that soon!\n", name);
+        exit(1);
+    } else if (EQUALS("retries", name)) {
+        unsigned x = strtoul(value, 0, 0);
+        if (x >= 1000) {
+            fprintf(stderr, "error: retries=<n>: expected number less than 1000\n");
+        } else {
+            masscan->retries = x;
+        }
+    } else if (EQUALS("script", name)) {
+        fprintf(stderr, "nmap(%s): unsupported, it's too complex for this simple scanner\n", name);
+        exit(1);
+    } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
+        fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
+        exit(1);
+    } else if (EQUALS("scanflags", name)) {
+        fprintf(stderr, "nmap(%s): TCP scan flags not yet supported\n", name);
+        exit(1);
+    } else if (EQUALS("send-eth", name)) {
+        fprintf(stderr, "nmap(%s): unnecessary, we always do --send-eth\n", name);
+    } else if (EQUALS("send-ip", name)) {
+        fprintf(stderr, "nmap(%s): unsupported, we only do --send-eth\n", name);
+        exit(1);
+    } else if (EQUALS("selftest", name) || EQUALS("self-test", name) || EQUALS("regress", name)) {
         masscan->op = Operation_Selftest;
         return;
+    } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
+        masscan_set_parameter(masscan, "adapter-port", value);
+    } else if (EQUALS("no-stylesheet", name)) {
+        masscan->nmap.stylesheet[0] = '\0';
+    } else if (EQUALS("stylesheet", name)) {
+        strcpy_s(masscan->nmap.stylesheet, sizeof(masscan->nmap.stylesheet), value);
+    } else if (EQUALS("system-dns", name)) {
+        fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
+        exit(1);
+    } else if (EQUALS("top-ports", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("traceroute", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("ttl", name)) {
+        unsigned x = strtoul(value, 0, 0);
+        if (x >= 256) {
+            fprintf(stderr, "error: %s=<n>: expected number less than 256\n", name);
+        } else {
+            masscan->nmap.ttl = x;
+        }
+    } else if (EQUALS("version-intensity", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("version-light", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("version-all", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("version-trace", name)) {
+        fprintf(stderr, "nmap(%s): unsupported\n", name);
+        exit(1);
+    } else if (EQUALS("webxml", name)) {        
+        masscan_set_parameter(masscan, "stylesheet", "http://nmap.org/svn/docs/nmap.xsl");
     } else {
         fprintf(stderr, "CONF: unknown config option: %s=%s\n", name, value);
     }
 }
 
+/***************************************************************************
+ * Command-line parsing code assumes every --parm is followed by a value.
+ * This is a list of the parameters that don't follow the default.
+ ***************************************************************************/
 static int
 is_singleton(const char *name)
 {
-    if (EQUALS("echo", name)) return 1;
-    if (EQUALS("selftest", name)) return 1;
-    if (EQUALS("self-test", name)) return 1;
+    static const char *singletons[] = {
+        "echo", "selftest", "self-test", "regress",
+        "system-dns", "traceroute", "version-light",
+        "version-all", "version-trace",
+        "osscan-limit", "osscan-guess",
+        "badsum", "reason", "open",
+        "packet-trace", "release-memory",
+        "log-errors", "append-output", "webxml", "no-stylesheet",
+        "no-stylesheet",
+        "send-eth", "send-ip", "iflist", "randomize-hosts",
+        0};
+    size_t i;
+
+    for (i=0; singletons[i]; i++) {
+        if (EQUALS(singletons[i], name))
+            return 1;
+    }
     return 0;
 }
 
@@ -522,6 +682,15 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             const char *arg;
 
 			switch (argv[i][1]) {
+            case '6':
+                fprintf(stderr, "nmap(%s): unsupported: maybe one day\n", argv[i]);
+                exit(1);
+            case 'A':
+                fprintf(stderr, "nmap(%s): unsupported: this tool only does SYN scan\n", argv[i]);
+                exit(1);
+            case 'b':
+                fprintf(stderr, "nmap(%s): FTP bounce scans will never be supported\n", argv[i]);
+                exit(1);
 			case 'c':
 				if (argv[i][2])
 					arg = argv[i]+2;
@@ -529,25 +698,98 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 					arg = argv[++i];
                 masscan_read_config_file(masscan, arg);
                 break;
-
-            case 'v':
+            case 'd': /* just do same as verbosity level */
                 {
                     int v;
                     for (v=1; argv[i][v] == 'v'; v++)
                         verbosity++;
                 }
                 break;
-			case 'i':
+			case 'e':
 				if (argv[i][2])
 					arg = argv[i]+2;
 				else
 					arg = argv[++i];
                 masscan_set_parameter(masscan, "adapter", arg);
 				break;
+            case 'f':
+                fprintf(stderr, "nmap(%s): fragmentation not yet supported\n", argv[i]);
+                exit(1);
+            case 'F':
+                fprintf(stderr, "nmap(%s): unsupported, no slow/fast mode\n", argv[i]);
+                exit(1);
+			case 'g':
+				if (argv[i][2])
+					arg = argv[i]+2;
+				else
+					arg = argv[++i];
+                masscan_set_parameter(masscan, "adapter-port", arg);
+				break;
 			case 'h':
 			case '?':
 				masscan_usage();
 				break;
+			case 'i':
+                if (argv[i][3] == '\0' && !isdigit(argv[i][2]&0xFF)) {
+                    /* This looks like an nmap option*/
+                    switch (argv[i][2]) {
+                    case 'L':
+                        masscan_set_parameter(masscan, "includefile", argv[++i]);
+                        break;
+                    case 'R':
+                        fprintf(stderr, "nmap(%s): quasi-supported, see documentation\n", argv[i]);
+                        break;
+                    default:
+                        fprintf(stderr, "nmap(%s): unsupported option\n", argv[i]);
+                        exit(1);
+                    }
+
+                } else {
+				    if (argv[i][2])
+					    arg = argv[i]+2;
+				    else
+					    arg = argv[++i];
+                
+                    masscan_set_parameter(masscan, "adapter", arg);
+                }
+				break;
+            case 'n':
+                /* This looks like an nmap option*/
+                /* Do nothing: this code never does DNS lookups anyway */
+                break;
+            case 'o': /* nmap output format */
+                switch (argv[i][2]) {
+                case 'A':
+                    masscan->nmap.format = Output_All;
+                    break;
+                case 'N':
+                    masscan->nmap.format = Output_Normal;
+                    break;
+                case 'X':
+                    masscan->nmap.format = Output_XML;
+                    break;
+                case 'S':
+                    masscan->nmap.format = Output_ScriptKiddie;
+                    break;
+                case 'G':
+                    masscan->nmap.format = Output_Grepable;
+                    break;
+                default:
+                    fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);
+                    exit(1);
+                }
+
+                ++i;
+                if (i >= argc || argv[i][0] == '-') {
+                    fprintf(stderr, "missing output filename\n");
+                    exit(1);
+                }
+                strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), argv[i]);
+                break;
+            case 'O':
+                fprintf(stderr, "nmap(%s): unsupported, OS detection is too complex\n", argv[i]);
+                exit(1);
+                break;
 			case 'p':
 				if (argv[i][2])
 					arg = argv[i]+2;
@@ -555,11 +797,113 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 					arg = argv[++i];
                 masscan_set_parameter(masscan, "ports", arg);
 				break;
+            case 'P':
+                switch (argv[i][2]) {
+                case 'n':
+                    /* we already do this */
+                    break;
+                default:
+                    fprintf(stderr, "nmap(%s): unsupported option, maybe in future\n", argv[i]);
+                    exit(1);
+                }
+                break;
+            case 'r':
+                /* This looks like an nmap option*/
+                fprintf(stderr, "nmap(%s): wat? randomization is our raison d'etre!! rethink prease\n", argv[i]);
+                exit(1);
+                break;
+            case 'R':
+                /* This looks like an nmap option*/
+                fprintf(stderr, "nmap(%s): unsupported. This code will never do DNS lookups.\n", argv[i]);
+                exit(1);
+                break;
+            case 's':
+                if (argv[i][3] == '\0' && !isdigit(argv[i][2]&0xFF)) {
+                    /* This looks like an nmap option*/
+                    switch (argv[i][2]) {
+                    case 'A':
+                        fprintf(stderr, "nmap(%s): ACK scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'C':
+                        fprintf(stderr, "nmap(%s): unsupported\n", argv[i]);
+                        exit(1);
+                    case 'F':
+                        fprintf(stderr, "nmap(%s): FIN scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'I':
+                        fprintf(stderr, "nmap(%s): Zombie scans will never be supported\n", argv[i]);
+                        exit(1);
+                    case 'L': /* List Scan - simply list targets to scan */
+                        fprintf(stderr, "nmap(%s): list scan unsupported\n", argv[i]);
+                        exit(1);
+                    case 'M':
+                        fprintf(stderr, "nmap(%s): Maimon scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'n': /* Ping Scan - disable port scan */
+                        fprintf(stderr, "nmap(%s): ping-sweeps not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'N':
+                        fprintf(stderr, "nmap(%s): NULL scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'O':
+                        fprintf(stderr, "nmap(%s): IP proto scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'S': /* SYN scan - THIS IS WHAT WE DO! */
+                        break;
+                    case 'T':
+                        fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
+                        exit(1);
+                    case 'U':
+                        fprintf(stderr, "nmap(%s): UDP scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'V':
+                        fprintf(stderr, "nmap(%s): unlikely this will be supported\n", argv[i]);
+                        exit(1);
+                    case 'W':
+                        fprintf(stderr, "nmap(%s): Windows scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'X':
+                        fprintf(stderr, "nmap(%s): Xmas scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'Y':
+                        fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
+                        exit(1);
+                    case 'Z':
+                        fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
+                        exit(1);
+                    default:
+                        fprintf(stderr, "nmap(%s): unsupported option\n", argv[i]);
+                        exit(1);
+                    }
+
+                } else {
+                    fprintf(stderr, "%s: unknown parameter\n", argv[i]);
+                    exit(1);
+                }
+				break;
+			case 'S':
+				if (argv[i][2])
+					arg = argv[i]+2;
+				else
+					arg = argv[++i];
+                masscan_set_parameter(masscan, "adapter-ip", arg);
+				break;
+            case 'v':
+                {
+                    int v;
+                    for (v=1; argv[i][v] == 'v'; v++)
+                        verbosity++;
+                }
+                break;
+            case 'V': /* print version and exit */
+                exit(1);
+                break;
 			case 'W':
 				masscan->op = Operation_List_Adapters;
 				return;
             case 'T':
-                masscan->op = Operation_Selftest;
+                fprintf(stderr, "nmap(%s): unsupported, we do timing WAY different than nmap\n", argv[i]);
+                exit(1);
                 return;
 			default:
 				fprintf(stderr, "unknown option: %s\n", argv[i]);
@@ -574,6 +918,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 	}
 }
 
+/***************************************************************************
+ * remove leading/trailing whitespace
+ ***************************************************************************/
 static void
 trim(char *line)
 {
@@ -585,7 +932,8 @@ trim(char *line)
 
 /***************************************************************************
  ***************************************************************************/
-void masscan_read_config_file(struct Masscan *masscan, const char *filename)
+void
+masscan_read_config_file(struct Masscan *masscan, const char *filename)
 {
     FILE *fp;
     errno_t err;
@@ -618,4 +966,5 @@ void masscan_read_config_file(struct Masscan *masscan, const char *filename)
         masscan_set_parameter(masscan, name, value);
     }
 
+    fclose(fp);
 }

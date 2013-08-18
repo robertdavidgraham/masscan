@@ -102,16 +102,84 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         }
     }
 
+    /* Find a spot to insert in sorted order */
+    for (i = 0; i < task->count; i++) {
+        if (range.begin < task->list[i].begin) {
+            memmove(task->list+i+1, task->list+i, (task->count - i) * sizeof(task->list[0]));
+            break;
+        }
+    }
+
     /* Add to end of list */
     task->list[i].begin = begin;
     task->list[i].end = end;
     task->count++;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+void
+rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
+{
+    unsigned i;
+    struct Range x;
+
+    x.begin = begin;
+    x.end = end;
+
+    /* See if the range overlaps any exist range already in the
+     * list */
+    for (i = 0; i < task->count; i++) {
+        if (!range_is_overlap(task->list[i], x))
+            continue;
+
+        /* If the removal-range wholly covers the range, delete
+         * it completely */
+        if (begin <= task->list[i].begin && end >= task->list[i].end) {
+            todo_remove_at(task, i);
+            i--;
+            continue;
+        }
+
+        /* If the removal-range bisects the target-rage, truncate
+         * the lower end and add a new high-end */
+        if (begin > task->list[i].begin && end < task->list[i].end) {
+            struct Range newrange;
+
+            newrange.begin = end+1;
+            newrange.end = task->list[i].end;
+
+
+            task->list[i].end = begin-1;
+
+            rangelist_add_range(task, newrange.begin, newrange.end);
+            i--;
+            continue;
+        }
+
+        /* If overlap on the lower side */
+        if (end >= task->list[i].begin && end < task->list[i].end) {
+            task->list[i].begin = end+1;
+        }
+
+        /* If overlap on the upper side */
+        if (begin > task->list[i].begin && begin <= task->list[i].end) {
+             task->list[i].end = begin-1;
+        }
+
+        //assert(!"impossible");
+    }
+}
+
 void
 rangelist_add_range2(struct RangeList *task, struct Range range)
 {
     rangelist_add_range(task, range.begin, range.end);
+}
+void
+rangelist_remove_range2(struct RangeList *task, struct Range range)
+{
+    rangelist_remove_range(task, range.begin, range.end);
 }
 
 
@@ -337,6 +405,59 @@ ranges_selftest()
         return 1;
     }
 
+    /*
+     * Test removal
+     */
+    {
+        struct RangeList task[1];
+
+        memset(task, 0, sizeof(task[0]));
+
+        rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
+        
+        /* These removals shouldn't change anything */
+        rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
+        rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
+        rangelist_remove_range2(task, range_parse_ipv4("192.168.0.0/16", 0, 0));
+        if (task->count != 1 
+            || task->list->begin != 0x0a000000
+            || task->list->end != 0x0aFFFFFF) {
+            ERROR();
+            return 1;
+        }
+
+        /* These removals should remove a bit from the edges */
+        rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
+        rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
+        if (task->count != 1 
+            || task->list->begin != 0x0a000001
+            || task->list->end != 0x0aFFFFFE) {
+            ERROR();
+            return 1;
+        }
+
+
+        /* remove things from the middle */
+        rangelist_remove_range2(task, range_parse_ipv4("10.10.0.0/16", 0, 0));
+        rangelist_remove_range2(task, range_parse_ipv4("10.20.0.0/16", 0, 0));
+        if (task->count != 3) {
+            ERROR();
+            return 1;
+        }
+
+        rangelist_remove_range2(task, range_parse_ipv4("10.12.0.0/16", 0, 0));
+        if (task->count != 4) {
+            ERROR();
+            return 1;
+        }
+
+        rangelist_remove_range2(task, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
+        if (task->count != 3) {
+            ERROR();
+            return 1;
+        }
+
+    }
 
     return 0;
 }

@@ -9,6 +9,8 @@
 */
 #include "tcpkt.h"
 #include "proto-preprocess.h"
+#include "string_s.h"
+#include "pixie-timer.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -174,6 +176,18 @@ tcp_init_packet(struct TcpPacket *pkt,
 }
 
 /***************************************************************************
+ ***************************************************************************/
+unsigned
+tcpkt_get_source_ip(struct TcpPacket *pkt)
+{
+    const unsigned char *px = pkt->packet;
+    unsigned offset = pkt->offset_ip;
+
+    return px[offset+12]<<24 | px[offset+13]<<16
+        | px[offset+14]<<8 | px[offset+15]<<0;
+}
+
+/***************************************************************************
  * Retrieve the source-port of the packet. We parse this from the packet
  * because while the source-port can be configured separately, we usually
  * get a raw packet template.
@@ -200,6 +214,17 @@ tcpkt_set_source_port(struct TcpPacket *pkt, unsigned port)
     px[offset+1] = (unsigned char)(port>>0);
 }
 
+/***************************************************************************
+ * Overwrites the TTL of the packet
+ ***************************************************************************/
+void
+tcpkt_set_ttl(struct TcpPacket *pkt, unsigned ttl)
+{
+    unsigned char *px = pkt->packet;
+    unsigned offset = pkt->offset_ip;
+
+    px[offset+8] = (unsigned char)(ttl);
+}
 
 
 /***************************************************************************
@@ -208,4 +233,31 @@ int
 tcpkt_selftest()
 {
     return 0;
+}
+
+
+/***************************************************************************
+ * Print packet info, when using nmap-style --packet-trace option
+ ***************************************************************************/
+void
+tcpkt_trace(struct TcpPacket *pkt_template, unsigned ip, unsigned port, double timestamp_start)
+{
+    char from[32];
+    char to[32];
+    unsigned src_ip = tcpkt_get_source_ip(pkt_template);
+    unsigned src_port = tcpkt_get_source_port(pkt_template);
+    double timestamp = 1.0 * port_gettime() / 1000000.0;
+
+    sprintf_s(from, sizeof(from), "%u.%u.%u.%u:%u",
+        (src_ip>>24)&0xFF, (src_ip>>16)&0xFF, 
+        (src_ip>>8)&0xFF, (src_ip>>0)&0xFF, 
+        src_port);
+
+    sprintf_s(to, sizeof(to), "%u.%u.%u.%u:%u",
+        (ip>>24)&0xFF, (ip>>16)&0xFF, 
+        (ip>>8)&0xFF, (ip>>0)&0xFF, 
+        port);
+
+    fprintf(stderr, "SENT (%5.4f) TCP %-21s > %-21s SYN\n",
+        timestamp - timestamp_start, from, to);
 }
