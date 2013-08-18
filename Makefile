@@ -1,28 +1,49 @@
 
+
 SYS := $(shell gcc -dumpmachine)
 
-
+# LINUX
+# The automated regression tests run on Linux, so this is the one
+# environment where things likely will work -- as well as anything
+# works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt
-endif
-
-ifneq (, $(findstring darwin, $(SYS)))
-LIBS = -lpcap -lm
-endif
-
-ifneq (, $(findstring mingw, $(SYS)))
-LIBS = -lwpcap
-endif
-
-ifneq (, $(findstring cygwin, $(SYS)))
-LIBS = -lwpcap
-endif
-
-
+LIBS = -lpcap -lm -lrt -rdynamic
 INCLUDES = -I.
+endif
+
+# MAC OS X
+# I occassionally develope code on Mac OS X, but it's not part of
+# my regularly regression-test environment. That means at any point
+# in time, something might be minorly broken in Mac OS X.
+ifneq (, $(findstring darwin, $(SYS)))
+LIBS = -lpcap -lm -rdynamic
+INCLUDES = -I.
+endif
+
+# MinGW on Windows
+# I develope on Visual Studio 2010, so that's the Windows environment
+# that'll work. However, 'git' on Windows runs under MingGW, so one
+# day I acccidentally typed 'make' instead of 'git, and felt compelled
+# to then fix all the errors, so this kinda works now. It's not the
+# intended environment, so it make break in the future.
+ifneq (, $(findstring mingw, $(SYS)))
+INCLUDES = -I. -Ivs10/include
+LIBS = -L vs10/lib -lwpcap -lIPHLPAPI
+endif
+
+# Cygwin
+# I hate Cygwin, use Visual Studio or MingGW instead. I just put this
+# second here for completeness, or in case I gate tired of hitting my
+# head with a hammer and want to feel a different sort of pain.
+ifneq (, $(findstring cygwin, $(SYS)))
+INCLUDES = -I.
+LIBS = -lwpcap
+endif
+
+
 DEFINES = 
 CC = gcc
-CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -rdynamic -Wno-format
+CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 
 tmp/%.o: src/%.c

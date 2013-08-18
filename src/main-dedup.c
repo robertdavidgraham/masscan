@@ -57,7 +57,7 @@ dedup_is_duplicate(struct DedupTable *dedup, unsigned ip, unsigned port)
 
     /* THREAT: We've already validated resonses via SYN-cookies, so 
      * therefore we don't need a robust hash for duplicate detection */
-    hash = ip + port ^ (ip>>8) + (ip>>16) ^ (ip>>24);
+    hash = (ip + port) ^ ((ip>>8) + (ip>>16)) ^ (ip>>24);
     hash &= DEDUP_ENTRIES-1;
 
     /* Search in this bucket */

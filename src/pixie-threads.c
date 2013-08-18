@@ -21,10 +21,10 @@ pixie_begin_thread(
     unsigned flags, 
     void *worker_data)
 {
-#if defined(WIN32) && defined(_MT)
+#if defined(WIN32)
 	UNUSEDPARM(flags);
 	return _beginthread(worker_thread, 0, worker_data);
-#elif defined(__GNUC__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
     
 	typedef void *(*PTHREADFUNC)(void*);
 	pthread_t thread_id;

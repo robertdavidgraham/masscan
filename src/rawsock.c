@@ -15,10 +15,47 @@
 
 #ifdef WIN32
 #include <Win32-Extensions.h>
-#include <iphlpapi.h>
+//#include <iphlpapi.h>
+#define MAX_ADAPTER_DESCRIPTION_LENGTH  128 // arb.
+#define MAX_ADAPTER_NAME_LENGTH         256 // arb.
+#define MAX_ADAPTER_ADDRESS_LENGTH      8   // arb.
+#define MIB_IF_TYPE_ETHERNET            6
+typedef struct {
+    char String[4 * 4];
+} IP_ADDRESS_STRING, *PIP_ADDRESS_STRING, IP_MASK_STRING, *PIP_MASK_STRING;
+typedef struct _IP_ADDR_STRING {
+    struct _IP_ADDR_STRING* Next;
+    IP_ADDRESS_STRING IpAddress;
+    IP_MASK_STRING IpMask;
+    DWORD Context;
+} IP_ADDR_STRING, *PIP_ADDR_STRING;
+typedef struct _IP_ADAPTER_INFO {
+    struct _IP_ADAPTER_INFO* Next;
+    DWORD ComboIndex;
+    char AdapterName[MAX_ADAPTER_NAME_LENGTH + 4];
+    char Description[MAX_ADAPTER_DESCRIPTION_LENGTH + 4];
+    UINT AddressLength;
+    BYTE Address[MAX_ADAPTER_ADDRESS_LENGTH];
+    DWORD Index;
+    UINT Type;
+    UINT DhcpEnabled;
+    PIP_ADDR_STRING CurrentIpAddress;
+    IP_ADDR_STRING IpAddressList;
+    IP_ADDR_STRING GatewayList;
+    IP_ADDR_STRING DhcpServer;
+    BOOL HaveWins;
+    IP_ADDR_STRING PrimaryWinsServer;
+    IP_ADDR_STRING SecondaryWinsServer;
+    time_t LeaseObtained;
+    time_t LeaseExpires;
+} IP_ADAPTER_INFO, *PIP_ADAPTER_INFO;
+ULONG WINAPI GetAdaptersInfo(PIP_ADAPTER_INFO AdapterInfo, PULONG SizePointer);
+
+#if defined(_MSC_VER)
 #pragma comment(lib, "packet.lib")
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
+#endif
 
 #elif defined(__GNUC__)
 #include <unistd.h>
