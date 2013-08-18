@@ -23,11 +23,9 @@
 #include <signal.h>
 
 
-unsigned control_c_pressed=0;
-void control_c_handler(int x)
-{
-	control_c_pressed = 1+x;
-}
+
+static unsigned control_c_pressed = 0;
+
 
 
 /***************************************************************************
@@ -519,16 +517,17 @@ main_scan(struct Masscan *masscan)
 
 /***************************************************************************
  ***************************************************************************/
+static void control_c_handler(int x)
+{
+	control_c_pressed = 1+x;
+}
+
+/***************************************************************************
+ ***************************************************************************/
 int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
 
-
-   	/*
-	 * Register a signal handler for the <ctrl-c> key. This allows
-     * us to pause and then resume a scan.
-     */
-	signal(SIGINT, control_c_handler);
 
 
     /* We need to do a separate "raw socket" initialization step */
@@ -577,6 +576,13 @@ int main(int argc, char *argv[])
         /*
          * THIS IS THE NORMAL THING
          */
+    	
+        /*
+         * trap <ctrl-c> to pause
+         */
+        signal(SIGINT, control_c_handler);
+
+
         {
             char buffer[80];
             time_t now  = time(0);
@@ -586,7 +592,7 @@ int main(int argc, char *argv[])
             strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
             fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
         }
-        fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v\n");
+        fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
         fprintf(stderr, "Initiating SYN Stealth Scan\n");
         return main_scan(masscan);
 

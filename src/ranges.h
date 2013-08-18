@@ -27,5 +27,6 @@ void rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end
 struct Range range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
 uint64_t rangelist_count(struct RangeList *targets);
 unsigned rangelist_pick(struct RangeList *targets, uint64_t i);
+void rangelist_parse_ports(struct RangeList *ports, const char *string);
 
 #endif

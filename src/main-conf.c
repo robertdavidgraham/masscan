@@ -27,44 +27,65 @@ void masscan_usage(void)
     printf("usage:\n");
     printf("masscan --echo\n");
     printf(" view default configuration\n");
-    printf("masscan -c mass.conf -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
+    printf("masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
     printf(" scan some web ports on 10.x.x.x at 10kpps\n");
+    printf("masscan --nmap\n");
+    printf(" list all the options (nmap format)\n");
+    printf("masscan --echo\n");
+    printf(" list all options AND their current settings (non-nmap format)\n");
 	exit(1);
 }
 
 /***************************************************************************
  ***************************************************************************/
 static void
-parse_port_list(struct RangeList *ports, const char *string)
+print_nmap_help(void)
 {
-	char *p = (char*)string;
-
-	while (*p) {
-		unsigned port;
-		unsigned end;
-
-		while (*p && isspace(*p & 0xFF))
-			p++;
-		if (*p == 0)
-			break;
-
-		port = strtoul(p, &p, 0);
-		end = port;
-		if (*p == '-') {
-			p++;
-			end = strtoul(p, &p, 0);
-		}
-		if (*p == ',')
-			p++;
-
-		if (port > 0xFFFF || end > 0xFFFF || end < port) {
-			fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
-			break;
-		} else {
-			rangelist_add_range(ports, port, end);
-		}
-	}
+    printf("Masscan (https://github.com/robertdavidgraham/masscan)\n"
+"Usage: masscan [Options] -p{Target-Ports} {Target-IP-Ranges}\n"
+"TARGET SPECIFICATION:\n"
+"  Can pass only IPv4 address, CIDR networks, or ranges (non-nmap style)\n"
+"  Ex: 10.0.0.0/8, 192.168.0.1, 10.0.0.1-10.0.0.254\n"
+"  -iL <inputfilename>: Input from list of hosts/networks\n"
+"  --exclude <host1[,host2][,host3],...>: Exclude hosts/networks\n"
+"  --excludefile <exclude_file>: Exclude list from file\n"
+"  --randomize-hosts: Randomize order of hosts (default)\n"
+"HOST DISCOVERY:\n"
+"  -Pn: Treat all hosts as online (default)\n"
+"  -n: Never do DNS resolution (default)\n"
+"SCAN TECHNIQUES:\n"
+"  -sS: TCP SYN (always on, default)\n"
+"PORT SPECIFICATION AND SCAN ORDER:\n"
+"  -p <port ranges>: Only scan specified ports\n"
+"    Ex: -p22; -p1-65535; -p 111,137,80,139,8080\n"
+"TIMING AND PERFORMANCE:\n"
+"  --max-rate <number>: Send packets no faster than <number> per second\n"
+"FIREWALL/IDS EVASION AND SPOOFING:\n"
+"  -S <IP_Address>: Spoof source address\n"
+"  -e <iface>: Use specified interface\n"
+"  -g/--source-port <portnum>: Use given port number\n"
+"  --ttl <val>: Set IP time-to-live field\n"
+"  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
+"OUTPUT:\n"
+"  -oL/-oJ <file>: Output scan in List or JSON format, respectively,\n"
+"     to the given filename.\n"
+"  -v: Increase verbosity level (use -vv or more for greater effect)\n"
+"  -d: Increase debugging level (use -dd or more for greater effect)\n"
+"  --open: Only show open (or possibly open) ports\n"
+"  --packet-trace: Show all packets sent and received\n"
+"  --iflist: Print host interfaces and routes (for debugging)\n"
+"  --append-output: Append to rather than clobber specified output files\n"
+"  --resume <filename>: Resume an aborted scan\n"
+"MISC:\n"
+"  --send-eth: Send using raw ethernet frames (default)\n"
+"  -V: Print version number\n"
+"  -h: Print this help summary page.\n"
+"EXAMPLES:\n"
+"  masscan -v -sS 192.168.0.0/16 10.0.0.0/8 -p 80\n"
+"SEE THE MAN PAGE (http://nmap.org/book/man.html) FOR MORE OPTIONS AND EXAMPLES\n"
+"}\n");
 }
+
 
 /***************************************************************************
  * Prints the current configuration to the command-line then exits.
@@ -412,7 +433,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         
     }
     else if (EQUALS("ports", name) || EQUALS("port", name)) {
-    	parse_port_list(&masscan->ports, value);
+    	rangelist_parse_ports(&masscan->ports, value);
 		masscan->op = Operation_Scan;
     }
     else if (
@@ -420,7 +441,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
             EQUALS("exclude.ports", name) || EQUALS("exclude.port", name) ||
             EQUALS("excludeports", name) || EQUALS("excludeport", name)
         ) {
-    	parse_port_list(&masscan->exclude_port, value);
+    	rangelist_parse_ports(&masscan->exclude_port, value);
     }
     else if (EQUALS("range", name) || EQUALS("ranges", name) || EQUALS("ip", name) || EQUALS("ipv4", name)) {
         const char *ranges = value;
@@ -534,8 +555,11 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("mtu", name)) {
         fprintf(stderr, "nmap(%s): fragmentation not yet supported\n", name);
         exit(1);
+    } else if (EQUALS("nmap", name)) {
+        print_nmap_help();
+        exit(1);
     } else if (EQUALS("open", name)) {
-        /* This is the default behavior */
+        masscan->nmap.open_only = 1;
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
@@ -663,6 +687,7 @@ is_singleton(const char *name)
         "log-errors", "append-output", "webxml", "no-stylesheet",
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
+        "nmap",
         0};
     size_t i;
 

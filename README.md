@@ -2,13 +2,13 @@
 
 This is a port scanner. It spews out packets at a high rate, then catches any
 responses asynchronously. Because it's asynchronous, it's a lot faster than 
-''nmap'' -- and a lot less feature rich.
+`nmap` -- and a lot less feature rich.
 
-The intent is to be a 48-bit scanner -- scanning all ports (16-bits) on all
+This is a 48-bit scanner: scanning all ports (16-bits) on all
 IPv4 addresses (32-bits). It's also useful on smaller problems, such as the
 10.x.x.x address space within a company.
 
-It randomizes the IPv4+port combination, whereas nmap only randomizes the
+It randomizes the IPv4+port combination, whereas `nmap only randomizes the
 IPv4 address. This is so that we can send out 10-million packet per second
 when scanning the entire Internet, but the owner of a Class C network will
 only see 1 packet per second comming in.
@@ -45,7 +45,7 @@ should be a lot faster than Linux.
 The project contains a built-in self-test:
 
 	$ make regress
-	bin/masscan --selftest
+	bin/masscan --regress
 	selftest: success!
 
 If the self-test fails, the program returns an exit code of '1' and an
@@ -59,28 +59,55 @@ that what's transmitted is the same thing that was specified to be sent.
 
 # Usage
 
-Usage is similar to ''nmap'', such as the following scan:
+Usage is similar to `nmap`, such as the following scan:
 
-	# bin/masscan -p80,8000-8100 10.0.0.0/8
+	# masscan -p80,8000-8100 10.0.0.0/8
 
 This will:
 * scan the 10.x.x.x subnet, all 16 million addresses
 * scans port 80 and the range 8000 to 8100, or 102 addresses total
+* print output to <stdout> that can be redirected to a file
 
-Some comparison with ''nmap'':
-* no default ports to scan, you must specify ''-p <ports>''
-* the ''-sS'' option is enabled: this does SYN scan only
-* the ''-n'' option is enabled: no DNS resolution happens
-* the ''-Pn'' option is enabled: doesn't ping hosts first
-* target hosts are IP addresses or ranges, not DNS names
-* specify ''--rate <rate>''
+To see the complete list of options, use the `--echo` feature. This
+dumps the current configuration and exits. This ouput can be used as input back
+into the program:
 
-I've tried to make this familiar to ''nmap'' users, but fundamentally
-it's a vastly different scanner. You can try some ''nmap'' options you
-think might work -- it'll quickly tell you if they don't.
+	# masscan masscan -p80,8000-8100 10.0.0.0/8 --echo > xxx.conf
+	# masscan -c xxx.conf --rate 1000
 
 
-## Transmit rate (IMPORTANT!!)
+# Comparison with Nmap
+
+Where reasonable, every effort has been taken to make the program familiar
+to `nmap` users, even though it's fundamentally different. Two important
+differences are:
+
+* no default ports to scan, you must specify `-p <ports>`
+* target hosts are IP addresses or simple ranges, not DNS names, nor 
+  the funky subnet ranges `nmap` can use.
+
+You can think of `masscan` as having the following settings permanently
+enabled:
+* `-sS`: this does SYN scan only (currently, will change in future)
+* `-Pn`: doesn't ping hosts first, which is fundamental to the async operation
+* `-n`: no DNS resolution happens
+* `--randomize-hosts`: scan completely randomized
+* `--send-eth`: sends using raw `libpcap`
+
+If you want a list of additional `nmap` compatible settings, use the following
+command:
+
+	# masscan --nmap
+
+# Tips on reading the code
+
+The file `main.c` contains the `main()` function, as you'd expect. Also,
+this file contains the main scanning thread that spews packets, as well
+as the catching thread that catches responses. This is the core functionality
+of the program, everything else is secondary.
+
+
+# Transmit rate (IMPORTANT!!)
 
 This program spews out packets very fast. On Windows, or from VMs,
 it can do 300,000 packets/second. On a Linux (no virtualization) it'll

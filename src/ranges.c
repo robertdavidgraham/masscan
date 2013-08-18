@@ -352,6 +352,40 @@ rangelist_pick(struct RangeList *targets, uint64_t index)
 	return 0;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+void
+rangelist_parse_ports(struct RangeList *ports, const char *string)
+{
+	char *p = (char*)string;
+
+	while (*p) {
+		unsigned port;
+		unsigned end;
+
+		while (*p && isspace(*p & 0xFF))
+			p++;
+		if (*p == 0)
+			break;
+
+		port = strtoul(p, &p, 0);
+		end = port;
+		if (*p == '-') {
+			p++;
+			end = strtoul(p, &p, 0);
+		}
+		if (*p == ',')
+			p++;
+
+		if (port > 0xFFFF || end > 0xFFFF || end < port) {
+			fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
+			break;
+		} else {
+			rangelist_add_range(ports, port, end);
+		}
+	}
+}
+
 
 /***************************************************************************
  * Called during "make regress" to run a regression test over this module.
@@ -457,6 +491,26 @@ ranges_selftest()
             return 1;
         }
 
+    }
+
+    /* test ports */
+    {
+        struct RangeList task;
+
+        memset(&task, 0, sizeof(task));
+
+        rangelist_parse_ports(&task, "80,1000-2000,1234,4444");
+        if (task.count != 3) {
+            ERROR();
+            return 1;
+        }
+
+        if (task.list[0].begin != 80 || task.list[0].end != 80 ||
+            task.list[1].begin != 1000 || task.list[1].end != 2000 ||
+            task.list[2].begin != 4444 || task.list[2].end != 4444) {
+            ERROR();
+            return 1;
+        }
     }
 
     return 0;

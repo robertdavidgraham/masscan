@@ -61,6 +61,7 @@
     <None Include="..\LICENSE" />
     <None Include="..\Makefile" />
     <None Include="..\README.md" />
+    <None Include="..\VULNINFO.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C88D7583-254F-4BE6-A9B9-89A5BB52E679}</ProjectGuid>

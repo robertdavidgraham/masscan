@@ -89,6 +89,7 @@ struct Masscan
 
         /* ouput options */
         unsigned packet_trace:1; /* print transmit messages */
+        unsigned open_only:1; /* show only open ports */
         unsigned reason; /* print reason port is open, which is redundant for us */
         unsigned format; /* see enum OutputFormat */
         unsigned append; /* append instead of clobber file */

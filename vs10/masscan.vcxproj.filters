@@ -118,5 +118,6 @@
     <None Include="..\README.md" />
     <None Include="..\LICENSE" />
     <None Include="..\Makefile" />
+    <None Include="..\VULNINFO.md" />
   </ItemGroup>
 </Project>
