@@ -55,7 +55,9 @@ scriptable service, this becomes a potential vulnerability.
 Unsafe functions like `strcpy()` are banned.
 
 The code contains an automated regression test by running with the 
-`--regress` option.
+`--regress` option. However, currently the regression only tests
+a small percentage of the code.
+
 
 
 

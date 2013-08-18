@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
+    <ClCompile Include="..\src\main-dedup.c" />
     <ClCompile Include="..\src\main-status.c" />
     <ClCompile Include="..\src\main-throttle.c" />
     <ClCompile Include="..\src\main.c">
@@ -44,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\logger.h" />
+    <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />

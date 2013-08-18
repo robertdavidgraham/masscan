@@ -72,6 +72,9 @@
     <ClCompile Include="..\src\pixie-timer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-dedup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -111,6 +114,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\pixie-timer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-dedup.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

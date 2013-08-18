@@ -2,8 +2,11 @@
 
     main
 
-    This includes the main() function, as well as the inner loop of the
-    scan function 'scanning_thread()'.
+    This includes:
+    
+    * main()
+    * scanning_thread() - transmits packets
+    * main_scan() - launch and receive packets
 */
 #include "masscan.h"
 
@@ -13,6 +16,7 @@
 #include "logger.h"             /* adjust with -v command-line opt */
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
+#include "main-dedup.h"         /* ignore duplicate responses */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -147,7 +151,7 @@ scanning_thread(void *v)
  * in the configuration file.
  ***************************************************************************/
 static int
-initialize(struct Masscan *masscan,
+initialize_adapter(struct Masscan *masscan,
     unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac)
@@ -293,6 +297,17 @@ initialize(struct Masscan *masscan,
 }
 
 /***************************************************************************
+ ***************************************************************************/
+const char *status_string(int x)
+{
+    switch (x) {
+    case Port_Open: return "open";
+    case Port_Closed: return "closed";
+    default: return "unknown";
+    }
+}
+
+/***************************************************************************
  * Start the scan. This is the main function of the program.
  * Called from main()
  ***************************************************************************/
@@ -308,11 +323,12 @@ main_scan(struct Masscan *masscan)
     unsigned char router_mac[6];
     int err;
     FILE *fpout = stdout;
-    
+    struct DedupTable *dedup;
+
     /*
      * Turn the adapter on, and get the running configuration
      */
-    err = initialize(   masscan,
+    err = initialize_adapter(   masscan,
                         &adapter_ip,
                         adapter_mac,
                         router_mac);
@@ -352,17 +368,15 @@ main_scan(struct Masscan *masscan)
 	if (count_ips == 0) {
 		fprintf(stderr, "FAIL: no IPv4 ranges were specified\n");
 		return 1;
-	} else
-        LOG(2, "range = %u IP addresses\n", count_ips);
+	}
 	count_ports = rangelist_count(&masscan->ports);
 	if (count_ports == 0) {
 		fprintf(stderr, "FAIL: no ports were specified, use \"-p<port>\"\n");
 		return 1;
-	} else
-        LOG(2, "range = %u ports\n", count_ports);
+	}
 
-    fprintf(stderr, "Scanning %u hosts [%u ports/host]\n",
-        (unsigned)count_ips, (unsigned)count_ports);
+    fprintf(stderr, "Scanning %u hosts [%u port%s/host]\n",
+        (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
 	
     /*
      * Initialize LCG translator
@@ -405,6 +419,7 @@ main_scan(struct Masscan *masscan)
             exit(1);
         }
     }
+    dedup = dedup_create();
 
     /*
      * Start the scanning thread.
@@ -418,6 +433,7 @@ main_scan(struct Masscan *masscan)
      * them to the terminal.
      */
     while (!masscan->is_done) {
+        int status;
         unsigned length;
         unsigned secs;
         unsigned usecs;
@@ -446,10 +462,12 @@ main_scan(struct Masscan *masscan)
         x = preprocess_frame(px, length, 1, &parsed);
         if (!x)
             continue; /* corrupt packet */
-
-        /* verify: my IP address */
         dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
+        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
+            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+
+        /* verify: my IP address */
         if (adapter_ip != dst)
             continue;
 
@@ -464,10 +482,6 @@ main_scan(struct Masscan *masscan)
         if (parsed.found != FOUND_TCP)
             continue;
 
-        /* verify: SYN-ACK */
-        if ((px[parsed.transport_offset+13] & 0x12) != 0x12)
-            continue;
-
         /* verify: my IP address */
         dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
@@ -478,17 +492,28 @@ main_scan(struct Masscan *masscan)
         if (adapter_port != parsed.port_dst)
             continue;
 
+        /* verify: ignore duplicates */
+        if (dedup_is_duplicate(dedup, src, parsed.port_src))
+            continue;
+
+        /* figure out the status */
+        status = Port_Unknown;
+        if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
+            status = Port_Open;
+        if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
+            status = Port_Closed;
+            
+
         /*
          * XXXX
          * TODO: add lots more verification, such as coming from one of
          * our sending port numbers, and having the right seqno/ackno
          * fields set.
          */
-        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
-            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
         switch (masscan->nmap.format) {
         case Output_Interactive:
-            fprintf(fpout, "Discovered open port %u/tcp on %u.%u.%u.%u                          \n",
+            fprintf(fpout, "Discovered %s port %u/tcp on %u.%u.%u.%u                          \n",
+                status_string(status),
                 parsed.port_src,
                 (src>>24)&0xFF,
                 (src>>16)&0xFF,
@@ -497,7 +522,8 @@ main_scan(struct Masscan *masscan)
                 );
             break;
         case Output_List:
-            fprintf(fpout, "open tcp %u %u.%u.%u.%u\n",
+            fprintf(fpout, "%s tcp %u %u.%u.%u.%u\n",
+                status_string(status),
                 parsed.port_src,
                 (src>>24)&0xFF,
                 (src>>16)&0xFF,

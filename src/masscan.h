@@ -29,6 +29,12 @@ enum OutpuFormat {
     Output_List /* specific to Masscan */
 };
 
+enum PortStatus {
+    Port_Unknown,
+    Port_Open,
+    Port_Closed,
+};
+
 struct Masscan
 {
 	int op;
