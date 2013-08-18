@@ -20,7 +20,14 @@
 
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
+
+unsigned control_c_pressed=0;
+void control_c_handler(int x)
+{
+	control_c_pressed = 1+x;
+}
 
 
 /***************************************************************************
@@ -42,7 +49,7 @@ scanning_thread(void *v)
 	struct Status status;
     struct Throttler throttler;
     struct TcpPacket *pkt_template = masscan->pkt_template;
-   	uint64_t index;
+   	uint64_t seed;
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
 
@@ -55,12 +62,12 @@ scanning_thread(void *v)
     /*
      * Seed the LCG so that it does a different scan every time.
      */
-    index = time(0) % masscan->lcg.m;
+    seed = masscan->resume.seed;
 
     /*
      * the main loop
      */
-	for (i=0; i<masscan->lcg.m; ) {
+	for (i=masscan->resume.index; i<masscan->lcg.m; ) {
         uint64_t batch_size;
 
         /*
@@ -78,11 +85,11 @@ scanning_thread(void *v)
 
 			/* randomize the index
              *  index = lcg_rand(index, a, c, m); */
-			index = (index * a + c) % m;
+			seed = (seed * a + c) % m;
 
 			/* Pick the IPv4 address pointed to by this index */
-			ip = rangelist_pick(&masscan->targets, index%count_ips);
-			port = rangelist_pick(&masscan->ports, index/count_ips);
+			ip = rangelist_pick(&masscan->targets, seed%count_ips);
+			port = rangelist_pick(&masscan->ports, seed/count_ips);
 
             /* Send the probe */
 			rawsock_send_probe(masscan->adapter, ip, port, pkt_template);
@@ -102,6 +109,15 @@ scanning_thread(void *v)
             if (packet_trace)
                 tcpkt_trace(pkt_template, ip, port, timestamp_start);
         }
+
+        if (control_c_pressed) {
+            masscan->resume.seed = seed;
+            masscan->resume.index = i;
+            masscan_save_state(masscan);
+            fprintf(stderr, "waiting 10 seconds to exit...\n");
+            fflush(stderr);
+            break;
+        }
 	}
 
     /*
@@ -113,6 +129,7 @@ scanning_thread(void *v)
             status_print(&status, i++, m);
             port_usleep(1000000);
         }
+        fprintf(stderr, "                                                                      \r");
     }
 
     /* Tell the other it's time to exit the program */
@@ -292,6 +309,7 @@ main_scan(struct Masscan *masscan)
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
     int err;
+    FILE *fpout = stdout;
     
     /*
      * Turn the adapter on, and get the running configuration
@@ -354,18 +372,41 @@ main_scan(struct Masscan *masscan)
 	 * This can take a couple seconds on a slow CPU. We have to find all the
      * primes out to 2^24 when doing large ranges.
 	 */
-	masscan->lcg.m = count_ips * count_ports;
-	lcg_calculate_constants(
-		masscan->lcg.m,
-		&masscan->lcg.a,
-		&masscan->lcg.c,
-		0);
-    LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n", 
-		masscan->lcg.a,
-		masscan->lcg.c,
-		masscan->lcg.m
-        );
+    if (masscan->resume.index && masscan->resume.seed && masscan->lcg.m
+        && masscan->lcg.a && masscan->lcg.c) {
+        if (masscan->lcg.m != count_ips * count_ports) {
+            fprintf(stderr, "FAIL: corrupt resume data\n");
+            exit(1);
+        } else
+            fprintf(stderr, "resuming scan...\n");
+    } else {
+	    masscan->lcg.m = count_ips * count_ports;
+	    lcg_calculate_constants(
+		    masscan->lcg.m,
+		    &masscan->lcg.a,
+		    &masscan->lcg.c,
+		    0);
+        LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n", 
+		    masscan->lcg.a,
+		    masscan->lcg.c,
+		    masscan->lcg.m
+            );
+        masscan->resume.seed = time(0) % masscan->lcg.m;
+        masscan->resume.index = 0;
+    }
 
+
+    /*
+     * Open output
+     */
+    if (masscan->nmap.format != Output_Interactive && masscan->nmap.filename[0]) {
+        FILE *fp;
+        err = fopen_s(&fp, masscan->nmap.filename, masscan->nmap.append?"a":"w");
+        if (err || fp == NULL) {
+            perror(masscan->nmap.filename);
+            exit(1);
+        }
+    }
 
     /*
      * Start the scanning thread.
@@ -447,17 +488,31 @@ main_scan(struct Masscan *masscan)
          */
         src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
-        if (masscan->nmap.format == Output_Interactive) {
-            printf("Discovered open port %u/tcp on %u.%u.%u.%u                          \n",
+        switch (masscan->nmap.format) {
+        case Output_Interactive:
+            fprintf(fpout, "Discovered open port %u/tcp on %u.%u.%u.%u                          \n",
                 parsed.port_src,
                 (src>>24)&0xFF,
                 (src>>16)&0xFF,
                 (src>> 8)&0xFF,
                 (src>> 0)&0xFF
                 );
+            break;
+        case Output_List:
+            fprintf(fpout, "open tcp %u %u.%u.%u.%u\n",
+                parsed.port_src,
+                (src>>24)&0xFF,
+                (src>>16)&0xFF,
+                (src>> 8)&0xFF,
+                (src>> 0)&0xFF
+                );
+            break;
         }
     }
 
+
+    if (fpout != stdout)
+        fclose(fpout);
 
     return 0;
 }
@@ -468,18 +523,12 @@ int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
 
-    {
-        char buffer[80];
-        time_t now  = time(0);
-        struct tm x;
 
-        gmtime_s(&x, &now);
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
-        fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
-    }
-
-
-	memset(masscan, 0, sizeof(*masscan));
+   	/*
+	 * Register a signal handler for the <ctrl-c> key. This allows
+     * us to pause and then resume a scan.
+     */
+	signal(SIGINT, control_c_handler);
 
 
     /* We need to do a separate "raw socket" initialization step */
@@ -490,6 +539,7 @@ int main(int argc, char *argv[])
 	 * Read in the configuration from the command-line. We are looking for
      * either options or a list of IPv4 address ranges.
 	 */
+	memset(masscan, 0, sizeof(*masscan));
     masscan->max_rate = 100.0; /* initialize: max rate = hundred packets-per-second */
     masscan->adapter_port = 0x10000; /* value not set */
 	
@@ -527,6 +577,15 @@ int main(int argc, char *argv[])
         /*
          * THIS IS THE NORMAL THING
          */
+        {
+            char buffer[80];
+            time_t now  = time(0);
+            struct tm x;
+
+            gmtime_s(&x, &now);
+            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
+            fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
+        }
         fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v\n");
         fprintf(stderr, "Initiating SYN Stealth Scan\n");
         return main_scan(masscan);

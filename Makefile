@@ -22,7 +22,7 @@ endif
 INCLUDES = -I.
 DEFINES = 
 CC = gcc
-CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -rdynamic
+CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -rdynamic -Wno-format
 .SUFFIXES: .c .cpp
 
 tmp/%.o: src/%.c

@@ -72,26 +72,30 @@ parse_port_list(struct RangeList *ports, const char *string)
  * Use#2: make sure your configuration was interpreted correctly.
  ***************************************************************************/
 void
-masscan_echo(struct Masscan *masscan)
+masscan_echo(struct Masscan *masscan, FILE *fp)
 {
     unsigned i;
 
-    printf("rate = %10.2f\n", masscan->max_rate);
-    printf("adapter = %s\n", masscan->ifname);
-    printf("adapter-ip = %u.%u.%u.%u\n", 
+    fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
+    fprintf(fp, "randomize-hosts = true\n");
+    
+
+    fprintf(fp, "\n# adapter settings\n");
+    fprintf(fp, "adapter = %s\n", masscan->ifname);
+    fprintf(fp, "adapter-ip = %u.%u.%u.%u\n", 
         (masscan->adapter_ip>>24)&0xFF,
         (masscan->adapter_ip>>16)&0xFF,
         (masscan->adapter_ip>> 8)&0xFF,
         (masscan->adapter_ip>> 0)&0xFF
         );
-    printf("adapter.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
+    fprintf(fp, "adapter.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->adapter_mac[0],
             masscan->adapter_mac[1],
             masscan->adapter_mac[2],
             masscan->adapter_mac[3],
             masscan->adapter_mac[4],
             masscan->adapter_mac[5]);
-    printf("router.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
+    fprintf(fp, "router.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->router_mac[0],
             masscan->router_mac[1],
             masscan->router_mac[2],
@@ -100,79 +104,95 @@ masscan_echo(struct Masscan *masscan)
             masscan->router_mac[5]);
 
     /*
-     * PORTS
+     * Output information
      */
-    printf("ports = ");
+    fprintf(fp, "# output\n");
+    switch (masscan->nmap.format) {
+    case Output_Interactive:
+        fprintf(stderr, "output.format = interactive\n");
+        break;
+    case Output_List:
+        fprintf(stderr, "output.format = list\n");
+        break;
+    default:
+        fprintf(stderr, "output.format = unknown(%u)\n", masscan->nmap.format);
+        break;
+    }
+    fprintf(fp, "output.filename = %s\n", masscan->nmap.filename);
+    if (masscan->nmap.append)
+        fprintf(fp, "output.append = true\n");
+
+
+    /*
+     * Targets
+     */
+    fprintf(fp, "\n# targets\n");
+    fprintf(fp, "ports = ");
     for (i=0; i<masscan->ports.count; i++) {
         struct Range range = masscan->ports.list[i];
         if (range.begin == range.end)
-            printf("%u", range.begin);
+            fprintf(fp, "%u", range.begin);
         else
-            printf("%u-%u", range.begin, range.end);
+            fprintf(fp, "%u-%u", range.begin, range.end);
         if (i+1 < masscan->ports.count)
-            printf(",");
+            fprintf(fp, ",");
     }
-    if (masscan->ports.count == 0)
-        printf("65536,70000-80000");
-    printf("\n");
-
-    /*
-     * RANGES
-     */
+    fprintf(fp, "\n");
     for (i=0; i<masscan->targets.count; i++) {
         struct Range range = masscan->targets.list[i];
-        printf("range = ");
-        printf("%u.%u.%u.%u", 
+        fprintf(fp, "range = ");
+        fprintf(fp, "%u.%u.%u.%u", 
             (range.begin>>24)&0xFF,
             (range.begin>>16)&0xFF,
             (range.begin>> 8)&0xFF,
             (range.begin>> 0)&0xFF
             );
         if (range.begin != range.end) {
-            printf("-%u.%u.%u.%u", 
+            fprintf(fp, "-%u.%u.%u.%u", 
                 (range.end>>24)&0xFF,
                 (range.end>>16)&0xFF,
                 (range.end>> 8)&0xFF,
                 (range.end>> 0)&0xFF
                 );
         }
-        printf("\n");
+        fprintf(fp, "\n");
     }
 
-    if (masscan->targets.count == 0) {
-        printf("range = 0.0.0.0-0.0.0.0\n");
-        printf("range = 0.0.0.0/32\n");
-    }
-
-    /*
-     * EXCLUDE
-     */
-    for (i=0; i<masscan->exclude_ip.count; i++) {
-        struct Range range = masscan->exclude_ip.list[i];
-        printf("exclude = ");
-        printf("%u.%u.%u.%u", 
-            (range.begin>>24)&0xFF,
-            (range.begin>>16)&0xFF,
-            (range.begin>> 8)&0xFF,
-            (range.begin>> 0)&0xFF
-            );
-        if (range.begin != range.end) {
-            printf("-%u.%u.%u.%u", 
-                (range.end>>24)&0xFF,
-                (range.end>>16)&0xFF,
-                (range.end>> 8)&0xFF,
-                (range.end>> 0)&0xFF
-                );
-        }
-        printf("\n");
-    }
-
-    if (masscan->targets.count == 0) {
-        printf("exclude = 255.255.255.255-255.255.255.255\n");
-        printf("exclude = 255.255.255.255/32\n");
-    }
 
 }
+
+/***************************************************************************
+ ***************************************************************************/
+void
+masscan_save_state(struct Masscan *masscan)
+{
+    char filename[512];
+    FILE *fp;
+    int err;
+    
+
+    strcpy_s(filename, sizeof(filename), "paused.scan");
+    fprintf(stderr, "                                                                      \r");
+    fprintf(stderr, "saving resume file to: %s\n", filename);
+
+    err = fopen_s(&fp, filename, "wt");
+    if (err) {
+        perror(filename);
+        return;
+    }
+
+    fprintf(fp, "\n# resume information\n");
+    fprintf(fp, "resume-seed = %llu\n", masscan->resume.seed);
+    fprintf(fp, "resume-index = %llu\n", masscan->resume.index);
+    fprintf(fp, "resume-range = %llu\n", masscan->lcg.m);
+    fprintf(fp, "resume-lcg-a = %llu\n", masscan->lcg.a);
+    fprintf(fp, "resume-lcg-c = %llu\n", masscan->lcg.c);
+
+    masscan_echo(masscan, fp);
+
+    fclose(fp);
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -291,6 +311,18 @@ parse_mac_address(const char *text, unsigned char *mac)
     }
 
     return 0;
+}
+
+static uint64_t
+parseInt(const char *str)
+{
+    uint64_t result = 0;
+
+    while (*str && isdigit(*str & 0xFF)) {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    return result;
 }
 
 
@@ -445,7 +477,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 				offset++; /* skip comma */
 		}
       	masscan->op = Operation_Scan;
-    } else if (EQUALS("append-output", name)) {
+    } else if (EQUALS("append-output", name) || EQUALS("output-append", name)) {
         masscan->nmap.append = 1;
     } else if (EQUALS("badsum", name)) {
         masscan->nmap.badsum = 1;
@@ -466,7 +498,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
         exit(1);
     } else if (EQUALS("echo", name)) {
-        masscan_echo(masscan);
+        masscan_echo(masscan, stdout);
         exit(1);
     } else if (EQUALS("excludefile", name) || EQUALS("exclude-file", name) || EQUALS("exclude.file", name)) {
         ranges_from_file(&masscan->exclude_ip, value);
@@ -510,6 +542,16 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("osscan-guess", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
+    } else if (EQUALS("output-format", name)) {
+        if (EQUALS("list", value))
+            masscan->nmap.format = Output_List;
+        else if (EQUALS("interactive", value))
+            masscan->nmap.format = Output_Interactive;
+        else {
+            fprintf(stderr, "error: %s=%s\n", name, value);
+        }
+    } else if (EQUALS("output-filename", name)) {
+        strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
     } else if (EQUALS("packet-trace", name)) {
         masscan->nmap.packet_trace = 1;
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
@@ -526,8 +568,19 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("release-memory", name)) {
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
-        fprintf(stderr, "nmap(%s): unsupported now, but we'll fix that soon!\n", name);
-        exit(1);
+        masscan_read_config_file(masscan, value);
+    } else if (EQUALS("resume-seed", name)) {
+        masscan->resume.seed = parseInt(value);
+    } else if (EQUALS("resume-index", name)) {
+        masscan->resume.index = parseInt(value);
+    } else if (EQUALS("resume-range", name)) {
+        masscan->lcg.m = parseInt(value);
+    } else if (EQUALS("resume-lcg-m", name)) {
+        masscan->lcg.m = parseInt(value);
+    } else if (EQUALS("resume-lcg-a", name)) {
+        masscan->lcg.a = parseInt(value);
+    } else if (EQUALS("resume-lcg-c", name)) {
+        masscan->lcg.c = parseInt(value);
     } else if (EQUALS("retries", name)) {
         unsigned x = strtoul(value, 0, 0);
         if (x >= 1000) {
@@ -761,18 +814,31 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 switch (argv[i][2]) {
                 case 'A':
                     masscan->nmap.format = Output_All;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
                     break;
                 case 'N':
                     masscan->nmap.format = Output_Normal;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
                     break;
                 case 'X':
                     masscan->nmap.format = Output_XML;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
                     break;
                 case 'S':
                     masscan->nmap.format = Output_ScriptKiddie;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
                     break;
                 case 'G':
                     masscan->nmap.format = Output_Grepable;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
+                    break;
+                case 'L':
+                    masscan_set_parameter(masscan, "output-format", "list");
                     break;
                 default:
                     fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);
@@ -784,7 +850,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     fprintf(stderr, "missing output filename\n");
                     exit(1);
                 }
-                strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), argv[i]);
+
+                masscan_set_parameter(masscan, "output-filename", argv[i]);
                 break;
             case 'O':
                 fprintf(stderr, "nmap(%s): unsupported, OS detection is too complex\n", argv[i]);
@@ -942,7 +1009,7 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
     err = fopen_s(&fp, filename, "rt");
     if (err) {
         perror(filename);
-        exit(1);
+        return;
     }
 
     while (fgets(line, sizeof(line), fp)) {

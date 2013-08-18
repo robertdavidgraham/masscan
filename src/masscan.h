@@ -25,7 +25,8 @@ enum OutpuFormat {
     Output_XML,
     Output_ScriptKiddie,
     Output_Grepable,
-    Output_All
+    Output_All,
+    Output_List /* specific to Masscan */
 };
 
 struct Masscan
@@ -96,6 +97,12 @@ struct Masscan
         char stylesheet[256];
     } nmap;
 
+
+    struct {
+        uint64_t seed;
+        uint64_t index;
+    } resume;
+
     /**
      * The packet template we are current using
      */
@@ -112,6 +119,7 @@ struct Masscan
 void masscan_read_config_file(struct Masscan *masscan, const char *filename);
 void masscan_command_line(struct Masscan *masscan, int argc, char *argv[]);
 void masscan_usage();
+void masscan_save_state(struct Masscan *masscan);
 
 
 #endif
