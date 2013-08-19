@@ -121,6 +121,7 @@ scanning_thread(void *v)
             masscan_save_state(masscan);
             fprintf(stderr, "waiting 10 seconds to exit...\n");
             fflush(stderr);
+            control_c_pressed = 0;
             break;
         }
 	}
@@ -130,7 +131,7 @@ scanning_thread(void *v)
      */
     {
         unsigned j;
-        for (j=0; j<10; j++) {
+        for (j=0; j<10 && !control_c_pressed; j++) {
             status_print(&status, i++, m);
             port_usleep(1000000);
         }
