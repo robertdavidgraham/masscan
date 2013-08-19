@@ -52,7 +52,9 @@ end:
 #if defined(WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
+#ifdef _MSC_VER
 #pragma comment(lib, "IPHLPAPI.lib")
+#endif
 
 
 

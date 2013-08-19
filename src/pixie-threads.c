@@ -10,7 +10,11 @@
 #endif
 
 #ifndef UNUSEDPARM
+#ifdef _MSC_VER
 #define UNUSEDPARM(x) x
+#else
+#define UNUSEDPARM(x)
+#endif
 #endif
 
 /****************************************************************************

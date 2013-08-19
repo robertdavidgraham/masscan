@@ -12,6 +12,7 @@
 
 #define BUCKET_COUNT 16
 
+#define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
 
 /***************************************************************************
  * ???
@@ -300,7 +301,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
 	 * Handle CIDR address of the form "10.0.0.0/8" 
 	 */
     if (line[offset] == '/') {
-        unsigned prefix = 0;
+        uint64_t prefix = 0;
         uint64_t mask = 0;
         unsigned digits = 0;
 
@@ -325,7 +326,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
             return badrange;
 
 		/* Create the mask from the prefix */
-        mask = 0xFFFFFFFF00000000UL >> prefix;
+        mask = 0xFFFFFFFF00000000ULL >> prefix;
         
 		/* Mask off any non-zero bits from the start
 		 * TODO print warning */
@@ -405,6 +406,108 @@ rangelist_pick(struct RangeList *targets, uint64_t index)
 	assert(!"end of list");
 	return 0;
 }
+unsigned *
+rangelist_pick2_create(struct RangeList *targets)
+{
+    unsigned *picker;
+    unsigned i;
+    unsigned total = 0;
+
+    picker = (unsigned *)malloc(targets->count * sizeof(*picker));
+    for (i=0; i<targets->count; i++) {
+        picker[i] = total;
+        total += targets->list[i].end - targets->list[i].begin + 1;
+    }
+    return picker;
+}
+void
+rangelist_pick2_destroy(unsigned *picker)
+{
+    if (picker)
+        free(picker);
+}
+unsigned
+rangelist_pick2(struct RangeList *targets, uint64_t index, unsigned *picker)
+{
+    unsigned maxmax = targets->count;
+    unsigned min = 0;
+    unsigned max = targets->count;
+    unsigned mid;
+
+    for (;;) {
+        mid = min + (max-min)/2;
+        if (index < picker[mid]) {
+            max = mid;
+            continue;
+        } if (index >= picker[mid]) {
+            if (mid + 1 == maxmax)
+                break;
+            else if (index < picker[mid+1])
+                break;
+            else
+                min = mid+1;
+        }
+    }
+
+    return (unsigned)(targets->list[mid].begin + (index - picker[mid]));
+}
+int
+regress_pick2()
+{
+    unsigned i;
+
+    /*
+     * Run 100 randomized regression tests
+     */
+    for (i=0; i<100; i++) {
+        unsigned j;
+        unsigned num_targets;
+        unsigned begin = 0;
+        unsigned end;
+        struct RangeList targets[1];
+        struct RangeList duplicate[1];
+        unsigned *picker;
+        unsigned range;
+
+        /* seed this test so that it's reproducible (on this platform) */
+        srand(i);
+
+        /* Create a new target list */
+        memset(targets, 0, sizeof(targets[0]));
+
+        /* fill the target list with random ranges */
+        num_targets = rand()%5 + 1;
+        for (j=0; j<num_targets; j++) {
+            begin += rand()%10;
+            end = begin + rand()%10;
+
+            rangelist_add_range(targets, begin, end);
+        }
+        range = (unsigned)rangelist_count(targets);
+
+        /* Create a "picker" */
+        picker = rangelist_pick2_create(targets);
+
+        /* Duplicate the targetlist using the picker */
+        memset(duplicate, 0, sizeof(duplicate[0]));
+        for (j=0; j<range; j++) {
+            unsigned x;
+
+            x = rangelist_pick2(targets, j, picker);
+            rangelist_add_range(duplicate, x, x);
+        }
+
+        /* at this point, the two range lists shouild be identical */
+        REGRESS(targets->count == duplicate->count);
+        REGRESS(memcmp(targets->list, duplicate->list, targets->count*sizeof(targets->list[0])) == 0);
+
+        rangelist_free(targets);
+        rangelist_free(duplicate);
+    }
+
+    return 0;
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -450,26 +553,27 @@ ranges_selftest()
     struct Range r;
     struct RangeList task[1];
 
+    REGRESS(regress_pick2() == 0);
+
     memset(task, 0, sizeof(task[0]));
-#define ASSURT(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
 #define ERROR() fprintf(stderr, "selftest: failed %s:%u\n", __FILE__, __LINE__);
 
     /* test for the /0 CIDR block, since we'll be using that a lot to scan the entire
      * Internet */
     r = range_parse_ipv4("0.0.0.0/0", 0, 0);
-    ASSURT(r.begin == 0 && r.end == 0xFFFFFFFF);
+    REGRESS(r.begin == 0 && r.end == 0xFFFFFFFF);
 
     r = range_parse_ipv4("0.0.0./0", 0, 0);
-    ASSURT(r.begin > r.end);
+    REGRESS(r.begin > r.end);
 
     r = range_parse_ipv4("75.748.86.91", 0, 0);
-    ASSURT(r.begin > r.end);
+    REGRESS(r.begin > r.end);
 
     r = range_parse_ipv4("23.75.345.200", 0, 0);
-    ASSURT(r.begin > r.end);
+    REGRESS(r.begin > r.end);
 
     r = range_parse_ipv4("192.1083.0.1", 0, 0);
-    ASSURT(r.begin > r.end);
+    REGRESS(r.begin > r.end);
 
     r = range_parse_ipv4("192.168.1.3", 0, 0);
     if (r.begin != 0xc0a80103 || r.end != 0xc0a80103) {

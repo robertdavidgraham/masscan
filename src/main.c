@@ -54,6 +54,7 @@ scanning_thread(void *v)
    	uint64_t seed;
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
+    unsigned *picker;
 
     status_start(&status);
     throttler_start(&throttler, masscan->max_rate);
@@ -65,6 +66,8 @@ scanning_thread(void *v)
      * Seed the LCG so that it does a different scan every time.
      */
     seed = masscan->resume.seed;
+
+    picker = rangelist_pick2_create(&masscan->targets);
 
     /*
      * the main loop
@@ -90,7 +93,7 @@ scanning_thread(void *v)
 			seed = (seed * a + c) % m;
 
 			/* Pick the IPv4 address pointed to by this index */
-			ip = rangelist_pick(&masscan->targets, seed%count_ips);
+			ip = rangelist_pick2(&masscan->targets, seed%count_ips, picker);
 			port = rangelist_pick(&masscan->ports, seed/count_ips);
 
             /* Send the probe */
@@ -586,6 +589,8 @@ int main(int argc, char *argv[])
             struct Range range = masscan->exclude_port.list[i];
             rangelist_remove_range(&masscan->ports, range.begin, range.end);
         }
+
+        rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
     }
 
 

@@ -169,6 +169,18 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
             (range.begin>> 0)&0xFF
             );
         if (range.begin != range.end) {
+            unsigned i;
+
+            for (i=0; i<30; i++) {
+                if ((range.begin&(1<<i))==0 && (range.end&(1<<i)))
+                    ;
+                else
+                    break;
+            }
+            i = 32-i;
+            if ((range.begin & (0xFFFFFFFF>>i)) == ((range.end & (0xFFFFFFFF>>i)))) {
+                fprintf(fp, "/%u", i);
+            } else 
             fprintf(fp, "-%u.%u.%u.%u", 
                 (range.end>>24)&0xFF,
                 (range.end>>16)&0xFF,
@@ -226,9 +238,9 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
-        char dirname[256];
+        //char dirname[256];
         perror(filename);
-        fprintf(stderr, "dir = %s\n", getcwd(dirname));
+        //fprintf(stderr, "dir = %s\n", getcwd(dirname));
         exit(1); /* HARD EXIT: because if it's an exclusion file, we don't 
                   * want to continue. We don't want ANY chance of
                   * accidentally scanning somebody */
@@ -273,7 +285,7 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
 
 
             /* fetch next address range */
-            address[0] = c;
+            address[0] = (char)c;
             i = 1;
             while (!feof(fp)) {
                 c = getc(fp);

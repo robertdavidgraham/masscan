@@ -24,10 +24,18 @@ struct RangeList
 
 void rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
 void rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end);
+void rangelist_remove_range2(struct RangeList *task, struct Range range);
+
 struct Range range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
 uint64_t rangelist_count(struct RangeList *targets);
 unsigned rangelist_pick(struct RangeList *targets, uint64_t i);
 void rangelist_parse_ports(struct RangeList *ports, const char *string);
 
 void rangelist_free(struct RangeList *list);
+
+
+unsigned *rangelist_pick2_create(struct RangeList *targets);
+void rangelist_pick2_destroy(unsigned *picker);
+unsigned rangelist_pick2(struct RangeList *targets, uint64_t index, unsigned *picker);
+
 #endif
