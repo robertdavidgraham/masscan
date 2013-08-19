@@ -119,6 +119,17 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 /***************************************************************************
  ***************************************************************************/
 void
+rangelist_free(struct RangeList *list)
+{
+    if (list->list) {
+        free(list->list);
+        memset(list, 0, sizeof(*list));
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
 rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
 {
     unsigned i;
@@ -187,8 +198,8 @@ rangelist_remove_range2(struct RangeList *task, struct Range range)
  * Parse an IPv4 address from a line of text, moving the offset forward
  * to the first non-IPv4 character
  ***************************************************************************/
-static unsigned
-parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
+static int
+parse_ipv4(const char *line, unsigned *inout_offset, unsigned max, unsigned *ipv4)
 {
     unsigned offset = *inout_offset;
     unsigned result = 0;
@@ -196,18 +207,39 @@ parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
 
     for (i=0; i<4; i++) {
         unsigned x = 0;
+        unsigned digits = 0;
+
+        if (offset >= max)
+            return -4;
+        if (!isdigit(line[offset]&0xFF))
+            return -1;
+
+        /* clear leading zeros */
+        while (offset < max && line[offset] == '0')
+            offset++;
+
+        /* parse maximum of 3 digits */
         while (offset < max && isdigit(line[offset]&0xFF)) {
             x = x * 10 + (line[offset] - '0');
             offset++;
+            if (++digits > 3)
+                return -2;
         }
+        if (x > 255)
+            return -5;
         result = result * 256 + (x & 0xFF);
-        if (offset >= max || line[offset] != '.')
+        if (i == 3)
             break;
+
+        if (line[offset] != '.')
+            return -3;
         offset++; /* skip dot */
     }
 
     *inout_offset = offset;
-    return result;
+    *ipv4 = result;
+
+    return 0; /* parse ok */
 }
 
 /****************************************************************************
@@ -233,6 +265,9 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
 {
     unsigned offset;
     struct Range result;
+    static const struct Range badrange = {0xFFFFFFFF, 0};
+    int err;
+
 
     if (inout_offset == NULL) {
          inout_offset = &offset;
@@ -247,7 +282,10 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
         offset++;
 
     /* get the first IP address */
-    result.begin = parse_ipv4(line, &offset, max);
+    err = parse_ipv4(line, &offset, max, &result.begin);
+    if (err) {
+        return badrange;
+    }
     result.end = result.begin;
 
     /* trim whitespace */
@@ -264,13 +302,27 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
     if (line[offset] == '/') {
         unsigned prefix = 0;
         uint64_t mask = 0;
+        unsigned digits = 0;
 
 		/* skip slash */
         offset++;
 
+        if (!isdigit(line[offset]&0xFF)) {
+            return badrange;
+        }
+
+        /* strip leading zeroes */
+        while (offset<max && line[offset] == '0')
+            offset++;
+
 		/* parse decimal integer */
-        while (offset<max && isdigit(line[offset]&0xFF))
+        while (offset<max && isdigit(line[offset]&0xFF)) {
             prefix = prefix * 10 + (line[offset++] - '0');
+            if (++digits > 2)
+                return badrange;
+        }
+        if (prefix > 32)
+            return badrange;
 
 		/* Create the mask from the prefix */
         mask = 0xFFFFFFFF00000000UL >> prefix;
@@ -292,7 +344,9 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
 		unsigned ip;
 
         offset++;
-		ip = parse_ipv4(line, &offset, max);
+		err = parse_ipv4(line, &offset, max, &ip);
+        if (err)
+            return badrange;
 		if (ip < result.begin) {
             result.begin = 0xFFFFFFFF;
             result.end = 0x00000000;
@@ -341,7 +395,7 @@ rangelist_pick(struct RangeList *targets, uint64_t index)
 	unsigned i;
 
 	for (i=0; i<targets->count; i++) {
-		uint64_t range = targets->list[i].end - targets->list[i].begin + 1;
+		uint64_t range = (uint64_t)targets->list[i].end - (uint64_t)targets->list[i].begin + 1UL;
 		if (index < range)
 			return (unsigned)(targets->list[i].begin + index);
 		else
@@ -397,9 +451,25 @@ ranges_selftest()
     struct RangeList task[1];
 
     memset(task, 0, sizeof(task[0]));
-
-
+#define ASSURT(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
 #define ERROR() fprintf(stderr, "selftest: failed %s:%u\n", __FILE__, __LINE__);
+
+    /* test for the /0 CIDR block, since we'll be using that a lot to scan the entire
+     * Internet */
+    r = range_parse_ipv4("0.0.0.0/0", 0, 0);
+    ASSURT(r.begin == 0 && r.end == 0xFFFFFFFF);
+
+    r = range_parse_ipv4("0.0.0./0", 0, 0);
+    ASSURT(r.begin > r.end);
+
+    r = range_parse_ipv4("75.748.86.91", 0, 0);
+    ASSURT(r.begin > r.end);
+
+    r = range_parse_ipv4("23.75.345.200", 0, 0);
+    ASSURT(r.begin > r.end);
+
+    r = range_parse_ipv4("192.1083.0.1", 0, 0);
+    ASSURT(r.begin > r.end);
 
     r = range_parse_ipv4("192.168.1.3", 0, 0);
     if (r.begin != 0xc0a80103 || r.end != 0xc0a80103) {

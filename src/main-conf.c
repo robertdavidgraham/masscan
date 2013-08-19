@@ -109,14 +109,14 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         (masscan->adapter_ip>> 8)&0xFF,
         (masscan->adapter_ip>> 0)&0xFF
         );
-    fprintf(fp, "adapter.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
+    fprintf(fp, "adapter-mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->adapter_mac[0],
             masscan->adapter_mac[1],
             masscan->adapter_mac[2],
             masscan->adapter_mac[3],
             masscan->adapter_mac[4],
             masscan->adapter_mac[5]);
-    fprintf(fp, "router.mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
+    fprintf(fp, "router-mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
             masscan->router_mac[0],
             masscan->router_mac[1],
             masscan->router_mac[2],
@@ -130,18 +130,18 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "# output\n");
     switch (masscan->nmap.format) {
     case Output_Interactive:
-        fprintf(stderr, "output.format = interactive\n");
+        fprintf(fp, "output-format = interactive\n");
         break;
     case Output_List:
-        fprintf(stderr, "output.format = list\n");
+        fprintf(fp, "output-format = list\n");
         break;
     default:
-        fprintf(stderr, "output.format = unknown(%u)\n", masscan->nmap.format);
+        fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
     }
-    fprintf(fp, "output.filename = %s\n", masscan->nmap.filename);
+    fprintf(fp, "output-filename = %s\n", masscan->nmap.filename);
     if (masscan->nmap.append)
-        fprintf(fp, "output.append = true\n");
+        fprintf(fp, "output-append = true\n");
 
 
     /*
@@ -347,6 +347,22 @@ parseInt(const char *str)
 }
 
 
+int EQUALS(const char *lhs, const char *rhs)
+{
+    for (;;) {
+        while (*lhs == '-' || *lhs == '.')
+            lhs++;
+        while (*rhs == '-' || *rhs == '.')
+            rhs++;
+        if (tolower(*lhs & 0xFF) != tolower(*rhs & 0xFF))
+            return 0;
+        if (*lhs == '\0')
+            return 1;
+        lhs++;
+        rhs++;
+    }
+}
+
 /***************************************************************************
  * Called either from the "command-line" parser when it sees a --parm,
  * or from the "config-file" parser for normal options.
@@ -354,7 +370,6 @@ parseInt(const char *str)
 void
 masscan_set_parameter(struct Masscan *masscan, const char *name, const char *value)
 {
-#define EQUALS(lhs, rhs) (strcmp(lhs, rhs)==0)
 
     if (EQUALS("conf", name) || EQUALS("config", name)) {
         masscan_read_config_file(masscan, value);
@@ -576,7 +591,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         }
     } else if (EQUALS("output-filename", name)) {
         strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
-    } else if (EQUALS("packet-trace", name)) {
+    } else if (EQUALS("packet-trace", name) || EQUALS("trace-packet", name)) {
         masscan->nmap.packet_trace = 1;
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
@@ -687,7 +702,7 @@ is_singleton(const char *name)
         "log-errors", "append-output", "webxml", "no-stylesheet",
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
-        "nmap",
+        "nmap", "trace-packet",
         0};
     size_t i;
 
@@ -839,8 +854,6 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 switch (argv[i][2]) {
                 case 'A':
                     masscan->nmap.format = Output_All;
-                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
-                    exit(1);
                     break;
                 case 'N':
                     masscan->nmap.format = Output_Normal;

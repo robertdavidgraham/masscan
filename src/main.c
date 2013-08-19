@@ -325,6 +325,8 @@ main_scan(struct Masscan *masscan)
     FILE *fpout = stdout;
     struct DedupTable *dedup;
 
+
+
     /*
      * Turn the adapter on, and get the running configuration
      */
@@ -418,6 +420,7 @@ main_scan(struct Masscan *masscan)
             perror(masscan->nmap.filename);
             exit(1);
         }
+        fpout = fp;
     }
     dedup = dedup_create();
 
@@ -510,9 +513,8 @@ main_scan(struct Masscan *masscan)
          * our sending port numbers, and having the right seqno/ackno
          * fields set.
          */
-        switch (masscan->nmap.format) {
-        case Output_Interactive:
-            fprintf(fpout, "Discovered %s port %u/tcp on %u.%u.%u.%u                          \n",
+        if (masscan->nmap.format == Output_Interactive || masscan->nmap.format == Output_All) {
+            fprintf(stdout, "Discovered %s port %u/tcp on %u.%u.%u.%u                          \n",
                 status_string(status),
                 parsed.port_src,
                 (src>>24)&0xFF,
@@ -520,8 +522,8 @@ main_scan(struct Masscan *masscan)
                 (src>> 8)&0xFF,
                 (src>> 0)&0xFF
                 );
-            break;
-        case Output_List:
+        }
+        if (masscan->nmap.format == Output_List || masscan->nmap.format == Output_All) {
             fprintf(fpout, "%s tcp %u %u.%u.%u.%u\n",
                 status_string(status),
                 parsed.port_src,
@@ -530,7 +532,6 @@ main_scan(struct Masscan *masscan)
                 (src>> 8)&0xFF,
                 (src>> 0)&0xFF
                 );
-            break;
         }
     }
 

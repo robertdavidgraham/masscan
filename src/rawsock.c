@@ -360,9 +360,9 @@ rawsock_send_probe(
 			; //printf("+%u\n", count++);
 	}
 	if (ip_checksum(pkt) != 0xFFFF)
-		printf("IP checksum bad 0x%04x\n", ip_checksum(pkt));
+		LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
 	if (tcp_checksum(pkt) != 0xFFFF)
-		printf("TCP checksum bad 0x%04x\n", tcp_checksum(pkt));
+		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));
 }
 
 /***************************************************************************

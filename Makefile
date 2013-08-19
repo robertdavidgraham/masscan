@@ -41,11 +41,17 @@ LIBS = -lwpcap
 endif
 
 
-DEFINES = 
+# this works on llvm or real gcc
 CC = gcc
+
+DEFINES = 
 CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 
+# just compile everything in the 'src' directory. Using this technique
+# means that include file dependencies are broken, so sometimes when
+# the program crashes unexpectedly, 'make clean' then 'make' fixes the
+# problem that a .h file was out of date
 tmp/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -29,4 +29,5 @@ uint64_t rangelist_count(struct RangeList *targets);
 unsigned rangelist_pick(struct RangeList *targets, uint64_t i);
 void rangelist_parse_ports(struct RangeList *ports, const char *string);
 
+void rangelist_free(struct RangeList *list);
 #endif
