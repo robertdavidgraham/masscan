@@ -261,11 +261,13 @@ rawsock_send_packet(
 {
 
     if (adapter->ring) {
-        int err = 0;
+        int err = PF_RING_ERROR_NO_TX_SLOT_AVAILABLE;
 
-        while (err != PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
+        while (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
             err = PFRING.send(adapter->ring, packet, length, 1);
         }
+	if (err < 0)
+		LOG(1, "pfring:xmit: ERROR %d\n", err);
         return err;
     } else if (adapter->sendq) {
         int err;
@@ -415,12 +417,17 @@ const char *rawsock_win_name(const char *ifname)
 void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
 
+    if (adapter == 0)
+        return;
+
     if (adapter->ring) {
         /* don't do anything, we've already done it above */
+        return;
     }
 
+
 #if !defined(WIN32)
-    {
+    if (adapter->pcap) {
         int err;
       
         //printf("%u", PCAP_OPENFLAGS_NOCAPTURE_LOCAL);
@@ -430,7 +437,7 @@ void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adap
         }
     }
 #else
-    {
+    if (adapter->pcap) {
         int err;
         char filter[256];
         struct bpf_program prog;
@@ -496,7 +503,7 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
         unsigned version;
 
         LOG(2, "pfring:'%s': opening...\n", adapter_name);
-	    adapter->ring = PFRING.open(adapter_name, 1500, 0);
+	    adapter->ring = PFRING.open(adapter_name, 1500, 0); //PF_RING_REENTRANT);
 	    adapter->pcap = (pcap_t*)adapter->ring;
         if (adapter->ring == NULL) {
             LOG(0, "pfring:'%s': OPEN ERROR: %s\n", adapter_name, strerror_x(errno));
@@ -511,21 +518,23 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
                 (version >> 8) & 0xFF,
                 (version >> 0) & 0xFF);
 
-	    err = PFRING.enable_ring(adapter->ring);
-	    if (err != 0) {
+        LOG(2, "pfring:'%s': setting direction\n", adapter_name);
+        err = PFRING.set_direction(adapter->ring, rx_only_direction);
+        if (err) {
+            fprintf(stderr, "pfring:'%s': setdirection = %d\n", adapter_name, err);
+        } else
+            LOG(2, "pfring:'%s': direction success\n", adapter_name);
+
+	LOG(2, "pfring:'%s': activating\n", adapter_name);
+	err = PFRING.enable_ring(adapter->ring);
+	if (err != 0) {
             LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
             PFRING.close(adapter->ring);
             adapter->ring = 0;
 		    return 0;
-	    } else
-		    LOG(1, "pfring:'%s': succesfully enabled enabled\n", adapter_name);
+	} else
+	    LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
 
-        LOG(2, "pfring:'%s': setting direction\n", adapter_name);
-        err = PFRING.set_direction(adapter->ring, rx_only_direction);
-        if (err) {
-            fprintf(stderr, "pfring:'%s': setdirection = %d\n", err);
-        } else
-            LOG(2, "pfring:'%s': direction success\n");
         return adapter;
 
     } else {

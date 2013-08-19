@@ -56,7 +56,7 @@ scanning_thread(void *v)
     double timestamp_start;
     unsigned *picker;
 
-    LOG(1, "starting scanning thread...\n");
+    LOG(1, "xmit: starting transmit thread...\n");
 
     status_start(&status);
     throttler_start(&throttler, masscan->max_rate);
@@ -74,6 +74,7 @@ scanning_thread(void *v)
     /*
      * the main loop
      */
+    LOG(3, "xmit: starting main loop\n");
 	for (i=masscan->resume.index; i<masscan->lcg.m; ) {
         uint64_t batch_size;
 
@@ -98,6 +99,9 @@ scanning_thread(void *v)
 			ip = rangelist_pick2(&masscan->targets, seed%count_ips, picker);
 			port = rangelist_pick(&masscan->ports, seed/count_ips);
 
+            /* Print packet if debugging */
+            if (packet_trace)
+                tcpkt_trace(pkt_template, ip, port, timestamp_start);
             /* Send the probe */
 			rawsock_send_probe(masscan->adapter, ip, port, pkt_template);
 
@@ -112,9 +116,6 @@ scanning_thread(void *v)
 			if ((i & status.timer) == status.timer) 
                 status_print(&status, i, m);
 
-            /* Print packet if debugging */
-            if (packet_trace)
-                tcpkt_trace(pkt_template, ip, port, timestamp_start);
         }
 
         if (control_c_pressed) {
@@ -250,7 +251,9 @@ initialize_adapter(struct Masscan *masscan,
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;
     }
+    LOG(3, "rawsock: ignoring transmits\n");
     rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+    LOG(3, "rawsock: initialization done\n");
 
     /*
      * ROUTER MAC ADDRESS
@@ -267,6 +270,7 @@ initialize_adapter(struct Masscan *masscan,
         unsigned router_ipv4;
         int err;
 
+        LOG(1, "rawsock: looking for default gateway\n");
         err = rawsock_get_default_gateway(ifname, &router_ipv4);
         if (err == 0) {
             LOG(2, "auto-detected: router-ip=%u.%u.%u.%u\n",
