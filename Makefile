@@ -7,8 +7,8 @@ SYS := $(shell gcc -dumpmachine)
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt -rdynamic
-INCLUDES = -I.
+LIBS = -lpfring -lpcap -lm -lrt -rdynamic
+INCLUDES = -I. -I../PF_RING/userland/lib
 endif
 
 # MAC OS X
@@ -44,7 +44,7 @@ endif
 # this works on llvm or real gcc
 CC = gcc
 
-DEFINES = 
+DEFINES = -DPFRING
 CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 

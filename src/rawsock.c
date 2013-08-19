@@ -10,7 +10,10 @@
 
 #include "string_s.h"
 
-
+#ifdef PFRING
+#define _GNU_SOURCE
+#include "pfring.h"
+#endif
 #include <pcap.h>
 
 #ifdef WIN32
@@ -80,6 +83,9 @@ int pcap_sendqueue_queue(pcap_send_queue *queue,
 
 struct Adapter
 {
+#ifdef PFRING
+	pfring *ring;
+#endif
 	pcap_t *pcap;
 	pcap_send_queue *sendq;
 };
@@ -289,7 +295,17 @@ rawsock_send_packet(
     const unsigned char *packet,
     unsigned length)
 {
+
+#ifdef PFRING
+    int err;
+again:
+    err = pfring_send(adapter->ring, packet, length, 1);
+    if (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE)
+        goto again;
+    return err;
+#else
     return pcap_sendpacket(adapter->pcap, packet, length);
+#endif
 }
 
 /***************************************************************************
@@ -301,7 +317,10 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet)
 {
+#ifdef PFRING
+#else
     struct pcap_pkthdr hdr;
+
     
 	*packet = pcap_next(adapter->pcap, &hdr);
 
@@ -311,7 +330,7 @@ int rawsock_recv_packet(
     *length = hdr.caplen;
     *secs = hdr.ts.tv_sec;
     *usecs = hdr.ts.tv_usec;
-
+#endif
     return 0;
 }
 
@@ -343,7 +362,7 @@ rawsock_send_probe(
 
 	tcp_set_target(pkt, ip, port);
 	if (sendq == 0)
-		x = pcap_sendpacket(pcap, pkt->packet, pkt->length);
+		x = rawsock_send_packet(adapter, pkt->packet, pkt->length);
 	else {
 		x = pcap_sendqueue_queue(sendq, &hdr, pkt->packet);
 		if (x != 0) {
@@ -405,7 +424,24 @@ const char *rawsock_win_name(const char *ifname)
  ***************************************************************************/
 void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
-#ifndef WIN32
+#ifdef PFRING
+/*
+typedef enum {
+  rx_and_tx_direction = 0,
+  rx_only_direction,
+  tx_only_direction
+} packet_direction;
+*/
+    int err;
+
+    LOG(2, "pfring: setting direction\n");
+    err = pfring_set_direction(adapter->ring, rx_only_direction);
+    if (err) {
+        fprintf(stderr, "pfring: setdirection = %d\n", err);
+    } else
+        LOG(1, "pfring: don't receive transmits\n");
+
+#elif defined(WIN32)
     int err;
       
     //printf("%u", PCAP_OPENFLAGS_NOCAPTURE_LOCAL);
@@ -476,12 +512,42 @@ rawsock_init_adapter(const char *adapter_name)
 	/*
 	 * Open the PCAP adapter
 	 */
+#ifdef PFRING
+	adapter->ring = pfring_open(adapter_name, 1500, 0);
+	adapter->pcap = (pfring*)adapter->ring;
+        if (adapter->ring == NULL) {
+                perror(adapter_name);
+                return 0;
+        } else
+                LOG(1, "%s: openned with pfring\n", adapter_name);
+
+        pfring_set_application_name(adapter->ring, "masscan");
+        {
+                uint32_t version;
+                pfring_version(adapter->ring, &version);
+                LOG(1, "PF_RING v%d.%d.%d\n",
+                        (version >> 16) & 0xFFFF,
+                        (version >> 8) & 0xFF,
+                        (version >> 0) & 0xFF);
+        }
+
+	{
+		int err;
+		err = pfring_enable_ring(adapter->ring);
+		if (err != 0) {
+			perror("enable PFRING");
+			return 0;
+		} else
+			LOG(1, "pfring: enabled\n");
+	}
+#else
 	adapter->pcap = pcap_open_live(
 				adapter_name,	    	/* interface name */
 				65536,					/* max packet size */
 				8,						/* promiscuous mode */
 				1000,					/* read timeout in milliseconds */
 				errbuf);
+#endif
 	if (adapter->pcap == NULL) {
 		fprintf(stderr, "pcap_open_live(%s) error: %s\n", adapter_name, errbuf);
 		return 0;
