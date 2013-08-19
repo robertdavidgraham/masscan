@@ -103,6 +103,8 @@ struct Masscan
         char filename[256];
         char stylesheet[256];
     } nmap;
+    unsigned is_pfring:1;
+    unsigned is_sendq:1;
 
 
     struct {

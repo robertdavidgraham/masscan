@@ -28,7 +28,7 @@
 
 
 
-static unsigned control_c_pressed = 0;
+unsigned control_c_pressed = 0;
 
 
 
@@ -245,7 +245,7 @@ initialize_adapter(struct Masscan *masscan,
      * Once we've figured out which adapter to use, we now need to 
      * turn it on.
      */
-    masscan->adapter = rawsock_init_adapter(ifname);
+    masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
     if (masscan->adapter == 0) {
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;
@@ -567,8 +567,6 @@ int main(int argc, char *argv[])
 
 
 
-    /* We need to do a separate "raw socket" initialization step */
-	rawsock_init();
 
 
 	/*
@@ -579,7 +577,18 @@ int main(int argc, char *argv[])
     masscan->max_rate = 100.0; /* initialize: max rate = hundred packets-per-second */
     masscan->adapter_port = 0x10000; /* value not set */
 	
+    
     masscan_command_line(masscan, argc, argv);
+    
+    LOG(3, "\n====== MASSCAN ======\n");
+
+
+
+    /* We need to do a separate "raw socket" initialization step. This is
+     * for Windows and PF_RING. */
+	rawsock_init();
+
+
 
     /*
      * Apply excludes
@@ -599,6 +608,7 @@ int main(int argc, char *argv[])
 
         rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
     }
+
 
 
     /*

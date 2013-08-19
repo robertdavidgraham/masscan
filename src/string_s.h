@@ -49,6 +49,11 @@
 #undef itoa
 #define itoa        ITOA_FUNCTION_IS_BAD
 
+#undef strerror
+#define strerror    STRERROR_FUNCTION_IS_BAD
+
+const char *strerror_x(int x);
+
 #if defined(_MSC_VER) && (_MSC_VER == 1600)
 /*Visual Studio 2010*/
 # include <stdio.h>

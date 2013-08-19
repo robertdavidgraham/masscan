@@ -10,49 +10,13 @@
 
 #include "string_s.h"
 
-#ifdef PFRING
-#define _GNU_SOURCE
-#include "pfring.h"
-#endif
+#include "rawsock-pfring.h"
+
 #include <pcap.h>
 
 #ifdef WIN32
 #include <Win32-Extensions.h>
-//#include <iphlpapi.h>
-#define MAX_ADAPTER_DESCRIPTION_LENGTH  128 // arb.
-#define MAX_ADAPTER_NAME_LENGTH         256 // arb.
-#define MAX_ADAPTER_ADDRESS_LENGTH      8   // arb.
-#define MIB_IF_TYPE_ETHERNET            6
-typedef struct {
-    char String[4 * 4];
-} IP_ADDRESS_STRING, *PIP_ADDRESS_STRING, IP_MASK_STRING, *PIP_MASK_STRING;
-typedef struct _IP_ADDR_STRING {
-    struct _IP_ADDR_STRING* Next;
-    IP_ADDRESS_STRING IpAddress;
-    IP_MASK_STRING IpMask;
-    DWORD Context;
-} IP_ADDR_STRING, *PIP_ADDR_STRING;
-typedef struct _IP_ADAPTER_INFO {
-    struct _IP_ADAPTER_INFO* Next;
-    DWORD ComboIndex;
-    char AdapterName[MAX_ADAPTER_NAME_LENGTH + 4];
-    char Description[MAX_ADAPTER_DESCRIPTION_LENGTH + 4];
-    UINT AddressLength;
-    BYTE Address[MAX_ADAPTER_ADDRESS_LENGTH];
-    DWORD Index;
-    UINT Type;
-    UINT DhcpEnabled;
-    PIP_ADDR_STRING CurrentIpAddress;
-    IP_ADDR_STRING IpAddressList;
-    IP_ADDR_STRING GatewayList;
-    IP_ADDR_STRING DhcpServer;
-    BOOL HaveWins;
-    IP_ADDR_STRING PrimaryWinsServer;
-    IP_ADDR_STRING SecondaryWinsServer;
-    time_t LeaseObtained;
-    time_t LeaseExpires;
-} IP_ADAPTER_INFO, *PIP_ADAPTER_INFO;
-ULONG WINAPI GetAdaptersInfo(PIP_ADAPTER_INFO AdapterInfo, PULONG SizePointer);
+#include <iphlpapi.h>
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "packet.lib")
@@ -83,11 +47,9 @@ int pcap_sendqueue_queue(pcap_send_queue *queue,
 
 struct Adapter
 {
-#ifdef PFRING
-	pfring *ring;
-#endif
 	pcap_t *pcap;
 	pcap_send_queue *sendq;
+    pfring *ring;
 };
 
 
@@ -222,6 +184,8 @@ rawsock_init()
     }
     if (pAdapterInfo)
         free(pAdapterInfo);
+#else
+    PFRING_init();
 #endif
     return;
 }
@@ -296,17 +260,38 @@ rawsock_send_packet(
     unsigned length)
 {
 
-#ifdef PFRING
-    int err;
-again:
-    err = pfring_send(adapter->ring, packet, length, 1);
-    if (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE)
-        goto again;
-    return err;
-#else
-    return pcap_sendpacket(adapter->pcap, packet, length);
-#endif
+    if (adapter->ring) {
+        int err = 0;
+
+        while (err != PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
+            err = PFRING.send(adapter->ring, packet, length, 1);
+        }
+        return err;
+    } else if (adapter->sendq) {
+        int err;
+        struct pcap_pkthdr hdr;
+	    hdr.len = length;
+	    hdr.caplen = length;
+
+		err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+		if (err) {
+			//printf("sendpacket() failed %d\n", x);
+			//for (;;)
+			err = pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+			//printf("pcap_send_queue)() returned %u\n", x);
+			pcap_sendqueue_destroy(adapter->sendq);
+			adapter->sendq =  pcap_sendqueue_alloc(65536);
+			err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+			//("sendpacket() returned %d\n", x);
+			//exit(1);
+		} else
+			; //printf("+%u\n", count++);
+        return 0;
+    } else {
+        return pcap_sendpacket(adapter->pcap, packet, length);
+    }
 }
+extern unsigned control_c_pressed;
 
 /***************************************************************************
  ***************************************************************************/
@@ -317,20 +302,43 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet)
 {
-#ifdef PFRING
-#else
-    struct pcap_pkthdr hdr;
+    if (adapter->ring) {
+        struct pfring_pkthdr hdr;
+        int err;
+        
+        again:
+        err = PFRING.recv(adapter->ring,
+                        (unsigned char**)packet,
+                        0,  /* zero-copy */
+                        &hdr,
+                        0   /* return immediately */
+                        );
+        if (err == PF_RING_ERROR_NO_PKT_AVAILABLE) {
+            PFRING.poll(adapter->ring, 1);
+            if (control_c_pressed)
+                return 1;
+            goto again;
+        }
+        if (err)
+            return 1;
+
+        *length = hdr.caplen;
+        *secs = hdr.ts.tv_sec;
+        *usecs = hdr.ts.tv_usec;
+
+    } else {
+        struct pcap_pkthdr hdr;
 
     
-	*packet = pcap_next(adapter->pcap, &hdr);
+	    *packet = pcap_next(adapter->pcap, &hdr);
 
-    if (*packet == NULL)
-        return 1;
+        if (*packet == NULL)
+            return 1;
 
-    *length = hdr.caplen;
-    *secs = hdr.ts.tv_sec;
-    *usecs = hdr.ts.tv_usec;
-#endif
+        *length = hdr.caplen;
+        *secs = hdr.ts.tv_sec;
+        *usecs = hdr.ts.tv_usec;
+    }
     return 0;
 }
 
@@ -342,46 +350,28 @@ rawsock_send_probe(
     unsigned ip, unsigned port,
     struct TcpPacket *pkt)
 {
-    pcap_t *pcap;
-    pcap_send_queue *sendq;
-	int x;
-	struct pcap_pkthdr hdr;
 
     if (adapter == NULL)
         return;
-    else {
-        pcap = adapter->pcap;
-        sendq = adapter->sendq;
-    }
 
-	hdr.len = pkt->length;
-	hdr.caplen = pkt->length;
-
-    if (pkt->length < 60)
-        pkt->length = 60;
-
+    /*
+     * Construct the destination packet
+     */
 	tcp_set_target(pkt, ip, port);
-	if (sendq == 0)
-		x = rawsock_send_packet(adapter, pkt->packet, pkt->length);
-	else {
-		x = pcap_sendqueue_queue(sendq, &hdr, pkt->packet);
-		if (x != 0) {
-			//printf("sendpacket() failed %d\n", x);
-			//for (;;)
-			x = pcap_sendqueue_transmit(pcap, sendq, 0);
-			//printf("pcap_send_queue)() returned %u\n", x);
-			pcap_sendqueue_destroy(sendq);
-			adapter->sendq = sendq = pcap_sendqueue_alloc(65536);
-			x = pcap_sendqueue_queue(sendq, &hdr, pkt->packet);
-			//("sendpacket() returned %d\n", x);
-			//exit(1);
-		} else
-			; //printf("+%u\n", count++);
-	}
-	if (ip_checksum(pkt) != 0xFFFF)
+
+    /*
+     * Send it
+     */
+    rawsock_send_packet(adapter, pkt->packet, pkt->length);
+	
+    /*
+     * Verify I'm doing the checksum correctly ('cause I ain't, I got
+     * a bug right now).
+     */
+    /*if (ip_checksum(pkt) != 0xFFFF)
 		LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
 	if (tcp_checksum(pkt) != 0xFFFF)
-		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));
+		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
 }
 
 /***************************************************************************
@@ -424,57 +414,49 @@ const char *rawsock_win_name(const char *ifname)
  ***************************************************************************/
 void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
-#ifdef PFRING
-/*
-typedef enum {
-  rx_and_tx_direction = 0,
-  rx_only_direction,
-  tx_only_direction
-} packet_direction;
-*/
-    int err;
 
-    LOG(2, "pfring: setting direction\n");
-    err = pfring_set_direction(adapter->ring, rx_only_direction);
-    if (err) {
-        fprintf(stderr, "pfring: setdirection = %d\n", err);
-    } else
-        LOG(1, "pfring: don't receive transmits\n");
+    if (adapter->ring) {
+        /* don't do anything, we've already done it above */
+    }
 
-#elif defined(WIN32)
-    int err;
+#if !defined(WIN32)
+    {
+        int err;
       
-    //printf("%u", PCAP_OPENFLAGS_NOCAPTURE_LOCAL);
-    err = pcap_setdirection(adapter->pcap, PCAP_D_IN);
-    if (err) {
-        pcap_perror(adapter->pcap, "pcap_setdirection(IN)");
+        //printf("%u", PCAP_OPENFLAGS_NOCAPTURE_LOCAL);
+        err = pcap_setdirection(adapter->pcap, PCAP_D_IN);
+        if (err) {
+            pcap_perror(adapter->pcap, "pcap_setdirection(IN)");
+        }
     }
 #else
-    int err;
-    char filter[256];
-    struct bpf_program prog;
+    {
+        int err;
+        char filter[256];
+        struct bpf_program prog;
 
-    sprintf_s(filter, sizeof(filter), "not ether src %02x:%02X:%02X:%02X:%02X:%02X",
-        adapter_mac[0], adapter_mac[1], adapter_mac[2], 
-        adapter_mac[3], adapter_mac[4], adapter_mac[5]);
+        sprintf_s(filter, sizeof(filter), "not ether src %02x:%02X:%02X:%02X:%02X:%02X",
+            adapter_mac[0], adapter_mac[1], adapter_mac[2], 
+            adapter_mac[3], adapter_mac[4], adapter_mac[5]);
 
-    err = pcap_compile(
-                adapter->pcap,
-                &prog,          /* object code, output of compile */
-                filter,         /* source code */
-                1,              /* optimize to go fast */
-                0);
+        err = pcap_compile(
+                    adapter->pcap,
+                    &prog,          /* object code, output of compile */
+                    filter,         /* source code */
+                    1,              /* optimize to go fast */
+                    0);
 
-    if (err) {
-        pcap_perror(adapter->pcap, "pcap_compile()");
-        exit(1);
-    }
+        if (err) {
+            pcap_perror(adapter->pcap, "pcap_compile()");
+            exit(1);
+        }
 
 
-    err = pcap_setfilter(adapter->pcap, &prog);
-    if (err < 0) {
-        pcap_perror(adapter->pcap, "pcap_setfilter");
-        exit(1);
+        err = pcap_setfilter(adapter->pcap, &prog);
+        if (err < 0) {
+            pcap_perror(adapter->pcap, "pcap_setfilter");
+            exit(1);
+        }
     }
 #endif
 
@@ -484,15 +466,13 @@ typedef enum {
 /***************************************************************************
  ***************************************************************************/
 struct Adapter *
-rawsock_init_adapter(const char *adapter_name)
+rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_sendq)
 {
     struct Adapter *adapter;
 	char errbuf[PCAP_ERRBUF_SIZE];
 
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
     memset(adapter, 0, sizeof(*adapter));
-
-    LOG(1, "pcap: %s\n", pcap_lib_version());
 
     /*
      * If is all digits index, then look in indexed list
@@ -507,59 +487,70 @@ rawsock_init_adapter(const char *adapter_name)
         } else
             adapter_name = new_adapter_name;
     }
-    LOG(2, "RAWSOCK: opening adapter '%s'\n", adapter_name);
 
 	/*
 	 * Open the PCAP adapter
 	 */
-#ifdef PFRING
-	adapter->ring = pfring_open(adapter_name, 1500, 0);
-	adapter->pcap = (pfring*)adapter->ring;
+    if (is_pfring) {
+	    int err;
+        unsigned version;
+
+        LOG(2, "pfring:'%s': opening...\n", adapter_name);
+	    adapter->ring = PFRING.open(adapter_name, 1500, 0);
+	    adapter->pcap = (pcap_t*)adapter->ring;
         if (adapter->ring == NULL) {
-                perror(adapter_name);
-                return 0;
+            LOG(0, "pfring:'%s': OPEN ERROR: %s\n", adapter_name, strerror_x(errno));
+            return 0;
         } else
-                LOG(1, "%s: openned with pfring\n", adapter_name);
+            LOG(1, "pfring:'%s': successfully opened\n", adapter_name);
 
-        pfring_set_application_name(adapter->ring, "masscan");
-        {
-                uint32_t version;
-                pfring_version(adapter->ring, &version);
-                LOG(1, "PF_RING v%d.%d.%d\n",
-                        (version >> 16) & 0xFFFF,
-                        (version >> 8) & 0xFF,
-                        (version >> 0) & 0xFF);
-        }
+        PFRING.set_application_name(adapter->ring, "masscan");
+        PFRING.version(adapter->ring, &version);
+        LOG(1, "pfring: version %d.%d.%d\n",
+                (version >> 16) & 0xFFFF,
+                (version >> 8) & 0xFF,
+                (version >> 0) & 0xFF);
 
-	{
-		int err;
-		err = pfring_enable_ring(adapter->ring);
-		if (err != 0) {
-			perror("enable PFRING");
-			return 0;
-		} else
-			LOG(1, "pfring: enabled\n");
-	}
-#else
-	adapter->pcap = pcap_open_live(
-				adapter_name,	    	/* interface name */
-				65536,					/* max packet size */
-				8,						/* promiscuous mode */
-				1000,					/* read timeout in milliseconds */
-				errbuf);
-#endif
-	if (adapter->pcap == NULL) {
-		fprintf(stderr, "pcap_open_live(%s) error: %s\n", adapter_name, errbuf);
-		return 0;
-	}
+	    err = PFRING.enable_ring(adapter->ring);
+	    if (err != 0) {
+            LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
+            PFRING.close(adapter->ring);
+            adapter->ring = 0;
+		    return 0;
+	    } else
+		    LOG(1, "pfring:'%s': succesfully enabled enabled\n", adapter_name);
+
+        LOG(2, "pfring:'%s': setting direction\n", adapter_name);
+        err = PFRING.set_direction(adapter->ring, rx_only_direction);
+        if (err) {
+            fprintf(stderr, "pfring:'%s': setdirection = %d\n", err);
+        } else
+            LOG(2, "pfring:'%s': direction success\n");
+        return adapter;
+
+    } else {
+        LOG(1, "pcap: %s\n", pcap_lib_version());
+        LOG(2, "pcap:'%s': opening...\n", adapter_name);
+	    adapter->pcap = pcap_open_live(
+				    adapter_name,	    	/* interface name */
+				    65536,					/* max packet size */
+				    8,						/* promiscuous mode */
+				    1000,					/* read timeout in milliseconds */
+				    errbuf);
+	    if (adapter->pcap == NULL) {
+		    fprintf(stderr, "pcap:'%s': OPEN ERROR: %s\n", adapter_name, errbuf);
+		    return 0;
+	    } else
+            LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
+    }
 
  	/*
 	 * Create a send queue for faster transmits
 	 */
-#if defined(WIN32)
-	adapter->sendq = 0; //pcap_sendqueue_alloc(65536);
-#else
     adapter->sendq = 0;
+#if defined(WIN32)
+    if (is_sendq)
+    	adapter->sendq = pcap_sendqueue_alloc(65536);
 #endif
 
     return adapter;
@@ -639,7 +630,7 @@ rawsock_selftest_if(const char *ifname)
             (unsigned char)(router_ipv4>>0));
 
 
-        adapter = rawsock_init_adapter(ifname);
+        adapter = rawsock_init_adapter(ifname, 0, 0);
         if (adapter == 0) {
             printf("adapter[%s]: failed\n", ifname);
             return -1;

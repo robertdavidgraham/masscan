@@ -9,6 +9,8 @@
 #include "string_s.h"
 #include <errno.h>
 #include <ctype.h>
+#include <errno.h>
+#include <string.h>
 
 /**
  * fopen_s
@@ -98,3 +100,15 @@ errno_t gmtime_s(struct tm* _tm, const time_t *time)
 #endif
 
 
+/*
+ * I don't understand why Microsoft says this function is unsafe, so
+ * do it anyway
+ */
+const char *strerror_x(int x)
+{
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
+#undef strerror
+    return strerror(x);
+}

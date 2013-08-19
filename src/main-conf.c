@@ -623,6 +623,10 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
+    } else if (EQUALS("pfring", name)) {
+        masscan->is_pfring = 1;
+    } else if (EQUALS("sendq", name)) {
+        masscan->is_sendq = 1;
     } else if (EQUALS("port-ratio", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -729,7 +733,7 @@ is_singleton(const char *name)
         "log-errors", "append-output", "webxml", "no-stylesheet",
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
-        "nmap", "trace-packet",
+        "nmap", "trace-packet", "pfring", "sendq", 
         0};
     size_t i;
 

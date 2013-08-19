@@ -25,19 +25,23 @@ On Debian/Ubuntu, it goes something like this:
 	$ make
 	$ make regresss
 
-This puts the program in the 'bin' subdirectory.
+This puts the program in the `masscan\bin` subdirectory.
 
-On Windows, use the VisualStudio 2010 project.
+* Windows: use the Visual Studio 2010 project in the `vs10` subdirectory
+* Windows: MingGW should work
+* Windows: cygwin shouldn't work
+* Mac OS X: once you install the development tools, just `make`
+* FreeBSD: doesn't work, probably, but I'm hoping to get around to it
+* other: won't work, don't care
 
-On Mac OS X, once you've installed a developer environment, you
-should be able to likewise just "make; make regress". Detecting
-the network adapter is currently broken, so you'll get errors 
-telling you what to manually configure when running the program.
-
-On BSD's, it oughta be close to working, but I haven't tried it
-yet. I'd like to see what 'netmap' can do with it -- in theory
-should be a lot faster than Linux.
-
+The code works with PF_RING. There are no special build instructions. After
+(or before) building this project, follow the PF_RING directions to install.
+Run Masscan with the `--pfring` option, and it will go try to use PF_RING 
+instead of libpcap. If it can't find the driver (`pf_ring`) or the shared
+library (`/usr/lib/libpfring.so`), it'll warn you. For me, even `make install`
+didn't install things, so I had to manually install the kernel drivers and
+shared library. With the PF_RING-customized driver `ixgbe` on an Intel 10gbps
+network card, this program runs at 12-million packets/second.
 
 
 # Regression testing

@@ -18,7 +18,7 @@ int rawsock_selftest_if(const char *ifname);
 
 void rawsock_init();
 
-struct Adapter *rawsock_init_adapter(const char *adapter_name);
+struct Adapter *rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_sendq);
 
 void rawsock_list_adapters();
 

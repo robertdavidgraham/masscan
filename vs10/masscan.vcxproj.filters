@@ -75,6 +75,9 @@
     <ClCompile Include="..\src\main-dedup.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rawsock-pfring.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -117,6 +120,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-dedup.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-pfring.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

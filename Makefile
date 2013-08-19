@@ -7,7 +7,7 @@ SYS := $(shell gcc -dumpmachine)
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt -rdynamic
+LIBS = -lpcap -lm -lrt -ldl -rdynamic
 INCLUDES = -I. -I../PF_RING/userland/lib
 endif
 
