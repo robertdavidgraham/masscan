@@ -221,11 +221,14 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
 {
     FILE *fp;
     errno_t err;
+    unsigned line_number = 0;
 
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
+        char dirname[256];
         perror(filename);
+        fprintf(stderr, "dir = %s\n", getcwd(dirname));
         exit(1); /* HARD EXIT: because if it's an exclusion file, we don't 
                   * want to continue. We don't want ANY chance of
                   * accidentally scanning somebody */
@@ -246,9 +249,16 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
         if (ispunct(c&0xFF)) {
             while (!feof(fp)) {
                 c = getc(fp);
-                if (c == '\n')
+                if (c == '\n') {
+                    line_number++;
                     break;
+                }
             }
+            continue;
+        }
+
+        if (c == '\n') {
+            line_number++;
             continue;
         }
 
@@ -261,25 +271,30 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
             struct Range range;
             unsigned offset = 0;
 
+
             /* fetch next address range */
-            i = 0;
+            address[0] = c;
+            i = 1;
             while (!feof(fp)) {
                 c = getc(fp);
                 if (isspace(c&0xFF))
                     break;
                 if (i+1 < sizeof(address))
                     address[i] = (char)c;
+                i++;
             }
             address[i] = '\0';
 
             /* parse the address range */
 			range = range_parse_ipv4(address, &offset, (unsigned)i);
-			if (range.begin == 0 && range.end == 0) {
-				fprintf(stderr, "bad range spec: %s\n", address);
+			if (range.begin == 0xFFFFFFFF && range.end == 0) {
+				fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", filename, line_number, offset, address);
 			} else {
     			rangelist_add_range(ranges, range.begin, range.end);
             }
         }
+
+        line_number++;
     }
 
     fclose(fp);
