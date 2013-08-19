@@ -65,10 +65,16 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
     {
         double rate = ((double)(count - status->last.count)*1.0/elapsed);
         double percent_done = (double)(count*100.0/max_count);
+        double finished = 0;
+        if (rate)
+		finished  = (1.0 - percent_done/100.0) * (max_count / rate);
         /* (%u-days %02u:%02u:%02u remaining) */
-	    fprintf(stderr, "rate = %5.3f-kpps: About %5.2f%% done;      \r", 
+	    fprintf(stderr, "rate = %5.2f-kpps, %5.2f%% done, %u:%02u:%02u remaining             \r", 
                         rate/1000.0, 
-                        percent_done
+                        percent_done,
+			(unsigned)(finished/60/60),
+			(unsigned)(finished/60)%60,
+			(unsigned)(finished)%60
                         );
         fflush(stderr);
     }

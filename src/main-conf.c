@@ -829,7 +829,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         verbosity++;
                 }
                 break;
-			case 'e':
+            case 'e':
 				if (argv[i][2])
 					arg = argv[i]+2;
 				else
