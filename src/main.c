@@ -56,6 +56,8 @@ scanning_thread(void *v)
     double timestamp_start;
     unsigned *picker;
 
+    LOG(1, "starting scanning thread...\n");
+
     status_start(&status);
     throttler_start(&throttler, masscan->max_rate);
 
@@ -161,6 +163,8 @@ initialize_adapter(struct Masscan *masscan,
 {
     char *ifname;
     char ifname2[256];
+
+    LOG(1, "initializing adapter\n");
 
     /*
      * ADAPTER/NETWORK-INTERFACE
@@ -296,6 +300,7 @@ initialize_adapter(struct Masscan *masscan,
         return -1;
     }
 
+    LOG(1, "adapter initialization done.\n");
     return 0;
 }
 
@@ -434,6 +439,8 @@ main_scan(struct Masscan *masscan)
      */
     pixie_begin_thread(scanning_thread, 0, masscan);
 
+    LOG(1, "begin receive thread\n");
+
     /*
      * Receive packets. This is where we catch any responses and print
      * them to the terminal.
@@ -449,7 +456,6 @@ main_scan(struct Masscan *masscan)
         struct PreprocessedInfo parsed;
         unsigned dst;
         unsigned src;
-
 
         err = rawsock_recv_packet(
                     masscan->adapter,
