@@ -52,7 +52,7 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
 
     /* Get the time. NOTE: this is CLOCK_MONOTONIC_RAW on Linux, not
      * wall-clock time. */
-	now = port_gettime();
+	now = pixie_gettime();
 	elapsed = ((double)now - (double)status->last.clock)/(double)1000000.0;
     if (elapsed == 0)
         return;

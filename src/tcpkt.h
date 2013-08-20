@@ -8,6 +8,15 @@
  */
 int tcpkt_selftest();
 
+enum TemplateProtocol {
+    Proto_Unknown,
+    Proto_TCP,
+    Proto_UDP,
+    Proto_ICMP,
+    Proto_IPv4,
+    Proto_ARP,
+};
+
 struct TcpPacket
 {
 	unsigned length;
@@ -21,6 +30,8 @@ struct TcpPacket
 	unsigned checksum_tcp;
 
 	unsigned ip_id;
+
+    enum TemplateProtocol proto;
 };
 
 void
@@ -29,7 +40,7 @@ tcp_init_packet(struct TcpPacket *pkt,
     unsigned char *mac_souce,
     unsigned char *mac_dest);
 
-void tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port);
+void tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port, unsigned seqno);
 
 void tcpkt_trace(struct TcpPacket *pkt, unsigned ip, unsigned port, double timestamp_start);
 

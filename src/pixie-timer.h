@@ -1,18 +1,23 @@
-#ifndef PORT_TIMER_H
-#define PORT_TIMER_H
+#ifndef TIMER_H
+#define PIXIE_TIMER_H
 #include <stdint.h>
 
 /**
  * The current time, in microseconds
  */
-uint64_t port_gettime();
+uint64_t pixie_gettime();
+
+/**
+ * The current time, in nanoseconds
+ */
+uint64_t pixie_nanotime();
 
 /**
  * Wait the specified number of microseconds
  */
-void port_usleep(uint64_t usec);
+void pixie_usleep(uint64_t usec);
 
-int port_time_selftest();
+int pixie_time_selftest();
 
 
 

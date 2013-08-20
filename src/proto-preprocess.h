@@ -33,11 +33,14 @@ struct PreprocessedInfo {
 	unsigned ip_offset;		/* 14 for normal Ethernet */
     unsigned ip_version;    /* 4 or 6 */
     unsigned ip_protocol;   /* 6 for TCP, 11 for UDP */
+    unsigned ip_length;     /* length of total packet */
     const unsigned char *ip_src;
     const unsigned char *ip_dst;
 	unsigned transport_offset;	/* 34 for normal Ethernet */
     unsigned port_src;
     unsigned port_dst;
+
+    unsigned app_offset; /* start of TCP payload */
 
     int found;
     int found_offset;

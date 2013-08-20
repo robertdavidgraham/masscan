@@ -89,7 +89,7 @@ clock_gettime(int X, struct timeval *tv)
 
 
 uint64_t
-port_gettime()
+pixie_gettime()
 {
     //struct timeval tv;
     //clock_gettime(0, &tv);
@@ -106,9 +106,19 @@ port_gettime()
 
     //return (uint64_t)tv.tv_sec * 1000000UL + tv.tv_usec;
 }
+uint64_t
+pixie_nanotime()
+{
+    uint64_t time1 = 0, freq = 0;
+    double seconds;
+    QueryPerformanceCounter((LARGE_INTEGER *) &time1);
+    QueryPerformanceFrequency((LARGE_INTEGER *)&freq);
+    seconds = (double)time1/(double)freq;
+    return (uint64_t)(seconds * 1000000000.0);
+}
 
 void
-port_usleep(uint64_t waitTime)
+pixie_usleep(uint64_t waitTime)
 {
     /*
     uint64_t time1 = 0, time2 = 0, freq = 0;
@@ -123,16 +133,16 @@ port_usleep(uint64_t waitTime)
 
     uint64_t start;
 
-    start = port_gettime();
+    start = pixie_gettime();
 
-    while (port_gettime() - start < waitTime)
+    while (pixie_gettime() - start < waitTime)
         ;
 }
 #elif defined(CLOCK_MONOTONIC)
 #include <unistd.h>
 
 void
-port_usleep(uint64_t microseconds)
+pixie_usleep(uint64_t microseconds)
 {
     struct timespec ts;
     struct timespec remaining;
@@ -151,7 +161,7 @@ again:
     //usleep(microseconds);
 }
 uint64_t
-port_gettime()
+pixie_gettime()
 {
     int x;
     struct timespec tv;
@@ -167,30 +177,52 @@ port_gettime()
 
     return tv.tv_sec * 1000000 + tv.tv_nsec/1000;
 }
+uint64_t
+pixie_nanotime()
+{
+    int x;
+    struct timespec tv;
+
+#ifdef CLOCK_MONOTONIC_RAW
+    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
+#else
+    x = clock_gettime(CLOCK_MONOTONIC, &tv);
+#endif
+    if (x != 0) {
+        printf("clock_gettime() err %d\n", errno);
+    }
+
+    return tv.tv_sec * 1000000000 + tv.tv_nsec;
+}
 #elif defined(__MACH__) /* works for Apple */
 #include <unistd.h>
 #include <mach/mach_time.h>
 
-void port_usleep(uint64_t microseconds)
+void pixie_usleep(uint64_t microseconds)
 {
     usleep(microseconds);
 }
 uint64_t
-port_gettime()
+pixie_gettime()
 {
     return mach_absolute_time()/1000;
 }
+uint64_t
+pixie_nanotime()
+{
+    return mach_absolute_time();
+}
 #endif
 
-int port_time_selftest()
+int pixie_time_selftest()
 {
     static const uint64_t duration = 123456;
     uint64_t start, stop, elapsed;
     
 
-    start = port_gettime();
-    port_usleep(duration);
-    stop = port_gettime();
+    start = pixie_gettime();
+    pixie_usleep(duration);
+    stop = pixie_gettime();
     elapsed = stop - start;
 
     if (elapsed < 0.9*duration || 1.1*duration < elapsed) {

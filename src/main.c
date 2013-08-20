@@ -17,6 +17,7 @@
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
+#include "syn-cookie.h"         /* for SYN-cookies on send */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -61,7 +62,7 @@ scanning_thread(void *v)
     status_start(&status);
     throttler_start(&throttler, masscan->max_rate);
 
-    timestamp_start = 1.0 * port_gettime() / 1000000.0;
+    timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
 
 
     /*
@@ -102,8 +103,14 @@ scanning_thread(void *v)
             /* Print packet if debugging */
             if (packet_trace)
                 tcpkt_trace(pkt_template, ip, port, timestamp_start);
+
             /* Send the probe */
-			rawsock_send_probe(masscan->adapter, ip, port, pkt_template);
+			rawsock_send_probe(
+                    masscan->adapter, 
+                    ip, 
+                    port, 
+                    syn_hash(ip, port), 
+                    pkt_template);
 
 
             i++;
@@ -136,7 +143,7 @@ scanning_thread(void *v)
         unsigned j;
         for (j=0; j<10 && !control_c_pressed; j++) {
             status_print(&status, i++, m);
-            port_usleep(1000000);
+            pixie_usleep(1000000);
         }
         fprintf(stderr, "                                                                      \r");
     }
@@ -461,6 +468,7 @@ main_scan(struct Masscan *masscan)
         struct PreprocessedInfo parsed;
         unsigned dst;
         unsigned src;
+        unsigned seqno;
 
         err = rawsock_recv_packet(
                     masscan->adapter,
@@ -483,6 +491,9 @@ main_scan(struct Masscan *masscan)
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
         src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16 
+              | px[parsed.transport_offset+10]<<8 | px[parsed.transport_offset+11];
+        seqno -= 1;
 
         /* verify: my IP address */
         if (adapter_ip != dst)
@@ -499,15 +510,13 @@ main_scan(struct Masscan *masscan)
         if (parsed.found != FOUND_TCP)
             continue;
 
-        /* verify: my IP address */
-        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
-            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
-        if (adapter_ip != dst)
-            continue;
-
         /* verify: my port number */
         if (adapter_port != parsed.port_dst)
             continue;
+
+        if (syn_hash(src, parsed.port_src) != seqno) {
+            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno, syn_hash(src, parsed.port_src));
+        }
 
         /* verify: ignore duplicates */
         if (dedup_is_duplicate(dedup, src, parsed.port_src))
@@ -592,7 +601,8 @@ int main(int argc, char *argv[])
      * for Windows and PF_RING. */
 	rawsock_init();
 
-
+    /* Set randomization seed for SYN-cookies */
+    syn_set_entropy();
 
     /*
      * Apply excludes
@@ -668,7 +678,7 @@ int main(int argc, char *argv[])
             x += randlcg_selftest();
             x += tcpkt_selftest();
             x += ranges_selftest();
-            x += port_time_selftest();
+            x += pixie_time_selftest();
 
             if (x != 0) {
                 /* one of the selftests failed, so return error */

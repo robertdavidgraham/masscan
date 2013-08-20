@@ -264,7 +264,7 @@ rawsock_send_packet(
         int err = PF_RING_ERROR_NO_TX_SLOT_AVAILABLE;
 
         while (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
-            err = PFRING.send(adapter->ring, packet, length, 1);
+            err = PFRING.send(adapter->ring, packet, length, 0);
         }
 	if (err < 0)
 		LOG(1, "pfring:xmit: ERROR %d\n", err);
@@ -349,7 +349,7 @@ int rawsock_recv_packet(
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port,
+    unsigned ip, unsigned port, unsigned seqno,
     struct TcpPacket *pkt)
 {
 
@@ -359,7 +359,7 @@ rawsock_send_probe(
     /*
      * Construct the destination packet
      */
-	tcp_set_target(pkt, ip, port);
+	tcp_set_target(pkt, ip, port, seqno);
 
     /*
      * Send it
@@ -370,10 +370,10 @@ rawsock_send_probe(
      * Verify I'm doing the checksum correctly ('cause I ain't, I got
      * a bug right now).
      */
-    /*if (ip_checksum(pkt) != 0xFFFF)
+    if (ip_checksum(pkt) != 0xFFFF)
 		LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
 	if (tcp_checksum(pkt) != 0xFFFF)
-		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
+		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));
 }
 
 /***************************************************************************

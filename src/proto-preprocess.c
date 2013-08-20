@@ -83,6 +83,7 @@ parse_ipv4:
         unsigned fragment_offset;
         unsigned total_length;
 
+        info->ip_offset = offset;
         VERIFY_REMAINING(20, FOUND_IPV4);
 
         /* Check version */
@@ -108,11 +109,13 @@ parse_ipv4:
             return 0; /* weird corruption */
         length = offset + total_length; /* reduce the max length */
 
+
         /* Save off pseudo header for checksum calculation */
         info->ip_version = (px[offset]>>4)&0xF;
 	    info->ip_src = px+offset+12;
 	    info->ip_dst = px+offset+16;
     	info->ip_protocol = px[offset+9];
+        info->ip_length = total_length;
         if (info->ip_version != 4)
             return 0;
 
@@ -128,9 +131,13 @@ parse_ipv4:
 
 parse_tcp:
     {
+        unsigned tcp_length;
         VERIFY_REMAINING(20, FOUND_TCP);
+        tcp_length = px[offset + 12]>>2;
+        VERIFY_REMAINING(tcp_length, FOUND_TCP);
         info->port_src = ex16be(px+offset+0);
         info->port_dst = ex16be(px+offset+2);
+        info->app_offset = offset + tcp_length;
 
         return 1;
     }
@@ -142,6 +149,7 @@ parse_udp:
         info->port_src = ex16be(px+offset+0);
         info->port_dst = ex16be(px+offset+2);
         offset += 8;
+        info->app_offset = offset;
 
         if (info->port_dst == 53 || info->port_src == 53) {
             goto parse_dns;

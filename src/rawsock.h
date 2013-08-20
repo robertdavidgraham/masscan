@@ -25,7 +25,7 @@ void rawsock_list_adapters();
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port,
+    unsigned ip, unsigned port, unsigned seqno,
     struct TcpPacket *pkt);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);

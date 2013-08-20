@@ -35,7 +35,7 @@ throttler_start(struct Throttler *throttler, double max_rate)
     throttler->max_rate = max_rate;
 
     for (i=0; i<sizeof(throttler->buckets)/sizeof(throttler->buckets[0]); i++) {
-        throttler->buckets[i].timestamp = port_gettime();
+        throttler->buckets[i].timestamp = pixie_gettime();
         throttler->buckets[i].packet_count = 0;
     }
 
@@ -69,8 +69,7 @@ again:
 
     /* NOTE: this uses CLOCK_MONOTONIC_RAW on Linux, so the timstamp doesn't
      * move forward when the machine is suspended */
-    timestamp = port_gettime();
-
+    timestamp = pixie_gettime();
 
     /*
      * We record that last 256 buckets, and average the rate over all of
@@ -115,7 +114,7 @@ again:
         if (waittime > 0.1)
             waittime = 0.1;
 
-        port_usleep((uint64_t)(waittime * 1000000.0));
+        pixie_usleep((uint64_t)(waittime * 1000000.0));
 
         throttler->batch_size *= 0.999;
         goto again;
