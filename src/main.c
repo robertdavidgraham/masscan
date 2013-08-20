@@ -280,7 +280,7 @@ initialize_adapter(struct Masscan *masscan,
                 (router_ipv4>> 0)&0xFF
                 );
 
-            err = arp_resolve_sync(
+            arp_resolve_sync(
                     masscan->adapter,
                     *r_adapter_ip,
                     adapter_mac,

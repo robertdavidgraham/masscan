@@ -32,7 +32,7 @@ pixie_begin_thread(
     
 	typedef void *(*PTHREADFUNC)(void*);
 	pthread_t thread_id;
-	return pthread_create(
+	return (size_t)pthread_create(
                           &thread_id, 
                           NULL, 
                           (PTHREADFUNC)worker_thread, 

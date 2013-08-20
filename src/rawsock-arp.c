@@ -73,7 +73,7 @@ proto_arp_parse(struct ARP_IncomingRequest *arp, const unsigned char px[], unsig
 	offset += arp->hardware_length;
 
 	arp->ip_dst = px[offset+0]<<24 | px[offset+1]<<16 | px[offset+2]<<8 | px[offset+3];
-	offset += arp->protocol_length;
+	//offset += arp->protocol_length;
 
     arp->is_valid = 1;
 }

@@ -19,6 +19,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 
 
 #if defined(WIN32)
@@ -130,9 +131,24 @@ port_usleep(uint64_t waitTime)
 #elif defined(CLOCK_MONOTONIC)
 #include <unistd.h>
 
-void port_usleep(uint64_t microseconds)
+void
+port_usleep(uint64_t microseconds)
 {
-    usleep(microseconds);
+    struct timespec ts;
+    struct timespec remaining;
+    int err;
+
+    ts.tv_sec  =  microseconds/1000000;
+    ts.tv_nsec = (microseconds%1000000) * 1000;
+
+again:
+    err = nanosleep(&ts, &remaining);
+    if (err == -1 && errno == EINTR) {
+        memcpy(&ts, &remaining, sizeof(ts));
+        goto again;
+    }
+
+    //usleep(microseconds);
 }
 uint64_t
 port_gettime()

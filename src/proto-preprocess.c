@@ -339,7 +339,7 @@ parse_prism_header:
     {
 		unsigned header_length;
         VERIFY_REMAINING(8, FOUND_PRISM);
-		header_length = ex32le(px+4);
+		
 		if (ex32le(px+offset+0) != 0x00000044)
             return 0;
 		header_length = ex32le(px+offset+4);

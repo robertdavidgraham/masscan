@@ -279,11 +279,11 @@ rawsock_send_packet(
 		if (err) {
 			//printf("sendpacket() failed %d\n", x);
 			//for (;;)
-			err = pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+			pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
 			//printf("pcap_send_queue)() returned %u\n", x);
 			pcap_sendqueue_destroy(adapter->sendq);
 			adapter->sendq =  pcap_sendqueue_alloc(65536);
-			err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+			pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
 			//("sendpacket() returned %d\n", x);
 			//exit(1);
 		} else
@@ -430,7 +430,7 @@ void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adap
     if (adapter->pcap) {
         int err;
       
-        //printf("%u", PCAP_OPENFLAGS_NOCAPTURE_LOCAL);
+
         err = pcap_setdirection(adapter->pcap, PCAP_D_IN);
         if (err) {
             pcap_perror(adapter->pcap, "pcap_setdirection(IN)");
@@ -468,6 +468,24 @@ void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adap
 #endif
 
 
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+rawsock_close_adapter(struct Adapter *adapter)
+{
+    if (adapter->ring) {
+        PFRING.close(adapter->ring);
+    }
+    if (adapter->pcap) {
+        pcap_close(adapter->pcap);
+    }
+    if (adapter->sendq) {
+        pcap_sendqueue_destroy(adapter->sendq);
+    }
+
+    free(adapter);
 }
 
 /***************************************************************************
@@ -667,6 +685,7 @@ rawsock_selftest_if(const char *ifname)
         } else {
             printf("gateway = [failed to ARP address]\n");
         }
+        rawsock_close_adapter(adapter);
     }
 
     return 0;
