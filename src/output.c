@@ -424,8 +424,14 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
         break;
     case Port_Closed:
         out->closed_count++;
+        if (masscan->nmap.open_only)
+            return;
         break;
+    default:
+        if (masscan->nmap.open_only)
+            return;
     }
+
 
     if (masscan->nmap.format == Output_List || masscan->nmap.format == Output_All) {
         fprintf(fp, "%s tcp %u %u.%u.%u.%u %u\n",
@@ -441,6 +447,7 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
     if (masscan->nmap.format == Output_XML || masscan->nmap.format == Output_All) {
         char reason_buffer[128];
         fprintf(fp, "<host endtime=\"%u\">"
+                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                      "<ports>"
                       "<port protocol=\"tcp\" portid=\"%u\">"
                        "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
@@ -449,15 +456,14 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
                     "</host>"  
                     "\r\n",
             (unsigned)global_now,
-            port,
-            status_string(status),
-            reason_string(reason, reason_buffer, sizeof(reason_buffer)),
-            ttl,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,
             (ip>> 0)&0xFF,
-            (unsigned)global_now
+            port,
+            status_string(status),
+            reason_string(reason, reason_buffer, sizeof(reason_buffer)),
+            ttl
             );
     }
 

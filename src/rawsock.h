@@ -25,7 +25,7 @@ void rawsock_list_adapters();
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port, unsigned seqno,
+    unsigned ip, unsigned port, unsigned seqno, unsigned flush,
     struct TcpPacket *pkt);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);
@@ -41,7 +41,8 @@ int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs);
 int rawsock_send_packet(
     struct Adapter *adapter,
     const unsigned char *packet,
-    unsigned length);
+    unsigned length,
+    unsigned flush);
 
 int rawsock_recv_packet(
     struct Adapter *adapter,

@@ -126,7 +126,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     /*
      * Now loop for a few seconds looking for the response
      */
-    rawsock_send_packet(adapter, arp_packet, 60);
+    rawsock_send_packet(adapter, arp_packet, 60, 1);
     start = time(0);
     i = 0;
     for (;;) {
@@ -138,7 +138,7 @@ int arp_resolve_sync(struct Adapter *adapter,
 
         if (time(0) != start) {
             start = time(0);
-            rawsock_send_packet(adapter, arp_packet, 60);
+            rawsock_send_packet(adapter, arp_packet, 60, 1);
             if (i++ >= 10)
                 break; /* timeout */
         }
@@ -267,7 +267,7 @@ int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *m
     /*
      * Now transmit the packet
      */
-    rawsock_send_packet(adapter, arp_packet, 60);
+    rawsock_send_packet(adapter, arp_packet, 60, 1);
 
     return 0;
 }

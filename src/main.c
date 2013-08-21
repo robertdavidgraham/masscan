@@ -118,7 +118,9 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     ip, 
                     port, 
                     syn_hash(ip, port), 
-                    pkt_template);
+                    !batch_size,        /* flush transmit queue on last packet */
+                    pkt_template
+                    );
 
 
             i++;

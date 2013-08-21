@@ -134,10 +134,15 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_List:
         fprintf(fp, "output-format = list\n");
         break;
+    case Output_XML:
+        fprintf(fp, "output-format = xml\n");
+        break;
     default:
         fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
     }
+    fprintf(fp, "output-status = %s\n",
+            masscan->nmap.open_only?"open":"all");
     fprintf(fp, "output-filename = %s\n", masscan->nmap.filename);
     if (masscan->nmap.append)
         fprintf(fp, "output-append = true\n");
@@ -604,6 +609,10 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         exit(1);
     } else if (EQUALS("open", name)) {
         masscan->nmap.open_only = 1;
+    } else if (EQUALS("output-status", name)) {
+        if (EQUALS("open", value))
+            masscan->nmap.open_only = 1;
+        
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
@@ -615,6 +624,8 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
             masscan->nmap.format = Output_List;
         else if (EQUALS("interactive", value))
             masscan->nmap.format = Output_Interactive;
+        else if (EQUALS("xml", value))
+            masscan->nmap.format = Output_XML;
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
         }

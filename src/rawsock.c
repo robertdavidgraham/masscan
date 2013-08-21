@@ -249,6 +249,7 @@ char *adapter_from_index(unsigned index)
 extern unsigned ip_checksum(struct TcpPacket *pkt);
 extern unsigned tcp_checksum(struct TcpPacket *pkt);
 
+
 /***************************************************************************
  * wrapper for libpcap's sendpacket
  ***************************************************************************/
@@ -256,14 +257,15 @@ int
 rawsock_send_packet(
     struct Adapter *adapter,
     const unsigned char *packet,
-    unsigned length)
+    unsigned length,
+    unsigned flush)
 {
 
     if (adapter->ring) {
         int err = PF_RING_ERROR_NO_TX_SLOT_AVAILABLE;
 
         while (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
-            err = PFRING.send(adapter->ring, packet, length, 0);
+            err = PFRING.send(adapter->ring, packet, length, (unsigned char)flush);
         }
 	if (err < 0)
 		LOG(1, "pfring:xmit: ERROR %d\n", err);
@@ -287,6 +289,11 @@ rawsock_send_packet(
 			//exit(1);
 		} else
 			; //printf("+%u\n", count++);
+        if (flush) {
+            pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+   			pcap_sendqueue_destroy(adapter->sendq);
+			adapter->sendq =  pcap_sendqueue_alloc(65536);
+        }
         return 0;
     } else {
         return pcap_sendpacket(adapter->pcap, packet, length);
@@ -353,7 +360,7 @@ int rawsock_recv_packet(
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port, unsigned seqno,
+    unsigned ip, unsigned port, unsigned seqno, unsigned flush,
     struct TcpPacket *pkt)
 {
     /*
@@ -364,7 +371,7 @@ rawsock_send_probe(
     /*
      * Send it
      */
-    rawsock_send_packet(adapter, pkt->packet, pkt->length);
+    rawsock_send_packet(adapter, pkt->packet, pkt->length, flush);
 	
     /*
      * Verify I'm doing the checksum correctly ('cause I ain't, I got
