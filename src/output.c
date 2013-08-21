@@ -31,6 +31,9 @@
 #include <Windows.h>
 #include <io.h>
 #include <fcntl.h>
+#define access _access
+#elif defined(__linux__)
+#include <unistd.h>
 #endif
 
 extern unsigned control_c_pressed;
@@ -342,7 +345,7 @@ again:
         tm.tm_min,
         tm.tm_sec,
         filename);
-    if (_access(new_filename, 0) == 0) {
+    if (access(new_filename, 0) == 0) {
         tm.tm_sec++;
         if (err++ == 0)
             goto again;
