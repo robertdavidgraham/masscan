@@ -14,11 +14,10 @@
 #include "masscan.h"
 #include "ranges.h"
 #include "string_s.h"
+#include "logger.h"
 
 #include <ctype.h>
 
-
-extern int verbosity; /* logger.c */
 
 /***************************************************************************
  ***************************************************************************/
@@ -101,7 +100,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "randomize-hosts = true\n");
     
 
-    fprintf(fp, "\n# adapter settings\n");
+    fprintf(fp, "# ADAPTER SETTINGS\n");
     fprintf(fp, "adapter = %s\n", masscan->ifname);
     fprintf(fp, "adapter-ip = %u.%u.%u.%u\n", 
         (masscan->adapter_ip>>24)&0xFF,
@@ -127,7 +126,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     /*
      * Output information
      */
-    fprintf(fp, "# output\n");
+    fprintf(fp, "# OUTPUT/REPORTING SETTINGS\n");
     switch (masscan->nmap.format) {
     case Output_Interactive:
         fprintf(fp, "output-format = interactive\n");
@@ -142,12 +141,15 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "output-filename = %s\n", masscan->nmap.filename);
     if (masscan->nmap.append)
         fprintf(fp, "output-append = true\n");
+    fprintf(fp, "rotate = %u\n", masscan->rotate_output);
+    fprintf(fp, "rotate-dir = %s\n", masscan->rotate_directory);
+    fprintf(fp, "rotate-offset = %u\n", masscan->rotate_offset);
 
 
     /*
      * Targets
      */
-    fprintf(fp, "\n# targets\n");
+    fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
     fprintf(fp, "ports = ");
     for (i=0; i<masscan->ports.count; i++) {
         struct Range range = masscan->ports.list[i];
@@ -658,6 +660,86 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         } else {
             masscan->retries = x;
         }
+    } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) || EQUALS("ouput-rotate", name)) {
+        switch (tolower(value[0])) {
+        case 's':
+            masscan->rotate_output = 1;
+            return;
+        case 'm':
+            masscan->rotate_output = 60;
+            return;
+        case 'h':
+            masscan->rotate_output = 60*60;
+            return;
+        case 'd':
+            masscan->rotate_output = 24*60*60;
+            return;
+        case 'w':
+            masscan->rotate_output = 24*60*60*7;
+            return;
+        default:
+            if (isdigit(value[0]&0xFF)) {
+                masscan->rotate_output = strtoul(value, 0, 0);
+                return;
+            }
+        }
+        fprintf(stderr, "--rotate: unknown value (epected 'minute', 'hour', 'day', 'week')\n");
+        exit(1);
+    } else if (EQUALS("rotate-offset", name) || EQUALS("ouput-rotate-offset", name)) {
+        uint64_t num = 0;
+        unsigned is_negative = 0;
+        while (*value == '-') {
+            is_negative = 1;
+            value++;
+        }
+        while (isdigit(value[0]&0xFF)) {
+            num = num*10 + (value[0] - '0');
+            value++;
+        }
+        while (ispunct(value[0]) || isspace(value[0]))
+            value++;
+
+        if (isalpha(value[0]) && num == 0)
+            num = 1;
+
+        switch (tolower(value[0])) {
+        case 's':
+            num *= 1;
+            break;
+        case 'm':
+            num *= 60;
+            break;
+        case 'h':
+            num *= 60*60;
+            break;
+        case 'd':
+            num *= 24*60*60;
+            break;
+        case 'w':
+            num *= 24*60*60*7;
+            break;
+        default:
+            fprintf(stderr, "--rotate-offset: unknown character\n");
+            exit(1);
+        }
+        if (num >= 24*60*60) {
+            fprintf(stderr, "--rotate-offset: value is greater than 1 day\n");
+            exit(1);
+        }
+        if (is_negative)
+            num = 24*60*60 - num;
+
+        masscan->rotate_offset = (unsigned)num;
+    } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
+        char *p;
+        strcpy_s(   masscan->rotate_directory, 
+                    sizeof(masscan->rotate_directory),
+                    value);
+
+        /* strip trailing slashes */
+        p = masscan->rotate_directory;
+        while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
+            p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
         fprintf(stderr, "nmap(%s): unsupported, it's too complex for this simple scanner\n", name);
         exit(1);
@@ -893,8 +975,6 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'X':
                     masscan->nmap.format = Output_XML;
-                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
-                    exit(1);
                     break;
                 case 'S':
                     masscan->nmap.format = Output_ScriptKiddie;

@@ -22,12 +22,14 @@
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
     <ClCompile Include="..\src\main-dedup.c" />
+    <ClCompile Include="..\src\main-initadapter.c" />
     <ClCompile Include="..\src\main-status.c" />
     <ClCompile Include="..\src\main-throttle.c" />
     <ClCompile Include="..\src\main.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">include</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\src\output.c" />
     <ClCompile Include="..\src\pixie-threads.c" />
     <ClCompile Include="..\src\pixie-timer.c" />
     <ClCompile Include="..\src\proto-preprocess.c" />
@@ -51,6 +53,7 @@
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\pixie-threads.h" />
     <ClInclude Include="..\src\pixie-timer.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />

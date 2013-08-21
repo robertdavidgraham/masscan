@@ -19,6 +19,8 @@
 #endif
 #endif
 
+extern time_t global_now;
+
 /***************************************************************************
  * Print a status message about once-per-second to the command-line. This
  * algorithm is a little funky because checking the timestamp on EVERY
@@ -29,7 +31,18 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
 {
     double elapsed;
     uint64_t now;
-                
+        
+    /*
+     * ####  FUGGLY TIME HACK  ####
+     *
+     * PF_RING doesn't timestamp packets well, so we can't base time from
+     * incoming packets. Checking the time ourself is too ugly on per-packet
+     * basis. Therefore, we are going to create a global variable that keeps
+     * the time, and update that variable whenever it's convienient. This
+     * is one of those convenient places.
+     */
+    global_now = time(0);
+
     /* speed up or slow down how often we report so that we get about 
      * 1-second between reports */
     {

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEDUP_ENTRIES 1024
+#define DEDUP_ENTRIES 4096
 
 struct DedupEntry
 {
@@ -55,8 +55,8 @@ dedup_is_duplicate(struct DedupTable *dedup, unsigned ip, unsigned port)
     struct DedupEntry *bucket;
     unsigned i;
 
-    /* THREAT: We've already validated resonses via SYN-cookies, so 
-     * therefore we don't need a robust hash for duplicate detection */
+    /* THREAT: probably need to secure this hash, though the syn-cookies
+     * provides some protection */
     hash = (ip + port) ^ ((ip>>8) + (ip>>16)) ^ (ip>>24);
     hash &= DEDUP_ENTRIES-1;
 
@@ -64,8 +64,20 @@ dedup_is_duplicate(struct DedupTable *dedup, unsigned ip, unsigned port)
     bucket = dedup->entries[hash];
 
     for (i = 0; i < 4; i++) {
-        if (bucket[i].ip == ip && bucket[i].port == port)
+        if (bucket[i].ip == ip && bucket[i].port == port) {
+            /* move to end of list so constant repeats get ignored */
+            if (i > 0) {
+                bucket[i].ip ^= bucket[0].ip;
+                bucket[i].port ^= bucket[0].port;
+
+                bucket[0].ip ^= bucket[i].ip;
+                bucket[0].port ^= bucket[i].port;
+
+                bucket[i].ip ^= bucket[0].ip;
+                bucket[i].port ^= bucket[0].port;
+            }
             return 1;
+        }
     }
     
     /* We didn't find it, so add it to our list. This will push

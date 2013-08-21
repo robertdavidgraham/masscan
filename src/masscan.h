@@ -4,11 +4,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
 
 #include "ranges.h"
 
 struct Adapter;
 struct TcpPacket;
+extern time_t global_now;
 
 enum {
 	Operation_Default = 0,      /* nothing specified, so print usage */
@@ -88,21 +90,6 @@ struct Masscan
      */
     unsigned retries;
 
-    struct {
-        unsigned data_length; /* number of bytes to randomly append */
-        unsigned ttl; /* starting IP TTL field */
-        unsigned badsum; /* bad TCP/UDP/SCTP checksum */
-
-        /* ouput options */
-        unsigned packet_trace:1; /* print transmit messages */
-        unsigned open_only:1; /* show only open ports */
-        unsigned reason; /* print reason port is open, which is redundant for us */
-        unsigned format; /* see enum OutputFormat */
-        unsigned append; /* append instead of clobber file */
-        char datadir[256];
-        char filename[256];
-        char stylesheet[256];
-    } nmap;
     unsigned is_pfring:1;
     unsigned is_sendq:1;
 
@@ -122,6 +109,37 @@ struct Masscan
      * The receive thread will wait a bit after this, then exit.
      */
     unsigned is_done;
+
+    /**
+     * When we should rotate output into the target directory
+     */
+    unsigned rotate_output;
+
+    /**
+     * When doing "--rotate daily", the rotation is done at GMT. In order
+     * to fix this, add an offset.
+     */
+    unsigned rotate_offset;
+
+    struct {
+        unsigned data_length; /* number of bytes to randomly append */
+        unsigned ttl; /* starting IP TTL field */
+        unsigned badsum; /* bad TCP/UDP/SCTP checksum */
+
+        /* ouput options */
+        unsigned packet_trace:1; /* print transmit messages */
+        unsigned open_only:1; /* show only open ports */
+        unsigned reason; /* print reason port is open, which is redundant for us */
+        unsigned format; /* see enum OutputFormat */
+        unsigned append; /* append instead of clobber file */
+
+        char datadir[256];
+        char filename[256];
+        char stylesheet[256];
+
+    } nmap;
+
+    char rotate_directory[256];
 };
 
 
@@ -130,5 +148,10 @@ void masscan_command_line(struct Masscan *masscan, int argc, char *argv[]);
 void masscan_usage();
 void masscan_save_state(struct Masscan *masscan);
 
+int
+masscan_initialize_adapter(struct Masscan *masscan,
+    unsigned *r_adapter_ip,
+    unsigned char *adapter_mac,
+    unsigned char *router_mac);
 
 #endif

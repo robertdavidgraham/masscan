@@ -81,6 +81,12 @@
     <ClCompile Include="..\src\syn-cookie.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-initadapter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -129,6 +135,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\syn-cookie.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

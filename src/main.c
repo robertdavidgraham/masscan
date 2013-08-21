@@ -5,8 +5,8 @@
     This includes:
     
     * main()
-    * scanning_thread() - transmits packets
-    * main_scan() - launch and receive packets
+    * transmit_thread() - transmits probe packets
+    * receive_thread() - receives response packets
 */
 #include "masscan.h"
 
@@ -18,6 +18,7 @@
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
+#include "output.h"             /* for outputing results */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -30,7 +31,7 @@
 
 
 unsigned control_c_pressed = 0;
-
+time_t global_now;
 
 
 /***************************************************************************
@@ -41,7 +42,7 @@ unsigned control_c_pressed = 0;
  *
  ***************************************************************************/
 static void
-scanning_thread(void *v)
+transmit_thread(void *v) /*aka. scanning_thread() */
 {
     uint64_t i;
     struct Masscan *masscan = (struct Masscan *)v;
@@ -59,22 +60,29 @@ scanning_thread(void *v)
 
     LOG(1, "xmit: starting transmit thread...\n");
 
+    /* "STATUS" is once-per-second <stderr> notification to the command
+     * line as to what's going on */
     status_start(&status);
+
+    /* "THROTTLER" rate-limits how fast we transmit, set with the
+     * --max-rate parameter */
     throttler_start(&throttler, masscan->max_rate);
 
+    /* needed for --packet-trace option so that we know when we started
+     * the scan */
     timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
 
 
-    /*
-     * Seed the LCG so that it does a different scan every time.
-     */
+    /* Seed the LCG for randomizing the scan*/
     seed = masscan->resume.seed;
 
+    /* Optimize target selection so it's a quick binary search instead 
+     * of walking large memory tables */
     picker = rangelist_pick2_create(&masscan->targets);
 
-    /*
+    /* -----------------
      * the main loop
-     */
+     * -----------------*/
     LOG(3, "xmit: starting main loop\n");
 	for (i=masscan->resume.index; i<masscan->lcg.m; ) {
         uint64_t batch_size;
@@ -92,7 +100,7 @@ scanning_thread(void *v)
 
             batch_size--;
 
-			/* randomize the index
+			/* randomize the index. THIS IS WHERE RANDOMIZATION HAPPENS
              *  index = lcg_rand(index, a, c, m); */
 			seed = (seed * a + c) % m;
 
@@ -125,19 +133,25 @@ scanning_thread(void *v)
 
         }
 
+        /* If the user pressed <ctrl-c>, then we need to exit. but, in case
+         * the user wants to resume the scan later, we save the current
+         * state in a file */
         if (control_c_pressed) {
             masscan->resume.seed = seed;
             masscan->resume.index = i;
             masscan_save_state(masscan);
             fprintf(stderr, "waiting 10 seconds to exit...\n");
             fflush(stderr);
-            control_c_pressed = 0;
+            control_c_pressed = 0; /* a second ^C press exits faster */
             break;
         }
 	}
 
     /*
-     * We are done, so wait for 10 seconds before exiting
+     * We are done transmitting. However, response packets will take several
+     * seconds to arrive. Therefore, sit in short loop waiting for those 
+     * packets to arrive. Pressing <ctrl-c> a second time will exit this
+     * prematurely.
      */
     {
         unsigned j;
@@ -148,183 +162,144 @@ scanning_thread(void *v)
         fprintf(stderr, "                                                                      \r");
     }
 
-    /* Tell the other it's time to exit the program */
+    /* Tell the other threads it's time to exit the program */
     masscan->is_done = 1;
 }
 
 
+
 /***************************************************************************
- * Initialize the network adapter.
- * 
- * This requires finding things like our IP address, MAC address, and router
- * MAC address. The user could configure these things manually instead.
- *
- * Note that we don't update the "static" configuration with the discovered
- * values, but instead return them as the "running" configuration. That's
- * so if we pause and resume a scan, autodiscovered values don't get saved
- * in the configuration file.
  ***************************************************************************/
-static int
-initialize_adapter(struct Masscan *masscan,
-    unsigned *r_adapter_ip,
-    unsigned char *adapter_mac,
-    unsigned char *router_mac)
+static void
+receive_thread(struct Masscan *masscan,
+    unsigned adapter_ip,
+    unsigned adapter_port,
+    const unsigned char *adapter_mac)
 {
-    char *ifname;
-    char ifname2[256];
-
-    LOG(1, "initializing adapter\n");
+    struct Output *out;
+    struct DedupTable *dedup;
 
     /*
-     * ADAPTER/NETWORK-INTERFACE
-     *
-     * If no network interface was configured, we need to go hunt down
-     * the best Interface to use. We do this by choosing the first 
-     * interface with a "default route" (aka. "gateway") defined
+     * Open output. This is where results are reported.
      */
-    if (masscan->ifname && masscan->ifname[0])
-        ifname = masscan->ifname;
-    else {
-        /* no adapter specified, so find a default one */
+    out = output_create(masscan);
+
+    /*
+     * Create deduplication table
+     */
+    dedup = dedup_create();
+
+
+    /*
+     * Receive packets. This is where we catch any responses and print
+     * them to the terminal.
+     */
+    LOG(1, "begin receive thread\n");
+    while (!masscan->is_done) {
+        int status;
+        unsigned length;
+        unsigned secs;
+        unsigned usecs;
+        const unsigned char *px;
         int err;
-        err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
-        if (err) {
-            fprintf(stderr, "FAIL: could not determine default interface\n");
-            fprintf(stderr, "FAIL:... try \"--interface ethX\"\n");
-            return -1;
-        } else {
-            LOG(2, "auto-detected: interface=%s\n", ifname2);
-        }
-        ifname = ifname2;
-        
-    }
+        unsigned x;
+        struct PreprocessedInfo parsed;
+        unsigned dst;
+        unsigned src;
+        unsigned seqno;
 
-    /*
-     * IP ADDRESS
-     *
-     * We need to figure out that IP address to send packets from. This
-     * is done by queryin the adapter (or configured by user). If the 
-     * adapter doesn't have one, then the user must configure one.
-     */
-    *r_adapter_ip = masscan->adapter_ip;
-    if (*r_adapter_ip == 0) {
-        *r_adapter_ip = rawsock_get_adapter_ip(ifname);
-        LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
-            (*r_adapter_ip>>24)&0xFF,
-            (*r_adapter_ip>>16)&0xFF,
-            (*r_adapter_ip>> 8)&0xFF,
-            (*r_adapter_ip>> 0)&0xFF
-            );
-    }
-    if (*r_adapter_ip == 0) {
-        fprintf(stderr, "FAIL: failed to detect IP of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--adapter-ip 192.168.100.5\"\n");
-        return -1;
-    }
-
-    /*
-     * MAC ADDRESS
-     *
-     * This is the address we send packets from. It actually doesn't really
-     * matter what this address is, but to be a "responsible" citizen we
-     * try to use the hardware address in the network card.
-     */
-    memcpy(adapter_mac, masscan->adapter_mac, 6);
-    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-        rawsock_get_adapter_mac(ifname, adapter_mac);
-        LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
-            adapter_mac[0],
-            adapter_mac[1],
-            adapter_mac[2],
-            adapter_mac[3],
-            adapter_mac[4],
-            adapter_mac[5]
-            );
-    }
-    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-        fprintf(stderr, "FAIL: failed to detect MAC address of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--adapter-mac 00-11-22-33-44\"\n");
-        return -1;
-    }
-
-    /*
-     * START ADAPTER
-     *
-     * Once we've figured out which adapter to use, we now need to 
-     * turn it on.
-     */
-    masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
-    if (masscan->adapter == 0) {
-        fprintf(stderr, "adapter[%s].init: failed\n", ifname);
-        return -1;
-    }
-    LOG(3, "rawsock: ignoring transmits\n");
-    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
-    LOG(3, "rawsock: initialization done\n");
-
-    /*
-     * ROUTER MAC ADDRESS
-     * 
-     * NOTE: this is one of the least understood aspects of the code. We must
-     * send packets to the local router, which means the MAC address (not
-     * IP address) of the router.
-     * 
-     * Note: in order to ARP the router, we need to first enable the libpcap
-     * code above.
-     */
-    memcpy(router_mac, masscan->router_mac, 6);
-    if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
-        unsigned router_ipv4;
-        int err;
-
-        LOG(1, "rawsock: looking for default gateway\n");
-        err = rawsock_get_default_gateway(ifname, &router_ipv4);
-        if (err == 0) {
-            LOG(2, "auto-detected: router-ip=%u.%u.%u.%u\n",
-                (router_ipv4>>24)&0xFF,
-                (router_ipv4>>16)&0xFF,
-                (router_ipv4>> 8)&0xFF,
-                (router_ipv4>> 0)&0xFF
-                );
-
-            arp_resolve_sync(
+        err = rawsock_recv_packet(
                     masscan->adapter,
-                    *r_adapter_ip,
-                    adapter_mac,
-                    router_ipv4,
-                    router_mac);
+                    &length,
+                    &secs,
+                    &usecs,
+                    &px);
 
-            if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-                LOG(2, "auto-detected: router-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
-                    router_mac[0],
-                    router_mac[1],
-                    router_mac[2],
-                    router_mac[3],
-                    router_mac[4],
-                    router_mac[5]
-                    );
-            }
+        if (err != 0)
+            continue;
+
+
+        /*
+         * parse the response packet
+         */
+        x = preprocess_frame(px, length, 1, &parsed);
+        if (!x)
+            continue; /* corrupt packet */
+        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
+            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
+        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
+            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16 
+              | px[parsed.transport_offset+10]<<8 | px[parsed.transport_offset+11];
+        seqno -= 1;
+
+
+        /* verify: my IP address */
+        if (adapter_ip != dst)
+            continue;
+
+        /* OOPS: handle arp instead */
+        if (parsed.found == FOUND_ARP) {
+            LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
+            arp_response(masscan->adapter, adapter_ip, adapter_mac, px, length);
+            continue;
         }
-    }
-    if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
-        fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--router-mac 66-55-44-33-22-11\"\n");
-        return -1;
+
+        /* verify: TCP */
+        if (parsed.found != FOUND_TCP)
+            continue;
+
+        /* verify: my port number */
+        if (adapter_port != parsed.port_dst)
+            continue;
+
+        /* verify: syn-cookies */
+        if (syn_hash(src, parsed.port_src) != seqno) {
+            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno, syn_hash(src, parsed.port_src));
+        }
+
+        /* verify: ignore duplicates */
+        if (dedup_is_duplicate(dedup, src, parsed.port_src))
+            continue;
+
+        /* figure out the status */
+        status = Port_Unknown;
+        if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
+            status = Port_Open;
+        if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
+            status = Port_Closed;
+            
+
+        /*
+         * XXXX
+         * TODO: add lots more verification, such as coming from one of
+         * our sending port numbers, and having the right seqno/ackno
+         * fields set.
+         */
+        output_report(
+                    out,
+                    status,
+                    src,
+                    parsed.port_src,
+                    px[parsed.transport_offset + 13], /* tcp flags */
+                    px[parsed.ip_offset + 8] /* ttl */
+                    );
     }
 
-    LOG(1, "adapter initialization done.\n");
-    return 0;
+    LOG(1, "end receive thread\n");
+
+    /*
+     * cleanup
+     */
+    dedup_destroy(dedup);
+    output_destroy(out);
 }
 
 /***************************************************************************
  ***************************************************************************/
-const char *status_string(int x)
+static void control_c_handler(int x)
 {
-    switch (x) {
-    case Port_Open: return "open";
-    case Port_Closed: return "closed";
-    default: return "unknown";
-    }
+	control_c_pressed = 1+x;
 }
 
 /***************************************************************************
@@ -342,15 +317,13 @@ main_scan(struct Masscan *masscan)
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
     int err;
-    FILE *fpout = stdout;
-    struct DedupTable *dedup;
-
 
 
     /*
      * Turn the adapter on, and get the running configuration
      */
-    err = initialize_adapter(   masscan,
+    err = masscan_initialize_adapter(   
+                        masscan,
                         &adapter_ip,
                         adapter_mac,
                         router_mac);
@@ -429,148 +402,49 @@ main_scan(struct Masscan *masscan)
         masscan->resume.index = 0;
     }
 
+    /*
+     * trap <ctrl-c> to pause
+     */
+    signal(SIGINT, control_c_handler);
+
 
     /*
-     * Open output
+     * Print helpful text
      */
-    if (masscan->nmap.format != Output_Interactive && masscan->nmap.filename[0]) {
-        FILE *fp;
-        err = fopen_s(&fp, masscan->nmap.filename, masscan->nmap.append?"a":"w");
-        if (err || fp == NULL) {
-            perror(masscan->nmap.filename);
-            exit(1);
-        }
-        fpout = fp;
+    {
+        char buffer[80];
+        time_t now  = time(0);
+        struct tm x;
+
+        gmtime_s(&x, &now);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
+        fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
     }
-    dedup = dedup_create();
+    fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+    fprintf(stderr, "Initiating SYN Stealth Scan\n");
+
 
     /*
      * Start the scanning thread.
      * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
      * RATE OF SPEED.
      */
-    pixie_begin_thread(scanning_thread, 0, masscan);
+    pixie_begin_thread(transmit_thread, 0, masscan);
 
-    LOG(1, "begin receive thread\n");
 
     /*
-     * Receive packets. This is where we catch any responses and print
-     * them to the terminal.
+     * Start the receive thread
      */
-    while (!masscan->is_done) {
-        int status;
-        unsigned length;
-        unsigned secs;
-        unsigned usecs;
-        const unsigned char *px;
-        int err;
-        unsigned x;
-        struct PreprocessedInfo parsed;
-        unsigned dst;
-        unsigned src;
-        unsigned seqno;
+    receive_thread(masscan,
+            adapter_ip,
+            adapter_port,
+            adapter_mac);
 
-        err = rawsock_recv_packet(
-                    masscan->adapter,
-                    &length,
-                    &secs,
-                    &usecs,
-                    &px);
-
-        if (err != 0)
-            continue;
-
-
-        /*
-         * handle packet
-         */
-        x = preprocess_frame(px, length, 1, &parsed);
-        if (!x)
-            continue; /* corrupt packet */
-        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
-            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
-        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
-            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
-        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16 
-              | px[parsed.transport_offset+10]<<8 | px[parsed.transport_offset+11];
-        seqno -= 1;
-
-        /* verify: my IP address */
-        if (adapter_ip != dst)
-            continue;
-
-        /* OOPS: handle arp instead */
-        if (parsed.found == FOUND_ARP) {
-            LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
-            arp_response(masscan->adapter, adapter_ip, adapter_mac, px, length);
-            continue;
-        }
-
-        /* verify: TCP */
-        if (parsed.found != FOUND_TCP)
-            continue;
-
-        /* verify: my port number */
-        if (adapter_port != parsed.port_dst)
-            continue;
-
-        if (syn_hash(src, parsed.port_src) != seqno) {
-            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno, syn_hash(src, parsed.port_src));
-        }
-
-        /* verify: ignore duplicates */
-        if (dedup_is_duplicate(dedup, src, parsed.port_src))
-            continue;
-
-        /* figure out the status */
-        status = Port_Unknown;
-        if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
-            status = Port_Open;
-        if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
-            status = Port_Closed;
-            
-
-        /*
-         * XXXX
-         * TODO: add lots more verification, such as coming from one of
-         * our sending port numbers, and having the right seqno/ackno
-         * fields set.
-         */
-        if (masscan->nmap.format == Output_Interactive || masscan->nmap.format == Output_All) {
-            fprintf(stdout, "Discovered %s port %u/tcp on %u.%u.%u.%u                          \n",
-                status_string(status),
-                parsed.port_src,
-                (src>>24)&0xFF,
-                (src>>16)&0xFF,
-                (src>> 8)&0xFF,
-                (src>> 0)&0xFF
-                );
-        }
-        if (masscan->nmap.format == Output_List || masscan->nmap.format == Output_All) {
-            fprintf(fpout, "%s tcp %u %u.%u.%u.%u\n",
-                status_string(status),
-                parsed.port_src,
-                (src>>24)&0xFF,
-                (src>>16)&0xFF,
-                (src>> 8)&0xFF,
-                (src>> 0)&0xFF
-                );
-        }
-    }
-
-
-    if (fpout != stdout)
-        fclose(fpout);
+ 
 
     return 0;
 }
 
-/***************************************************************************
- ***************************************************************************/
-static void control_c_handler(int x)
-{
-	control_c_pressed = 1+x;
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -578,24 +452,25 @@ int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
 
+    global_now = time(0);
 
-
-
+    /*
+     * Initialize those defaults that aren't zero
+     */
+	memset(masscan, 0, sizeof(*masscan));
+    masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
+    masscan->adapter_port = 0x10000; /* value not set */
+    strcpy_s(   masscan->rotate_directory, 
+                sizeof(masscan->rotate_directory),
+                ".");
+	
 
 	/*
 	 * Read in the configuration from the command-line. We are looking for
      * either options or a list of IPv4 address ranges.
 	 */
-	memset(masscan, 0, sizeof(*masscan));
-    masscan->max_rate = 100.0; /* initialize: max rate = hundred packets-per-second */
-    masscan->adapter_port = 0x10000; /* value not set */
-	
-    
     masscan_command_line(masscan, argc, argv);
     
-    LOG(3, "\n====== MASSCAN ======\n");
-
-
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
@@ -605,7 +480,9 @@ int main(int argc, char *argv[])
     syn_set_entropy();
 
     /*
-     * Apply excludes
+     * Apply excludes. People ask us not to scan them, so we maintain a list
+     * of their ranges, and when doing wide scans, add the exclude list to
+     * prevent them from being scanned.
      */
     {
         unsigned i;
@@ -639,24 +516,6 @@ int main(int argc, char *argv[])
         /*
          * THIS IS THE NORMAL THING
          */
-    	
-        /*
-         * trap <ctrl-c> to pause
-         */
-        signal(SIGINT, control_c_handler);
-
-
-        {
-            char buffer[80];
-            time_t now  = time(0);
-            struct tm x;
-
-            gmtime_s(&x, &now);
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
-            fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
-        }
-        fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
-        fprintf(stderr, "Initiating SYN Stealth Scan\n");
         return main_scan(masscan);
 
 	case Operation_List_Adapters:

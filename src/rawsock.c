@@ -82,10 +82,9 @@ int pcap_setdirection(pcap_t *pcap, pcap_direction_t direction)
             return -1;
         }
     }
-#include <winerror.h>
+
     return real_setdirection(pcap, direction);
 }
-
 #endif
 
 /***************************************************************************
@@ -344,7 +343,12 @@ int rawsock_recv_packet(
     return 0;
 }
 
+
 /***************************************************************************
+ * Sends the TCP SYN probe packet.
+ *
+ * Step 1: format the packet
+ * Step 2: send it in a portable manner
  ***************************************************************************/
 void
 rawsock_send_probe(
@@ -352,10 +356,6 @@ rawsock_send_probe(
     unsigned ip, unsigned port, unsigned seqno,
     struct TcpPacket *pkt)
 {
-
-    if (adapter == NULL)
-        return;
-
     /*
      * Construct the destination packet
      */
@@ -370,13 +370,17 @@ rawsock_send_probe(
      * Verify I'm doing the checksum correctly ('cause I ain't, I got
      * a bug right now).
      */
-    if (ip_checksum(pkt) != 0xFFFF)
+    /*if (ip_checksum(pkt) != 0xFFFF)
 		LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
 	if (tcp_checksum(pkt) != 0xFFFF)
-		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));
+		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
 }
 
+
 /***************************************************************************
+ * Used on Windows: network adapters have horrible names, so therefore we
+ * use numeric indexes instead. You can which adapter you are looking for
+ * by typing "--iflist" as an option.
  ***************************************************************************/
 static int
 is_numeric_index(const char *ifname)
@@ -399,7 +403,13 @@ is_numeric_index(const char *ifname)
     return result;
 }
 
-const char *rawsock_win_name(const char *ifname)
+
+/***************************************************************************
+ * Used on Windows: if the adpter name is a numeric index, convert it to
+ * the full name.
+ ***************************************************************************/
+const char *
+rawsock_win_name(const char *ifname)
 {
     if (is_numeric_index(ifname)) {
         const char *new_adapter_name;
@@ -412,24 +422,32 @@ const char *rawsock_win_name(const char *ifname)
     return ifname;
 }
 
+
 /***************************************************************************
+ * Configure the socket to not capture transmitted packets. This is needed
+ * because we transmit packets at a rate of millions per second, which will
+ * overwhelm the receive thread.
+ *
+ * PORTABILITY: Windows doesn't seem to support this feature, so instead
+ * what we do is apply a BPF filter to ignore the transmits, so that they
+ * still get filtered at a low level.
  ***************************************************************************/
-void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
+void
+rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
-
-    if (adapter == 0)
-        return;
-
     if (adapter->ring) {
-        /* don't do anything, we've already done it above */
+        /* PORTABILITY: don't do anything for PF_RING, because it's 
+         * actually done when we create the adapter, because we can't 
+         * reconfigure the adapter after it's been activated. */
         return;
     }
 
 
 #if !defined(WIN32)
+    /* PORTABILITY: this is what we do on all systems except windows, because
+     * Windows doesn't support this feature. */
     if (adapter->pcap) {
         int err;
-      
 
         err = pcap_setdirection(adapter->pcap, PCAP_D_IN);
         if (err) {
@@ -499,9 +517,10 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
     memset(adapter, 0, sizeof(*adapter));
 
-    /*
+    /*----------------------------------------------------------------
+     * PORTABILITY: WINDOWS
      * If is all digits index, then look in indexed list
-     */
+     *----------------------------------------------------------------*/
     if (is_numeric_index(adapter_name)) {
         const char *new_adapter_name;
         
@@ -513,13 +532,25 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
             adapter_name = new_adapter_name;
     }
 
-	/*
-	 * Open the PCAP adapter
-	 */
+    /*----------------------------------------------------------------
+     * PORTABILITY: PF_RING
+     *  If we've been told to use --pfring, then attempt to open the
+     *  network adapter usign the PF_RING API rather than libpcap.
+     *  Since a lot of things can go wrong, we do a lot of extra 
+     *  logging here.
+     *----------------------------------------------------------------*/
     if (is_pfring) {
 	    int err;
         unsigned version;
 
+        /*
+         * Open
+         *
+         * TODO: Do we need the PF_RING_REENTRANT flag? We only have one
+         * transmit and one receive thread, so I don't think we need it.
+         * Also, this reduces performance in half, from 12-mpps to 
+         * 6-mpps.
+         */
         LOG(2, "pfring:'%s': opening...\n", adapter_name);
 	    adapter->ring = PFRING.open(adapter_name, 1500, 0); //PF_RING_REENTRANT);
 	    adapter->pcap = (pcap_t*)adapter->ring;
@@ -529,6 +560,9 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
         } else
             LOG(1, "pfring:'%s': successfully opened\n", adapter_name);
 
+        /*
+         * Housekeeping
+         */
         PFRING.set_application_name(adapter->ring, "masscan");
         PFRING.version(adapter->ring, &version);
         LOG(1, "pfring: version %d.%d.%d\n",
@@ -543,19 +577,31 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
         } else
             LOG(2, "pfring:'%s': direction success\n", adapter_name);
 
-	LOG(2, "pfring:'%s': activating\n", adapter_name);
-	err = PFRING.enable_ring(adapter->ring);
-	if (err != 0) {
-            LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
-            PFRING.close(adapter->ring);
-            adapter->ring = 0;
-		    return 0;
-	} else
-	    LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
+        /*
+         * Activate
+         *
+         * PF_RING requires a separate activation step.
+         */
+	    LOG(2, "pfring:'%s': activating\n", adapter_name);
+	    err = PFRING.enable_ring(adapter->ring);
+	    if (err != 0) {
+                LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
+                PFRING.close(adapter->ring);
+                adapter->ring = 0;
+		        return 0;
+	    } else
+	        LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
 
         return adapter;
 
-    } else {
+    }
+    
+    /*----------------------------------------------------------------
+     * PORTABILITY: LIBPCAP
+     *
+     * This is the stanard that should work everywhere.
+     *----------------------------------------------------------------*/
+    {
         LOG(1, "pcap: %s\n", pcap_lib_version());
         LOG(2, "pcap:'%s': opening...\n", adapter_name);
 	    adapter->pcap = pcap_open_live(
@@ -571,14 +617,19 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
     }
 
- 	/*
-	 * Create a send queue for faster transmits
-	 */
+    /*----------------------------------------------------------------
+     * PORTABILITY: WINDOWS
+     *
+     * The transmit rate on Windows is really slow, like 40-kpps.
+     * The speed can be increased by using the "sendqueue" feature
+     * to roughly 300-kpps.
+     *----------------------------------------------------------------*/
     adapter->sendq = 0;
 #if defined(WIN32)
     if (is_sendq)
     	adapter->sendq = pcap_sendqueue_alloc(65536);
 #endif
+
 
     return adapter;
 }
@@ -589,7 +640,8 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
  * for testing when two Windows adapters have the same name. Sometimes
  * the \Device\NPF_ string is prepended, sometimes not.
  ***************************************************************************/
-int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs)
+int
+rawsock_is_adapter_names_equal(const char *lhs, const char *rhs)
 {
     if (memcmp(lhs, "\\Device\\NPF_", 12) == 0)
         lhs += 12;
@@ -598,7 +650,11 @@ int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs)
     return strcmp(lhs, rhs) == 0;
 }
 
+
 /***************************************************************************
+ * Runs some tests when the "--debug if" option is given on the
+ * command-line. This is useful to figure out why the interface you 
+ * are accessing doesn't work.
  ***************************************************************************/
 int
 rawsock_selftest_if(const char *ifname)
