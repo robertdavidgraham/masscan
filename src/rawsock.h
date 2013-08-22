@@ -51,7 +51,7 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet);
 
-int arp_resolve_sync(struct Adapter *adapter, 
+int arp_resolve_sync(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address);
 

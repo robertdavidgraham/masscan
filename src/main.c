@@ -3,7 +3,7 @@
     main
 
     This includes:
-    
+
     * main()
     * transmit_thread() - transmits probe packets
     * receive_thread() - receives response packets
@@ -46,14 +46,14 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 {
     uint64_t i;
     struct Masscan *masscan = (struct Masscan *)v;
-	uint64_t a = masscan->lcg.a;
-	uint64_t c = masscan->lcg.c;
-	uint64_t m = masscan->lcg.m;
+    uint64_t a = masscan->lcg.a;
+    uint64_t c = masscan->lcg.c;
+    uint64_t m = masscan->lcg.m;
     uint64_t count_ips = rangelist_count(&masscan->targets);
-	struct Status status;
+    struct Status status;
     struct Throttler throttler;
     struct TcpPacket *pkt_template = masscan->pkt_template;
-   	uint64_t seed;
+    uint64_t seed;
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
     unsigned *picker;
@@ -76,7 +76,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     /* Seed the LCG for randomizing the scan*/
     seed = masscan->resume.seed;
 
-    /* Optimize target selection so it's a quick binary search instead 
+    /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables */
     picker = rangelist_pick2_create(&masscan->targets);
 
@@ -84,40 +84,40 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * the main loop
      * -----------------*/
     LOG(3, "xmit: starting main loop\n");
-	for (i=masscan->resume.index; i<masscan->lcg.m; ) {
+    for (i=masscan->resume.index; i<masscan->lcg.m; ) {
         uint64_t batch_size;
 
         /*
          * Do a batch of many packets at a time. That because per-packet
-         * throttling is expensive at 10-million pps, so we reduce the 
+         * throttling is expensive at 10-million pps, so we reduce the
          * per-packet cost by doing batches. At slower rates, the batch
          * size will always be one.
          */
         batch_size = throttler_next_batch(&throttler, i);
         while (batch_size && i < m) {
-			unsigned ip;
-			unsigned port;
+            unsigned ip;
+            unsigned port;
 
             batch_size--;
 
-			/* randomize the index. THIS IS WHERE RANDOMIZATION HAPPENS
+            /* randomize the index. THIS IS WHERE RANDOMIZATION HAPPENS
              *  index = lcg_rand(index, a, c, m); */
-			seed = (seed * a + c) % m;
+            seed = (seed * a + c) % m;
 
-			/* Pick the IPv4 address pointed to by this index */
-			ip = rangelist_pick2(&masscan->targets, seed%count_ips, picker);
-			port = rangelist_pick(&masscan->ports, seed/count_ips);
+            /* Pick the IPv4 address pointed to by this index */
+            ip = rangelist_pick2(&masscan->targets, seed%count_ips, picker);
+            port = rangelist_pick(&masscan->ports, seed/count_ips);
 
             /* Print packet if debugging */
             if (packet_trace)
                 tcpkt_trace(pkt_template, ip, port, timestamp_start);
 
             /* Send the probe */
-			rawsock_send_probe(
-                    masscan->adapter, 
-                    ip, 
-                    port, 
-                    syn_hash(ip, port), 
+            rawsock_send_probe(
+                    masscan->adapter,
+                    ip,
+                    port,
+                    syn_hash(ip, port),
                     !batch_size,        /* flush transmit queue on last packet */
                     pkt_template
                     );
@@ -126,11 +126,11 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             i++;
 
 
-            /* 
+            /*
              * update screen about once per second with statistics,
              * namely packets/second.
              */
-			if ((i & status.timer) == status.timer) 
+            if ((i & status.timer) == status.timer)
                 status_print(&status, i, m);
 
         }
@@ -147,11 +147,11 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             control_c_pressed = 0; /* a second ^C press exits faster */
             break;
         }
-	}
+    }
 
     /*
      * We are done transmitting. However, response packets will take several
-     * seconds to arrive. Therefore, sit in short loop waiting for those 
+     * seconds to arrive. Therefore, sit in short loop waiting for those
      * packets to arrive. Pressing <ctrl-c> a second time will exit this
      * prematurely.
      */
@@ -231,7 +231,7 @@ receive_thread(struct Masscan *masscan,
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
         src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
-        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16 
+        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16
               | px[parsed.transport_offset+10]<<8 | px[parsed.transport_offset+11];
         seqno -= 1;
 
@@ -270,7 +270,7 @@ receive_thread(struct Masscan *masscan,
             status = Port_Open;
         if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
             status = Port_Closed;
-            
+
 
         /*
          * XXXX
@@ -301,7 +301,7 @@ receive_thread(struct Masscan *masscan,
  ***************************************************************************/
 static void control_c_handler(int x)
 {
-	control_c_pressed = 1+x;
+    control_c_pressed = 1+x;
 }
 
 /***************************************************************************
@@ -311,9 +311,9 @@ static void control_c_handler(int x)
 static int
 main_scan(struct Masscan *masscan)
 {
-	struct TcpPacket pkt[1];
-	uint64_t count_ips;
-	uint64_t count_ports;
+    struct TcpPacket pkt[1];
+    uint64_t count_ips;
+    uint64_t count_ports;
     unsigned adapter_ip = 0;
     unsigned adapter_port;
     unsigned char adapter_mac[6];
@@ -324,21 +324,21 @@ main_scan(struct Masscan *masscan)
     /*
      * Turn the adapter on, and get the running configuration
      */
-    err = masscan_initialize_adapter(   
+    err = masscan_initialize_adapter(
                         masscan,
                         &adapter_ip,
                         adapter_mac,
                         router_mac);
     if (err != 0)
         return err;
-	
+
     /*
-	 * Initialize the TCP packet template. The way this works is that we parse
+     * Initialize the TCP packet template. The way this works is that we parse
      * an existing TCP packet, and use that as the template for scanning. Then,
      * we adjust the template with additional features, such as the IP address
      * and so on.
-	 */
-	tcp_init_packet(pkt,
+     */
+    tcp_init_packet(pkt,
         adapter_ip,
         adapter_mac,
         router_mac);
@@ -351,36 +351,36 @@ main_scan(struct Masscan *masscan)
         tcpkt_set_source_port(pkt, masscan->adapter_port);
     if (masscan->nmap.ttl)
         tcpkt_set_ttl(pkt, masscan->nmap.ttl);
-    
+
     /*
      * Read back what we've set
      */
     adapter_port = tcpkt_get_source_port(pkt);
 
-	
+
     /*
-	 * Initialize the task size
-	 */
-	count_ips = rangelist_count(&masscan->targets);
-	if (count_ips == 0) {
-		fprintf(stderr, "FAIL: no IPv4 ranges were specified\n");
-		return 1;
-	}
-	count_ports = rangelist_count(&masscan->ports);
-	if (count_ports == 0) {
-		fprintf(stderr, "FAIL: no ports were specified, use \"-p<port>\"\n");
-		return 1;
-	}
+     * Initialize the task size
+     */
+    count_ips = rangelist_count(&masscan->targets);
+    if (count_ips == 0) {
+        fprintf(stderr, "FAIL: no IPv4 ranges were specified\n");
+        return 1;
+    }
+    count_ports = rangelist_count(&masscan->ports);
+    if (count_ports == 0) {
+        fprintf(stderr, "FAIL: no ports were specified, use \"-p<port>\"\n");
+        return 1;
+    }
 
     fprintf(stderr, "Scanning %u hosts [%u port%s/host]\n",
         (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
-	
+
     /*
      * Initialize LCG translator
      *
-	 * This can take a couple seconds on a slow CPU. We have to find all the
+     * This can take a couple seconds on a slow CPU. We have to find all the
      * primes out to 2^24 when doing large ranges.
-	 */
+     */
     if (masscan->resume.index && masscan->resume.seed && masscan->lcg.m
         && masscan->lcg.a && masscan->lcg.c) {
         if (masscan->lcg.m != count_ips * count_ports) {
@@ -389,16 +389,16 @@ main_scan(struct Masscan *masscan)
         } else
             fprintf(stderr, "resuming scan...\n");
     } else {
-	    masscan->lcg.m = count_ips * count_ports;
-	    lcg_calculate_constants(
-		    masscan->lcg.m,
-		    &masscan->lcg.a,
-		    &masscan->lcg.c,
-		    0);
-        LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n", 
-		    masscan->lcg.a,
-		    masscan->lcg.c,
-		    masscan->lcg.m
+        masscan->lcg.m = count_ips * count_ports;
+        lcg_calculate_constants(
+            masscan->lcg.m,
+            &masscan->lcg.a,
+            &masscan->lcg.c,
+            0);
+        LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n",
+            masscan->lcg.a,
+            masscan->lcg.c,
+            masscan->lcg.m
             );
         masscan->resume.seed = time(0) % masscan->lcg.m;
         masscan->resume.index = 0;
@@ -419,7 +419,7 @@ main_scan(struct Masscan *masscan)
         struct tm x;
 
         gmtime_s(&x, &now);
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x); 
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
     }
     fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
@@ -442,7 +442,7 @@ main_scan(struct Masscan *masscan)
             adapter_port,
             adapter_mac);
 
- 
+
 
     return 0;
 }
@@ -459,24 +459,24 @@ int main(int argc, char *argv[])
     /*
      * Initialize those defaults that aren't zero
      */
-	memset(masscan, 0, sizeof(*masscan));
+    memset(masscan, 0, sizeof(*masscan));
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
     masscan->adapter_port = 0x10000; /* value not set */
-    strcpy_s(   masscan->rotate_directory, 
+    strcpy_s(   masscan->rotate_directory,
                 sizeof(masscan->rotate_directory),
                 ".");
-	
 
-	/*
-	 * Read in the configuration from the command-line. We are looking for
+
+    /*
+     * Read in the configuration from the command-line. We are looking for
      * either options or a list of IPv4 address ranges.
-	 */
+     */
     masscan_command_line(masscan, argc, argv);
-    
+
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
-	rawsock_init();
+    rawsock_init();
 
     /* Set randomization seed for SYN-cookies */
     syn_set_entropy();
@@ -508,11 +508,11 @@ int main(int argc, char *argv[])
      * Once we've read in the configuration, do the operation that was
      * specified
      */
-	switch (masscan->op) {
-	case Operation_Default:
+    switch (masscan->op) {
+    case Operation_Default:
         /* Print usage info and exit */
         masscan_usage();
-		break;
+        break;
 
     case Operation_Scan:
         /*
@@ -520,10 +520,10 @@ int main(int argc, char *argv[])
          */
         return main_scan(masscan);
 
-	case Operation_List_Adapters:
+    case Operation_List_Adapters:
         /* List the network adapters we might want to use for scanning */
-		rawsock_list_adapters();
-		break;
+        rawsock_list_adapters();
+        break;
 
     case Operation_DebugIF:
         rawsock_selftest_if(masscan->ifname);
@@ -551,9 +551,9 @@ int main(int argc, char *argv[])
             }
         }
         break;
-	}
+    }
 
-   
+
     return 0;
 }
 

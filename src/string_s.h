@@ -1,10 +1,10 @@
 /*
-	safe "string" functions, like Microsoft's
+    safe "string" functions, like Microsoft's
 
-	This is for the "safe" clib functions, where things like "strcpy()" is 
-	replaced with a safer version of the function, like "strcpy_s()". Since
-	these things are non-standard, compilers deal with them differently.
- 
+    This is for the "safe" clib functions, where things like "strcpy()" is
+    replaced with a safer version of the function, like "strcpy_s()". Since
+    these things are non-standard, compilers deal with them differently.
+
  Reference:
  http://msdn.microsoft.com/en-us/library/bb288454.aspx
 */
@@ -58,24 +58,24 @@ const char *strerror_x(int x);
 /*Visual Studio 2010*/
 # include <stdio.h>
 # include <string.h>
-# define strcasecmp		_stricmp
-# define memcasecmp		_memicmp
+# define strcasecmp     _stricmp
+# define memcasecmp     _memicmp
 
 
 
 #elif defined(_MSC_VER) && (_MSC_VER == 1200)
 /* Visual Studio 6.0 */
-# define sprintf_s		_snprintf
-# define strcasecmp		_stricmp
-# define memcasecmp		_memicmp
-# define vsprintf_s		_vsnprintf
+# define sprintf_s      _snprintf
+# define strcasecmp     _stricmp
+# define memcasecmp     _memicmp
+# define vsprintf_s     _vsnprintf
  typedef int errno_t;
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 
 #elif defined(__GNUC__) && (__GNUC__ == 4)
 /* GCC 4 */
-# define sprintf_s		snprintf
-# define vsprintf_s		vsnprintf
+# define sprintf_s      snprintf
+# define vsprintf_s     vsnprintf
  int memcasecmp(const void *lhs, const void *rhs, int length);
  typedef int errno_t;
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);

@@ -26,21 +26,21 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
     int fd;
     int x;
     struct ifreq ifr;
- 
-  
-    fd = socket(AF_INET, SOCK_STREAM, 0); 
-    if(fd < 0){ 
+
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(fd < 0){
         perror("socket");
         goto end;
-    } 
-  
+    }
+
     strcpy_s(ifr.ifr_name, IFNAMSIZ, ifname);
     x = ioctl(fd, SIOCGIFHWADDR, (char *)&ifr);
     if (x < 0) {
         perror("ioctl");
         goto end;
-    } 
-  
+    }
+
     memcpy(mac, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
 
 end:

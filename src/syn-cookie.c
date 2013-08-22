@@ -13,7 +13,7 @@ static uint64_t entropy = 0;
 
 /***************************************************************************
  * Go gather some entropy (aka. randmoness) to seed hashing with.
- * 
+ *
  * NOTE: Mostly it's here to amuse cryptographers with its lulz.
  ***************************************************************************/
 void
@@ -73,11 +73,11 @@ murmur(uint64_t entropy, ...)
     unsigned n = 0xe6546b64;
     va_list key;
     unsigned len;
- 
+
     unsigned hash = (unsigned)entropy;
 
     va_start(key, entropy);
-    
+
     for (len=0; len<2; len++) {
         unsigned k = va_arg(key, unsigned);
 

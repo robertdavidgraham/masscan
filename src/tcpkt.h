@@ -19,17 +19,17 @@ enum TemplateProtocol {
 
 struct TcpPacket
 {
-	unsigned length;
-	unsigned offset_ip;
-	unsigned offset_tcp;
-	unsigned offset_app;
+    unsigned length;
+    unsigned offset_ip;
+    unsigned offset_tcp;
+    unsigned offset_app;
 
-	unsigned char *packet;
+    unsigned char *packet;
 
-	unsigned checksum_ip;
-	unsigned checksum_tcp;
+    unsigned checksum_ip;
+    unsigned checksum_tcp;
 
-	unsigned ip_id;
+    unsigned ip_id;
 
     enum TemplateProtocol proto;
 };

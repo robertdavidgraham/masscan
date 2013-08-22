@@ -1,7 +1,7 @@
 /*
     portable interface to "raw sockets"
 
-    This uses both "libpcap" on systems, but on Linux, we try to use the 
+    This uses both "libpcap" on systems, but on Linux, we try to use the
     basic raw sockets, bypassing libpcap for better performance.
 */
 #include "rawsock.h"
@@ -47,8 +47,8 @@ int pcap_sendqueue_queue(pcap_send_queue *queue,
 
 struct Adapter
 {
-	pcap_t *pcap;
-	pcap_send_queue *sendq;
+    pcap_t *pcap;
+    pcap_send_queue *sendq;
     pfring *ring;
 };
 
@@ -57,8 +57,8 @@ struct Adapter
 
 struct AdapterNames
 {
-	char *easy_name;
-	char *hard_name;
+    char *easy_name;
+    char *hard_name;
 };
 
 struct AdapterNames adapter_names[64];
@@ -99,11 +99,11 @@ rawsock_init()
 
 // It is possible for an adapter to have multiple
 // IPv4 addresses, gateways, and secondary WINS servers
-// assigned to the adapter. 
+// assigned to the adapter.
 //
-// Note that this sample code only prints out the 
+// Note that this sample code only prints out the
 // first entry for the IP address/mask, and gateway, and
-// the primary and secondary WINS server for each adapter. 
+// the primary and secondary WINS server for each adapter.
 
     PIP_ADAPTER_INFO pAdapterInfo;
     PIP_ADAPTER_INFO pAdapter = NULL;
@@ -135,46 +135,46 @@ rawsock_init()
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
         pAdapter = pAdapterInfo;
         while (pAdapter) {
-			if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
-				continue;
+            if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
+                continue;
 
             //printf("\tComboIndex: \t%d\n", pAdapter->ComboIndex);
             //printf("\tAdapter Name: \t%s\n", pAdapter->AdapterName);
-			{
-				size_t name_len = strlen(pAdapter->AdapterName) + 12 + 1;
-				char *name = (char*)malloc(name_len);
-				size_t addr_len = pAdapter->AddressLength * 3 + 1;
-				char *addr = (char*)malloc(addr_len);
-				sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
-				
-				//printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
-				//printf("\tAdapter Addr: \t");
-				for (i = 0; i < pAdapter->AddressLength; i++) {
-					if (i == (pAdapter->AddressLength - 1))
-						sprintf_s(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
-					else
-						sprintf_s(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
-				}
-				//printf("%s  ->  %s\n", addr, name);
-				adapter_names[adapter_name_count].easy_name = addr;
-				adapter_names[adapter_name_count].hard_name = name;
-				adapter_name_count++;
-			}
+            {
+                size_t name_len = strlen(pAdapter->AdapterName) + 12 + 1;
+                char *name = (char*)malloc(name_len);
+                size_t addr_len = pAdapter->AddressLength * 3 + 1;
+                char *addr = (char*)malloc(addr_len);
+                sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+
+                //printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
+                //printf("\tAdapter Addr: \t");
+                for (i = 0; i < pAdapter->AddressLength; i++) {
+                    if (i == (pAdapter->AddressLength - 1))
+                        sprintf_s(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
+                    else
+                        sprintf_s(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
+                }
+                //printf("%s  ->  %s\n", addr, name);
+                adapter_names[adapter_name_count].easy_name = addr;
+                adapter_names[adapter_name_count].hard_name = name;
+                adapter_name_count++;
+            }
 
             //printf("\tIndex: \t%d\n", pAdapter->Index);
-            
-			{
-				size_t name_len = strlen(pAdapter->AdapterName) + 12 + 1;
-				char *name = (char*)malloc(name_len);
-				size_t addr_len = strlen(pAdapter->IpAddressList.IpAddress.String) + 1;
-				char *addr = (char*)malloc(addr_len);
-				sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
-				sprintf_s(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);				
-				//printf("%s  ->  %s\n", addr, name);
-				adapter_names[adapter_name_count].easy_name = addr;
-				adapter_names[adapter_name_count].hard_name = name;
-				adapter_name_count++;
-			}
+
+            {
+                size_t name_len = strlen(pAdapter->AdapterName) + 12 + 1;
+                char *name = (char*)malloc(name_len);
+                size_t addr_len = strlen(pAdapter->IpAddressList.IpAddress.String) + 1;
+                char *addr = (char*)malloc(addr_len);
+                sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+                sprintf_s(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);
+                //printf("%s  ->  %s\n", addr, name);
+                adapter_names[adapter_name_count].easy_name = addr;
+                adapter_names[adapter_name_count].hard_name = name;
+                adapter_name_count++;
+            }
 
             //printf("\tGateway: \t%s\n", pAdapter->GatewayList.IpAddress.String);
             pAdapter = pAdapter->Next;
@@ -196,56 +196,56 @@ rawsock_init()
 void
 rawsock_list_adapters()
 {
-	pcap_if_t *alldevs;
-	char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_if_t *alldevs;
+    char errbuf[PCAP_ERRBUF_SIZE];
 
-	if (pcap_findalldevs(&alldevs, errbuf) != -1) {
-		int i;
-		pcap_if_t *d;
-		i=0;
+    if (pcap_findalldevs(&alldevs, errbuf) != -1) {
+        int i;
+        pcap_if_t *d;
+        i=0;
 
-		if (alldevs == NULL) {
-			fprintf(stderr, "ERR:libpcap: no adapters found, are you sure you are root?\n");
-		}
-		/* Print the list */
-		for(d=alldevs; d; d=d->next) {
-			fprintf(stderr, " %d  %s \t", i++, d->name);
-			if (d->description)
-				fprintf(stderr, "(%s)\n", d->description);
-			else
-				fprintf(stderr, "(No description available)\n");
-		}
-		fprintf(stderr,"\n");
-	} else {
-		fprintf(stderr, "%s\n", errbuf);
-	}
+        if (alldevs == NULL) {
+            fprintf(stderr, "ERR:libpcap: no adapters found, are you sure you are root?\n");
+        }
+        /* Print the list */
+        for(d=alldevs; d; d=d->next) {
+            fprintf(stderr, " %d  %s \t", i++, d->name);
+            if (d->description)
+                fprintf(stderr, "(%s)\n", d->description);
+            else
+                fprintf(stderr, "(No description available)\n");
+        }
+        fprintf(stderr,"\n");
+    } else {
+        fprintf(stderr, "%s\n", errbuf);
+    }
 }
 
 /***************************************************************************
  ***************************************************************************/
 char *adapter_from_index(unsigned index)
 {
-	pcap_if_t *alldevs;
-	char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_if_t *alldevs;
+    char errbuf[PCAP_ERRBUF_SIZE];
     int x;
 
     x = pcap_findalldevs(&alldevs, errbuf);
-	if (x != -1) {
-		pcap_if_t *d;
+    if (x != -1) {
+        pcap_if_t *d;
 
-		if (alldevs == NULL) {
-			fprintf(stderr, "ERR:libpcap: no adapters found, are you sure you are root?\n");
-		}
-		/* Print the list */
-		for(d=alldevs; d; d=d->next)
-		{
-			if (index-- == 0)
-				return d->name;
-		}
+        if (alldevs == NULL) {
+            fprintf(stderr, "ERR:libpcap: no adapters found, are you sure you are root?\n");
+        }
+        /* Print the list */
+        for(d=alldevs; d; d=d->next)
+        {
+            if (index-- == 0)
+                return d->name;
+        }
         return 0;
-	} else {
+    } else {
         return 0;
-	}
+    }
 }
 
 extern unsigned ip_checksum(struct TcpPacket *pkt);
@@ -274,45 +274,45 @@ rawsock_send_packet(
         while (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
             err = PFRING.send(adapter->ring, packet, length, (unsigned char)flush);
         }
-	    if (err < 0)
-    		LOG(1, "pfring:xmit: ERROR %d\n", err);
+        if (err < 0)
+            LOG(1, "pfring:xmit: ERROR %d\n", err);
         return err;
     }
-    
+
     /* WINDOWS PCAP */
     if (adapter->sendq) {
         int err;
         struct pcap_pkthdr hdr;
-	    hdr.len = length;
-	    hdr.caplen = length;
+        hdr.len = length;
+        hdr.caplen = length;
 
-		err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
-		if (err) {
-			//printf("sendpacket() failed %d\n", x);
-			//for (;;)
-			pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
-			//printf("pcap_send_queue)() returned %u\n", x);
-			pcap_sendqueue_destroy(adapter->sendq);
-			adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
-			pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
-			//("sendpacket() returned %d\n", x);
-			//exit(1);
-		} else
-			; //printf("+%u\n", count++);
+        err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+        if (err) {
+            //printf("sendpacket() failed %d\n", x);
+            //for (;;)
+            pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+            //printf("pcap_send_queue)() returned %u\n", x);
+            pcap_sendqueue_destroy(adapter->sendq);
+            adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
+            pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+            //("sendpacket() returned %d\n", x);
+            //exit(1);
+        } else
+            ; //printf("+%u\n", count++);
         if (flush) {
             pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
 
             /* Dude, I totally forget why this step is necessary. I vaguely
              * remember there's a good reason for it though */
-   			pcap_sendqueue_destroy(adapter->sendq);
-			adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
+            pcap_sendqueue_destroy(adapter->sendq);
+            adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
         }
         return 0;
     }
-    
+
     /* LIBPCAP */
     return pcap_sendpacket(adapter->pcap, packet, length);
-    
+
 }
 extern unsigned control_c_pressed;
 
@@ -328,7 +328,7 @@ int rawsock_recv_packet(
     if (adapter->ring) {
         struct pfring_pkthdr hdr;
         int err;
-        
+
         again:
         err = PFRING.recv(adapter->ring,
                         (unsigned char**)packet,
@@ -352,8 +352,8 @@ int rawsock_recv_packet(
     } else {
         struct pcap_pkthdr hdr;
 
-    
-	    *packet = pcap_next(adapter->pcap, &hdr);
+
+        *packet = pcap_next(adapter->pcap, &hdr);
 
         if (*packet == NULL)
             return 1;
@@ -381,21 +381,21 @@ rawsock_send_probe(
     /*
      * Construct the destination packet
      */
-	tcp_set_target(pkt, ip, port, seqno);
+    tcp_set_target(pkt, ip, port, seqno);
 
     /*
      * Send it
      */
     rawsock_send_packet(adapter, pkt->packet, pkt->length, flush);
-	
+
     /*
      * Verify I'm doing the checksum correctly ('cause I ain't, I got
      * a bug right now).
      */
     /*if (ip_checksum(pkt) != 0xFFFF)
-		LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
-	if (tcp_checksum(pkt) != 0xFFFF)
-		LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
+        LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
+    if (tcp_checksum(pkt) != 0xFFFF)
+        LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
 }
 
 
@@ -435,7 +435,7 @@ rawsock_win_name(const char *ifname)
 {
     if (is_numeric_index(ifname)) {
         const char *new_adapter_name;
-        
+
         new_adapter_name = adapter_from_index(atoi(ifname));
         if (new_adapter_name)
             return new_adapter_name;
@@ -458,8 +458,8 @@ void
 rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
     if (adapter->ring) {
-        /* PORTABILITY: don't do anything for PF_RING, because it's 
-         * actually done when we create the adapter, because we can't 
+        /* PORTABILITY: don't do anything for PF_RING, because it's
+         * actually done when we create the adapter, because we can't
          * reconfigure the adapter after it's been activated. */
         return;
     }
@@ -483,7 +483,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         struct bpf_program prog;
 
         sprintf_s(filter, sizeof(filter), "not ether src %02x:%02X:%02X:%02X:%02X:%02X",
-            adapter_mac[0], adapter_mac[1], adapter_mac[2], 
+            adapter_mac[0], adapter_mac[1], adapter_mac[2],
             adapter_mac[3], adapter_mac[4], adapter_mac[5]);
 
         err = pcap_compile(
@@ -534,7 +534,7 @@ struct Adapter *
 rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_sendq)
 {
     struct Adapter *adapter;
-	char errbuf[PCAP_ERRBUF_SIZE];
+    char errbuf[PCAP_ERRBUF_SIZE];
 
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
     memset(adapter, 0, sizeof(*adapter));
@@ -545,7 +545,7 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
      *----------------------------------------------------------------*/
     if (is_numeric_index(adapter_name)) {
         const char *new_adapter_name;
-        
+
         new_adapter_name = adapter_from_index(atoi(adapter_name));
         if (new_adapter_name == 0) {
             fprintf(stderr, "pcap_open_live(%s) error: bad index\n", adapter_name);
@@ -558,11 +558,11 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
      * PORTABILITY: PF_RING
      *  If we've been told to use --pfring, then attempt to open the
      *  network adapter usign the PF_RING API rather than libpcap.
-     *  Since a lot of things can go wrong, we do a lot of extra 
+     *  Since a lot of things can go wrong, we do a lot of extra
      *  logging here.
      *----------------------------------------------------------------*/
     if (is_pfring) {
-	    int err;
+        int err;
         unsigned version;
 
         /*
@@ -570,12 +570,12 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
          *
          * TODO: Do we need the PF_RING_REENTRANT flag? We only have one
          * transmit and one receive thread, so I don't think we need it.
-         * Also, this reduces performance in half, from 12-mpps to 
+         * Also, this reduces performance in half, from 12-mpps to
          * 6-mpps.
          */
         LOG(2, "pfring:'%s': opening...\n", adapter_name);
-	    adapter->ring = PFRING.open(adapter_name, 1500, 0); //PF_RING_REENTRANT);
-	    adapter->pcap = (pcap_t*)adapter->ring;
+        adapter->ring = PFRING.open(adapter_name, 1500, 0); //PF_RING_REENTRANT);
+        adapter->pcap = (pcap_t*)adapter->ring;
         if (adapter->ring == NULL) {
             LOG(0, "pfring:'%s': OPEN ERROR: %s\n", adapter_name, strerror_x(errno));
             return 0;
@@ -604,20 +604,20 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
          *
          * PF_RING requires a separate activation step.
          */
-	    LOG(2, "pfring:'%s': activating\n", adapter_name);
-	    err = PFRING.enable_ring(adapter->ring);
-	    if (err != 0) {
+        LOG(2, "pfring:'%s': activating\n", adapter_name);
+        err = PFRING.enable_ring(adapter->ring);
+        if (err != 0) {
                 LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
                 PFRING.close(adapter->ring);
                 adapter->ring = 0;
-		        return 0;
-	    } else
-	        LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
+                return 0;
+        } else
+            LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
 
         return adapter;
 
     }
-    
+
     /*----------------------------------------------------------------
      * PORTABILITY: LIBPCAP
      *
@@ -626,16 +626,16 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
     {
         LOG(1, "pcap: %s\n", pcap_lib_version());
         LOG(2, "pcap:'%s': opening...\n", adapter_name);
-	    adapter->pcap = pcap_open_live(
-				    adapter_name,	    	/* interface name */
-				    65536,					/* max packet size */
-				    8,						/* promiscuous mode */
-				    1000,					/* read timeout in milliseconds */
-				    errbuf);
-	    if (adapter->pcap == NULL) {
-		    fprintf(stderr, "pcap:'%s': OPEN ERROR: %s\n", adapter_name, errbuf);
-		    return 0;
-	    } else
+        adapter->pcap = pcap_open_live(
+                    adapter_name,           /* interface name */
+                    65536,                  /* max packet size */
+                    8,                      /* promiscuous mode */
+                    1000,                   /* read timeout in milliseconds */
+                    errbuf);
+        if (adapter->pcap == NULL) {
+            fprintf(stderr, "pcap:'%s': OPEN ERROR: %s\n", adapter_name, errbuf);
+            return 0;
+        } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
     }
 
@@ -649,7 +649,7 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
     adapter->sendq = 0;
 #if defined(WIN32)
     if (is_sendq)
-    	adapter->sendq = pcap_sendqueue_alloc(SENDQ_SIZE);
+        adapter->sendq = pcap_sendqueue_alloc(SENDQ_SIZE);
 #endif
 
 
@@ -675,7 +675,7 @@ rawsock_is_adapter_names_equal(const char *lhs, const char *rhs)
 
 /***************************************************************************
  * Runs some tests when the "--debug if" option is given on the
- * command-line. This is useful to figure out why the interface you 
+ * command-line. This is useful to figure out why the interface you
  * are accessing doesn't work.
  ***************************************************************************/
 int
@@ -705,7 +705,7 @@ rawsock_selftest_if(const char *ifname)
     if (ipv4 == 0) {
         fprintf(stderr, "get-ip: returned err\n");
     } else {
-        printf("ip = %u.%u.%u.%u\n", 
+        printf("ip = %u.%u.%u.%u\n",
             (unsigned char)(ipv4>>24),
             (unsigned char)(ipv4>>16),
             (unsigned char)(ipv4>>8),
@@ -717,7 +717,7 @@ rawsock_selftest_if(const char *ifname)
     if (err) {
         fprintf(stderr, "get-adapter-mac: returned err=%d\n", err);
     } else {
-        printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n", 
+        printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n",
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     }
 
@@ -728,7 +728,7 @@ rawsock_selftest_if(const char *ifname)
     } else {
         unsigned char router_mac[6];
 
-        printf("gateway = %u.%u.%u.%u\n", 
+        printf("gateway = %u.%u.%u.%u\n",
             (unsigned char)(router_ipv4>>24),
             (unsigned char)(router_ipv4>>16),
             (unsigned char)(router_ipv4>>8),

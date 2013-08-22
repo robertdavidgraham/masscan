@@ -1,8 +1,8 @@
 /* Copyright: (c) 2009-2010 by Robert David Graham
-** License: This code is private to the author, and you do not 
-** have a license to run it, or own a copy, unless given 
-** a license personally by the author. This is 
-** explained in the LICENSE file at the root of the project. 
+** License: This code is private to the author, and you do not
+** have a license to run it, or own a copy, unless given
+** a license personally by the author. This is
+** explained in the LICENSE file at the root of the project.
 **/
 #ifndef PREPROCESS_H
 #define PREPROCESS_H
@@ -30,13 +30,13 @@ struct PreprocessedInfo {
     const unsigned char *mac_src;
     const unsigned char *mac_dst;
     const unsigned char *mac_bss;
-	unsigned ip_offset;		/* 14 for normal Ethernet */
+    unsigned ip_offset;     /* 14 for normal Ethernet */
     unsigned ip_version;    /* 4 or 6 */
     unsigned ip_protocol;   /* 6 for TCP, 11 for UDP */
     unsigned ip_length;     /* length of total packet */
     const unsigned char *ip_src;
     const unsigned char *ip_dst;
-	unsigned transport_offset;	/* 34 for normal Ethernet */
+    unsigned transport_offset;  /* 34 for normal Ethernet */
     unsigned port_src;
     unsigned port_dst;
 
@@ -46,7 +46,7 @@ struct PreprocessedInfo {
     int found_offset;
 };
 
-unsigned 
+unsigned
 preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, struct PreprocessedInfo *info);
 
 #endif

@@ -11,7 +11,7 @@
  * 3600 works well on a Pentium II-350
  * 4004 works well on an UltraSPARC-I/167
  *
- * 2012-nov (Rob): This code was written 15 years ago. Processor caches 
+ * 2012-nov (Rob): This code was written 15 years ago. Processor caches
  * haven't really gotten any larger. A number like 8008 works slightly
  * better on an Ivy Bridge CPU, but works noticeably worse on an Atom
  * or ARM processor. The value 4004 seems to be a good compromise for

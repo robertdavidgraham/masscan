@@ -1,8 +1,8 @@
 /* Copyright: (c) 2009-2010 by Robert David Graham
-** License: This code is private to the author, and you do not 
-** have a license to run it, or own a copy, unless given 
-** a license personally by the author. This is 
-** explained in the LICENSE file at the root of the project. 
+** License: This code is private to the author, and you do not
+** have a license to run it, or own a copy, unless given
+** a license personally by the author. This is
+** explained in the LICENSE file at the root of the project.
 **/
 /****************************************************************************
 
@@ -51,7 +51,7 @@
 
 /****************************************************************************
  ****************************************************************************/
-unsigned 
+unsigned
 preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, struct PreprocessedInfo *info)
 {
     unsigned offset = 0;
@@ -60,9 +60,9 @@ preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, s
     info->transport_offset = 0;
     info->found = FOUND_NOTHING;
     info->found_offset = 0;
-    
-	if (link_type != 1)
-		goto parse_linktype;
+
+    if (link_type != 1)
+        goto parse_linktype;
 
 parse_ethernet:
     VERIFY_REMAINING(14, FOUND_ETHERNET);
@@ -73,8 +73,8 @@ parse_ethernet:
     offset += 14;
     if (ethertype < 2000)
         goto parse_llc;
-	if (ethertype != 0x0800)
-		goto parse_ethertype;
+    if (ethertype != 0x0800)
+        goto parse_ethertype;
 
 parse_ipv4:
     {
@@ -89,7 +89,7 @@ parse_ipv4:
         /* Check version */
         if ((px[offset]>>4) != 4)
             return 0; /* not IPv4 or corrupt */
-        
+
         /* Check header length */
         header_length = (px[offset] & 0x0F) * 4;
         VERIFY_REMAINING(header_length, FOUND_IPV4);
@@ -97,9 +97,9 @@ parse_ipv4:
         /*TODO: verify checksum */
 
         /* Check for fragmentation */
-	    flags = px[offset+6]&0xE0;
-	    fragment_offset = (ex16be(px+offset+6) & 0x3FFF) << 3;
-	    if (fragment_offset != 0 || (flags & 0x20))
+        flags = px[offset+6]&0xE0;
+        fragment_offset = (ex16be(px+offset+6) & 0x3FFF) << 3;
+        if (fragment_offset != 0 || (flags & 0x20))
             return 0; /* fragmented */
 
         /* Check for total-length */
@@ -112,9 +112,9 @@ parse_ipv4:
 
         /* Save off pseudo header for checksum calculation */
         info->ip_version = (px[offset]>>4)&0xF;
-	    info->ip_src = px+offset+12;
-	    info->ip_dst = px+offset+16;
-    	info->ip_protocol = px[offset+9];
+        info->ip_src = px+offset+12;
+        info->ip_dst = px+offset+16;
+        info->ip_protocol = px[offset+9];
         info->ip_length = total_length;
         if (info->ip_version != 4)
             return 0;
@@ -145,7 +145,7 @@ parse_tcp:
 parse_udp:
     {
         VERIFY_REMAINING(8, FOUND_UDP);
-        
+
         info->port_src = ex16be(px+offset+0);
         info->port_dst = ex16be(px+offset+2);
         offset += 8;
@@ -172,7 +172,7 @@ parse_ipv6:
         /* Check version */
         if ((px[offset]>>4) != 6)
             return 0; /* not IPv4 or corrupt */
-        
+
         /* Payload length */
         payload_length = ex16be(px+offset+4);
         VERIFY_REMAINING(40+payload_length, FOUND_IPV6);
@@ -181,9 +181,9 @@ parse_ipv6:
 
         /* Save off pseudo header for checksum calculation */
         info->ip_version = (px[offset]>>4)&0xF;
-	    info->ip_src = px+offset+8;
-	    info->ip_dst = px+offset+8+16;
-    	info->ip_protocol = px[offset+6];
+        info->ip_src = px+offset+8;
+        info->ip_dst = px+offset+8+16;
+        info->ip_protocol = px[offset+6];
 
         /* next protocol */
         offset += 40;
@@ -194,8 +194,8 @@ parse_ipv6_next:
         case 6: goto parse_tcp;
         case 17: goto parse_udp;
         case 58: goto parse_icmpv6;
-		case 0x2c: /* IPv6 fragmetn */
-			return 0;
+        case 0x2c: /* IPv6 fragmetn */
+            return 0;
         default:
             printf("***** test me ******\n");
             return 0; /* todo: should add more protocols, like ICMP */
@@ -306,57 +306,57 @@ parse_radiotap_header:
      *   };
      */
     {
-		unsigned header_length;
-		unsigned features;
+        unsigned header_length;
+        unsigned features;
 
         VERIFY_REMAINING(8, FOUND_RADIOTAP);
         if (px[offset] != 0)
             return 0;
-		header_length = ex16le(px+offset+2);
-		features = ex32le(px+offset+4);
+        header_length = ex16le(px+offset+2);
+        features = ex32le(px+offset+4);
 
         VERIFY_REMAINING(header_length, FOUND_RADIOTAP);
 
-		/* If FCS is present at the end of the packet, then change
-		 * the length to remove it */
-		if (features & 0x4000) {
-			unsigned fcs_header = ex32le(px+offset+header_length-4);
-			unsigned fcs_frame = ex32le(px+length-4);
-			if (fcs_header == fcs_frame)
-				length -= 4;
+        /* If FCS is present at the end of the packet, then change
+         * the length to remove it */
+        if (features & 0x4000) {
+            unsigned fcs_header = ex32le(px+offset+header_length-4);
+            unsigned fcs_frame = ex32le(px+length-4);
+            if (fcs_header == fcs_frame)
+                length -= 4;
             VERIFY_REMAINING(header_length, FOUND_RADIOTAP);
-		}
+        }
         offset += header_length;
         goto parse_wifi;
-	}
+    }
 
 
 parse_prism_header:
     /* DLT_PRISM_HEADER */
-	/* This was original created to handle Prism II cards, but now we see this
-	 * from other cards as well, such as the 'madwifi' drivers using Atheros
-	 * chipsets.
-	 *
-	 * This starts with a "TLV" format, a 4-byte little-endian tag, followed by
-	 * a 4-byte little-endian length. This TLV should contain the entire Prism
-	 * header, after which we'll find the real header. Therefore, we should just
-	 * be able to parse the 'length', and skip that many bytes. I'm told it's more
-	 * complicated than that, but it seems to work right now, so I'm keeping it 
-	 * this way.
-	 */
+    /* This was original created to handle Prism II cards, but now we see this
+     * from other cards as well, such as the 'madwifi' drivers using Atheros
+     * chipsets.
+     *
+     * This starts with a "TLV" format, a 4-byte little-endian tag, followed by
+     * a 4-byte little-endian length. This TLV should contain the entire Prism
+     * header, after which we'll find the real header. Therefore, we should just
+     * be able to parse the 'length', and skip that many bytes. I'm told it's more
+     * complicated than that, but it seems to work right now, so I'm keeping it
+     * this way.
+     */
     {
-		unsigned header_length;
+        unsigned header_length;
         VERIFY_REMAINING(8, FOUND_PRISM);
-		
-		if (ex32le(px+offset+0) != 0x00000044)
+
+        if (ex32le(px+offset+0) != 0x00000044)
             return 0;
-		header_length = ex32le(px+offset+4);
+        header_length = ex32le(px+offset+4);
         if (header_length > 0xFFFFF)
             return 0;
         VERIFY_REMAINING(header_length, FOUND_PRISM);
         offset += header_length;
         goto parse_wifi;
-	}
+    }
 
 parse_llc:
     {
@@ -388,7 +388,7 @@ parse_llc:
 parse_ethertype:
     switch (ethertype) {
     case 0x0800: goto parse_ipv4;
-	case 0x0806: goto parse_arp;
+    case 0x0806: goto parse_arp;
     case 0x86dd: goto parse_ipv6;
     case 0x8100: goto parse_vlan8021q;
     case 0x8847: goto parse_vlanmpls;
@@ -399,47 +399,47 @@ parse_linktype:
     /*
      * The "link-type" is the same as specified in "libpcap" headers
      */
-	switch (link_type) {
-	case 1:     goto parse_ethernet;
-	case 0x69:  goto parse_wifi;
-	case 119:   goto parse_prism_header;
-	case 127:   goto parse_radiotap_header;
-	default:    return 0;
-	}
+    switch (link_type) {
+    case 1:     goto parse_ethernet;
+    case 0x69:  goto parse_wifi;
+    case 119:   goto parse_prism_header;
+    case 127:   goto parse_radiotap_header;
+    default:    return 0;
+    }
 
-	/*
-	 +--------+--------+--------+--------+
-	 |   hardware type |   protocol type |
-	 +--------+--------+--------+--------+
-	 | h-len  |  p-len |      opcode     |
-	 +--------+--------+--------+--------+
-	*/
-	 
+    /*
+     +--------+--------+--------+--------+
+     |   hardware type |   protocol type |
+     +--------+--------+--------+--------+
+     | h-len  |  p-len |      opcode     |
+     +--------+--------+--------+--------+
+    */
+
 parse_arp:
-	info->ip_version = 256;
-	info->ip_offset = offset;
+    info->ip_version = 256;
+    info->ip_offset = offset;
 
     {
-		//unsigned hardware_type;
-		//unsigned protocol_type;
-		unsigned hardware_length;
-		unsigned protocol_length;
-		unsigned opcode;
+        //unsigned hardware_type;
+        //unsigned protocol_type;
+        unsigned hardware_length;
+        unsigned protocol_length;
+        unsigned opcode;
 
-	    VERIFY_REMAINING(8, FOUND_ARP);
-		//hardware_type = px[offset]<<8 | px[offset+1];
-		//protocol_type = px[offset+2]<<8 | px[offset+3];
-		hardware_length = px[offset+4];
-		protocol_length = px[offset+5];
-		opcode = px[offset+6]<<8 | px[offset+7];
-		offset += 8;
+        VERIFY_REMAINING(8, FOUND_ARP);
+        //hardware_type = px[offset]<<8 | px[offset+1];
+        //protocol_type = px[offset+2]<<8 | px[offset+3];
+        hardware_length = px[offset+4];
+        protocol_length = px[offset+5];
+        opcode = px[offset+6]<<8 | px[offset+7];
+        offset += 8;
 
-		VERIFY_REMAINING(2*hardware_length + 2*protocol_length, FOUND_ARP);
+        VERIFY_REMAINING(2*hardware_length + 2*protocol_length, FOUND_ARP);
 
-	    info->ip_src = px + offset + hardware_length;
-	    info->ip_dst = px + offset + 2*hardware_length + protocol_length;
-		info->ip_protocol = opcode;
-		return 1;
+        info->ip_src = px + offset + hardware_length;
+        info->ip_dst = px + offset + 2*hardware_length + protocol_length;
+        info->ip_protocol = opcode;
+        return 1;
     }
 
 }

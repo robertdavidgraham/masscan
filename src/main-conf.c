@@ -1,8 +1,8 @@
 /*
-	Read in the configuration for MASSCAN.
+    Read in the configuration for MASSCAN.
 
-	Configuration parameters can be read either from the command-line
-	or a configuration file. Long parameters of the --xxxx variety have
+    Configuration parameters can be read either from the command-line
+    or a configuration file. Long parameters of the --xxxx variety have
     the same name in both.
 
     Most of the code in this module is for 'nmap' options we don't support.
@@ -32,7 +32,7 @@ void masscan_usage(void)
     printf(" list all the options (nmap format)\n");
     printf("masscan --echo\n");
     printf(" list all options AND their current settings (non-nmap format)\n");
-	exit(1);
+    exit(1);
 }
 
 /***************************************************************************
@@ -98,11 +98,11 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
-    
+
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
     fprintf(fp, "adapter = %s\n", masscan->ifname);
-    fprintf(fp, "adapter-ip = %u.%u.%u.%u\n", 
+    fprintf(fp, "adapter-ip = %u.%u.%u.%u\n",
         (masscan->adapter_ip>>24)&0xFF,
         (masscan->adapter_ip>>16)&0xFF,
         (masscan->adapter_ip>> 8)&0xFF,
@@ -164,7 +164,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     for (i=0; i<masscan->targets.count; i++) {
         struct Range range = masscan->targets.list[i];
         fprintf(fp, "range = ");
-        fprintf(fp, "%u.%u.%u.%u", 
+        fprintf(fp, "%u.%u.%u.%u",
             (range.begin>>24)&0xFF,
             (range.begin>>16)&0xFF,
             (range.begin>> 8)&0xFF,
@@ -182,8 +182,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
             i = 32-i;
             if ((range.begin & (0xFFFFFFFF>>i)) == ((range.end & (0xFFFFFFFF>>i)))) {
                 fprintf(fp, "/%u", i);
-            } else 
-            fprintf(fp, "-%u.%u.%u.%u", 
+            } else
+            fprintf(fp, "-%u.%u.%u.%u",
                 (range.end>>24)&0xFF,
                 (range.end>>16)&0xFF,
                 (range.end>> 8)&0xFF,
@@ -204,7 +204,7 @@ masscan_save_state(struct Masscan *masscan)
     char filename[512];
     FILE *fp;
     int err;
-    
+
 
     strcpy_s(filename, sizeof(filename), "paused.scan");
     fprintf(stderr, "                                                                      \r");
@@ -243,7 +243,7 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
         //char dirname[256];
         perror(filename);
         //fprintf(stderr, "dir = %s\n", getcwd(dirname));
-        exit(1); /* HARD EXIT: because if it's an exclusion file, we don't 
+        exit(1); /* HARD EXIT: because if it's an exclusion file, we don't
                   * want to continue. We don't want ANY chance of
                   * accidentally scanning somebody */
     }
@@ -300,11 +300,11 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
             address[i] = '\0';
 
             /* parse the address range */
-			range = range_parse_ipv4(address, &offset, (unsigned)i);
-			if (range.begin == 0xFFFFFFFF && range.end == 0) {
-				fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", filename, line_number, offset, address);
-			} else {
-    			rangelist_add_range(ranges, range.begin, range.end);
+            range = range_parse_ipv4(address, &offset, (unsigned)i);
+            if (range.begin == 0xFFFFFFFF && range.end == 0) {
+                fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", filename, line_number, offset, address);
+            } else {
+                rangelist_add_range(ranges, range.begin, range.end);
             }
         }
 
@@ -406,16 +406,16 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         if (masscan->ifname[0]) {
             fprintf(stderr, "CONF: overwriting \"adapter=%s\"\n", masscan->ifname);
         }
-		sprintf_s(masscan->ifname, sizeof(masscan->ifname), "%s", value);
+        sprintf_s(masscan->ifname, sizeof(masscan->ifname), "%s", value);
     }
     else if (EQUALS("adapter-ip", name) || EQUALS("adapter.ip", name) || EQUALS("adapterip", name)) {
-			struct Range range;
+            struct Range range;
 
-			range = range_parse_ipv4(value, 0, 0);
-			if (range.begin == 0 && range.end == 0) {
-				fprintf(stderr, "CONF: bad IPv4 address: %s=%s\n", name, value);
+            range = range_parse_ipv4(value, 0, 0);
+            if (range.begin == 0 && range.end == 0) {
+                fprintf(stderr, "CONF: bad IPv4 address: %s=%s\n", name, value);
                 return;
-			}
+            }
 
             masscan->adapter_ip = range.begin;
     } else if (EQUALS("adapter-port", name) || EQUALS("adapterport", name)) {
@@ -474,76 +474,79 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         }
 
         masscan->max_rate = rate;
-        
+
     }
     else if (EQUALS("ports", name) || EQUALS("port", name)) {
-    	rangelist_parse_ports(&masscan->ports, value);
-		masscan->op = Operation_Scan;
+        rangelist_parse_ports(&masscan->ports, value);
+        masscan->op = Operation_Scan;
     }
     else if (
             EQUALS("exclude-ports", name) || EQUALS("exclude-port", name) ||
             EQUALS("exclude.ports", name) || EQUALS("exclude.port", name) ||
             EQUALS("excludeports", name) || EQUALS("excludeport", name)
         ) {
-    	rangelist_parse_ports(&masscan->exclude_port, value);
+        rangelist_parse_ports(&masscan->exclude_port, value);
     }
     else if (EQUALS("range", name) || EQUALS("ranges", name) || EQUALS("ip", name) || EQUALS("ipv4", name)) {
         const char *ranges = value;
         unsigned offset = 0;
-		unsigned max_offset = (unsigned)strlen(ranges);
+        unsigned max_offset = (unsigned)strlen(ranges);
 
-		for (;;) {
-			struct Range range;
+        for (;;) {
+            struct Range range;
 
-			range = range_parse_ipv4(ranges, &offset, max_offset);
-			if (range.begin == 0 && range.end == 0) {
-				fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
-				break;
-			}
+            range = range_parse_ipv4(ranges, &offset, max_offset);
+            if (range.begin == 0 && range.end == 0) {
+                fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
+                break;
+            }
 
-			rangelist_add_range(&masscan->targets, range.begin, range.end);
+            rangelist_add_range(&masscan->targets, range.begin, range.end);
 
-			if (offset >= max_offset || ranges[offset] != ',')
-				break;
-			else
-				offset++; /* skip comma */
-		}
-      	masscan->op = Operation_Scan;
+            if (offset >= max_offset || ranges[offset] != ',')
+                break;
+            else
+                offset++; /* skip comma */
+        }
+        masscan->op = Operation_Scan;
     }
-    else if (   
-                EQUALS("exclude", name) || 
-                EQUALS("exclude-range", name) || 
-                EQUALS("excluderange", name) || 
-                EQUALS("exclude-ranges", name) || 
-                EQUALS("excluderanges", name) || 
-                EQUALS("exclude-ip", name) || 
-                EQUALS("excludeip", name) || 
+    else if (
+                EQUALS("exclude", name) ||
+                EQUALS("exclude-range", name) ||
+                EQUALS("excluderange", name) ||
+                EQUALS("exclude-ranges", name) ||
+                EQUALS("excluderanges", name) ||
+                EQUALS("exclude-ip", name) ||
+                EQUALS("excludeip", name) ||
                 EQUALS("exclude-ipv4", name) ||
                 EQUALS("excludeipv4", name)
                 ) {
         const char *ranges = value;
         unsigned offset = 0;
-		unsigned max_offset = (unsigned)strlen(ranges);
+        unsigned max_offset = (unsigned)strlen(ranges);
 
-		for (;;) {
-			struct Range range;
+        for (;;) {
+            struct Range range;
 
-			range = range_parse_ipv4(ranges, &offset, max_offset);
-			if (range.begin == 0 && range.end == 0) {
-				fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
-				break;
-			}
+            range = range_parse_ipv4(ranges, &offset, max_offset);
+            if (range.begin == 0 && range.end == 0) {
+                fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
+                break;
+            }
 
-			rangelist_add_range(&masscan->exclude_ip, range.begin, range.end);
+            rangelist_add_range(&masscan->exclude_ip, range.begin, range.end);
 
-			if (offset >= max_offset || ranges[offset] != ',')
-				break;
-			else
-				offset++; /* skip comma */
-		}
-      	masscan->op = Operation_Scan;
+            if (offset >= max_offset || ranges[offset] != ',')
+                break;
+            else
+                offset++; /* skip comma */
+        }
+        masscan->op = Operation_Scan;
     } else if (EQUALS("append-output", name) || EQUALS("output-append", name)) {
-        masscan->nmap.append = 1;
+        if (EQUALS("overwrite", name))
+            masscan->nmap.append = 0;
+        else
+            masscan->nmap.append = 1;
     } else if (EQUALS("badsum", name)) {
         masscan->nmap.badsum = 1;
     } else if (EQUALS("datadir", name)) {
@@ -571,7 +574,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
     } else if (EQUALS("iflist", name)) {
-		masscan->op = Operation_List_Adapters;
+        masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name) || EQUALS("include-file", name) || EQUALS("include.file", name)) {
         ranges_from_file(&masscan->targets, value);
     } else if (EQUALS("ip-options", name)) {
@@ -607,7 +610,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("output-status", name)) {
         if (EQUALS("open", value))
             masscan->nmap.open_only = 1;
-        
+
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
@@ -645,6 +648,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
         masscan_read_config_file(masscan, value);
+        masscan_set_parameter(masscan, "output-append", "true");
     } else if (EQUALS("resume-seed", name)) {
         masscan->resume.seed = parseInt(value);
     } else if (EQUALS("resume-index", name)) {
@@ -736,7 +740,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         masscan->rotate_offset = (unsigned)num;
     } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
         char *p;
-        strcpy_s(   masscan->rotate_directory, 
+        strcpy_s(   masscan->rotate_directory,
                     sizeof(masscan->rotate_directory),
                     value);
 
@@ -795,7 +799,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("version-trace", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
-    } else if (EQUALS("webxml", name)) {        
+    } else if (EQUALS("webxml", name)) {
         masscan_set_parameter(masscan, "stylesheet", "http://nmap.org/svn/docs/nmap.xsl");
     } else {
         fprintf(stderr, "CONF: unknown config option: %s=%s\n", name, value);
@@ -819,7 +823,7 @@ is_singleton(const char *name)
         "log-errors", "append-output", "webxml", "no-stylesheet",
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
-        "nmap", "trace-packet", "pfring", "sendq", 
+        "nmap", "trace-packet", "pfring", "sendq",
         0};
     size_t i;
 
@@ -837,19 +841,19 @@ is_singleton(const char *name)
 void
 masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 {
-	int i;
+    int i;
 
-	for (i=1; i<argc; i++) {
+    for (i=1; i<argc; i++) {
 
-		/*
+        /*
          * --name=value
          * --name:value
          * -- name value
          */
-		if (argv[i][0] == '-' && argv[i][1] == '-') {
-			if (strcmp(argv[i], "--help") == 0)
-				masscan_usage();
-			else {
+        if (argv[i][0] == '-' && argv[i][1] == '-') {
+            if (strcmp(argv[i], "--help") == 0)
+                masscan_usage();
+            else {
                 char name2[64];
                 char *name = argv[i] + 2;
                 unsigned name_length;
@@ -883,15 +887,15 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 name2[name_length] = '\0';
 
                 masscan_set_parameter(masscan, name2, value);
-			}
-			continue;
-		}
+            }
+            continue;
+        }
 
-		/* For for a single-dash parameter */
-		if (argv[i][0] == '-') {
+        /* For for a single-dash parameter */
+        if (argv[i][0] == '-') {
             const char *arg;
 
-			switch (argv[i][1]) {
+            switch (argv[i][1]) {
             case '6':
                 fprintf(stderr, "nmap(%s): unsupported: maybe one day\n", argv[i]);
                 exit(1);
@@ -901,11 +905,11 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'b':
                 fprintf(stderr, "nmap(%s): FTP bounce scans will never be supported\n", argv[i]);
                 exit(1);
-			case 'c':
-				if (argv[i][2])
-					arg = argv[i]+2;
-				else
-					arg = argv[++i];
+            case 'c':
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
                 masscan_read_config_file(masscan, arg);
                 break;
             case 'd': /* just do same as verbosity level */
@@ -916,30 +920,30 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 }
                 break;
             case 'e':
-				if (argv[i][2])
-					arg = argv[i]+2;
-				else
-					arg = argv[++i];
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
                 masscan_set_parameter(masscan, "adapter", arg);
-				break;
+                break;
             case 'f':
                 fprintf(stderr, "nmap(%s): fragmentation not yet supported\n", argv[i]);
                 exit(1);
             case 'F':
                 fprintf(stderr, "nmap(%s): unsupported, no slow/fast mode\n", argv[i]);
                 exit(1);
-			case 'g':
-				if (argv[i][2])
-					arg = argv[i]+2;
-				else
-					arg = argv[++i];
+            case 'g':
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
                 masscan_set_parameter(masscan, "adapter-port", arg);
-				break;
-			case 'h':
-			case '?':
-				masscan_usage();
-				break;
-			case 'i':
+                break;
+            case 'h':
+            case '?':
+                masscan_usage();
+                break;
+            case 'i':
                 if (argv[i][3] == '\0' && !isdigit(argv[i][2]&0xFF)) {
                     /* This looks like an nmap option*/
                     switch (argv[i][2]) {
@@ -955,14 +959,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     }
 
                 } else {
-				    if (argv[i][2])
-					    arg = argv[i]+2;
-				    else
-					    arg = argv[++i];
-                
+                    if (argv[i][2])
+                        arg = argv[i]+2;
+                    else
+                        arg = argv[++i];
+
                     masscan_set_parameter(masscan, "adapter", arg);
                 }
-				break;
+                break;
             case 'n':
                 /* This looks like an nmap option*/
                 /* Do nothing: this code never does DNS lookups anyway */
@@ -1010,13 +1014,13 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 fprintf(stderr, "nmap(%s): unsupported, OS detection is too complex\n", argv[i]);
                 exit(1);
                 break;
-			case 'p':
-				if (argv[i][2])
-					arg = argv[i]+2;
-				else
-					arg = argv[++i];
+            case 'p':
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
                 masscan_set_parameter(masscan, "ports", arg);
-				break;
+                break;
             case 'P':
                 switch (argv[i][2]) {
                 case 'n':
@@ -1100,14 +1104,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     fprintf(stderr, "%s: unknown parameter\n", argv[i]);
                     exit(1);
                 }
-				break;
-			case 'S':
-				if (argv[i][2])
-					arg = argv[i]+2;
-				else
-					arg = argv[++i];
+                break;
+            case 'S':
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
                 masscan_set_parameter(masscan, "adapter-ip", arg);
-				break;
+                break;
             case 'v':
                 {
                     int v;
@@ -1118,24 +1122,24 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'V': /* print version and exit */
                 exit(1);
                 break;
-			case 'W':
-				masscan->op = Operation_List_Adapters;
-				return;
+            case 'W':
+                masscan->op = Operation_List_Adapters;
+                return;
             case 'T':
                 fprintf(stderr, "nmap(%s): unsupported, we do timing WAY different than nmap\n", argv[i]);
                 exit(1);
                 return;
-			default:
-				fprintf(stderr, "unknown option: %s\n", argv[i]);
-			}
-			continue;
-		}
+            default:
+                fprintf(stderr, "unknown option: %s\n", argv[i]);
+            }
+            continue;
+        }
 
         /* If parameter doesn't start with '-', assume it's an
          * IPv4 range
          */
         masscan_set_parameter(masscan, "range", argv[i]);
-	}
+    }
 }
 
 /***************************************************************************

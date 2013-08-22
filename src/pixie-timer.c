@@ -8,11 +8,11 @@
     time. In other words, if you put the system to sleep and wake it
     up a day later, this function should see no change, since time
     wasn't elapsing while the system was asleep.
- 
+
     Reference:
     http://www.python.org/dev/peps/pep-0418/#monotonic-clocks
     http://www.brain-dump.org/blog/entry/107
- 
+
 */
 #include "pixie-timer.h"
 
@@ -218,7 +218,7 @@ int pixie_time_selftest()
 {
     static const uint64_t duration = 123456;
     uint64_t start, stop, elapsed;
-    
+
 
     start = pixie_gettime();
     pixie_usleep(duration);
@@ -231,6 +231,6 @@ int pixie_time_selftest()
         fprintf(stderr, "timing error, long delay\n");
         return 1;
     }
-    
+
     return 0;
 }

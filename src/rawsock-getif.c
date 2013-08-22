@@ -74,7 +74,7 @@ static int read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, 
             break;
         }
     } while ((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pId));
-    
+
     return msgLen;
 }
 
@@ -129,8 +129,8 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     unsigned ipv4 = 0;
 
 
-    /* 
-     * Create 'netlink' socket to query kernel 
+    /*
+     * Create 'netlink' socket to query kernel
      */
     fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
     if (fd < 0) {
@@ -159,7 +159,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
             __FILE__, __LINE__, errno);
         return errno;
     }
-    
+
     /*
      * Now read all the responses
      */
@@ -179,7 +179,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
         int err;
 
         memset(rtInfo, 0, sizeof(struct route_info));
-            
+
         err = parseRoutes(nlMsg, rtInfo);
         if (err != 0)
             continue;
@@ -281,7 +281,7 @@ again:
 
         /*
          * When we reach the first adapter with an IP address, then
-         * we'll use that one 
+         * we'll use that one
          */
         if (ipv4) {
             sprintf_s(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);

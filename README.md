@@ -162,3 +162,9 @@ entire Internet for all ports is a 48-bit problem (32-bit address and
 16-bit port), but we accomplish this with only a few kilobytes of
 memory.
 
+# Authors
+
+This tool created by Robert Graham:
+email: robert_david_graham@yahoo.com
+twitter: @ErrataRob
+

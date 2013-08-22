@@ -56,12 +56,12 @@ typedef pfring*(*PFRING_OPEN)(
                     unsigned flags);
 typedef void (*PFRING_CLOSE)(pfring *ring);
 typedef int (*PFRING_ENABLE_RING)(pfring *ring);
-typedef int (*PFRING_SEND)( pfring *ring, 
-                    const unsigned char *buffer, 
-                    unsigned buffer_length, 
+typedef int (*PFRING_SEND)( pfring *ring,
+                    const unsigned char *buffer,
+                    unsigned buffer_length,
                     unsigned char flush_packet);
-typedef int (*PFRING_RECV)(    pfring *ring, 
-                    unsigned char** buffer, 
+typedef int (*PFRING_RECV)(    pfring *ring,
+                    unsigned char** buffer,
                     unsigned buffer_length,
                     struct pfring_pkthdr *hdr,
                     unsigned char wait_for_incoming_packet);

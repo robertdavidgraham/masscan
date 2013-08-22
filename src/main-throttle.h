@@ -7,9 +7,9 @@ struct Throttler
     double max_rate;
     double current_rate;
     double batch_size;
-   
+
     unsigned index;
-    
+
     struct {
         uint64_t timestamp;
         uint64_t packet_count;

@@ -21,15 +21,15 @@
 struct ARP_IncomingRequest
 {
     unsigned is_valid;
-	unsigned opcode;
-  	unsigned hardware_type;
-	unsigned protocol_type;
-	unsigned hardware_length;
-	unsigned protocol_length;
-	unsigned ip_src;
-	unsigned ip_dst;
-	const unsigned char *mac_src;
-	const unsigned char *mac_dst;
+    unsigned opcode;
+    unsigned hardware_type;
+    unsigned protocol_type;
+    unsigned hardware_length;
+    unsigned protocol_length;
+    unsigned ip_src;
+    unsigned ip_dst;
+    const unsigned char *mac_src;
+    const unsigned char *mac_dst;
 };
 
 /****************************************************************************
@@ -38,42 +38,42 @@ void
 proto_arp_parse(struct ARP_IncomingRequest *arp, const unsigned char px[], unsigned offset, unsigned max)
 {
 
-	/*
-	 * parse the header
-	 */
-	VERIFY_REMAINING(8);
+    /*
+     * parse the header
+     */
+    VERIFY_REMAINING(8);
     arp->is_valid = 0; /* not valid yet */
 
-	arp->hardware_type = px[offset]<<8 | px[offset+1];
-	arp->protocol_type = px[offset+2]<<8 | px[offset+3];
-	arp->hardware_length = px[offset+4];
-	arp->protocol_length = px[offset+5];
-	arp->opcode = px[offset+6]<<8 | px[offset+7];
-	offset += 8;
+    arp->hardware_type = px[offset]<<8 | px[offset+1];
+    arp->protocol_type = px[offset+2]<<8 | px[offset+3];
+    arp->hardware_length = px[offset+4];
+    arp->protocol_length = px[offset+5];
+    arp->opcode = px[offset+6]<<8 | px[offset+7];
+    offset += 8;
 
-	/* We only support IPv4 and Ethernet addresses */
-	if (arp->protocol_length != 4 && arp->hardware_length != 6)
-		return;
-	if (arp->protocol_type != 0x0800)
-		return;
-	if (arp->hardware_type != 1 && arp->hardware_type != 6)
-		return;
+    /* We only support IPv4 and Ethernet addresses */
+    if (arp->protocol_length != 4 && arp->hardware_length != 6)
+        return;
+    if (arp->protocol_type != 0x0800)
+        return;
+    if (arp->hardware_type != 1 && arp->hardware_type != 6)
+        return;
 
-	/*
-	 * parse the addresses
-	 */
-	VERIFY_REMAINING(2 * arp->hardware_length + 2 * arp->protocol_length);
-	arp->mac_src = px+offset;
-	offset += arp->hardware_length;
-	
-	arp->ip_src = px[offset+0]<<24 | px[offset+1]<<16 | px[offset+2]<<8 | px[offset+3];
-	offset += arp->protocol_length;
+    /*
+     * parse the addresses
+     */
+    VERIFY_REMAINING(2 * arp->hardware_length + 2 * arp->protocol_length);
+    arp->mac_src = px+offset;
+    offset += arp->hardware_length;
 
-	arp->mac_dst = px+offset;
-	offset += arp->hardware_length;
+    arp->ip_src = px[offset+0]<<24 | px[offset+1]<<16 | px[offset+2]<<8 | px[offset+3];
+    offset += arp->protocol_length;
 
-	arp->ip_dst = px[offset+0]<<24 | px[offset+1]<<16 | px[offset+2]<<8 | px[offset+3];
-	//offset += arp->protocol_length;
+    arp->mac_dst = px+offset;
+    offset += arp->hardware_length;
+
+    arp->ip_dst = px[offset+0]<<24 | px[offset+1]<<16 | px[offset+2]<<8 | px[offset+3];
+    //offset += arp->protocol_length;
 
     arp->is_valid = 1;
 }
@@ -81,7 +81,7 @@ proto_arp_parse(struct ARP_IncomingRequest *arp, const unsigned char px[], unsig
 
 /****************************************************************************
  ****************************************************************************/
-int arp_resolve_sync(struct Adapter *adapter, 
+int arp_resolve_sync(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address)
 {
@@ -103,7 +103,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     memcpy(arp_packet +  6, my_mac_address, 6);
     memcpy(arp_packet + 12, "\x08\x06", 2);
 
-    memcpy(arp_packet + 14, 
+    memcpy(arp_packet + 14,
             "\x00\x01" /* hardware = Ethernet */
             "\x08\x00" /* protocol = IPv4 */
             "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
@@ -115,7 +115,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     arp_packet[29] = (unsigned char)(my_ipv4 >> 16);
     arp_packet[30] = (unsigned char)(my_ipv4 >>  8);
     arp_packet[31] = (unsigned char)(my_ipv4 >>  0);
-    
+
     memcpy(arp_packet + 32, "\x00\x00\x00\x00\x00\x00", 6);
     arp_packet[38] = (unsigned char)(your_ipv4 >> 24);
     arp_packet[39] = (unsigned char)(your_ipv4 >> 16);
@@ -244,7 +244,7 @@ int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *m
     memcpy(arp_packet +  6, my_mac, 6);
     memcpy(arp_packet + 12, "\x08\x06", 2);
 
-    memcpy(arp_packet + 14, 
+    memcpy(arp_packet + 14,
             "\x00\x01" /* hardware = Ethernet */
             "\x08\x00" /* protocol = IPv4 */
             "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
@@ -256,7 +256,7 @@ int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *m
     arp_packet[29] = (unsigned char)(my_ip >> 16);
     arp_packet[30] = (unsigned char)(my_ip >>  8);
     arp_packet[31] = (unsigned char)(my_ip >>  0);
-    
+
     memcpy(arp_packet + 32, request.mac_src, 6);
     arp_packet[38] = (unsigned char)(request.ip_src >> 24);
     arp_packet[39] = (unsigned char)(request.ip_src >> 16);

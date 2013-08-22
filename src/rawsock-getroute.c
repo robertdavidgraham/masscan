@@ -23,8 +23,8 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
     int err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;
-    
-    
+
+
     /*
      * Requests/responses from the kernel are done with an "rt_msghdr"
      * structure followed by an array of "sockaddr" structures.
@@ -32,9 +32,9 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
     sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in) * sizeof(int)*8;
     rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
 
-    
+
     /*
-     * Create a socket for querying the kernel 
+     * Create a socket for querying the kernel
      */
     fd = socket(PF_ROUTE, SOCK_RAW, 0);
     if (fd <= 0) {
@@ -42,10 +42,10 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         free(rtm);
         return errno;
     }
-    
+
 
     /*
-     * Format and send request to kernel 
+     * Format and send request to kernel
      */
     memset(rtm, 0, sizeof_buffer);
     rtm->rtm_msglen = sizeof_buffer;
@@ -54,7 +54,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
     rtm->rtm_version = RTM_VERSION;
     rtm->rtm_seq = seq;
     rtm->rtm_addrs = RTA_DST | RTA_NETMASK;
-    
+
     err = write(fd, (char *)rtm, sizeof_buffer);
     if (err) {
         perror("write(RTM_GET)");
@@ -74,20 +74,20 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
             continue;
         if (rtm->rtm_pid != getpid())
             continue;
-        
+
     }
     close(fd);
-    
+
     /*
      * Parse our data
      */
     {
         int i;
         struct sockaddr *sa;
-        
+
         /* Addresses start right in buffer after RTM structure */
         sa = (struct sockaddr *)(rtm + 1);
-        
+
         for (i=1; i; i *= 2) {
             if (i == RTA_GATEWAY) {
                 /* FOUND IT!! copy the address and return */
@@ -99,7 +99,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
             sa++;
         }
     }
-    
+
     free(rtm);
     return -1;
 }
@@ -164,7 +164,7 @@ static int read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, 
             break;
         }
     } while ((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pId));
-    
+
     return msgLen;
 }
 
@@ -222,8 +222,8 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
      */
     *ipv4 = 0;
 
-    /* 
-     * Create 'netlink' socket to query kernel 
+    /*
+     * Create 'netlink' socket to query kernel
      */
     fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
     if (fd < 0) {
@@ -252,7 +252,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
             __FILE__, __LINE__, errno);
         return errno;
     }
-    
+
     /*
      * Now read all the responses
      */
@@ -272,7 +272,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         int err;
 
         memset(rtInfo, 0, sizeof(struct route_info));
-            
+
         err = parseRoutes(nlMsg, rtInfo);
         if (err != 0)
             continue;

@@ -79,7 +79,7 @@ dedup_is_duplicate(struct DedupTable *dedup, unsigned ip, unsigned port)
             return 1;
         }
     }
-    
+
     /* We didn't find it, so add it to our list. This will push
      * older entries at this bucket off the list */
     memmove(bucket, bucket+1, 3*sizeof(*bucket));

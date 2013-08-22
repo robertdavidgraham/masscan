@@ -24,7 +24,7 @@
  * are:
  * 2*3*5*7*11*13*17*19*23*29*31*37*41*43*47*53 = 0xC443F2F861D29C3A
  *                                                 0123456789abcdef
- * We zero termiante this list, so we are going to reserve 20 slots. 
+ * We zero termiante this list, so we are going to reserve 20 slots.
  */
 typedef uint64_t PRIMEFACTORS[20];
 
@@ -34,106 +34,106 @@ typedef uint64_t PRIMEFACTORS[20];
  * is about 5 to 10 times faster than the Seive of Eratosthenes.
  *
  * @param number
- *		The integer that we are factoring. It can be any value up to 64 bits
- *		in size.
+ *      The integer that we are factoring. It can be any value up to 64 bits
+ *      in size.
  * @param factors
- *		The list of all the prime factors, zero terminated.
+ *      The list of all the prime factors, zero terminated.
  * @param non_factors
- *		A list of smallest numbers that aren't prime factors. We return
- *		this because we are going to use prime non-factors for finding
- *		interesting numbers.
+ *      A list of smallest numbers that aren't prime factors. We return
+ *      this because we are going to use prime non-factors for finding
+ *      interesting numbers.
  ****************************************************************************/
 unsigned
 sieve_prime_factors(uint64_t number, PRIMEFACTORS factors, PRIMEFACTORS non_factors, double *elapsed)
 {
-	primegen pg;
-	clock_t start;
-	clock_t stop;
-	uint64_t prime;
-	uint64_t max;
-	unsigned factor_count = 0;
-	unsigned non_factor_count = 0;
+    primegen pg;
+    clock_t start;
+    clock_t stop;
+    uint64_t prime;
+    uint64_t max;
+    unsigned factor_count = 0;
+    unsigned non_factor_count = 0;
 
-	/*
-	 * We only need to seive up to the square-root of the target number. Only
-	 * one prime factor can be bigger than the square root, so once we find
-	 * all the other primes, the square root is the only one left.
-	 * Note: you have to link to the 'm' math library for some gcc platforms.
-	 */
-	max = (uint64_t)sqrt(number + 1.0);
+    /*
+     * We only need to seive up to the square-root of the target number. Only
+     * one prime factor can be bigger than the square root, so once we find
+     * all the other primes, the square root is the only one left.
+     * Note: you have to link to the 'm' math library for some gcc platforms.
+     */
+    max = (uint64_t)sqrt(number + 1.0);
 
-	/*
-	 * Init the DJB primegen library.
-	 */
-	primegen_init(&pg);
-  
-	/*
-	 * Enumerate all the primes starting with 2
-	 */
-	start = clock();
-	for (;;) {
+    /*
+     * Init the DJB primegen library.
+     */
+    primegen_init(&pg);
 
-		/* Seive the next prime */
-		prime = primegen_next(&pg);
+    /*
+     * Enumerate all the primes starting with 2
+     */
+    start = clock();
+    for (;;) {
 
-		/* If we've reached the square root, then that's as far as we need
-		 * to go */
-		if (prime > max)
-			break;
+        /* Seive the next prime */
+        prime = primegen_next(&pg);
 
-		/* If this prime is not a factor (evenly divisible with no remainder)
-		 * then loop back and get the next prime */
-		if ((number % prime) != 0) {
-			if (non_factor_count < 12)
-				non_factors[non_factor_count++] = prime;
-			continue;
-		}
-		
-		/* Else we've found a prime factor, so add this to the list of primes */
-		factors[factor_count++] = prime;
-		
-		/* At the end, we may have one prime factor left that's bigger than the
-		 * sqrt. Therefore, as we go along, divide the original number
-		 * (possibly several times) by the prime factor so that this large
-		 * remaining factor will be the only one left */
-		while ((number % prime) == 0)
-			number /= prime;
+        /* If we've reached the square root, then that's as far as we need
+         * to go */
+        if (prime > max)
+            break;
 
-		/* exit early if we've found all prime factors. comment out this
-		 * code if you want to benchmark it */
-		if (number == 1 && non_factor_count > 10)
-			break;
-	}
+        /* If this prime is not a factor (evenly divisible with no remainder)
+         * then loop back and get the next prime */
+        if ((number % prime) != 0) {
+            if (non_factor_count < 12)
+                non_factors[non_factor_count++] = prime;
+            continue;
+        }
 
-	/*
-	 * See if there is one last prime that's bigger than the square root.
-	 * Note: This is the only number that can be larger than 32-bits in the
-	 * way this code is written.
-	 */
-	if (number != 1)
-		factors[factor_count++] = number;
-	
-	/*
-	 * Zero terminate the results.
-	 */
-	factors[factor_count] = 0;
-	non_factors[non_factor_count] = 0;
+        /* Else we've found a prime factor, so add this to the list of primes */
+        factors[factor_count++] = prime;
 
-	/*
-	 * Since prime factorization takes a long time, especially on slow
-	 * CPUs, we benchmark it to keep track of performance.
-	 */
-	stop = clock();
-	if (elapsed)
-		*elapsed = ((double)stop - (double)start)/(double)CLOCKS_PER_SEC;
+        /* At the end, we may have one prime factor left that's bigger than the
+         * sqrt. Therefore, as we go along, divide the original number
+         * (possibly several times) by the prime factor so that this large
+         * remaining factor will be the only one left */
+        while ((number % prime) == 0)
+            number /= prime;
 
-	/* should always be at least 1, because if the number itself is prime,
-	 * then that's it's only prime factor */
-	return factor_count;
+        /* exit early if we've found all prime factors. comment out this
+         * code if you want to benchmark it */
+        if (number == 1 && non_factor_count > 10)
+            break;
+    }
+
+    /*
+     * See if there is one last prime that's bigger than the square root.
+     * Note: This is the only number that can be larger than 32-bits in the
+     * way this code is written.
+     */
+    if (number != 1)
+        factors[factor_count++] = number;
+
+    /*
+     * Zero terminate the results.
+     */
+    factors[factor_count] = 0;
+    non_factors[non_factor_count] = 0;
+
+    /*
+     * Since prime factorization takes a long time, especially on slow
+     * CPUs, we benchmark it to keep track of performance.
+     */
+    stop = clock();
+    if (elapsed)
+        *elapsed = ((double)stop - (double)start)/(double)CLOCKS_PER_SEC;
+
+    /* should always be at least 1, because if the number itself is prime,
+     * then that's it's only prime factor */
+    return factor_count;
 }
 
 
- 
+
 /****************************************************************************
  * Do a pseudo-random 1-to-1 translation of a number within a range to
  * another number in that range.
@@ -158,8 +158,8 @@ lcg_rand(uint64_t index, uint64_t a, uint64_t c, uint64_t range)
 {
     return (index * a + c) % range;
 }
- 
- 
+
+
 /****************************************************************************
  * Verify the LCG algorithm. You shouldn't do this for large ranges,
  * because we'll run out of memory. Therefore, this algorithm allocates
@@ -177,11 +177,11 @@ lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
     unsigned char *list;
     uint64_t i;
     unsigned is_success = 1;
-   
+
     /* Allocate a list of 1-byte counters */
     list = (unsigned char *)malloc((size_t)((range<max)?range:max));
     memset(list, 0, (size_t)((range<max)?range:max));
-   
+
     /* For all numbers in the range, verify increment the counter for the
      * the output. */
     for (i=0; i<range; i++) {
@@ -189,20 +189,20 @@ lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
         if (x < max)
             list[x]++;
     }
-   
+
     /* Now check the output to make sure that every counter is set exactly
      * to the value of '1'. */
     for (i=0; i<max && i<range; i++) {
         if (list[i] != 1)
             is_success = 0;
     }
-   
+
     free(list);
-   
+
     return is_success;
 }
- 
- 
+
+
 /****************************************************************************
  * Count the number of digits in a number so that we can pretty-print a
  * bunch of numbers in nice columns.
@@ -211,15 +211,15 @@ unsigned
 count_digits(uint64_t num)
 {
     unsigned result = 0;
-   
+
     while (num) {
         result++;
         num /= 10;
     }
-   
+
     return result;
 }
- 
+
 /****************************************************************************
  * Tell whether the number has any prime factors in common with the list
  * of factors. In other words, if it's not coprime with the other number.
@@ -234,7 +234,7 @@ uint64_t
 has_factors_in_common(uint64_t c, PRIMEFACTORS factors)
 {
     unsigned i;
-   
+
     for (i=0; factors[i]; i++) {
         if ((c % factors[i]) == 0)
             return factors[i]; /* found a common factor */
@@ -260,12 +260,12 @@ has_factors_in_common(uint64_t c, PRIMEFACTORS factors)
 void
 lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_debug)
 {
-	uint64_t a;
-	uint64_t c = *inout_c;
+    uint64_t a;
+    uint64_t c = *inout_c;
     double elapsed = 0.0; /* Benchmark of 'sieve' algorithm */
     PRIMEFACTORS factors; /* List of prime factors of 'm' */
-	PRIMEFACTORS non_factors;
-	unsigned i;
+    PRIMEFACTORS non_factors;
+    unsigned i;
 
     /*
      * Find all the prime factors of the number. This step can take several
@@ -273,33 +273,33 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
      * takes.
      */
     sieve_prime_factors(m, factors, non_factors, &elapsed);
-   
+
     /*
      * Calculate the 'a-1' constant. It must share all the prime factors
      * with the range, and if the range is a multiple of 4, must also
      * be a multiple of 4
      */
-	if (factors[0] == m) {
-		/* this number has no prime factors, so we can choose anything.
-		 * Therefore, we are going to pick something at random */
-		unsigned j;
+    if (factors[0] == m) {
+        /* this number has no prime factors, so we can choose anything.
+         * Therefore, we are going to pick something at random */
+        unsigned j;
 
-		a = 1;
-		for (j=0; non_factors[j] && j < 5; j++)
-			a *= non_factors[j];
-	} else {
-		unsigned j;
-		a = 1;
-		for (i=0; factors[i]; i++)
-			a = a * factors[i];
-		if ((m % 4) == 0)
-			a *= 2;
-		
-		for (j=0; j<0 && non_factors[j]; j++)
-			a *= non_factors[j];
-	}   
-	a += 1;
-   
+        a = 1;
+        for (j=0; non_factors[j] && j < 5; j++)
+            a *= non_factors[j];
+    } else {
+        unsigned j;
+        a = 1;
+        for (i=0; factors[i]; i++)
+            a = a * factors[i];
+        if ((m % 4) == 0)
+            a *= 2;
+
+        for (j=0; j<0 && non_factors[j]; j++)
+            a *= non_factors[j];
+    }
+    a += 1;
+
     /*
      * Calculate the 'c' constant. It must have no prime factors in
      * common with the range.
@@ -309,55 +309,55 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
     while (has_factors_in_common(c, factors))
         c++;
 
-	if (is_debug) {
-		/*
-		 * print the results
-		 */
-		//printf("sizeof(int) = %llu-bits\n", (uint64_t)(sizeof(size_t)*8));
-		printf("elapsed     = %5.3f-seconds\n", elapsed);
-		printf("factors     = ");
-		for (i=0; factors[i]; i++)
-			printf("%llu ", factors[i]);
-		printf("%s\n", factors[0]?"":"(none)");
-		printf("m           = %-24llu (0x%llx)\n", m, m);
-		printf("a           = %-24llu (0x%llx)\n", a, a);
-		printf("c           = %-24llu (0x%llx)\n", c, c);
-		printf("c%%m         = %-24llu (0x%llx)\n", c%m, c%m);
-		printf("a%%m         = %-24llu (0x%llx)\n", a%m, a%m);
-   
-		if (m < 1000000000) {
-			if (lcg_verify(a, c+1, m, 280))
-				printf("verify      = success\n");
-			else
-				printf("verify      = failure\n");
-		} else {
-			printf("verify      = too big to check\n");
-		}
-       
-   
-		/*
-		 * Print some first numbers. We use these to visually inspect whether
-		 * the results are random or not.
-		 */
-		{
-			unsigned count = 0;
-			uint64_t x = 0;
-			unsigned digits = count_digits(m);
-       
-			for (i=0; i<100 && i < m; i++) {
-				x = lcg_rand(x, a, c, m);
-				count += printf("%*llu ", digits, x);
-				if (count >= 70) {
-					count = 0;
-					printf("\n");
-				}
-			}
-			printf("\n");
-		}
-	}
+    if (is_debug) {
+        /*
+         * print the results
+         */
+        //printf("sizeof(int) = %llu-bits\n", (uint64_t)(sizeof(size_t)*8));
+        printf("elapsed     = %5.3f-seconds\n", elapsed);
+        printf("factors     = ");
+        for (i=0; factors[i]; i++)
+            printf("%llu ", factors[i]);
+        printf("%s\n", factors[0]?"":"(none)");
+        printf("m           = %-24llu (0x%llx)\n", m, m);
+        printf("a           = %-24llu (0x%llx)\n", a, a);
+        printf("c           = %-24llu (0x%llx)\n", c, c);
+        printf("c%%m         = %-24llu (0x%llx)\n", c%m, c%m);
+        printf("a%%m         = %-24llu (0x%llx)\n", a%m, a%m);
 
-	*out_a = a;
-	*inout_c = c;
+        if (m < 1000000000) {
+            if (lcg_verify(a, c+1, m, 280))
+                printf("verify      = success\n");
+            else
+                printf("verify      = failure\n");
+        } else {
+            printf("verify      = too big to check\n");
+        }
+
+
+        /*
+         * Print some first numbers. We use these to visually inspect whether
+         * the results are random or not.
+         */
+        {
+            unsigned count = 0;
+            uint64_t x = 0;
+            unsigned digits = count_digits(m);
+
+            for (i=0; i<100 && i < m; i++) {
+                x = lcg_rand(x, a, c, m);
+                count += printf("%*llu ", digits, x);
+                if (count >= 70) {
+                    count = 0;
+                    printf("\n");
+                }
+            }
+            printf("\n");
+        }
+    }
+
+    *out_a = a;
+    *inout_c = c;
 }
 
 /***************************************************************************

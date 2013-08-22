@@ -21,21 +21,21 @@
  ****************************************************************************/
 size_t
 pixie_begin_thread(
-    void (*worker_thread)(void*), 
-    unsigned flags, 
+    void (*worker_thread)(void*),
+    unsigned flags,
     void *worker_data)
 {
 #if defined(WIN32)
-	UNUSEDPARM(flags);
-	return _beginthread(worker_thread, 0, worker_data);
+    UNUSEDPARM(flags);
+    return _beginthread(worker_thread, 0, worker_data);
 #elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-    
-	typedef void *(*PTHREADFUNC)(void*);
-	pthread_t thread_id;
-	return (size_t)pthread_create(
-                          &thread_id, 
-                          NULL, 
-                          (PTHREADFUNC)worker_thread, 
+
+    typedef void *(*PTHREADFUNC)(void*);
+    pthread_t thread_id;
+    return (size_t)pthread_create(
+                          &thread_id,
+                          NULL,
+                          (PTHREADFUNC)worker_thread,
                           worker_data);
 
 #else

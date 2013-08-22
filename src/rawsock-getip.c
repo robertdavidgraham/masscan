@@ -41,7 +41,7 @@ rawsock_get_adapter_ip(const char *ifname)
         perror("ioctl");
         close(fd);
         return 0;
-    } 
+    }
 
     close(fd);
 

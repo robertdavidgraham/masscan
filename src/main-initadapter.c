@@ -5,7 +5,7 @@
 
 /***************************************************************************
  * Initialize the network adapter.
- * 
+ *
  * This requires finding things like our IP address, MAC address, and router
  * MAC address. The user could configure these things manually instead.
  *
@@ -29,7 +29,7 @@ masscan_initialize_adapter(struct Masscan *masscan,
      * ADAPTER/NETWORK-INTERFACE
      *
      * If no network interface was configured, we need to go hunt down
-     * the best Interface to use. We do this by choosing the first 
+     * the best Interface to use. We do this by choosing the first
      * interface with a "default route" (aka. "gateway") defined
      */
     if (masscan->ifname && masscan->ifname[0])
@@ -46,14 +46,14 @@ masscan_initialize_adapter(struct Masscan *masscan,
             LOG(2, "auto-detected: interface=%s\n", ifname2);
         }
         ifname = ifname2;
-        
+
     }
 
     /*
      * IP ADDRESS
      *
      * We need to figure out that IP address to send packets from. This
-     * is done by queryin the adapter (or configured by user). If the 
+     * is done by queryin the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
     *r_adapter_ip = masscan->adapter_ip;
@@ -100,7 +100,7 @@ masscan_initialize_adapter(struct Masscan *masscan,
     /*
      * START ADAPTER
      *
-     * Once we've figured out which adapter to use, we now need to 
+     * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
     masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
@@ -114,11 +114,11 @@ masscan_initialize_adapter(struct Masscan *masscan,
 
     /*
      * ROUTER MAC ADDRESS
-     * 
+     *
      * NOTE: this is one of the least understood aspects of the code. We must
      * send packets to the local router, which means the MAC address (not
      * IP address) of the router.
-     * 
+     *
      * Note: in order to ARP the router, we need to first enable the libpcap
      * code above.
      */

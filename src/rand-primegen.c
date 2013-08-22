@@ -194,7 +194,7 @@ static void squarefree1big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64_
       i = qq - (base % qq);
     if (!(i & 1)) i += qq;
 
-    if (i < B * 60) { 
+    if (i < B * 60) {
       pos = i;
       n = deltainverse[pos % 60];
       if (n >= 0) {
@@ -228,10 +228,10 @@ static void squarefree1(register uint32_t (*buf)[B32],uint64_t L,uint32_t q)
       i = qq - (base % qq);
     if (!(i & 1)) i += qq;
 
-    if (i < B * 60) { 
+    if (i < B * 60) {
       qqhigh = qq / 60;
       ilow = i % 60; ihigh = i / 60;
-  
+
       qqhigh += qqhigh;
       while (ihigh < B) {
         n = deltainverse[ilow];
@@ -263,7 +263,7 @@ static void squarefree49big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64
       i = qq - (base % qq);
     if (!(i & 1)) i += qq;
 
-    if (i < B * 60) { 
+    if (i < B * 60) {
       pos = i;
       n = deltainverse[pos % 60];
       if (n >= 0) {
@@ -296,10 +296,10 @@ static void squarefree49(register uint32_t (*buf)[B32],uint64_t L,uint32_t q)
       i = qq - (base % qq);
     if (!(i & 1)) i += qq;
 
-    if (i < B * 60) { 
+    if (i < B * 60) {
       qqhigh = qq / 60;
       ilow = i % 60; ihigh = i / 60;
-  
+
       qqhigh += qqhigh;
       qqhigh += 1;
       while (ihigh < B) {
@@ -656,11 +656,11 @@ uint64_t primegen_count(primegen *pg,uint64_t to)
     pos = pg->pos;
     while ((pos < B32) && (pg->base + 1920 < to)) {
       for (j = 0;j < 16;++j) {
-	bits = ~pg->buf[j][pos];
-	smallcount += pop[bits & 255]; bits >>= 8;
-	smallcount += pop[bits & 255]; bits >>= 8;
-	smallcount += pop[bits & 255]; bits >>= 8;
-	smallcount += pop[bits & 255];
+    bits = ~pg->buf[j][pos];
+    smallcount += pop[bits & 255]; bits >>= 8;
+    smallcount += pop[bits & 255]; bits >>= 8;
+    smallcount += pop[bits & 255]; bits >>= 8;
+    smallcount += pop[bits & 255];
       }
       pg->base += 1920;
       ++pos;
@@ -672,16 +672,16 @@ uint64_t primegen_count(primegen *pg,uint64_t to)
       while (pg->base + B * 60 < to) {
         primegen_sieve(pg);
         pg->L += B;
-  
-	smallcount = 0;
+
+    smallcount = 0;
         for (j = 0;j < 16;++j)
-	  for (pos = 0;pos < B32;++pos) {
-	    bits = ~pg->buf[j][pos];
-	    smallcount += pop[bits & 255]; bits >>= 8;
-	    smallcount += pop[bits & 255]; bits >>= 8;
-	    smallcount += pop[bits & 255]; bits >>= 8;
-	    smallcount += pop[bits & 255];
-	  }
+      for (pos = 0;pos < B32;++pos) {
+        bits = ~pg->buf[j][pos];
+        smallcount += pop[bits & 255]; bits >>= 8;
+        smallcount += pop[bits & 255]; bits >>= 8;
+        smallcount += pop[bits & 255]; bits >>= 8;
+        smallcount += pop[bits & 255];
+      }
         count += smallcount;
         pg->base += B * 60;
       }

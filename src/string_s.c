@@ -18,21 +18,21 @@
 #if defined(__GNUC__) || _MSC_VER == 1200
 errno_t fopen_s(FILE **pFile, const char *filename, const char *mode)
 {
-	if (pFile == NULL || filename == NULL || mode == NULL)
-		return EINVAL;
-	*pFile = fopen(filename, mode);
-	if (*pFile != NULL)
-		return 0;
-	else
-		return errno;
+    if (pFile == NULL || filename == NULL || mode == NULL)
+        return EINVAL;
+    *pFile = fopen(filename, mode);
+    if (*pFile != NULL)
+        return 0;
+    else
+        return errno;
 }
 #endif
 
-/** 
- * Case-insensitive memcmp() 
+/**
+ * Case-insensitive memcmp()
  */
 #ifdef __GNUC__
-int 
+int
 memcasecmp(const void *lhs, const void *rhs, int length)
 {
     int i;
@@ -44,7 +44,7 @@ memcasecmp(const void *lhs, const void *rhs, int length)
 }
 #endif
 
-/** 
+/**
  * strcpy
  */
 #ifdef __GNUC__

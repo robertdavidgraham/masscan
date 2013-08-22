@@ -13,8 +13,8 @@ struct TcpPacket;
 extern time_t global_now;
 
 enum {
-	Operation_Default = 0,      /* nothing specified, so print usage */
-	Operation_List_Adapters = 1,
+    Operation_Default = 0,      /* nothing specified, so print usage */
+    Operation_List_Adapters = 1,
     Operation_Selftest = 2,
     Operation_Scan = 3,         /* this is what you expect */
     Operation_DebugIF = 4,
@@ -40,12 +40,12 @@ enum PortStatus {
 
 struct Masscan
 {
-	int op;
+    int op;
 
-	/**
-	 * The network interface to use for scanning
-	 */
-	char ifname[256];
+    /**
+     * The network interface to use for scanning
+     */
+    char ifname[256];
 
     /**
      * The network adapter we'll use for transmitting packets
@@ -57,29 +57,29 @@ struct Masscan
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
 
-	/**
-	 * The target ranges of IPv4 addresses that are included in the scan.
-	 */
-	struct RangeList targets;
+    /**
+     * The target ranges of IPv4 addresses that are included in the scan.
+     */
+    struct RangeList targets;
 
-	/**
-	 * The ports we are scanning for
-	 */
-	struct RangeList ports;
+    /**
+     * The ports we are scanning for
+     */
+    struct RangeList ports;
 
-	/**
-	 * IPv4 addresses/ranges that are to be exluded from the scan. This teakes
-	 * precendence over any 'include' statement
-	 */
-	struct RangeList exclude_ip;
-	struct RangeList exclude_port;
+    /**
+     * IPv4 addresses/ranges that are to be exluded from the scan. This teakes
+     * precendence over any 'include' statement
+     */
+    struct RangeList exclude_ip;
+    struct RangeList exclude_port;
 
 
-	struct LCGParms {
-		uint64_t m;     /* LCG modulus aka. the IP address range size */
-		uint64_t a;     /* LCG multiplier */
-		uint64_t c;		/* LCG increment */
-	} lcg;
+    struct LCGParms {
+        uint64_t m;     /* LCG modulus aka. the IP address range size */
+        uint64_t a;     /* LCG multiplier */
+        uint64_t c;     /* LCG increment */
+    } lcg;
 
     /**
      * Maximum rate, in packets-per-second (--rate parameter)
@@ -105,7 +105,7 @@ struct Masscan
      */
     struct TcpPacket *pkt_template;
 
-    /** 
+    /**
      * Are we there yet? The scanning thread sets this to 1 when its done.
      * The receive thread will wait a bit after this, then exit.
      */

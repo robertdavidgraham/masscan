@@ -47,7 +47,7 @@ throttler_start(struct Throttler *throttler, double max_rate)
 
 /***************************************************************************
  * We return the number of packets that can be sent in a batch. Thus,
- * instead of trying to throttle each packet individually, which has a 
+ * instead of trying to throttle each packet individually, which has a
  * high per-packet cost, we try to throttle a bunch at a time. Normally,
  * this function will return 1, only at high rates does it return larger
  * numbers.
@@ -64,7 +64,7 @@ throttler_next_batch(struct Throttler *throttler, uint64_t packet_count)
     uint64_t old_packet_count;
     double current_rate;
     double max_rate = throttler->max_rate;
-    
+
 again:
 
     /* NOTE: this uses CLOCK_MONOTONIC_RAW on Linux, so the timstamp doesn't
@@ -96,7 +96,7 @@ again:
     /*
      * Calculate the recent rate.
      * NOTE: this isn't the rate "since start", but only the "recent" rate.
-     * That's so that if the system pauses for a while, we don't flood the 
+     * That's so that if the system pauses for a while, we don't flood the
      * network trying to catch up.
      */
     current_rate = 1.0*(packet_count - old_packet_count)/((timestamp - old_timestamp)/1000000.0);
@@ -123,8 +123,8 @@ again:
     /*
      * Calculate how many packets are needed to catch up again to the current
      * rate, and return that.
-     * 
-     * NOTE: this is almost always going to have the value of 1 (one). Only at 
+     *
+     * NOTE: this is almost always going to have the value of 1 (one). Only at
      * very high speeds (above 100,000 packets/second) will this value get
      * larger.
      */

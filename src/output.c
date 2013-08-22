@@ -52,7 +52,7 @@ struct Output
 
 /***************************************************************************
  * PORTABILITY: WINDOWS
- * 
+ *
  * Windows POSIX functions open the file without the "share-delete" flag,
  * meaning they can't be renamed while open. Therefore, we need to
  * construct our own open flag.
@@ -72,14 +72,14 @@ open_rotate(struct Output *output, const char *filename)
     /* int fd = open(filename, O_RDWR | O_CREAT, _S_IREAD | _S_IWRITE); */ /* Fails */
     /* int fd = _sopen(filename, O_RDWR | O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE); */ /* Also fails */
 
-    /* We need to use WINAPI + _open_osfhandle to be able to use 
+    /* We need to use WINAPI + _open_osfhandle to be able to use
        file descriptors (instead of WINAPI handles) */
-    hFile = CreateFileA(    filename, 
+    hFile = CreateFileA(    filename,
                             GENERIC_WRITE | (is_append?FILE_APPEND_DATA:0),
-                            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 
-                            NULL, 
-                            CREATE_ALWAYS, 
-                            FILE_ATTRIBUTE_TEMPORARY, 
+                            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                            NULL,
+                            CREATE_ALWAYS,
+                            FILE_ATTRIBUTE_TEMPORARY,
                             NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
         control_c_pressed = 1;
@@ -95,7 +95,7 @@ open_rotate(struct Output *output, const char *filename)
 
     fp = _fdopen(fd, "w");
 
-    
+
 #else
     fp = fopen(filename, is_append?"a":"w");
 #endif
@@ -146,10 +146,10 @@ close_rotate(struct Output *out, FILE *fp)
     char buffer[256];
     time_t now = time(0);
     struct tm tm;
- 
+
     localtime_s(&tm, &now);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-    
+
     if (out == NULL)
         return;
     if (fp == NULL)
@@ -227,7 +227,7 @@ output_create(struct Masscan *masscan)
      */
     if (masscan->nmap.format != Output_Interactive && masscan->nmap.filename[0]) {
         FILE *fp;
-        
+
         fp = open_rotate(out, masscan->nmap.filename);
         if (fp == NULL) {
             perror(masscan->nmap.filename);
@@ -302,7 +302,7 @@ reason_string(int x, char *buffer, size_t sizeof_buffer)
 
 /***************************************************************************
  ***************************************************************************/
-FILE * 
+FILE *
 output_do_rotate(struct Output *out)
 {
     const char *dir = out->masscan->rotate_directory;
@@ -399,7 +399,7 @@ again:
 
 /***************************************************************************
  ***************************************************************************/
-void 
+void
 output_report(struct Output *out, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     struct Masscan *masscan = out->masscan;
@@ -466,7 +466,7 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
                        "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
                       "</port>"
                      "</ports>"
-                    "</host>"  
+                    "</host>"
                     "\r\n",
             (unsigned)global_now,
             (ip>>24)&0xFF,

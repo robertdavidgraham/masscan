@@ -18,8 +18,8 @@ struct Range
 struct RangeList
 {
     struct Range *list;
-	unsigned count;
-	unsigned max;
+    unsigned count;
+    unsigned max;
 };
 
 void rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);

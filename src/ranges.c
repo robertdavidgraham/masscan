@@ -244,22 +244,22 @@ parse_ipv4(const char *line, unsigned *inout_offset, unsigned max, unsigned *ipv
 }
 
 /****************************************************************************
- * Parse from text an IPv4 address range. This can be in one of several 
+ * Parse from text an IPv4 address range. This can be in one of several
  * formats:
  * - '192.168.1.1" - a single address
  * - '192.168.1.0/24" - a CIDR spec
  * - '192.168.1.0-192.168.1.255' - a range
  * @param line
- *		Part of a line of text, probably read from a commandline or conf
- *		file.
+ *      Part of a line of text, probably read from a commandline or conf
+ *      file.
  * @param inout_offset
- *		On input, the offset from the start of the line where the address
- *		starts. On output, the offset of the first character after the
- *		range, or equal to 'max' if the line prematurely ended.
+ *      On input, the offset from the start of the line where the address
+ *      starts. On output, the offset of the first character after the
+ *      range, or equal to 'max' if the line prematurely ended.
  * @param max
- *		The maximum length of the line.
+ *      The maximum length of the line.
  * @return
- *		The first and last address of the range, inclusive.
+ *      The first and last address of the range, inclusive.
  ****************************************************************************/
 struct Range
 range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
@@ -293,19 +293,19 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
     while (offset < max && isspace(line[offset]&0xFF))
         offset++;
 
-	/* If onely one IP address, return that */
-	if (offset >= max)
-		goto end;
+    /* If onely one IP address, return that */
+    if (offset >= max)
+        goto end;
 
     /*
-	 * Handle CIDR address of the form "10.0.0.0/8" 
-	 */
+     * Handle CIDR address of the form "10.0.0.0/8"
+     */
     if (line[offset] == '/') {
         uint64_t prefix = 0;
         uint64_t mask = 0;
         unsigned digits = 0;
 
-		/* skip slash */
+        /* skip slash */
         offset++;
 
         if (!isdigit(line[offset]&0xFF)) {
@@ -316,7 +316,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
         while (offset<max && line[offset] == '0')
             offset++;
 
-		/* parse decimal integer */
+        /* parse decimal integer */
         while (offset<max && isdigit(line[offset]&0xFF)) {
             prefix = prefix * 10 + (line[offset++] - '0');
             if (++digits > 2)
@@ -325,43 +325,43 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
         if (prefix > 32)
             return badrange;
 
-		/* Create the mask from the prefix */
+        /* Create the mask from the prefix */
         mask = 0xFFFFFFFF00000000ULL >> prefix;
-        
-		/* Mask off any non-zero bits from the start
-		 * TODO print warning */
-		result.begin &= mask;
 
-		/* Set all suffix bits to 1, so that 192.168.1.0/24 has
-		 * an ending address of 192.168.1.255. */
+        /* Mask off any non-zero bits from the start
+         * TODO print warning */
+        result.begin &= mask;
+
+        /* Set all suffix bits to 1, so that 192.168.1.0/24 has
+         * an ending address of 192.168.1.255. */
         result.end = result.begin | (unsigned)~mask;
-		goto end;
+        goto end;
     }
-	
-	/*
-	 * Handle a dashed range like "10.0.0.100-10.0.0.200"
-	 */
-	if (offset<max && line[offset] == '-') {
-		unsigned ip;
+
+    /*
+     * Handle a dashed range like "10.0.0.100-10.0.0.200"
+     */
+    if (offset<max && line[offset] == '-') {
+        unsigned ip;
 
         offset++;
-		err = parse_ipv4(line, &offset, max, &ip);
+        err = parse_ipv4(line, &offset, max, &ip);
         if (err)
             return badrange;
-		if (ip < result.begin) {
+        if (ip < result.begin) {
             result.begin = 0xFFFFFFFF;
             result.end = 0x00000000;
-			fprintf(stderr, "err: ending addr %u.%u.%u.%u cannot come before starting addr %u.%u.%u.%u\n",
-				((ip>>24)&0xFF), ((ip>>16)&0xFF), ((ip>>8)&0xFF), ((ip>>0)&0xFF), 
-				((result.begin>>24)&0xFF), ((result.begin>>16)&0xFF), ((result.begin>>8)&0xFF), ((result.begin>>0)&0xFF)
-				);
+            fprintf(stderr, "err: ending addr %u.%u.%u.%u cannot come before starting addr %u.%u.%u.%u\n",
+                ((ip>>24)&0xFF), ((ip>>16)&0xFF), ((ip>>8)&0xFF), ((ip>>0)&0xFF),
+                ((result.begin>>24)&0xFF), ((result.begin>>16)&0xFF), ((result.begin>>8)&0xFF), ((result.begin>>0)&0xFF)
+                );
         } else
             result.end = ip;
-		goto end;
-	}
+        goto end;
+    }
 
 end:
-	*inout_offset = offset;
+    *inout_offset = offset;
     return result;
 }
 
@@ -371,14 +371,14 @@ end:
 uint64_t
 rangelist_count(struct RangeList *targets)
 {
-	unsigned i;
-	uint64_t result = 0;
+    unsigned i;
+    uint64_t result = 0;
 
-	for (i=0; i<targets->count; i++) {
-		result += (uint64_t)targets->list[i].end - (uint64_t)targets->list[i].begin + 1UL;
-	}
+    for (i=0; i<targets->count; i++) {
+        result += (uint64_t)targets->list[i].end - (uint64_t)targets->list[i].begin + 1UL;
+    }
 
-	return result;
+    return result;
 }
 
 
@@ -393,18 +393,18 @@ rangelist_count(struct RangeList *targets)
 unsigned
 rangelist_pick(struct RangeList *targets, uint64_t index)
 {
-	unsigned i;
+    unsigned i;
 
-	for (i=0; i<targets->count; i++) {
-		uint64_t range = (uint64_t)targets->list[i].end - (uint64_t)targets->list[i].begin + 1UL;
-		if (index < range)
-			return (unsigned)(targets->list[i].begin + index);
-		else
-			index -= range;
-	}
+    for (i=0; i<targets->count; i++) {
+        uint64_t range = (uint64_t)targets->list[i].end - (uint64_t)targets->list[i].begin + 1UL;
+        if (index < range)
+            return (unsigned)(targets->list[i].begin + index);
+        else
+            index -= range;
+    }
 
-	assert(!"end of list");
-	return 0;
+    assert(!"end of list");
+    return 0;
 }
 unsigned *
 rangelist_pick2_create(struct RangeList *targets)
@@ -514,33 +514,33 @@ regress_pick2()
 void
 rangelist_parse_ports(struct RangeList *ports, const char *string)
 {
-	char *p = (char*)string;
+    char *p = (char*)string;
 
-	while (*p) {
-		unsigned port;
-		unsigned end;
+    while (*p) {
+        unsigned port;
+        unsigned end;
 
-		while (*p && isspace(*p & 0xFF))
-			p++;
-		if (*p == 0)
-			break;
+        while (*p && isspace(*p & 0xFF))
+            p++;
+        if (*p == 0)
+            break;
 
-		port = strtoul(p, &p, 0);
-		end = port;
-		if (*p == '-') {
-			p++;
-			end = strtoul(p, &p, 0);
-		}
-		if (*p == ',')
-			p++;
+        port = strtoul(p, &p, 0);
+        end = port;
+        if (*p == '-') {
+            p++;
+            end = strtoul(p, &p, 0);
+        }
+        if (*p == ',')
+            p++;
 
-		if (port > 0xFFFF || end > 0xFFFF || end < port) {
-			fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
-			break;
-		} else {
-			rangelist_add_range(ports, port, end);
-		}
-	}
+        if (port > 0xFFFF || end > 0xFFFF || end < port) {
+            fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
+            break;
+        } else {
+            rangelist_add_range(ports, port, end);
+        }
+    }
 }
 
 
@@ -622,12 +622,12 @@ ranges_selftest()
         memset(task, 0, sizeof(task[0]));
 
         rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
-        
+
         /* These removals shouldn't change anything */
         rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
         rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
         rangelist_remove_range2(task, range_parse_ipv4("192.168.0.0/16", 0, 0));
-        if (task->count != 1 
+        if (task->count != 1
             || task->list->begin != 0x0a000000
             || task->list->end != 0x0aFFFFFF) {
             ERROR();
@@ -637,7 +637,7 @@ ranges_selftest()
         /* These removals should remove a bit from the edges */
         rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
         rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
-        if (task->count != 1 
+        if (task->count != 1
             || task->list->begin != 0x0a000001
             || task->list->end != 0x0aFFFFFE) {
             ERROR();
