@@ -52,6 +52,8 @@ struct Adapter
     pfring *ring;
 };
 
+#define SENDQ_SIZE 65536 * 8
+
 
 struct AdapterNames
 {
@@ -291,7 +293,7 @@ rawsock_send_packet(
 			pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
 			//printf("pcap_send_queue)() returned %u\n", x);
 			pcap_sendqueue_destroy(adapter->sendq);
-			adapter->sendq =  pcap_sendqueue_alloc(65536);
+			adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
 			pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
 			//("sendpacket() returned %d\n", x);
 			//exit(1);
@@ -303,7 +305,7 @@ rawsock_send_packet(
             /* Dude, I totally forget why this step is necessary. I vaguely
              * remember there's a good reason for it though */
    			pcap_sendqueue_destroy(adapter->sendq);
-			adapter->sendq =  pcap_sendqueue_alloc(65536);
+			adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
         }
         return 0;
     }
@@ -647,7 +649,7 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
     adapter->sendq = 0;
 #if defined(WIN32)
     if (is_sendq)
-    	adapter->sendq = pcap_sendqueue_alloc(65536);
+    	adapter->sendq = pcap_sendqueue_alloc(SENDQ_SIZE);
 #endif
 
 
