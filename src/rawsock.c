@@ -252,6 +252,11 @@ extern unsigned tcp_checksum(struct TcpPacket *pkt);
 
 /***************************************************************************
  * wrapper for libpcap's sendpacket
+ *
+ * PORTABILITY: WINDOWS and PF_RING
+ * For performance, Windows and PF_RING can queue up multiple packets, then
+ * transmit them all in a chunk. If we stop and wait for a bit, we need
+ * to flush the queue to force packets to be transmitted immediately.
  ***************************************************************************/
 int
 rawsock_send_packet(
@@ -260,17 +265,20 @@ rawsock_send_packet(
     unsigned length,
     unsigned flush)
 {
-
+    /* PF_RING */
     if (adapter->ring) {
         int err = PF_RING_ERROR_NO_TX_SLOT_AVAILABLE;
 
         while (err == PF_RING_ERROR_NO_TX_SLOT_AVAILABLE) {
             err = PFRING.send(adapter->ring, packet, length, (unsigned char)flush);
         }
-	if (err < 0)
-		LOG(1, "pfring:xmit: ERROR %d\n", err);
+	    if (err < 0)
+    		LOG(1, "pfring:xmit: ERROR %d\n", err);
         return err;
-    } else if (adapter->sendq) {
+    }
+    
+    /* WINDOWS PCAP */
+    if (adapter->sendq) {
         int err;
         struct pcap_pkthdr hdr;
 	    hdr.len = length;
@@ -291,13 +299,18 @@ rawsock_send_packet(
 			; //printf("+%u\n", count++);
         if (flush) {
             pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+
+            /* Dude, I totally forget why this step is necessary. I vaguely
+             * remember there's a good reason for it though */
    			pcap_sendqueue_destroy(adapter->sendq);
 			adapter->sendq =  pcap_sendqueue_alloc(65536);
         }
         return 0;
-    } else {
-        return pcap_sendpacket(adapter->pcap, packet, length);
     }
+    
+    /* LIBPCAP */
+    return pcap_sendpacket(adapter->pcap, packet, length);
+    
 }
 extern unsigned control_c_pressed;
 

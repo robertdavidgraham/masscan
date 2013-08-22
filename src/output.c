@@ -126,6 +126,12 @@ open_rotate(struct Output *output, const char *filename)
         fprintf(fp, "<scaninfo type=\"%s\" protocol=\"%s\" />\r\n",
             "syn", "tcp" );
         break;
+    case Output_Binary:
+        fwrite( "mass" "can/" "1.0\0", 1, 12, fp);
+        break;
+    default:
+        LOG(0, "output: ERROR: unknown format\n");
+        exit(1);
     }
 
     return fp;
@@ -170,6 +176,12 @@ close_rotate(struct Output *out, FILE *fp)
         out->open_count + out->closed_count
         );
         break;
+    case Output_Binary:
+        fwrite( "mass" "can/" "1.0\0", 1, 12, fp);
+        break;
+    default:
+        LOG(0, "output: ERROR: unknown format\n");
+        exit(1);
     }
 
     out->open_count = 0;
@@ -432,8 +444,8 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
             return;
     }
 
-
-    if (masscan->nmap.format == Output_List || masscan->nmap.format == Output_All) {
+    switch (masscan->nmap.format) {
+    case Output_List:
         fprintf(fp, "%s tcp %u %u.%u.%u.%u %u\n",
             status_string(status),
             port,
@@ -443,8 +455,9 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
             (ip>> 0)&0xFF,
             (unsigned)global_now
             );
-    }
-    if (masscan->nmap.format == Output_XML || masscan->nmap.format == Output_All) {
+        break;
+    case Output_XML:
+        {
         char reason_buffer[128];
         fprintf(fp, "<host endtime=\"%u\">"
                      "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
@@ -465,6 +478,30 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
             reason_string(reason, reason_buffer, sizeof(reason_buffer)),
             ttl
             );
+        }
+        break;
+    case Output_Binary:
+        {
+            struct {
+                unsigned timestamp;
+                unsigned ip;
+                unsigned short port;
+                unsigned char reason;
+                unsigned char ttl;
+            } foo;
+            foo.timestamp = (unsigned)global_now;
+            foo.ip = ip;
+            foo.port = (unsigned short)port;
+            foo.reason = (unsigned char)reason;
+            foo.ttl = (unsigned char)ttl;
+
+            fwrite(&foo, 1, 12, fp);
+        }
+        break;
+    default:
+        LOG(0, "output: ERROR: unknown format\n");
+        exit(1);
+
     }
 
 }

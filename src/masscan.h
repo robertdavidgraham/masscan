@@ -27,6 +27,7 @@ enum OutpuFormat {
     Output_XML,
     Output_ScriptKiddie,
     Output_Grepable,
+    Output_Binary,
     Output_All,
     Output_List /* specific to Masscan */
 };

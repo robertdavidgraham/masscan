@@ -128,15 +128,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
      */
     fprintf(fp, "# OUTPUT/REPORTING SETTINGS\n");
     switch (masscan->nmap.format) {
-    case Output_Interactive:
-        fprintf(fp, "output-format = interactive\n");
-        break;
-    case Output_List:
-        fprintf(fp, "output-format = list\n");
-        break;
-    case Output_XML:
-        fprintf(fp, "output-format = xml\n");
-        break;
+    case Output_Interactive:    fprintf(fp, "output-format = interactive\n"); break;
+    case Output_List:           fprintf(fp, "output-format = list\n"); break;
+    case Output_XML:            fprintf(fp, "output-format = xml\n"); break;
+    case Output_Binary:         fprintf(fp, "output-format = binary\n"); break;
     default:
         fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
@@ -620,12 +615,10 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
     } else if (EQUALS("output-format", name)) {
-        if (EQUALS("list", value))
-            masscan->nmap.format = Output_List;
-        else if (EQUALS("interactive", value))
-            masscan->nmap.format = Output_Interactive;
-        else if (EQUALS("xml", value))
-            masscan->nmap.format = Output_XML;
+        if (EQUALS("list", value))              masscan->nmap.format = Output_List;
+        else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
+        else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
+        else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
         }
