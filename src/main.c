@@ -147,7 +147,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             unsigned char *p;
             int err;
 
-            err = rte_ring_sc_dequeue(pending_packets, &p);
+            err = rte_ring_sc_dequeue(pending_packets, (void**)&p);
             if (err)
                 break;
             rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
@@ -183,7 +183,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     unsigned char *p;
                     int err;
 
-                    err = rte_ring_sc_dequeue(pending_packets, &p);
+                    err = rte_ring_sc_dequeue(pending_packets, (void**)&p);
                     if (err)
                         break;
                     rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);

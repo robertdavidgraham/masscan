@@ -1,7 +1,8 @@
 /*
     TCP connection table
 */
-
+#include <stdio.h>
+#include <stdint.h>
 
 #define is_power_of_2(x) ((((x)-1) & (x)) == 0)
 
