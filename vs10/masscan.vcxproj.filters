@@ -96,6 +96,9 @@
     <ClCompile Include="..\src\proto-tcp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rawsock-pcapfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -156,6 +159,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-arp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-pcapfile.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

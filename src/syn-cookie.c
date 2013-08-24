@@ -17,9 +17,17 @@ static uint64_t entropy = 0;
  * NOTE: Mostly it's here to amuse cryptographers with its lulz.
  ***************************************************************************/
 void
-syn_set_entropy()
+syn_set_entropy(uint64_t seed)
 {
     unsigned i;
+
+    /*
+     * If we have a manual seed, use that instead
+     */
+    if (seed) {
+        entropy = seed;
+        return;
+    }
 
     /*
      * Gather some random bits

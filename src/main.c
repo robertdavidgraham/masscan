@@ -22,6 +22,7 @@
 #include "output.h"             /* for outputing results */
 //#include "xring.h"              /* producer/consumer ring buffer */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
+#include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -177,7 +178,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         for (j=0; j<masscan->wait && !control_c_pressed; j++) {
             unsigned k;
             status_print(&status, i++, m);
-            for (k=0; k<100; k++) {
+            for (k=0; k<1000; k++) {
                 for (;;) {
                     unsigned char *p;
                     int err;
@@ -209,6 +210,16 @@ receive_thread(struct Masscan *masscan,
 {
     struct Output *out;
     struct DedupTable *dedup;
+    struct PcapFile *pcapfile = NULL;
+
+    /*
+     * If configured, open a pcap file for saving raw packets. This is
+     * so that we can debug scans, but also so that we can look at the
+     * strange things people send us. Note that we don't record transmitted
+     * packets, just the packets we've received.
+     */
+    if (masscan->pcap_filename)
+        pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);
 
     /*
      * Open output. This is where results are reported.
@@ -216,7 +227,8 @@ receive_thread(struct Masscan *masscan,
     out = output_create(masscan);
 
     /*
-     * Create deduplication table
+     * Create deduplication table. This is so when somebody sends us
+     * multiple responses, we only record the first one.
      */
     dedup = dedup_create();
 
@@ -268,6 +280,18 @@ receive_thread(struct Masscan *masscan,
         /* verify: my IP address */
         if (adapter_ip != dst)
             continue;
+
+        /* Save raw packet (if configured to do so) */
+        if (pcapfile) {
+            pcapfile_writeframe(
+                pcapfile,
+                px,
+                length,
+                length,
+                secs,
+                usecs);
+        }
+
 
         /* OOPS: handle arp instead */
         if (parsed.found == FOUND_ARP) {
@@ -321,6 +345,7 @@ receive_thread(struct Masscan *masscan,
                     );
     }
 
+
     LOG(1, "end receive thread\n");
 
     /*
@@ -328,6 +353,8 @@ receive_thread(struct Masscan *masscan,
      */
     dedup_destroy(dedup);
     output_destroy(out);
+    if (pcapfile)
+        pcapfile_close(pcapfile);
 }
 
 /***************************************************************************
@@ -529,7 +556,7 @@ int main(int argc, char *argv[])
     rawsock_init();
 
     /* Set randomization seed for SYN-cookies */
-    syn_set_entropy();
+    syn_set_entropy(masscan->seed);
 
     /*
      * Apply excludes. People ask us not to scan them, so we maintain a list

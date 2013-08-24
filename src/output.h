@@ -8,4 +8,5 @@ void output_destroy(struct Output *output);
 
 void output_report(struct Output *output, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
 
+
 #endif

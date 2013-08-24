@@ -5,7 +5,7 @@
 unsigned syn_hash(unsigned ip, unsigned port);
 
 
-void syn_set_entropy();
+void syn_set_entropy(uint64_t seed);
 
 
 #endif

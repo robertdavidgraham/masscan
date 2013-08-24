@@ -42,6 +42,7 @@
     <ClCompile Include="..\src\rawsock-getip.c" />
     <ClCompile Include="..\src\rawsock-getmac.c" />
     <ClCompile Include="..\src\rawsock-getroute.c" />
+    <ClCompile Include="..\src\rawsock-pcapfile.c" />
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\rte-ring.c" />
@@ -64,6 +65,7 @@
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\ranges.h" />
+    <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\rte-ring.h" />

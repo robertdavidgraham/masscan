@@ -122,6 +122,12 @@ struct Masscan
     unsigned rotate_output;
 
     /**
+     * A random seed for randomization if zero, otherwise we'll use
+     * the configured seed for repeatable tests.
+     */
+    uint64_t seed;
+
+    /**
      * When doing "--rotate daily", the rotation is done at GMT. In order
      * to fix this, add an offset.
      */
@@ -146,6 +152,7 @@ struct Masscan
     } nmap;
 
     char rotate_directory[256];
+    char pcap_filename[256];
 
     struct rte_ring *packet_buffers;
     struct rte_ring *pending_packets;

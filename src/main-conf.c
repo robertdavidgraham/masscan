@@ -99,6 +99,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
+    fprintf(fp, "seed = %llu\n", masscan->seed);
 
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
@@ -145,7 +146,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "rotate = %u\n", masscan->rotate_output);
     fprintf(fp, "rotate-dir = %s\n", masscan->rotate_directory);
     fprintf(fp, "rotate-offset = %u\n", masscan->rotate_offset);
-
+    fprintf(fp, "pcap = %s\n", masscan->pcap_filename);
 
     /*
      * Targets
@@ -628,6 +629,8 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         }
     } else if (EQUALS("output-filename", name)) {
         strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
+    } else if (EQUALS("pcap", name)) {
+        strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
     } else if (EQUALS("packet-trace", name) || EQUALS("trace-packet", name)) {
         masscan->nmap.packet_trace = 1;
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
@@ -635,8 +638,6 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         exit(1);
     } else if (EQUALS("pfring", name)) {
         masscan->is_pfring = 1;
-    } else if (EQUALS("sendq", name)) {
-        masscan->is_sendq = 1;
     } else if (EQUALS("port-ratio", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -758,6 +759,10 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("scanflags", name)) {
         fprintf(stderr, "nmap(%s): TCP scan flags not yet supported\n", name);
         exit(1);
+    } else if (EQUALS("seed", name)) {
+        masscan->seed = parseInt(value);
+    } else if (EQUALS("sendq", name)) {
+        masscan->is_sendq = 1;
     } else if (EQUALS("send-eth", name)) {
         fprintf(stderr, "nmap(%s): unnecessary, we always do --send-eth\n", name);
     } else if (EQUALS("send-ip", name)) {

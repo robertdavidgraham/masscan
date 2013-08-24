@@ -255,19 +255,6 @@ output_create(struct Masscan *masscan)
 
 /***************************************************************************
  ***************************************************************************/
-void
-output_destroy(struct Output *out)
-{
-    if (out == NULL)
-        return;
-    if (out->fp)
-        close_rotate(out, out->fp);
-
-    free(out);
-}
-
-/***************************************************************************
- ***************************************************************************/
 static const char *
 status_string(int x)
 {
@@ -504,5 +491,22 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
 
     }
 
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+output_destroy(struct Output *out)
+{
+    if (out == NULL)
+        return;
+
+    if (out->period)
+        output_do_rotate(out); /*TODO: this leaves an empty file behind */
+
+    if (out->fp)
+        close_rotate(out, out->fp);
+
+    free(out);
 }
 
