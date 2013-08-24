@@ -15,6 +15,8 @@
 #include "rawsock.h"
 #include "string_s.h"
 #include "logger.h"
+#include "rte-ring.h"
+#include "pixie-timer.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -202,16 +204,34 @@ int arp_resolve_sync(struct Adapter *adapter,
 
 /****************************************************************************
  ****************************************************************************/
-int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *my_mac,
-    const unsigned char *px, unsigned length)
+int arp_response(
+    unsigned my_ip, const unsigned char *my_mac,
+    const unsigned char *px, unsigned length,
+    struct rte_ring *packet_buffers,
+    struct rte_ring *transmit_queue)
 {
-    unsigned char arp_packet[64];
+    struct {
+        size_t length;
+        unsigned char px[1];
+    } *response;
     struct ARP_IncomingRequest request;
+    int err;
+    size_t offset;
+
+    /* Get a buffer for sending the response packet. This thread doesn't
+     * send the packet itself. Instead, it formats a packet, then hands
+     * that packet off to a transmit thread for later transmission. */
+again:
+    err = rte_ring_sc_dequeue(packet_buffers, &response);
+    if (err != 0) {
+        pixie_usleep(100);
+        goto again;
+    }
+    memset(response->px, 0, 64);
+    offset = sizeof(size_t);
 
     memset(&request, 0, sizeof(request));
 
-    /* zero out bytes in packet to avoid leaking stuff */
-    memset(arp_packet, 0, sizeof(arp_packet));
 
 
     /*
@@ -240,34 +260,40 @@ int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *m
     /*
      * Create the response packet
      */
-    memcpy(arp_packet +  0, request.mac_src, 6);
-    memcpy(arp_packet +  6, my_mac, 6);
-    memcpy(arp_packet + 12, "\x08\x06", 2);
+    memcpy(response->px +  0, request.mac_src, 6);
+    memcpy(response->px +  6, my_mac, 6);
+    memcpy(response->px + 12, "\x08\x06", 2);
 
-    memcpy(arp_packet + 14,
+    memcpy(response->px + 14,
             "\x00\x01" /* hardware = Ethernet */
             "\x08\x00" /* protocol = IPv4 */
             "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
             "\x00\x02" /* opcode = reply(2) */
             , 8);
 
-    memcpy(arp_packet + 22, my_mac, 6);
-    arp_packet[28] = (unsigned char)(my_ip >> 24);
-    arp_packet[29] = (unsigned char)(my_ip >> 16);
-    arp_packet[30] = (unsigned char)(my_ip >>  8);
-    arp_packet[31] = (unsigned char)(my_ip >>  0);
+    memcpy(response->px + 22, my_mac, 6);
+    response->px[28] = (unsigned char)(my_ip >> 24);
+    response->px[29] = (unsigned char)(my_ip >> 16);
+    response->px[30] = (unsigned char)(my_ip >>  8);
+    response->px[31] = (unsigned char)(my_ip >>  0);
 
-    memcpy(arp_packet + 32, request.mac_src, 6);
-    arp_packet[38] = (unsigned char)(request.ip_src >> 24);
-    arp_packet[39] = (unsigned char)(request.ip_src >> 16);
-    arp_packet[40] = (unsigned char)(request.ip_src >>  8);
-    arp_packet[41] = (unsigned char)(request.ip_src >>  0);
+    memcpy(response->px + 32, request.mac_src, 6);
+    response->px[38] = (unsigned char)(request.ip_src >> 24);
+    response->px[39] = (unsigned char)(request.ip_src >> 16);
+    response->px[40] = (unsigned char)(request.ip_src >>  8);
+    response->px[41] = (unsigned char)(request.ip_src >>  0);
 
 
     /*
-     * Now transmit the packet
+     * Now queue the packet up for transmission
      */
-    rawsock_send_packet(adapter, arp_packet, 60, 1);
+again2:
+    err = rte_ring_sp_enqueue(transmit_queue, response);
+    if (err) {
+        LOG(0, "transmit queue full (should be impossible)\n");
+        pixie_usleep(10000000);
+        goto again2;
+    }
 
     return 0;
 }

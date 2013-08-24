@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
     <ClCompile Include="..\src\main-dedup.c" />
@@ -43,9 +44,11 @@
     <ClCompile Include="..\src\rawsock-getroute.c" />
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
+    <ClCompile Include="..\src\rte-ring.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\syn-cookie.c" />
     <ClCompile Include="..\src\tcpkt.c" />
+    <ClCompile Include="..\src\xring.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\logger.h" />
@@ -56,15 +59,18 @@
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\pixie-threads.h" />
     <ClInclude Include="..\src\pixie-timer.h" />
+    <ClInclude Include="..\src\proto-arp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\ranges.h" />
     <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
+    <ClInclude Include="..\src\rte-ring.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\syn-cookie.h" />
     <ClInclude Include="..\src\tcpkt.h" />
+    <ClInclude Include="..\src\xring.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE" />

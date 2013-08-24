@@ -94,6 +94,11 @@ struct Masscan
     unsigned is_pfring:1;
     unsigned is_sendq:1;
 
+    /**
+     * Wait forever for responses, instead of the default 10 seconds
+     */
+    unsigned wait;
+
 
     struct {
         uint64_t seed;
@@ -141,6 +146,9 @@ struct Masscan
     } nmap;
 
     char rotate_directory[256];
+
+    struct rte_ring *packet_buffers;
+    struct rte_ring *pending_packets;
 };
 
 

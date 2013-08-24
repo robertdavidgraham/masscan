@@ -17,6 +17,7 @@
 #include "logger.h"
 
 #include <ctype.h>
+#include <limits.h>
 
 
 /***************************************************************************
@@ -799,6 +800,11 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     } else if (EQUALS("version-trace", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
+    } else if (EQUALS("wait", name)) {
+        if (EQUALS("forever", value))
+            masscan->wait =  INT_MAX;
+        else
+            masscan->wait = (unsigned)parseInt(value);
     } else if (EQUALS("webxml", name)) {
         masscan_set_parameter(masscan, "stylesheet", "http://nmap.org/svn/docs/nmap.xsl");
     } else {

@@ -9,6 +9,7 @@ SYS := $(shell gcc -dumpmachine)
 ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt -ldl -rdynamic
 INCLUDES = -I. -I../PF_RING/userland/lib
+FLAGS2 = 
 endif
 
 # MAC OS X
@@ -18,6 +19,7 @@ endif
 ifneq (, $(findstring darwin, $(SYS)))
 LIBS = -lpcap -lm -rdynamic
 INCLUDES = -I.
+FLAGS2 = 
 endif
 
 # MinGW on Windows
@@ -29,6 +31,7 @@ endif
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -I. -Ivs10/include
 LIBS = -L vs10/lib -lwpcap -lIPHLPAPI
+FLAGS2 = -march=i686
 endif
 
 # Cygwin
@@ -38,6 +41,7 @@ endif
 ifneq (, $(findstring cygwin, $(SYS)))
 INCLUDES = -I.
 LIBS = -lwpcap
+FLAGS2 = 
 endif
 
 
@@ -45,7 +49,7 @@ endif
 CC = gcc
 
 DEFINES = 
-CFLAGS = -g $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
+CFLAGS = -g $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 
 # just compile everything in the 'src' directory. Using this technique

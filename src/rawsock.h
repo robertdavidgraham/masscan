@@ -6,6 +6,8 @@
 #include <stdio.h>
 struct Adapter;
 struct TcpPacket;
+struct rte_ring;
+
 
 
 /**
@@ -55,7 +57,6 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address);
 
-int arp_response(struct Adapter *adapter, unsigned my_ip, const unsigned char *my_mac, const unsigned char *px, unsigned length);
 
 void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac);
 

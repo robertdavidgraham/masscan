@@ -87,6 +87,15 @@
     <ClCompile Include="..\src\output.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\xring.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rte-ring.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -138,6 +147,15 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\output.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\xring.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rte-ring.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-arp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

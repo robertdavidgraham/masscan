@@ -17,8 +17,11 @@
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
+#include "proto-arp.h"          /* for responding to ARP requests */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
 #include "output.h"             /* for outputing results */
+//#include "xring.h"              /* producer/consumer ring buffer */
+#include "rte-ring.h"           /* producer/consumer ring buffer */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -26,6 +29,7 @@
 
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 #include <signal.h>
 
 
@@ -57,6 +61,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
     unsigned *picker;
+    struct rte_ring *pending_packets = masscan->pending_packets;
+    struct Adapter *adapter = masscan->adapter;
 
     LOG(1, "xmit: starting transmit thread...\n");
 
@@ -114,7 +120,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
             /* Send the probe */
             rawsock_send_probe(
-                    masscan->adapter,
+                    adapter,
                     ip,
                     port,
                     syn_hash(ip, port),
@@ -133,6 +139,17 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             if ((i & status.timer) == status.timer)
                 status_print(&status, i, m);
 
+        } /* end of batch */
+
+        /* Transmit packets from other thread */
+        for (;;) {
+            unsigned char *p;
+            int err;
+
+            err = rte_ring_sc_dequeue(pending_packets, &p);
+            if (err)
+                break;
+            rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
         }
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
@@ -142,7 +159,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             masscan->resume.seed = seed;
             masscan->resume.index = i;
             masscan_save_state(masscan);
-            fprintf(stderr, "waiting 10 seconds to exit...\n");
+            fprintf(stderr, "waiting %u seconds to exit...\n", masscan->wait);
             fflush(stderr);
             control_c_pressed = 0; /* a second ^C press exits faster */
             break;
@@ -157,9 +174,21 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      */
     {
         unsigned j;
-        for (j=0; j<10 && !control_c_pressed; j++) {
+        for (j=0; j<masscan->wait && !control_c_pressed; j++) {
+            unsigned k;
             status_print(&status, i++, m);
-            pixie_usleep(1000000);
+            for (k=0; k<100; k++) {
+                for (;;) {
+                    unsigned char *p;
+                    int err;
+
+                    err = rte_ring_sc_dequeue(pending_packets, &p);
+                    if (err)
+                        break;
+                    rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
+                }
+                pixie_usleep(1000);
+            }
         }
         fprintf(stderr, "                                                                      \r");
     }
@@ -243,7 +272,11 @@ receive_thread(struct Masscan *masscan,
         /* OOPS: handle arp instead */
         if (parsed.found == FOUND_ARP) {
             LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
-            arp_response(masscan->adapter, adapter_ip, adapter_mac, px, length);
+
+            arp_response(
+                adapter_ip, adapter_mac, px, length,
+                masscan->packet_buffers,
+                masscan->pending_packets);
             continue;
         }
 
@@ -425,6 +458,22 @@ main_scan(struct Masscan *masscan)
     fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
     fprintf(stderr, "Initiating SYN Stealth Scan\n");
 
+    /*
+     * Allocate packet buffers for sending
+     */
+    masscan->packet_buffers = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
+    masscan->pending_packets = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
+    {
+        unsigned i;
+        for (i=0; i<256; i++) {
+            char *pkt = (char*)malloc(1600);
+            err = rte_ring_sp_enqueue(masscan->packet_buffers, pkt);
+            if (err) {
+                LOG(0, "packet_buffers: enqueue: error %d\n", err);
+            }
+        }
+    }
+
 
     /*
      * Start the scanning thread.
@@ -460,6 +509,7 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
+    masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
     masscan->adapter_port = 0x10000; /* value not set */
     strcpy_s(   masscan->rotate_directory,
@@ -540,13 +590,16 @@ int main(int argc, char *argv[])
             x += tcpkt_selftest();
             x += ranges_selftest();
             x += pixie_time_selftest();
+            //x += xring_selftest();
+            x += rte_ring_selftest();
+
 
             if (x != 0) {
                 /* one of the selftests failed, so return error */
-                fprintf(stderr, "selftest: failed :( \n");
+                fprintf(stderr, "regression test: failed :( \n");
                 return 1;
             } else {
-                fprintf(stderr, "selftest: success!\n");
+                fprintf(stderr, "regression test: success!\n");
                 return 0;
             }
         }
