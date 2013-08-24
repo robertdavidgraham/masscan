@@ -40,6 +40,30 @@ time_t global_now;
 
 
 /***************************************************************************
+ ***************************************************************************/
+void
+flush_packets(struct Masscan *masscan)
+{
+    for (;;) {
+        unsigned char *p;
+        int err;
+
+        err = rte_ring_sc_dequeue(masscan->pending_packets, (void**)&p);
+        if (err)
+            break;
+        rawsock_send_packet(masscan->adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
+        err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
+        again2:
+        if (err) {
+            LOG(0, "transmit queue full (should be impossible)\n");
+            pixie_usleep(10000);
+            goto again2;
+        }
+    }
+}
+
+
+/***************************************************************************
  * This thread spews packets as fast as it can
  *
  *      THIS IS WHERE ALL THE EXCITEMENT HAPPENS!!!!
@@ -62,7 +86,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
     unsigned *picker;
-    struct rte_ring *pending_packets = masscan->pending_packets;
     struct Adapter *adapter = masscan->adapter;
 
     LOG(1, "xmit: starting transmit thread...\n");
@@ -143,15 +166,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         } /* end of batch */
 
         /* Transmit packets from other thread */
-        for (;;) {
-            unsigned char *p;
-            int err;
-
-            err = rte_ring_sc_dequeue(pending_packets, (void**)&p);
-            if (err)
-                break;
-            rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
-        }
+        flush_packets(masscan);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to resume the scan later, we save the current
@@ -178,16 +193,11 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         for (j=0; j<masscan->wait && !control_c_pressed; j++) {
             unsigned k;
             status_print(&status, i++, m);
-            for (k=0; k<1000; k++) {
-                for (;;) {
-                    unsigned char *p;
-                    int err;
 
-                    err = rte_ring_sc_dequeue(pending_packets, (void**)&p);
-                    if (err)
-                        break;
-                    rawsock_send_packet(adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
-                }
+            for (k=0; k<1000; k++) {
+                /* Transmit packets from other thread */
+                flush_packets(masscan);
+
                 pixie_usleep(1000);
             }
         }
@@ -281,17 +291,6 @@ receive_thread(struct Masscan *masscan,
         if (adapter_ip != dst)
             continue;
 
-        /* Save raw packet (if configured to do so) */
-        if (pcapfile) {
-            pcapfile_writeframe(
-                pcapfile,
-                px,
-                length,
-                length,
-                secs,
-                usecs);
-        }
-
 
         /* OOPS: handle arp instead */
         if (parsed.found == FOUND_ARP) {
@@ -311,6 +310,17 @@ receive_thread(struct Masscan *masscan,
         /* verify: my port number */
         if (adapter_port != parsed.port_dst)
             continue;
+
+        /* Save raw packet (if configured to do so) */
+        if (pcapfile) {
+            pcapfile_writeframe(
+                pcapfile,
+                px,
+                length,
+                length,
+                secs,
+                usecs);
+        }
 
         /* verify: syn-cookies */
         if (syn_hash(src, parsed.port_src) != seqno) {
@@ -492,10 +502,11 @@ main_scan(struct Masscan *masscan)
     masscan->pending_packets = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
     {
         unsigned i;
-        for (i=0; i<256; i++) {
+        for (i=0; i<255 /*TODO: why not 256???*/; i++) {
             char *pkt = (char*)malloc(1600);
             err = rte_ring_sp_enqueue(masscan->packet_buffers, pkt);
             if (err) {
+                /* I dunno why but I can't queue all 256 packets, just 255 */
                 LOG(0, "packet_buffers: enqueue: error %d\n", err);
             }
         }

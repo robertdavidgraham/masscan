@@ -57,9 +57,6 @@
     <ClCompile Include="..\src\rawsock-getip.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rawsock-arp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rawsock-getif.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,10 +90,13 @@
     <ClCompile Include="..\src\rte-ring.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rawsock-pcapfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\proto-tcp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rawsock-pcapfile.c">
+    <ClCompile Include="..\src\rawsock-arp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

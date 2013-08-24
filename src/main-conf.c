@@ -377,6 +377,61 @@ parseInt(const char *str)
     return result;
 }
 
+static uint64_t
+parseTime(const char *value)
+{
+    uint64_t num = 0;
+    unsigned is_negative = 0;
+
+    while (*value == '-') {
+        is_negative = 1;
+        value++;
+    }
+
+    while (isdigit(value[0]&0xFF)) {
+        num = num*10 + (value[0] - '0');
+        value++;
+    }
+    while (ispunct(value[0]) || isspace(value[0]))
+        value++;
+
+    if (isalpha(value[0]) && num == 0)
+        num = 1;
+
+    if (value[0] == '\0')
+        return 0;
+
+    switch (tolower(value[0])) {
+    case 's':
+        num *= 1;
+        break;
+    case 'm':
+        num *= 60;
+        break;
+    case 'h':
+        num *= 60*60;
+        break;
+    case 'd':
+        num *= 24*60*60;
+        break;
+    case 'w':
+        num *= 24*60*60*7;
+        break;
+    default:
+        fprintf(stderr, "--rotate-offset: unknown character\n");
+        exit(1);
+    }
+    if (num >= 24*60*60) {
+        fprintf(stderr, "--rotate-offset: value is greater than 1 day\n");
+        exit(1);
+    }
+    if (is_negative)
+        num = 24*60*60 - num;
+
+    return num;
+}
+
+
 
 int EQUALS(const char *lhs, const char *rhs)
 {
@@ -671,75 +726,9 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
             masscan->retries = x;
         }
     } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) || EQUALS("ouput-rotate", name)) {
-        switch (tolower(value[0])) {
-        case 's':
-            masscan->rotate_output = 1;
-            return;
-        case 'm':
-            masscan->rotate_output = 60;
-            return;
-        case 'h':
-            masscan->rotate_output = 60*60;
-            return;
-        case 'd':
-            masscan->rotate_output = 24*60*60;
-            return;
-        case 'w':
-            masscan->rotate_output = 24*60*60*7;
-            return;
-        default:
-            if (isdigit(value[0]&0xFF)) {
-                masscan->rotate_output = strtoul(value, 0, 0);
-                return;
-            }
-        }
-        fprintf(stderr, "--rotate: unknown value (epected 'minute', 'hour', 'day', 'week')\n");
-        exit(1);
+        masscan->rotate_output = (unsigned)parseTime(value);
     } else if (EQUALS("rotate-offset", name) || EQUALS("ouput-rotate-offset", name)) {
-        uint64_t num = 0;
-        unsigned is_negative = 0;
-        while (*value == '-') {
-            is_negative = 1;
-            value++;
-        }
-        while (isdigit(value[0]&0xFF)) {
-            num = num*10 + (value[0] - '0');
-            value++;
-        }
-        while (ispunct(value[0]) || isspace(value[0]))
-            value++;
-
-        if (isalpha(value[0]) && num == 0)
-            num = 1;
-
-        switch (tolower(value[0])) {
-        case 's':
-            num *= 1;
-            break;
-        case 'm':
-            num *= 60;
-            break;
-        case 'h':
-            num *= 60*60;
-            break;
-        case 'd':
-            num *= 24*60*60;
-            break;
-        case 'w':
-            num *= 24*60*60*7;
-            break;
-        default:
-            fprintf(stderr, "--rotate-offset: unknown character\n");
-            exit(1);
-        }
-        if (num >= 24*60*60) {
-            fprintf(stderr, "--rotate-offset: value is greater than 1 day\n");
-            exit(1);
-        }
-        if (is_negative)
-            num = 24*60*60 - num;
-
-        masscan->rotate_offset = (unsigned)num;
+        masscan->rotate_offset = (unsigned)parseTime(value);
     } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
         char *p;
         strcpy_s(   masscan->rotate_directory,

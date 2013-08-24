@@ -216,19 +216,19 @@ int arp_response(
     } *response;
     struct ARP_IncomingRequest request;
     int err;
-    size_t offset;
+
 
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
 again:
-    err = rte_ring_sc_dequeue(packet_buffers, &response);
+    err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
     if (err != 0) {
         pixie_usleep(100);
         goto again;
     }
     memset(response->px, 0, 64);
-    offset = sizeof(size_t);
+
 
     memset(&request, 0, sizeof(request));
 

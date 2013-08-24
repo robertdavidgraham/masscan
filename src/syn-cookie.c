@@ -88,7 +88,6 @@ murmur(uint64_t entropy, ...)
 
     for (len=0; len<2; len++) {
         unsigned k = va_arg(key, unsigned);
-
         k = k * c1;
         k = (k << r1) | (k >> (32-r1));
         k = k * c2;
