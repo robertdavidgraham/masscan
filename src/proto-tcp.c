@@ -229,7 +229,7 @@ tcpcon_destroy_tcb(
             r_entry = &(*r_entry)->next;
     }
 
-    fprintf(stderr, "internal error\n");
+    fprintf(stderr, "tcpcon:internal error\n");
     exit(1);
 
 }
@@ -484,7 +484,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     if (tcb == NULL)
         return;
 
-    LOG(0, "%u.%u.%u.%u -  %s : %s                  \n", 
+    LOG(10, "%u.%u.%u.%u -  %s : %s                  \n", 
             (unsigned char)(tcb->ip_them>>24),
             (unsigned char)(tcb->ip_them>>16),
             (unsigned char)(tcb->ip_them>> 8),
@@ -704,7 +704,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         break;
 
     default:
-        LOG(0, "tcp: unknown event %s : %s\n", 
+        LOG(3, "tcp: unknown event %s : %s\n", 
             state_to_string(tcb->tcpstate), 
             what_to_string(what));
     }
