@@ -141,7 +141,12 @@ open_rotate(struct Output *output, const char *filename)
             "syn", "tcp" );
         break;
     case Output_Binary:
-        fwrite( "mass" "can/" "1.0\0", 1, 12, fp);
+        {
+            char firstrecord[2+'a'];
+            memset(firstrecord, 0, 2+'a');
+            sprintf_s(firstrecord, 2+'a', "masscan/1.1");
+            fwrite( firstrecord, 1, 2+'a', fp);
+        }
         break;
     default:
         LOG(0, "output: ERROR: unknown format\n");
@@ -191,7 +196,12 @@ close_rotate(struct Output *out, FILE *fp)
         );
         break;
     case Output_Binary:
-        fwrite( "mass" "can/" "1.0\0", 1, 12, fp);
+        {
+            char firstrecord[2+'a'];
+            memset(firstrecord, 0, 2+'a');
+            sprintf_s(firstrecord, 2+'a', "masscan/1.1");
+            fwrite( firstrecord, 1, 2+'a', fp);
+        }
         break;
     default:
         LOG(0, "output: ERROR: unknown format\n");
@@ -483,7 +493,7 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
         break;
     case Output_Binary:
         {
-            unsigned foo[256];
+            unsigned char foo[256];
 
             /* [TYPE] field */
             switch (status) {
@@ -546,7 +556,7 @@ proto_string(unsigned proto)
     }
 }
 const char *
-banner_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
+normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
 {
     size_t i=0;
     size_t offset = 0;
@@ -638,7 +648,7 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
             (ip>> 0)&0xFF,
             port,
             proto_string(proto),
-            banner_string(px, length, banner_buffer, sizeof(banner_buffer))
+            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
         }
         break;
@@ -669,8 +679,9 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
             foo[10] = (unsigned char)(port>>8);
             foo[11] = (unsigned char)(port>>0);
 
+            printf("banner: %.*s\n", length, px);
             /* Banner */
-            memcpy(foo, px, length);
+            memcpy(foo+12, px, length);
 
 
 

@@ -62,7 +62,7 @@ print_nmap_help(void)
 "TIMING AND PERFORMANCE:\n"
 "  --max-rate <number>: Send packets no faster than <number> per second\n"
 "FIREWALL/IDS EVASION AND SPOOFING:\n"
-"  -S <IP_Address>: Spoof source address\n"
+"  -S/--source-ip <IP_Address>: Spoof source address\n"
 "  -e <iface>: Use specified interface\n"
 "  -g/--source-port <portnum>: Use given port number\n"
 "  --ttl <val>: Set IP time-to-live field\n"
@@ -83,8 +83,9 @@ print_nmap_help(void)
 "  -h: Print this help summary page.\n"
 "EXAMPLES:\n"
 "  masscan -v -sS 192.168.0.0/16 10.0.0.0/8 -p 80\n"
-"SEE THE MAN PAGE (http://nmap.org/book/man.html) FOR MORE OPTIONS AND EXAMPLES\n"
-"}\n");
+"  masscan 23.0.0.0/0 -p80 -output-format binary --output-filename internet.scan\n"
+"SEE (https://github.com/robertdavidgraham/masscan) FOR MORE HELP\n"
+"\n");
 }
 
 
@@ -131,10 +132,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
      */
     fprintf(fp, "# OUTPUT/REPORTING SETTINGS\n");
     switch (masscan->nmap.format) {
-    case Output_Interactive:    fprintf(fp, "output-format = interactive\n"); break;
-    case Output_List:           fprintf(fp, "output-format = list\n"); break;
-    case Output_XML:            fprintf(fp, "output-format = xml\n"); break;
-    case Output_Binary:         fprintf(fp, "output-format = binary\n"); break;
+    case Output_Interactive:fprintf(fp, "output-format = interactive\n"); break;
+    case Output_List:       fprintf(fp, "output-format = list\n"); break;
+    case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
+    case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     default:
         fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
@@ -210,7 +211,8 @@ masscan_save_state(struct Masscan *masscan)
 
 
     strcpy_s(filename, sizeof(filename), "paused.scan");
-    fprintf(stderr, "                                                                      \r");
+    fprintf(stderr, "                                   "
+                    "                                   \r");
     fprintf(stderr, "saving resume file to: %s\n", filename);
 
     err = fopen_s(&fp, filename, "wt");
@@ -305,7 +307,8 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
             /* parse the address range */
             range = range_parse_ipv4(address, &offset, (unsigned)i);
             if (range.begin == 0xFFFFFFFF && range.end == 0) {
-                fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", filename, line_number, offset, address);
+                fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", 
+                        filename, line_number, offset, address);
             } else {
                 rangelist_add_range(ranges, range.begin, range.end);
             }
@@ -455,7 +458,8 @@ int EQUALS(const char *lhs, const char *rhs)
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
 void
-masscan_set_parameter(struct Masscan *masscan, const char *name, const char *value)
+masscan_set_parameter(struct Masscan *masscan, 
+                      const char *name, const char *value)
 {
 
     if (EQUALS("conf", name) || EQUALS("config", name)) {
@@ -466,24 +470,32 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         }
         sprintf_s(masscan->ifname, sizeof(masscan->ifname), "%s", value);
     }
-    else if (EQUALS("adapter-ip", name) || EQUALS("adapter.ip", name) || EQUALS("adapterip", name)) {
+    else if (EQUALS("adapter-ip", name) || EQUALS("source-ip", name) 
+             || EQUALS("source-address", name) || EQUALS("spoof-ip", name)
+             || EQUALS("spoof-address", name)) {
+        /* Send packets FROM this IP address */
             struct Range range;
 
             range = range_parse_ipv4(value, 0, 0);
             if (range.begin == 0 && range.end == 0) {
-                fprintf(stderr, "CONF: bad IPv4 address: %s=%s\n", name, value);
+                fprintf(stderr, "CONF: bad source IPv4 address: %s=%s\n", 
+                        name, value);
                 return;
             }
 
             masscan->adapter_ip = range.begin;
-    } else if (EQUALS("adapter-port", name) || EQUALS("adapterport", name)) {
+    } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)) {
+        /* Send packets FROM this port number */
         unsigned x = strtoul(value, 0, 0);
         if (x > 65535) {
-            fprintf(stderr, "error: %s=<n>: expected number less than 1000\n", name);
+            fprintf(stderr, "error: %s=<n>: expected number less than 1000\n", 
+                    name);
         } else {
             masscan->adapter_port = x;
         }
-    } else if (EQUALS("adapter-mac", name) || EQUALS("adapter.mac", name) || EQUALS("adaptermac", name) || EQUALS("spoof-mac", name)) {
+    } else if (EQUALS("adapter-mac", name) || EQUALS("spoof-mac", name)
+               || EQUALS("source-mac", name)) {
+        /* Send packets FROM this MAC address */
         unsigned char mac[6];
 
         if (parse_mac_address(value, mac) != 0) {
@@ -493,7 +505,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 
         memcpy(masscan->adapter_mac, mac, 6);
     }
-    else if (EQUALS("router-mac", name) || EQUALS("router.mac", name) || EQUALS("routermac", name)) {
+    else if (EQUALS("router-mac", name) || EQUALS("router", name)) {
         unsigned char mac[6];
 
         if (parse_mac_address(value, mac) != 0) {
@@ -503,7 +515,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
 
         memcpy(masscan->router_mac, mac, 6);
     }
-    else if (EQUALS("rate", name) || EQUALS("maxrate", name) || EQUALS("max.rate", name) ) {
+    else if (EQUALS("rate", name) || EQUALS("max-rate", name) ) {
         double rate = 0.0;
         double point = 10.0;
         unsigned i;
@@ -538,11 +550,7 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
         rangelist_parse_ports(&masscan->ports, value);
         masscan->op = Operation_Scan;
     }
-    else if (
-            EQUALS("exclude-ports", name) || EQUALS("exclude-port", name) ||
-            EQUALS("exclude.ports", name) || EQUALS("exclude.port", name) ||
-            EQUALS("excludeports", name) || EQUALS("excludeport", name)
-        ) {
+    else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         rangelist_parse_ports(&masscan->exclude_port, value);
     }
     else if (EQUALS("range", name) || EQUALS("ranges", name) || EQUALS("ip", name) || EQUALS("ipv4", name)) {
@@ -571,13 +579,9 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
     else if (
                 EQUALS("exclude", name) ||
                 EQUALS("exclude-range", name) ||
-                EQUALS("excluderange", name) ||
                 EQUALS("exclude-ranges", name) ||
-                EQUALS("excluderanges", name) ||
                 EQUALS("exclude-ip", name) ||
-                EQUALS("excludeip", name) ||
-                EQUALS("exclude-ipv4", name) ||
-                EQUALS("excludeipv4", name)
+                EQUALS("exclude-ipv4", name)
                 ) {
         const char *ranges = value;
         unsigned offset = 0;
@@ -626,19 +630,20 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
             masscan->op = Operation_DebugIF;
         }
     } else if (EQUALS("dns-servers", name)) {
-        fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
+        fprintf(stderr, "nmap(%s): unsupported: DNS lookups too synchronous\n", 
+                name);
         exit(1);
     } else if (EQUALS("echo", name)) {
         masscan_echo(masscan, stdout);
         exit(1);
-    } else if (EQUALS("excludefile", name) || EQUALS("exclude-file", name) || EQUALS("exclude.file", name)) {
+    } else if (EQUALS("excludefile", name)) {
         ranges_from_file(&masscan->exclude_ip, value);
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
-    } else if (EQUALS("includefile", name) || EQUALS("include-file", name) || EQUALS("include.file", name)) {
+    } else if (EQUALS("includefile", name)) {
         ranges_from_file(&masscan->targets, value);
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
