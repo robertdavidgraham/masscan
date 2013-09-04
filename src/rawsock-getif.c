@@ -9,11 +9,138 @@
 
 #include "ranges.h" /*for parsing IPv4 addresses */
 
-#if defined(__APPLE__)
-int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#include <unistd.h>
+#include <sys/socket.h>
+#include <net/route.h>
+#include <netinet/in.h>
+#include <net/if_dl.h>
+#include <ctype.h>
+
+#define ROUNDUP(a)							\
+((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
+
+static struct sockaddr *
+get_rt_address(struct rt_msghdr *rtm, int desired)
 {
+    int i;
+    int bitmask = rtm->rtm_addrs;
+    struct sockaddr *sa = (struct sockaddr *)(rtm + 1);
+    
+    for (i = 0; i < RTAX_MAX; i++) {
+        if (bitmask & (1 << i)) {
+            if ((1<<i) == desired)
+                return sa;
+            sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
+        } else
+            ;
+    }
+    return NULL;
+    
+}
+
+int
+rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
+{
+    int fd;
+    int seq = time(0);
+    int err;
+    struct rt_msghdr *rtm;
+    size_t sizeof_buffer;
+    
+    
+    /*
+     * Requests/responses from the kernel are done with an "rt_msghdr"
+     * structure followed by an array of "sockaddr" structures.
+     */
+    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
+    rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
+    
+    
+    /*
+     * Create a socket for querying the kernel
+     */
+    fd = socket(PF_ROUTE, SOCK_RAW, 0);
+    if (fd <= 0) {
+        perror("socket(PF_ROUTE)");
+        free(rtm);
+        return errno;
+    }
+    
+    
+    /*
+     * Format and send request to kernel
+     */
+    memset(rtm, 0, sizeof_buffer);
+    rtm->rtm_msglen = sizeof_buffer;
+    rtm->rtm_type = RTM_GET;
+    rtm->rtm_flags = RTF_UP | RTF_GATEWAY;
+    rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_seq = seq;
+    rtm->rtm_addrs = RTA_DST | RTA_NETMASK | RTA_GATEWAY | RTA_IFP;
+    
+    err = write(fd, (char *)rtm, sizeof_buffer);
+    if (err < 0 || err != sizeof_buffer) {
+        perror("write(RTM_GET)");
+        printf("----%u %u\n", err, sizeof_buffer);
+        close(fd);
+        free(rtm);
+        return -1;
+    }
+    
+    /*
+     * Read responses until we find one that belongs to us
+     */
+    for (;;) {
+        err = read(fd, (char *)rtm, sizeof_buffer);
+        if (err <= 0)
+            break;
+        if (rtm->rtm_seq != seq) {
+            printf("seq: %u %u\n", rtm->rtm_seq, seq);
+            continue;
+        }
+        if (rtm->rtm_pid != getpid()) {
+            printf("pid: %u %u\n", rtm->rtm_pid, getpid());
+            continue;
+        }
+        break;
+    }
+    close(fd);
+    
+    //hexdump(rtm+1, err-sizeof(*rtm));
+    //dump_rt_addresses(rtm);
+    
+    /*
+     * Parse our data
+     */
+    {
+        //struct sockaddr_in *sin;
+        struct sockaddr_dl *sdl;
+        
+        sdl = (struct sockaddr_dl *)get_rt_address(rtm, RTA_IFP);
+        if (sdl) {
+            size_t len = sdl->sdl_nlen;
+            if (len > sizeof_ifname-1)
+                len = sizeof_ifname-1;
+            memcpy(ifname, sdl->sdl_data, len);
+            ifname[len] = 0;
+            return 0;
+        }
+
+        /*sin = (struct sockaddr_in *)get_rt_address(rtm, RTA_GATEWAY);
+        if (sin) {
+            *ipv4 = ntohl(sin->sin_addr.s_addr);
+            free(rtm);
+            return 0;
+        }*/
+        
+    }
+    
+    free(rtm);
     return -1;
 }
+
+
 #elif defined(__linux__)
 #include <netinet/in.h>
 #include <net/if.h>

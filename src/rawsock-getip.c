@@ -2,19 +2,22 @@
     retrieve IPv4 address of the named network interface/adapter
     like "eth0"
 
-    This works on both Linux and Windows.
+ 
+    This works on:
+        - Windows
+        - Linux
+        - Apple
+        - FreeBSD
+ 
+ I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
 #include "string_s.h"
 #include "ranges.h" /*for parsing IPv4 addresses */
 
-#if defined(__APPLE__)
-unsigned
-rawsock_get_adapter_ip(const char *ifname)
-{
-    return 0;
-}
-#elif defined(__linux__)
+/*****************************************************************************
+ *****************************************************************************/
+#if defined(__linux__)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -49,16 +52,15 @@ rawsock_get_adapter_ip(const char *ifname)
     sin = (struct sockaddr_in *)sa;
     return ntohl(sin->sin_addr.s_addr);
 }
-#endif
 
-#if defined(WIN32)
+/*****************************************************************************
+ *****************************************************************************/
+#elif defined(WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #ifdef _MSC_VER
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
-
-
 
 unsigned
 rawsock_get_adapter_ip(const char *ifname)
@@ -75,7 +77,7 @@ rawsock_get_adapter_ip(const char *ifname)
      */
     pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof (IP_ADAPTER_INFO));
     if (pAdapterInfo == NULL) {
-        fprintf(stderr, "Error allocating memory needed to call GetAdaptersinfo\n");
+        fprintf(stderr, "error:malloc(): for GetAdaptersinfo\n");
         return 0;
     }
 
@@ -89,7 +91,7 @@ again:
         free(pAdapterInfo);
         pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
         if (pAdapterInfo == NULL) {
-            fprintf(stderr, "Error allocating memory needed to call GetAdaptersinfo\n");
+            fprintf(stderr, "error:malloc(): for GetAdaptersinfo\n");
             return 0;
         }
         goto again;
@@ -129,5 +131,61 @@ again:
 
     return 0;
 }
+/*****************************************************************************
+ *****************************************************************************/
+#elif defined(__APPLE__) || defined(__FreeBSD__) || 1
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+
+#ifdef AF_LINK
+#   include <net/if_dl.h>
+#endif
+#ifdef AF_PACKET
+#   include <netpacket/packet.h>
+#endif
+
+unsigned
+rawsock_get_adapter_ip(const char *ifname)
+{
+    int err;
+    struct ifaddrs *ifap;
+    struct ifaddrs *p;
+    unsigned ip;
+    
+    
+    /* Get the list of all network adapters */
+    err = getifaddrs(&ifap);
+    if (err != 0) {
+        perror("getifaddrs");
+        return 0;
+    }
+    
+    /* Look through the list until we get our adapter */
+    for (p = ifap; p; p = p->ifa_next) {
+        if (strcmp(ifname, p->ifa_name) == 0
+            && p->ifa_addr
+            && p->ifa_addr->sa_family == AF_INET)
+            break;
+    }
+    if (p == NULL)
+        goto error; /* not found */
+    
+    /* Return the address */
+    {
+        struct sockaddr_in *sin = (struct sockaddr_in *)p->ifa_addr;
+        
+        ip = ntohl(sin->sin_addr.s_addr);
+    }
+
+    freeifaddrs(ifap);
+    return ip;
+error:
+    freeifaddrs(ifap);
+    return 0;
+}
+
 #endif
 

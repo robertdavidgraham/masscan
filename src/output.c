@@ -34,7 +34,7 @@
 #include <io.h>
 #include <fcntl.h>
 #define access _access
-#elif defined(__linux__)
+#else
 #include <unistd.h>
 #endif
 

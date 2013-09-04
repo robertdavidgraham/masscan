@@ -46,10 +46,8 @@ int64_t ftell_x(FILE *fp)
 	return ftello64(fp);
 #elif defined(WIN32) && defined(_MSC_VER)
 	return _ftelli64(fp);
-#elif defined(__linux__)
-	return ftello(fp);
 #else
-#error ftell_x undefined for this platform
+	return ftello(fp);
 #endif
 }
 int fseek_x(FILE *fp, int64_t offset, int origin)
@@ -58,10 +56,8 @@ int fseek_x(FILE *fp, int64_t offset, int origin)
 	return fseeko64(fp, offset, origin);
 #elif defined(WIN32) && defined(_MSC_VER)
 	return _fseeki64(fp, offset, origin);
-#elif defined(__linux__)
-	return fseeko(fp, offset, origin);
 #else
-#error fseek_x undefined for this platform
+	return fseeko(fp, offset, origin);
 #endif
 }
 /****************************************************************************

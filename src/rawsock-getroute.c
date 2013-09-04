@@ -10,11 +10,87 @@
 #include "ranges.h" /*for parsing IPv4 addresses */
 
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net/route.h>
 #include <netinet/in.h>
+#include <net/if_dl.h>
+#include <ctype.h>
+
+#define ROUNDUP(a)							\
+((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
+
+struct sockaddr *
+get_rt_address(struct rt_msghdr *rtm, int desired)
+{
+    int i;
+    int bitmask = rtm->rtm_addrs;
+    struct sockaddr *sa = (struct sockaddr *)(rtm + 1);
+    
+    for (i = 0; i < RTAX_MAX; i++) {
+        if (bitmask & (1 << i)) {
+            if ((1<<i) == desired)
+                return sa;
+            sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
+        } else
+            ;
+    }
+    return NULL;
+
+}
+
+static void
+hexdump(const void *v, size_t len)
+{
+    const unsigned char *p = (const unsigned char *)v;
+    size_t i;
+    
+    
+    for (i=0; i<len; i += 16) {
+        size_t j;
+        
+        for (j=i; j<i+16 && j<len; j++)
+            printf("%02x ", p[j]);
+        for (;j<i+16; j++)
+            printf("   ");
+        printf("  ");
+        for (j=i; j<i+16 && j<len; j++)
+            if (isprint(p[j]) && !isspace(p[j]))
+                printf("%c", p[j]);
+            else
+                printf(".");
+        printf("\n");
+    }
+}
+
+#if 0
+#define RTA_DST         0x1     /* destination sockaddr present */
+#define RTA_GATEWAY     0x2     /* gateway sockaddr present */
+#define RTA_NETMASK     0x4     /* netmask sockaddr present */
+#define RTA_GENMASK     0x8     /* cloning mask sockaddr present */
+#define RTA_IFP         0x10    /* interface name sockaddr present */
+#define RTA_IFA         0x20    /* interface addr sockaddr present */
+#define RTA_AUTHOR      0x40    /* sockaddr for author of redirect */
+#define RTA_BRD         0x80    /* for NEWADDR, broadcast or p-p dest addr */
+#endif
+
+void
+dump_rt_addresses(struct rt_msghdr *rtm)
+{
+    int i;
+    int bitmask = rtm->rtm_addrs;
+    struct sockaddr *sa = (struct sockaddr *)(rtm + 1);
+    
+    for (i = 0; i < RTAX_MAX; i++) {
+        if (bitmask & (1 << i)) {
+            printf("b=%u fam=%u len=%u\n", (1<<i), sa->sa_family, sa->sa_len);
+            hexdump(sa, sa->sa_len + sizeof(sa->sa_family));
+            sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
+        } else
+            ;
+    }
+}
 
 int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 {
@@ -29,7 +105,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
      * Requests/responses from the kernel are done with an "rt_msghdr"
      * structure followed by an array of "sockaddr" structures.
      */
-    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in) * sizeof(int)*8;
+    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
     rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
 
 
@@ -53,11 +129,12 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
     rtm->rtm_flags = RTF_UP | RTF_GATEWAY;
     rtm->rtm_version = RTM_VERSION;
     rtm->rtm_seq = seq;
-    rtm->rtm_addrs = RTA_DST | RTA_NETMASK;
+    rtm->rtm_addrs = RTA_DST | RTA_NETMASK | RTA_GATEWAY | RTA_IFP;
 
     err = write(fd, (char *)rtm, sizeof_buffer);
-    if (err) {
+    if (err < 0 || err != sizeof_buffer) {
         perror("write(RTM_GET)");
+        printf("----%u %u\n", err, sizeof_buffer);
         close(fd);
         free(rtm);
         return -1;
@@ -70,34 +147,46 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         err = read(fd, (char *)rtm, sizeof_buffer);
         if (err <= 0)
             break;
-        if (rtm->rtm_seq != seq)
+        if (rtm->rtm_seq != seq) {
+            printf("seq: %u %u\n", rtm->rtm_seq, seq);
             continue;
-        if (rtm->rtm_pid != getpid())
+        }
+        if (rtm->rtm_pid != getpid()) {
+            printf("pid: %u %u\n", rtm->rtm_pid, getpid());
             continue;
-
+        }
+        break;
     }
     close(fd);
 
+    //hexdump(rtm+1, err-sizeof(*rtm));
+    //dump_rt_addresses(rtm);
+    
     /*
      * Parse our data
      */
     {
-        int i;
-        struct sockaddr *sa;
-
-        /* Addresses start right in buffer after RTM structure */
-        sa = (struct sockaddr *)(rtm + 1);
-
-        for (i=1; i; i *= 2) {
-            if (i == RTA_GATEWAY) {
-                /* FOUND IT!! copy the address and return */
-                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-                *ipv4 = ntohl(sin->sin_addr.s_addr);
-                free(rtm);
-                return 0;
+        struct sockaddr_in *sin;
+        struct sockaddr_dl *sdl;
+        
+        sdl = (struct sockaddr_dl *)get_rt_address(rtm, RTA_IFP);
+        if (sdl) {
+            //hexdump(sdl, sdl->sdl_len);
+            //printf("%.*s\n", sdl->sdl_nlen, sdl->sdl_data);
+            if (memcmp(ifname, sdl->sdl_data, sdl->sdl_nlen) != 0) {
+                fprintf(stderr, "ERROR: ROUTE DOESN'T MATCH INTERFACE\n");
+                fprintf(stderr, "YOU'LL HAVE TO SET --router-mac MANUALLY\n");
+                exit(1);
             }
-            sa++;
         }
+        
+        sin = (struct sockaddr_in *)get_rt_address(rtm, RTA_GATEWAY);
+        if (sin) {
+            *ipv4 = ntohl(sin->sin_addr.s_addr);
+            free(rtm);
+            return 0;
+        }
+        
     }
 
     free(rtm);

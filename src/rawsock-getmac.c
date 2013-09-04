@@ -1,18 +1,20 @@
 /*
     get MAC address of named network interface/adapter like "eth0"
 
-    This works on both Windows and linux
+    This works on:
+        - Windows
+        - Linux
+        - Apple
+        - FreeBSD
+ 
+    I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
 #include "string_s.h"
 
-#if defined(__APPLE__)
-int
-rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
-{
-    return -1;
-}
-#elif defined(__linux__)
+/*****************************************************************************
+ *****************************************************************************/
+#if defined(__linux__)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -47,9 +49,10 @@ end:
     close(fd);
     return 0;
 }
-#endif
 
-#if defined(WIN32)
+/*****************************************************************************
+ *****************************************************************************/
+#elif defined(WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #ifdef _MSC_VER
@@ -118,5 +121,72 @@ again:
 
     return 0;
 }
+
+/*****************************************************************************
+ *****************************************************************************/
+#elif defined(__APPLE__) || defined(__FreeBSD__) || 1
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <arpa/inet.h>
+
+#ifdef AF_LINK
+#   include <net/if_dl.h>
+#endif
+#ifdef AF_PACKET
+#   include <netpacket/packet.h>
+#endif
+
+int
+rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
+{
+    int err;
+    struct ifaddrs *ifap;
+    struct ifaddrs *p;
+    
+    
+    /* Get the list of all network adapters */
+    err = getifaddrs(&ifap);
+    if (err != 0) {
+        perror("getifaddrs");
+        return 1;
+    }
+    
+    /* Look through the list until we get our adapter */
+    for (p = ifap; p; p = p->ifa_next) {
+        if (strcmp(ifname, p->ifa_name) == 0
+            && p->ifa_addr
+            && p->ifa_addr->sa_family == AF_LINK)
+            break;
+    }
+    if (p == NULL)
+        goto error; /* not found */
+    
+    
+    /* Return the address */
+    {
+        size_t len = 6;        
+        struct sockaddr_dl *link;
+        
+        link = (struct sockaddr_dl *)p->ifa_addr;
+        if (len > link->sdl_alen) {
+            memset(mac, 0, 6);
+            len = link->sdl_alen;
+        }
+        
+        memcpy(     mac,
+               link->sdl_data + link->sdl_nlen,
+               len);
+        
+    }
+    
+    freeifaddrs(ifap);
+    return 0;
+error:
+    freeifaddrs(ifap);
+    return -1;
+}
+
 #endif
 
