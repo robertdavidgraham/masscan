@@ -15,8 +15,8 @@
 #include "rawsock.h"
 #include "string_s.h"
 #include "logger.h"
-#include "rte-ring.h"
 #include "pixie-timer.h"
+#include "packet-queue.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -207,32 +207,32 @@ int arp_resolve_sync(struct Adapter *adapter,
 int arp_response(
     unsigned my_ip, const unsigned char *my_mac,
     const unsigned char *px, unsigned length,
-    struct rte_ring *packet_buffers,
-    struct rte_ring *transmit_queue)
+    PACKET_QUEUE *packet_buffers,
+    PACKET_QUEUE *transmit_queue)
 {
-    struct {
-        size_t length;
-        unsigned char px[1];
-    } *response;
+    struct PacketBuffer *response = 0;
     struct ARP_IncomingRequest request;
     int err;
+
+    memset(&request, 0, sizeof(request));
 
 
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
-again:
-    err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
-    if (err != 0) {
-        pixie_usleep(100);
-        goto again;
+    for (err=1; err; ) {
+        err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
+        if (err != 0) {
+            pixie_usleep(100);
+        }
     }
-    memset(response->px, 0, 64);
 
+    /* ARP packets are too short, so increase the packet size to 
+     * the Ethernet minimum */
+    response->length = 60;
 
-    memset(&request, 0, sizeof(request));
-
-
+    /* Fill the padded area with zeroes to avoid leaking data */
+    memset(response->px, 0, response->length);
 
     /*
      * Parse the response as an ARP packet
@@ -287,12 +287,12 @@ again:
     /*
      * Now queue the packet up for transmission
      */
-again2:
-    err = rte_ring_sp_enqueue(transmit_queue, response);
-    if (err) {
-        LOG(0, "transmit queue full (should be impossible)\n");
-        pixie_usleep(10000000);
-        goto again2;
+    for (err=1; err; ) {
+        err = rte_ring_sp_enqueue(transmit_queue, response);
+        if (err) {
+            LOG(0, "transmit queue full (should be impossible)\n");
+            pixie_usleep(10000000);
+        }
     }
 
     return 0;

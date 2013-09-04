@@ -52,9 +52,11 @@ syn_set_entropy(uint64_t seed)
 
         err = fopen_s(&fp, "/dev/urandom", "r");
         if (err == 0 && fp) {
+            int x;
             uint64_t urand = 0;
-            fread(&urand, 1, sizeof(urand), fp);
+            x = fread(&urand, 1, sizeof(urand), fp);
             entropy ^= urand;
+            entropy ^= x;
             fclose(fp);
         }
         entropy ^= pixie_nanotime();

@@ -611,6 +611,8 @@ __rte_ring_sc_do_dequeue(struct rte_ring *r, void **obj_table,
 	/* copy in table */
 	rte_rmb();
 	for (i = 0; likely(i < n); i++) {
+        /* WTF??? WHY DOES THIS CODE GIVE STRICT-ALIASING WARNINGS
+         * ON SOME GCC. THEY ARE FREAKING VOID* !!! */
 		obj_table[i] = r->ring[(cons_head + i) & mask];
 	}
 

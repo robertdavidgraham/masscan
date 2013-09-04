@@ -7,9 +7,12 @@
 #include <time.h>
 
 #include "ranges.h"
+#include "packet-queue.h"
 
 struct Adapter;
 struct TcpPacket;
+struct Banner1;
+
 extern time_t global_now;
 
 enum {
@@ -93,6 +96,7 @@ struct Masscan
 
     unsigned is_pfring:1;
     unsigned is_sendq:1;
+    unsigned is_banners:1;
 
     /**
      * Wait forever for responses, instead of the default 10 seconds
@@ -154,8 +158,9 @@ struct Masscan
     char rotate_directory[256];
     char pcap_filename[256];
 
-    struct rte_ring *packet_buffers;
-    struct rte_ring *pending_packets;
+    PACKET_QUEUE *packet_buffers;
+    PACKET_QUEUE *transmit_queue;
+
 };
 
 

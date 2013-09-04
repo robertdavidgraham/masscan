@@ -24,8 +24,10 @@
 #include "masscan.h"
 #include "string_s.h"
 #include "logger.h"
+#include "proto-banner1.h"
 
 #include <limits.h>
+#include <ctype.h>
 
 #if defined(WIN32)
 #include <Windows.h>
@@ -37,6 +39,9 @@
 #endif
 
 extern unsigned control_c_pressed;
+
+
+
 struct Output
 {
     struct Masscan *masscan;
@@ -47,6 +52,7 @@ struct Output
     unsigned offset;
     uint64_t open_count;
     uint64_t closed_count;
+    uint64_t banner_count;
 };
 
 
@@ -65,6 +71,14 @@ open_rotate(struct Output *output, const char *filename)
     unsigned is_append =masscan->nmap.append;
 
 #if defined(WIN32)
+    /* PORTABILITY: WINDOWS
+     *  This bit of code deals with the fact that on Windows, fopen() opens
+     *  a file so that it can't be moved. This code opens it a different
+     *  way so that we can move it.
+     *
+     * NOTE: this is probably overkill, it appears that there is a better
+     * API _fsopen() that does what I want without all this nonsense.
+     */
     HANDLE hFile;
     int fd;
 
@@ -469,20 +483,199 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
         break;
     case Output_Binary:
         {
-            struct {
-                unsigned timestamp;
-                unsigned ip;
-                unsigned short port;
-                unsigned char reason;
-                unsigned char ttl;
-            } foo;
-            foo.timestamp = (unsigned)global_now;
-            foo.ip = ip;
-            foo.port = (unsigned short)port;
-            foo.reason = (unsigned char)reason;
-            foo.ttl = (unsigned char)ttl;
+            unsigned foo[256];
 
-            fwrite(&foo, 1, 12, fp);
+            /* [TYPE] field */
+            switch (status) {
+            case Port_Open:
+                foo[0] = 1;
+                break;
+            case Port_Closed:
+                foo[0] = 2;
+                break;
+            default:
+                return;
+            }
+
+            /* [LENGTH] field */
+            foo[1] = 12;
+
+            /* [TIMESTAMP] field */
+            foo[2] = (unsigned char)(global_now>>24);
+            foo[3] = (unsigned char)(global_now>>16);
+            foo[4] = (unsigned char)(global_now>> 8);
+            foo[5] = (unsigned char)(global_now>> 0);
+
+            foo[6] = (unsigned char)(ip>>24);
+            foo[7] = (unsigned char)(ip>>16);
+            foo[8] = (unsigned char)(ip>> 8);
+            foo[9] = (unsigned char)(ip>> 0);
+
+            foo[10] = (unsigned char)(port>>8);
+            foo[11] = (unsigned char)(port>>0);
+
+            foo[12] = (unsigned char)reason;
+            foo[13] = (unsigned char)ttl;
+
+
+
+            fwrite(&foo, 1, 14, fp);
+        }
+        break;
+    default:
+        LOG(0, "output: ERROR: unknown format\n");
+        exit(1);
+
+    }
+
+}
+
+const char *
+proto_string(unsigned proto)
+{
+    static char tmp[64];
+    switch (proto) {
+    case PROTO_SSH1: return "ssh";
+    case PROTO_SSH2: return "ssh";
+    case PROTO_HTTP: return "http";
+    case PROTO_FTP1: return "ftp";
+    case PROTO_FTP2: return "ftp";
+    default:
+        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
+        return tmp;
+    }
+}
+const char *
+banner_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
+{
+    size_t i=0;
+    size_t offset = 0;
+
+    for (i=0; i<length; i++) {
+
+        if (isprint(px[i]) && px[i] != '<' && px[i] != '>' && px[i] != '&' && px[i] != '\\') {
+            if (offset + 2 < buf_len)
+                buf[offset++] = px[i];
+        } else {
+            if (offset + 5 < buf_len) {
+                buf[offset++] = '\\';
+                buf[offset++] = 'x';
+                buf[offset++] = "0123456789abdef"[px[i]>>4];
+                buf[offset++] = "0123456789abdef"[px[i]>>0];
+            }
+        }
+    }
+
+    buf[offset] = '\0';
+
+    return buf;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned proto, const unsigned char *px, unsigned length)
+{
+    struct Masscan *masscan = out->masscan;
+    FILE *fp = out->fp;
+    time_t now = time(0);
+
+    global_now = now;
+
+
+    if (masscan->nmap.format == Output_Interactive || masscan->nmap.format == Output_All) {
+        fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s                          \n",
+            port,
+            (ip>>24)&0xFF,
+            (ip>>16)&0xFF,
+            (ip>> 8)&0xFF,
+            (ip>> 0)&0xFF,
+            length, px
+            );
+    }
+
+
+    if (fp == NULL)
+        return;
+
+    if (now >= out->next_rotate) {
+        fp = output_do_rotate(out);
+        if (fp == NULL)
+            return;
+    }
+
+    switch (masscan->nmap.format) {
+    case Output_List:
+        fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %.*s\n",
+            "banner",
+            port,
+            (ip>>24)&0xFF,
+            (ip>>16)&0xFF,
+            (ip>> 8)&0xFF,
+            (ip>> 0)&0xFF,
+            (unsigned)global_now,
+            length, px
+            );
+        break;
+    case Output_XML:
+        {
+        char banner_buffer[1024];
+        fprintf(fp, "<host endtime=\"%u\">"
+                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
+                     "<ports>"
+                      "<port protocol=\"tcp\" portid=\"%u\">"
+                       "<service name=\"%s\">"
+                        "<banner>%.*s</banner>"
+                       "</service>"
+                      "</port>"
+                     "</ports>"
+                    "</host>"
+                    "\r\n",
+            (unsigned)global_now,
+            (ip>>24)&0xFF,
+            (ip>>16)&0xFF,
+            (ip>> 8)&0xFF,
+            (ip>> 0)&0xFF,
+            port,
+            proto_string(proto),
+            banner_string(px, length, banner_buffer, sizeof(banner_buffer))
+            );
+        }
+        break;
+    case Output_Binary:
+        {
+            unsigned foo[256];
+
+            if (length > 255 - 12)
+                length = 255 - 12;
+
+            /* [TYPE] field */
+            foo[0] = 3; /*banner*/
+
+            /* [LENGTH] field */
+            foo[1] = length + 12;
+
+            /* [TIMESTAMP] field */
+            foo[2] = (unsigned char)(global_now>>24);
+            foo[3] = (unsigned char)(global_now>>16);
+            foo[4] = (unsigned char)(global_now>> 8);
+            foo[5] = (unsigned char)(global_now>> 0);
+
+            foo[6] = (unsigned char)(ip>>24);
+            foo[7] = (unsigned char)(ip>>16);
+            foo[8] = (unsigned char)(ip>> 8);
+            foo[9] = (unsigned char)(ip>> 0);
+
+            foo[10] = (unsigned char)(port>>8);
+            foo[11] = (unsigned char)(port>>0);
+
+            /* Banner */
+            memcpy(foo, px, length);
+
+
+
+
+            fwrite(&foo, 1, length+12, fp);
         }
         break;
     default:

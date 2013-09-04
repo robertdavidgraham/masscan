@@ -15,6 +15,7 @@
 #include "ranges.h"
 #include "string_s.h"
 #include "logger.h"
+#include "proto-banner1.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -606,6 +607,11 @@ masscan_set_parameter(struct Masscan *masscan, const char *name, const char *val
             masscan->nmap.append = 1;
     } else if (EQUALS("badsum", name)) {
         masscan->nmap.badsum = 1;
+    } else if (EQUALS("banner1", name)) {
+        banner1_test(value);
+        exit(1);
+    } else if (EQUALS("banners", name)) {
+        masscan->is_banners = 1;
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
@@ -824,6 +830,7 @@ is_singleton(const char *name)
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
+        "banners",
         0};
     size_t i;
 
@@ -951,7 +958,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         masscan_set_parameter(masscan, "includefile", argv[++i]);
                         break;
                     case 'R':
-                        fprintf(stderr, "nmap(%s): quasi-supported, see documentation\n", argv[i]);
+                        /* -iR in nmap makes it randomize addresses completely. Thus,
+                         * it's nearest equivelent is scanning the entire Internet range */
+                        masscan_set_parameter(masscan, "include", "0.0.0.0/0");
                         break;
                     default:
                         fprintf(stderr, "nmap(%s): unsupported option\n", argv[i]);

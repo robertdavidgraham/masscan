@@ -17,6 +17,7 @@
  ****************************************************************************/
 #include "proto-preprocess.h"
 #include <stdio.h>
+#include <assert.h>
 
 #define ex32be(px)  (   *((unsigned char*)(px)+0)<<24 \
                     |   *((unsigned char*)(px)+1)<<16 \
@@ -138,6 +139,8 @@ parse_tcp:
         info->port_src = ex16be(px+offset+0);
         info->port_dst = ex16be(px+offset+2);
         info->app_offset = offset + tcp_length;
+        info->app_length = length - info->app_offset;
+        assert(info->app_length < 2000);
 
         return 1;
     }
@@ -150,6 +153,8 @@ parse_udp:
         info->port_dst = ex16be(px+offset+2);
         offset += 8;
         info->app_offset = offset;
+        info->app_length = length - info->app_offset;
+        assert(info->app_length < 2000);
 
         if (info->port_dst == 53 || info->port_src == 53) {
             goto parse_dns;

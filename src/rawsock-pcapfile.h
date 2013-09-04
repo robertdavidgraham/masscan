@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include <time.h>
 
 struct PcapFile;
 

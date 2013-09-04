@@ -1,5 +1,6 @@
 #ifndef TCP_PACKET_H
 #define TCP_PACKET_H
+#include <stdio.h>
 
 /**
  * @return
@@ -41,6 +42,13 @@ tcp_init_packet(struct TcpPacket *pkt,
     unsigned char *mac_dest);
 
 void tcp_set_target(struct TcpPacket *pkt, unsigned ip, unsigned port, unsigned seqno);
+
+size_t tcp_create_packet(struct TcpPacket *pkt, 
+        unsigned ip, unsigned port,
+        unsigned seqno, unsigned ackno,
+        unsigned flags,
+        const unsigned char *payload, size_t payload_length,
+        unsigned char *px, size_t px_length);
 
 void tcpkt_trace(struct TcpPacket *pkt, unsigned ip, unsigned port, double timestamp_start);
 

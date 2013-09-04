@@ -382,6 +382,8 @@ rawsock_send_probe(
      * Construct the destination packet
      */
     tcp_set_target(pkt, ip, port, seqno);
+    if (pkt->length < 60)
+        pkt->length = 60;
 
     /*
      * Send it

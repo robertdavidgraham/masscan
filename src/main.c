@@ -18,11 +18,13 @@
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
 #include "proto-arp.h"          /* for responding to ARP requests */
+#include "proto-banner1.h"
+#include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
 #include "output.h"             /* for outputing results */
-//#include "xring.h"              /* producer/consumer ring buffer */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
+#include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -39,26 +41,66 @@ unsigned control_c_pressed = 0;
 time_t global_now;
 
 
+
 /***************************************************************************
+ * The recieve thread doesn't transmit packets. Instead, it queues them
+ * up on the transmit thread. Every so often, the transmit thread needs
+ * to flush this transmit queue and send everything.
+ *
+ * This is an inherent design issue trying to send things as batches rather
+ * than individually. It increases latency, but increases performance. We
+ * don't really care about latency.
  ***************************************************************************/
 void
-flush_packets(struct Masscan *masscan)
+flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *packets_sent)
 {
-    for (;;) {
-        unsigned char *p;
-        int err;
+    uint64_t batch_size;
 
-        err = rte_ring_sc_dequeue(masscan->pending_packets, (void**)&p);
+    /*
+     * Only send a few packets at a time, throttled according to the max
+     * --rate set by the usser
+     */
+    batch_size = throttler_next_batch(throttler, *packets_sent);
+
+    /*
+     * Send a batch of queued packets
+     */
+    for ( ; batch_size; batch_size--) {
+        int err;
+        struct PacketBuffer *p;
+
+        /*
+         * Get the next packet from the transmit queue. This packet was 
+         * put there by a receive thread, and will contain things like
+         * an ACK or an HTTP request
+         */
+        err = rte_ring_sc_dequeue(masscan->transmit_queue, (void**)&p);
         if (err)
-            break;
-        rawsock_send_packet(masscan->adapter, p + sizeof(size_t), (unsigned)*(size_t*)p, 0);
-        err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
-        again2:
-        if (err) {
-            LOG(0, "transmit queue full (should be impossible)\n");
-            pixie_usleep(10000);
-            goto again2;
+            break; /* queue is empty, nothing to send */
+
+        /*
+         * Actually send the packet
+         */
+        rawsock_send_packet(masscan->adapter, p->px, (unsigned)p->length, 1);
+
+        /*
+         * Now that we are done with the packet, put it on the free list
+         * of buffers that the transmit thread can reuse
+         */
+        for (err=1; err; ) {
+            err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
+            if (err) {
+                LOG(0, "transmit queue full (should be impossible)\n");
+                pixie_usleep(10000);
+            }
         }
+        
+
+        /*
+         * Remember that we sent a packet, which will be used in
+         * throttling.
+         */
+        (*packets_sent)++;
     }
 }
 
@@ -87,6 +129,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     double timestamp_start;
     unsigned *picker;
     struct Adapter *adapter = masscan->adapter;
+    uint64_t packets_sent = 0;
 
     LOG(1, "xmit: starting transmit thread...\n");
 
@@ -123,7 +166,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          * per-packet cost by doing batches. At slower rates, the batch
          * size will always be one.
          */
-        batch_size = throttler_next_batch(&throttler, i);
+        batch_size = throttler_next_batch(&throttler, packets_sent);
+        packets_sent += batch_size;
         while (batch_size && i < m) {
             unsigned ip;
             unsigned port;
@@ -166,7 +210,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         } /* end of batch */
 
         /* Transmit packets from other thread */
-        flush_packets(masscan);
+        flush_packets(masscan, &throttler, &packets_sent);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to resume the scan later, we save the current
@@ -196,7 +240,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
             for (k=0; k<1000; k++) {
                 /* Transmit packets from other thread */
-                flush_packets(masscan);
+                flush_packets(masscan, &throttler, &packets_sent);
 
                 pixie_usleep(1000);
             }
@@ -211,6 +255,13 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
 
 /***************************************************************************
+ * 
+ * Asynchronous receive thread
+ *
+ * The transmit and receive threads run independently of each other. There
+ * is no record what was transmitted. Instead, the transmit thread sets a 
+ * "SYN-cookie" in transmitted packets, which the receive thread will then
+ * use to match up requests with responses.
  ***************************************************************************/
 static void
 receive_thread(struct Masscan *masscan,
@@ -221,6 +272,9 @@ receive_thread(struct Masscan *masscan,
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
+    struct TCP_ConnectionTable *tcpcon = 0;
+
+
 
     /*
      * If configured, open a pcap file for saving raw packets. This is
@@ -228,7 +282,7 @@ receive_thread(struct Masscan *masscan,
      * strange things people send us. Note that we don't record transmitted
      * packets, just the packets we've received.
      */
-    if (masscan->pcap_filename)
+    if (masscan->pcap_filename[0])
         pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);
 
     /*
@@ -242,6 +296,20 @@ receive_thread(struct Masscan *masscan,
      */
     dedup = dedup_create();
 
+    /*
+     * Create a TCP connection table for interacting with live
+     * connections
+     */
+    if (masscan->is_banners) {
+        tcpcon = tcpcon_create_table(
+            (size_t)(masscan->max_rate/5), 
+            masscan->transmit_queue, 
+            masscan->packet_buffers,
+            masscan->pkt_template,
+            output_report_banner,
+            out
+            );
+    }
 
     /*
      * Receive packets. This is where we catch any responses and print
@@ -257,9 +325,10 @@ receive_thread(struct Masscan *masscan,
         int err;
         unsigned x;
         struct PreprocessedInfo parsed;
-        unsigned dst;
-        unsigned src;
-        unsigned seqno;
+        unsigned ip_me;
+        unsigned ip_them;
+        unsigned seqno_them;
+        unsigned seqno_me;
 
         err = rawsock_recv_packet(
                     masscan->adapter,
@@ -271,24 +340,33 @@ receive_thread(struct Masscan *masscan,
         if (err != 0)
             continue;
 
+        /*
+         * Do any TCP event timeouts based on the current timestamp from
+         * the packet. For example, if the connection has been open for
+         * around 10 seconds, we'll close the connection.
+         */
+        if (tcpcon) {
+            tcpcon_timeouts(tcpcon, secs, usecs);
+        }
 
         /*
-         * parse the response packet
+         * "Preprocess" the response packet. This means to go through and
+         * figure out where the TCP/IP headers are and the locations of
+         * some fields, like IP address and port numbers.
          */
         x = preprocess_frame(px, length, 1, &parsed);
         if (!x)
             continue; /* corrupt packet */
-        dst = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
+        ip_me = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
-        src = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
+        ip_them = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
-        seqno = px[parsed.transport_offset+8]<<24 | px[parsed.transport_offset+9]<<16
-              | px[parsed.transport_offset+10]<<8 | px[parsed.transport_offset+11];
-        seqno -= 1;
+        seqno_them = TCP_SEQNO(px, parsed.transport_offset);
+        seqno_me = TCP_ACKNO(px, parsed.transport_offset);
 
 
         /* verify: my IP address */
-        if (adapter_ip != dst)
+        if (adapter_ip != ip_me)
             continue;
 
 
@@ -299,13 +377,13 @@ receive_thread(struct Masscan *masscan,
             arp_response(
                 adapter_ip, adapter_mac, px, length,
                 masscan->packet_buffers,
-                masscan->pending_packets);
+                masscan->transmit_queue);
             continue;
         }
 
         /* verify: TCP */
         if (parsed.found != FOUND_TCP)
-            continue;
+            continue; /*TODO: fix for UDP-scan and ICMP-scan */
 
         /* verify: my port number */
         if (adapter_port != parsed.port_dst)
@@ -322,14 +400,63 @@ receive_thread(struct Masscan *masscan,
                 usecs);
         }
 
-        /* verify: syn-cookies */
-        if (syn_hash(src, parsed.port_src) != seqno) {
-            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno, syn_hash(src, parsed.port_src));
-        }
 
-        /* verify: ignore duplicates */
-        if (dedup_is_duplicate(dedup, src, parsed.port_src))
-            continue;
+        /* If recording banners, create a new "TCP Control Block (TCB)" */
+        if (tcpcon) {
+            struct TCP_Control_Block *tcb;
+
+            /* does a TCB already exist for this connection? */
+            tcb = tcpcon_lookup_tcb(tcpcon,
+                            ip_me, ip_them,
+                            parsed.port_dst, parsed.port_src);
+
+            if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
+                if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
+                    LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno_me-1, syn_hash(ip_them, parsed.port_src));
+                    continue;
+                }
+
+                if (tcb == NULL) {
+                    tcb = tcpcon_create_tcb(tcpcon,
+                                    ip_me, ip_them, 
+                                    parsed.port_dst, 
+                                    parsed.port_src, 
+                                    seqno_me, seqno_them+1);
+                }
+
+                tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK, 0, 0, secs, usecs);
+
+            } else if (tcb) {
+                /* If this is an ACK, then handle that first */
+                if (TCP_IS_ACK(px, parsed.transport_offset)) {
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_ACK, 0, seqno_me,
+                        secs, usecs);
+                }
+
+                /* If this contains payload, handle that */
+                if (parsed.app_length) {
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_DATA, 
+                        px + parsed.app_offset, parsed.app_length,
+                        secs, usecs);
+                }
+
+                /* If this is a FIN, handle that. Note that ACK + payload + FIN
+                 * can come together */
+                if (TCP_IS_FIN(px, parsed.transport_offset)) {
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 0, 0, 
+                        secs, usecs);
+                }
+
+                /* If this is a RST, then we'll be closing the connection */
+                if (TCP_IS_RST(px, parsed.transport_offset)) {
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_RST, 0, 0,
+                        secs, usecs);
+                }
+            } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
+                /* TODO: we ought to send FIN-ACK in response */
+            }
+
+        }
 
         /* figure out the status */
         status = Port_Unknown;
@@ -338,6 +465,15 @@ receive_thread(struct Masscan *masscan,
         if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
             status = Port_Closed;
 
+        /* verify: syn-cookies */
+        if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
+            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno_me-1, syn_hash(ip_them, parsed.port_src));
+            continue;
+        }
+
+        /* verify: ignore duplicates */
+        if (dedup_is_duplicate(dedup, ip_them, parsed.port_src))
+            continue;
 
         /*
          * XXXX
@@ -348,7 +484,7 @@ receive_thread(struct Masscan *masscan,
         output_report(
                     out,
                     status,
-                    src,
+                    ip_them,
                     parsed.port_src,
                     px[parsed.transport_offset + 13], /* tcp flags */
                     px[parsed.ip_offset + 8] /* ttl */
@@ -499,18 +635,20 @@ main_scan(struct Masscan *masscan)
      * Allocate packet buffers for sending
      */
     masscan->packet_buffers = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
-    masscan->pending_packets = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
+    masscan->transmit_queue = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
     {
         unsigned i;
         for (i=0; i<255 /*TODO: why not 256???*/; i++) {
-            char *pkt = (char*)malloc(1600);
-            err = rte_ring_sp_enqueue(masscan->packet_buffers, pkt);
+            struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
+            err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
             if (err) {
                 /* I dunno why but I can't queue all 256 packets, just 255 */
                 LOG(0, "packet_buffers: enqueue: error %d\n", err);
             }
         }
     }
+
+
 
 
     /*
@@ -568,6 +706,15 @@ int main(int argc, char *argv[])
 
     /* Set randomization seed for SYN-cookies */
     syn_set_entropy(masscan->seed);
+
+    
+    /* If the IP address range is very big, then require that that the 
+     * user apply an exclude range */
+    if (rangelist_count(&masscan->targets) > 1000000000ULL
+        && rangelist_count(&masscan->exclude_ip) == 0) {
+            LOG(0, "FAIL: no --exclude specified\n");
+            exit(1);
+    }
 
     /*
      * Apply excludes. People ask us not to scan them, so we maintain a list
@@ -630,6 +777,9 @@ int main(int argc, char *argv[])
             x += pixie_time_selftest();
             //x += xring_selftest();
             x += rte_ring_selftest();
+            x += smack_selftest();
+            x += banner1_selftest();
+
 
 
             if (x != 0) {

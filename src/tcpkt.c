@@ -82,8 +82,127 @@ tcp_checksum(struct TcpPacket *tmpl)
     }
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
 
     return xsum;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+tcp_checksum2(const unsigned char *px, unsigned offset_ip,
+    unsigned offset_tcp, size_t tcp_length)
+{
+    uint64_t xsum = 0;
+    unsigned i;
+
+    /* pseudo checksum */
+    xsum = 6;
+    xsum += tcp_length;
+    xsum += px[offset_ip + 12] << 8 | px[offset_ip + 13];
+    xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
+    xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
+    xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
+
+    /* tcp checksum */
+    for (i=0; i<tcp_length; i += 2) {
+        xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
+    }
+
+    xsum -= (tcp_length & 1) * px[offset_tcp + i - 1]; /* yea I know going off end of packet is bad so sue me */
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+
+    return (unsigned)xsum;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+size_t
+tcp_create_packet(struct TcpPacket *tmpl, 
+        unsigned ip, unsigned port,
+        unsigned seqno, unsigned ackno,
+        unsigned flags,
+        const unsigned char *payload, size_t payload_length,
+        unsigned char *px, size_t px_length)
+{
+    unsigned ip_id = ip ^ port ^ seqno;
+    unsigned offset_ip = tmpl->offset_ip;
+    unsigned offset_tcp = tmpl->offset_tcp;
+    unsigned offset_payload = offset_tcp + ((tmpl->packet[offset_tcp+12]&0xF0)>>2);
+    size_t new_length = offset_payload + payload_length;
+    uint64_t xsum;
+    size_t ip_len = (offset_payload - offset_ip) + payload_length;
+    unsigned old_len;
+    
+    if (new_length > px_length) {
+        fprintf(stderr, "tcp: err generating packet: too much payload\n");
+        return 0;
+    }
+
+    memcpy(px + 0,              tmpl->packet,   tmpl->length);
+    memcpy(px + offset_payload, payload,        payload_length);
+    old_len = px[offset_ip+2]<<8 | px[offset_ip+3];
+    
+    /*
+     * Fill in the empty fields in the IP header and then re-calculate
+     * the checksum.
+     */
+    px[offset_ip+2] = (unsigned char)(ip_len>> 8);
+    px[offset_ip+3] = (unsigned char)(ip_len & 0xFF);
+    px[offset_ip+4] = (unsigned char)(ip_id >> 8);
+    px[offset_ip+5] = (unsigned char)(ip_id & 0xFF);
+    px[offset_ip+16] = (unsigned char)((ip >> 24) & 0xFF);
+    px[offset_ip+17] = (unsigned char)((ip >> 16) & 0xFF);
+    px[offset_ip+18] = (unsigned char)((ip >>  8) & 0xFF);
+    px[offset_ip+19] = (unsigned char)((ip >>  0) & 0xFF);
+
+    xsum = tmpl->checksum_ip;
+    xsum += (ip_id&0xFFFF);
+    xsum += ip;
+    xsum += ip_len - old_len;
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = ~xsum;
+
+    px[offset_ip+10] = (unsigned char)(xsum >> 8);
+    px[offset_ip+11] = (unsigned char)(xsum & 0xFF);
+
+    /*
+     * now do the same for TCP
+     */
+    px[offset_tcp+ 2] = (unsigned char)(port >> 8);
+    px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
+    px[offset_tcp+ 4] = (unsigned char)(seqno >> 24);
+    px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
+    px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
+    px[offset_tcp+ 7] = (unsigned char)(seqno >>  0);
+    
+    px[offset_tcp+ 8] = (unsigned char)(ackno >> 24);
+    px[offset_tcp+ 9] = (unsigned char)(ackno >> 16);
+    px[offset_tcp+10] = (unsigned char)(ackno >>  8);
+    px[offset_tcp+11] = (unsigned char)(ackno >>  0);
+
+    px[offset_tcp+13] = (unsigned char)flags;
+    
+    px[offset_tcp+14] = (unsigned char)(1200>>8);
+    px[offset_tcp+15] = (unsigned char)(1200 & 0xFF);
+
+    px[offset_tcp+16] = (unsigned char)(0 >>  8);
+    px[offset_tcp+17] = (unsigned char)(0 >>  0);
+
+    xsum = tcp_checksum2(px, tmpl->offset_ip, tmpl->offset_tcp, new_length - tmpl->offset_tcp);
+    xsum = ~xsum;
+
+    px[offset_tcp+16] = (unsigned char)(xsum >>  8);
+    px[offset_tcp+17] = (unsigned char)(xsum >>  0);
+
+    if (new_length < 60) {
+        memset(px+new_length, 0, 60-new_length);
+        new_length = 60;
+    }
+    return new_length;
 }
 
 /***************************************************************************

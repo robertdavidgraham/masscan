@@ -6,8 +6,7 @@
 #include <stdio.h>
 struct Adapter;
 struct TcpPacket;
-struct rte_ring;
-
+#include "packet-queue.h"
 
 
 /**

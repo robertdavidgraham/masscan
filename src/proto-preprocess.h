@@ -41,11 +41,15 @@ struct PreprocessedInfo {
     unsigned port_dst;
 
     unsigned app_offset; /* start of TCP payload */
+    unsigned app_length; /* length of TCP payload */
 
     int found;
     int found_offset;
 };
 
+/**
+ * @return 1 if useful stuff found, 0 otherwise
+ */
 unsigned
 preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, struct PreprocessedInfo *info);
 

@@ -20,6 +20,8 @@
 
 */
 #define _CRT_SECURE_NO_WARNINGS
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -40,20 +42,24 @@
 #endif
 int64_t ftell_x(FILE *fp)
 {
-#if __GNUC__
+#if defined(WIN32) && defined(__GNUC__)
 	return ftello64(fp);
-#elif WIN32
+#elif defined(WIN32) && defined(_MSC_VER)
 	return _ftelli64(fp);
+#elif defined(__linux__)
+	return ftello(fp);
 #else
 #error ftell_x undefined for this platform
 #endif
 }
 int fseek_x(FILE *fp, int64_t offset, int origin)
 {
-#if __GNUC__
+#if defined(WIN32) && defined(__GNUC__)
 	return fseeko64(fp, offset, origin);
-#elif WIN32
+#elif defined(WIN32) && defined(_MSC_VER)
 	return _fseeki64(fp, offset, origin);
+#elif defined(__linux__)
+	return fseeko(fp, offset, origin);
 #else
 #error fseek_x undefined for this platform
 #endif
@@ -612,6 +618,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 	{
 		int loc;
 		char buf[8];
+        size_t x;
 
 		loc = ftell(fp);
 		if (loc == -1) {
@@ -620,7 +627,12 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 			fclose(fp);
 			return 0;
 		}
-		fread(buf, 1, 8, fp);
+		x = fread(buf, 1, 8, fp);
+        if (x != 8) {
+			perror(capfilename);
+			fclose(fp);
+			return 0;
+        }
 		
 		if (fseek(fp, loc, SEEK_SET) != 0) {
 			fprintf(stderr, "%s: fseek failed (file system error?)\n", capfilename);
