@@ -99,7 +99,7 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
          * the timeout, leaving behind stale ones that should be ignored
          * in deference to the newer ones */
         if (tcb->counter != e.counter) {
-            LOG(1, "%u.%u.%u.%u: stale counter: event=%u tcb=%u\n",
+            LOG(15, "%u.%u.%u.%u: stale counter: event=%u tcb=%u\n",
                 (unsigned char)(tcb->ip_them>>24),
                 (unsigned char)(tcb->ip_them>>16),
                 (unsigned char)(tcb->ip_them>> 8),
@@ -315,6 +315,7 @@ tcpcon_lookup_tcb(
     return tcb;
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 void
@@ -370,6 +371,29 @@ tcpcon_send_packet(
             pixie_usleep(100); /* no space available */
         }
     }
+}
+
+void
+tcpcon_send_FIN(
+    struct TCP_ConnectionTable *tcpcon,
+    unsigned ip_me, unsigned ip_them,
+    unsigned port_me, unsigned port_them,
+    uint32_t seqno_them, uint32_t ackno_them)
+{
+    struct TCP_Control_Block tcb;
+
+    memset(&tcb, 0, sizeof(tcb));
+
+    tcb.ip_me = ip_me;
+    tcb.ip_them = ip_them;
+    tcb.port_me = (unsigned short)port_me;
+    tcb.port_them = (unsigned short)port_them;
+    tcb.seqno_me = ackno_them;
+    tcb.ackno_me = seqno_them + 1;
+    tcb.seqno_them = seqno_them + 1;
+    tcb.ackno_them = ackno_them;
+
+    tcpcon_send_packet(tcpcon, &tcb, 0x11, 0, 0);
 }
 
 /***************************************************************************
@@ -447,6 +471,12 @@ handle_ack(
     uint32_t ackno)
 {
 
+    LOG(4,  "%u.%u.%u.%u - %u-sending, %u-reciving\n",
+            (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+            tcb->seqno_me - ackno,
+            ackno - tcb->ackno_them
+            );
+
     /* Normal: just discard repeats */
     if (ackno == tcb->ackno_them) {
         return;
@@ -455,8 +485,10 @@ handle_ack(
     /* Make sure this isn't a duplicate ACK from past
      * WRAPPING of 32-bit arithmetic happens here */
     if (ackno - tcb->ackno_them > 10000) {
-        LOG(4, "tcb: ackno from pact: "
+        LOG(4,  "%u.%u.%u.%u - "
+                "tcb: ackno from past: "
                 "old ackno = 0x%08x, this ackno = 0x%08x\n",
+                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
                 tcb->ackno_me, ackno);
         return;
     }
@@ -464,8 +496,10 @@ handle_ack(
     /* Make sure this isn't invalid ACK from the future
      * WRAPPING of 32-bit arithmatic happens here */
     if (tcb->seqno_me - ackno > 10000) {
-        LOG(4, "tcb: ackno from future: "
+        LOG(4, "%u.%u.%u.%u - "
+                "tcb: ackno from future: "
                 "my seqno = 0x%08x, their ackno = 0x%08x\n",
+                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
                 tcb->seqno_me, ackno);
         return;
     }
@@ -484,7 +518,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     if (tcb == NULL)
         return;
 
-    LOG(10, "%u.%u.%u.%u -  %s : %s                  \n", 
+    LOG(10, "%u.%u.%u.%u =%s : %s                  \n", 
             (unsigned char)(tcb->ip_them>>24),
             (unsigned char)(tcb->ip_them>>16),
             (unsigned char)(tcb->ip_them>> 8),
@@ -555,11 +589,15 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             }
 
 
+
             /* send request */
             x_len = strlen((const char*)x);
             tcpcon_send_packet(tcpcon, tcb,
                 0x18, 
                 x, x_len);
+            LOG(4, "%u.%u.%u.%u - sending payload %u bytes\n",
+                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+                x_len);
 
             /* Increment our sequence number */
             tcb->seqno_me += (uint32_t)x_len;
@@ -612,6 +650,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_FIN:
+        tcb->seqno_them = (uint32_t)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
                     0x14, /*reset */
                     0, 0);
@@ -659,11 +698,15 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             len = tcb->seqno_me - tcb->ackno_them;
 
             /* Resend the payload */
-            tcb->seqno_me -= (tcb->payload_length - len);
+            tcb->seqno_me -= len;
             tcpcon_send_packet(tcpcon, tcb,
                 0x18, 
                 tcb->payload + tcb->payload_length - len,
                 len);
+            LOG(4, "%u.%u.%u.%u - re-sending payload %u bytes\n",
+                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+                len);
+            tcb->seqno_me += len;
 
 
             /*  */
@@ -685,7 +728,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
 
     
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them++;
+        tcb->seqno_them = (uint32_t)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
             0x11, 
             0, 0);

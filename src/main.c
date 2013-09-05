@@ -400,6 +400,10 @@ receive_thread(struct Masscan *masscan,
                 usecs);
         }
 
+        LOG(1, "%u.%u.%u.%u - ackno=0x%08x flags=%02x\n", 
+            (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
+            seqno_me, TCP_FLAGS(px, parsed.transport_offset));
+
 
         /* If recording banners, create a new "TCP Control Block (TCB)" */
         if (tcpcon) {
@@ -412,7 +416,9 @@ receive_thread(struct Masscan *masscan,
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
-                    LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno_me-1, syn_hash(ip_them, parsed.port_src));
+                    LOG(1, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
+                        (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
+                        seqno_me-1, syn_hash(ip_them, parsed.port_src));
                     continue;
                 }
 
@@ -443,7 +449,7 @@ receive_thread(struct Masscan *masscan,
                 /* If this is a FIN, handle that. Note that ACK + payload + FIN
                  * can come together */
                 if (TCP_IS_FIN(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 0, 0, 
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 0, seqno_them, 
                         secs, usecs);
                 }
 
@@ -453,42 +459,55 @@ receive_thread(struct Masscan *masscan,
                         secs, usecs);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
-                /* TODO: we ought to send FIN-ACK in response */
+                /* 
+                 * NO TCB!
+                 *  This happens when we've sent a FIN, deleted our connection,
+                 *  but the other side didn't get the packet.
+                 */
+                tcpcon_send_FIN(
+                    tcpcon,
+                    ip_me, ip_them,
+                    parsed.port_dst, parsed.port_src,
+                    seqno_them, seqno_me);
             }
 
         }
 
-        /* figure out the status */
-        status = Port_Unknown;
-        if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
-            status = Port_Open;
-        if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
-            status = Port_Closed;
+        if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
+            /* figure out the status */
+            status = Port_Unknown;
+            if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
+                status = Port_Open;
+            if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
+                status = Port_Closed;
 
-        /* verify: syn-cookies */
-        if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
-            LOG(1, "bad packet: ackno=0x%08x expected=0x%08x\n", seqno_me-1, syn_hash(ip_them, parsed.port_src));
-            continue;
+            /* verify: syn-cookies */
+            if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
+                LOG(1, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
+                    (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
+                    seqno_me-1, syn_hash(ip_them, parsed.port_src));
+                continue;
+            }
+
+            /* verify: ignore duplicates */
+            if (dedup_is_duplicate(dedup, ip_them, parsed.port_src))
+                continue;
+
+            /*
+             * XXXX
+             * TODO: add lots more verification, such as coming from one of
+             * our sending port numbers, and having the right seqno/ackno
+             * fields set.
+             */
+            output_report(
+                        out,
+                        status,
+                        ip_them,
+                        parsed.port_src,
+                        px[parsed.transport_offset + 13], /* tcp flags */
+                        px[parsed.ip_offset + 8] /* ttl */
+                        );
         }
-
-        /* verify: ignore duplicates */
-        if (dedup_is_duplicate(dedup, ip_them, parsed.port_src))
-            continue;
-
-        /*
-         * XXXX
-         * TODO: add lots more verification, such as coming from one of
-         * our sending port numbers, and having the right seqno/ackno
-         * fields set.
-         */
-        output_report(
-                    out,
-                    status,
-                    ip_them,
-                    parsed.port_src,
-                    px[parsed.transport_offset + 13], /* tcp flags */
-                    px[parsed.ip_offset + 8] /* ttl */
-                    );
     }
 
 

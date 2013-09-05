@@ -74,4 +74,15 @@ tcpcon_create_tcb(
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno);
 
+
+/**
+ * Acknowledge a FIN even if we've forgotten about the connection
+ */
+void
+tcpcon_send_FIN(
+    struct TCP_ConnectionTable *tcpcon,
+    unsigned ip_me, unsigned ip_them,
+    unsigned port_me, unsigned port_them,
+    uint32_t seqno_them, uint32_t ackno_them);
+
 #endif

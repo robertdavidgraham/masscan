@@ -223,6 +223,7 @@ int arp_response(
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
         if (err != 0) {
+            LOG(0, "packet buffers empty (should be impossible)\n");
             pixie_usleep(100);
         }
     }
