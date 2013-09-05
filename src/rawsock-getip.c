@@ -41,7 +41,8 @@ rawsock_get_adapter_ip(const char *ifname)
 
     x = ioctl(fd, SIOCGIFADDR, &ifr);
     if (x < 0) {
-        perror("ioctl");
+        fprintf(stderr, "ERROR:'%s': %s\n", ifname, strerror(errno));
+        //fprintf(stderr, "ERROR:'%s': couldn't discover IP address of network interface\n", ifname);
         close(fd);
         return 0;
     }

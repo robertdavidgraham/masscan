@@ -26,14 +26,10 @@
 void masscan_usage(void)
 {
     printf("usage:\n");
-    printf("masscan --echo\n");
-    printf(" view default configuration\n");
     printf("masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
     printf(" scan some web ports on 10.x.x.x at 10kpps\n");
     printf("masscan --nmap\n");
-    printf(" list all the options (nmap format)\n");
-    printf("masscan --echo\n");
-    printf(" list all options AND their current settings (non-nmap format)\n");
+    printf(" list those options that are compatiable with nmap\n");
     exit(1);
 }
 
@@ -562,8 +558,8 @@ masscan_set_parameter(struct Masscan *masscan,
             struct Range range;
 
             range = range_parse_ipv4(ranges, &offset, max_offset);
-            if (range.begin == 0 && range.end == 0) {
-                fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
+            if (range.end < range.begin) {
+                fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
                 break;
             }
 
@@ -846,6 +842,39 @@ is_singleton(const char *name)
     return 0;
 }
 
+void
+masscan_help()
+{
+    printf(
+"MASSCAN is a fast port scanner. The primary input parameters are the\n"
+"IP addresses/ranges you want to scan, and the port numbers. An example\n"
+"is the following, which scans the 10.x.x.x network for web servers:\n"
+" masscan 10.0.0.0/8 -p80\n"
+"The program auto-detects network interface/adapter settings. If this\n"
+"fails, you'll have to set these manually. The following is an\n"
+"example of all the parameters that are needed:\n"
+" --adapter-ip 192.168.10.123\n"
+" --adapter-mac 00-11-22-33-44-55\n"
+" --router-mac 66-55-44-33-22-11\n"
+"Parameters can be set either via the command-line or config-file. The\n"
+"names are the same for both. Thus, the above adapter settings would\n"
+"appear as follows in a configuration file:\n"
+" adapter-ip = 192.168.10.123\n"
+" adapter-mac = 00-11-22-33-44-55\n"
+" router-mac = 66-55-44-33-22-11\n"
+"All single-dash parameters have a spelled out double-dash equivelent,\n"
+"so '-p80' is the same as '--ports 80' (or 'ports = 80' in config file).\n"
+"To use the config file, type:\n"
+" masscan -c <filename>\n"
+"To generate a config-file from the current settings, use the --echo\n"
+"option. This stops the program from actually running, and just echoes\n"
+"the current configuration instead. This is a useful way to generate\n"
+"your first config file, or see a list of parameters you didn't know\n"
+"about. I suggest you try it now:\n"
+" masscan -p1234 --echo\n");
+    exit(1);
+}
+
 /***************************************************************************
  * Read the configuration from the command-line.
  * Called by 'main()' when starting up.
@@ -864,7 +893,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          */
         if (argv[i][0] == '-' && argv[i][1] == '-') {
             if (strcmp(argv[i], "--help") == 0)
-                masscan_usage();
+                masscan_help();
             else {
                 char name2[64];
                 char *name = argv[i] + 2;
@@ -1144,9 +1173,18 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 exit(1);
                 return;
             default:
-                fprintf(stderr, "unknown option: %s\n", argv[i]);
+                LOG(0, "FAIL: unknown option: -%s\n", argv[i]);
+                LOG(0, " [hint] try \"--help\"\n");
+                LOG(0, " [hint] ...or, to list nmap-compatible options, try \"--nmap\"\n");
+                exit(1);
             }
             continue;
+        }
+
+        if (!isdigit(argv[i][0])) {
+            fprintf(stderr, "FAIL: unknown command-line parameter \"%s\"\n", argv[i]);
+            fprintf(stderr, " [hint] did you want \"--%s\"?\n", argv[i]);
+            exit(1);
         }
 
         /* If parameter doesn't start with '-', assume it's an

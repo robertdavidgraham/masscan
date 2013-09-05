@@ -82,6 +82,7 @@ errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src);
 errno_t localtime_s(struct tm* _tm, const time_t *time);
 errno_t gmtime_s(struct tm* _tm, const time_t *time);
+#undef strerror
 
 #else
 # error unknown compiler

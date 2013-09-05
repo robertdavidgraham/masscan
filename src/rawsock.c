@@ -13,6 +13,7 @@
 #include "rawsock-pfring.h"
 
 #include <pcap.h>
+#include <ctype.h>
 
 #ifdef WIN32
 #include <Win32-Extensions.h>
@@ -563,7 +564,10 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
      *  Since a lot of things can go wrong, we do a lot of extra
      *  logging here.
      *----------------------------------------------------------------*/
-    if (is_pfring) {
+    if (is_pfring || (
+            strlen(adapter_name) == 4 
+            && memcmp("dna", adapter_name, 3) == 0
+            && isdigit(adapter_name[3]))) {
         int err;
         unsigned version;
 
@@ -617,7 +621,6 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
             LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
 
         return adapter;
-
     }
 
     /*----------------------------------------------------------------
@@ -635,7 +638,11 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
                     1000,                   /* read timeout in milliseconds */
                     errbuf);
         if (adapter->pcap == NULL) {
-            fprintf(stderr, "pcap:'%s': OPEN ERROR: %s\n", adapter_name, errbuf);
+            LOG(0, "FAIL: %s\n", errbuf);
+            if (strstr(errbuf, "perm")) {
+                LOG(0, " [hint] need to sudo or run as root or something\n");
+                LOG(0, " [hint] I've got some local priv escalation 0days that might work\n");
+            }
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);

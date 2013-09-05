@@ -526,6 +526,31 @@ main_scan(struct Masscan *masscan)
     unsigned char router_mac[6];
     int err;
 
+    /*
+     * Initialize the task size
+     */
+    count_ips = rangelist_count(&masscan->targets);
+    if (count_ips == 0) {
+        LOG(0, "FAIL: target IP address list empty\n");
+        LOG(0, " [hint] try something like \"--range 10.0.0.0/8\"\n");
+        LOG(0, " [hint] try something like \"--range 192.168.0.100-192.168.0.200\"\n");
+        return 1;
+    }
+    count_ports = rangelist_count(&masscan->ports);
+    if (count_ports == 0) {
+        LOG(0, "FAIL: no ports were specified\n");
+        LOG(0, " [hint] try something like \"-p80,8000-9000\"\n");
+        LOG(0, " [hint] try something like \"--ports 0-65535\"\n");
+        return 1;
+    }
+    /* If the IP address range is very big, then require that that the 
+     * user apply an exclude range */
+    if (count_ips > 1000000000ULL && rangelist_count(&masscan->exclude_ip) == 0) {
+        LOG(0, "FAIL: range too big, need confirmation\n");
+        LOG(0, " [hint] to prevent acccidents, at least one --exclude must be specified\n");
+        LOG(0, " [hint] use \"--exclude 255.255.255.255\" as a simple confirmation\n");
+        exit(1);
+    }
 
     /*
      * Turn the adapter on, and get the running configuration
@@ -564,21 +589,8 @@ main_scan(struct Masscan *masscan)
     adapter_port = tcpkt_get_source_port(pkt);
 
 
-    /*
-     * Initialize the task size
-     */
-    count_ips = rangelist_count(&masscan->targets);
-    if (count_ips == 0) {
-        fprintf(stderr, "FAIL: no IPv4 ranges were specified\n");
-        return 1;
-    }
-    count_ports = rangelist_count(&masscan->ports);
-    if (count_ports == 0) {
-        fprintf(stderr, "FAIL: no ports were specified, use \"-p<port>\"\n");
-        return 1;
-    }
 
-    fprintf(stderr, "Scanning %u hosts [%u port%s/host]\n",
+    LOG(0, "Scanning %u hosts [%u port%s/host]\n",
         (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
 
     /*
@@ -590,10 +602,10 @@ main_scan(struct Masscan *masscan)
     if (masscan->resume.index && masscan->resume.seed && masscan->lcg.m
         && masscan->lcg.a && masscan->lcg.c) {
         if (masscan->lcg.m != count_ips * count_ports) {
-            fprintf(stderr, "FAIL: corrupt resume data\n");
+            LOG(0, "FAIL: corrupt resume data\n");
             exit(1);
         } else
-            fprintf(stderr, "resuming scan...\n");
+            LOG(0, "resuming scan...\n");
     } else {
         masscan->lcg.m = count_ips * count_ports;
         lcg_calculate_constants(
@@ -626,10 +638,10 @@ main_scan(struct Masscan *masscan)
 
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
-        fprintf(stderr, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
+        LOG(0, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
     }
-    fprintf(stderr, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
-    fprintf(stderr, "Initiating SYN Stealth Scan\n");
+    LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+    LOG(0, "Initiating SYN Stealth Scan\n");
 
     /*
      * Allocate packet buffers for sending
@@ -708,13 +720,6 @@ int main(int argc, char *argv[])
     syn_set_entropy(masscan->seed);
 
     
-    /* If the IP address range is very big, then require that that the 
-     * user apply an exclude range */
-    if (rangelist_count(&masscan->targets) > 1000000000ULL
-        && rangelist_count(&masscan->exclude_ip) == 0) {
-            LOG(0, "FAIL: no --exclude specified\n");
-            exit(1);
-    }
 
     /*
      * Apply excludes. People ask us not to scan them, so we maintain a list

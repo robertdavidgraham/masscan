@@ -365,23 +365,28 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
 int
 randlcg_selftest()
 {
-
-    int is_success;
+    unsigned i;
+    int is_success = 0;
     uint64_t m, a, c;
 
 
     m = 3015 * 3;
-    a = 0;
-    c = 0;
 
-    lcg_calculate_constants(m, &a, &c, 0);
+    for (i=0; i<5; i++) {
+        a = 0;
+        c = 0;
 
-    is_success = lcg_verify(a, c, m, m);
+        m += 10 + i;
 
-    if (!is_success) {
-        fprintf(stderr, "LCG: randomization failed\n");
-        return 1; /*fail*/
-    } else {
-        return 0; /*success*/
+        lcg_calculate_constants(m, &a, &c, 0);
+
+        is_success = lcg_verify(a, c, m, m);
+
+        if (!is_success) {
+            fprintf(stderr, "LCG: randomization failed\n");
+            return 1; /*fail*/
+        }
     }
+
+    return 0; /*success*/
 }

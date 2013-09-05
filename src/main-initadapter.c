@@ -67,8 +67,9 @@ masscan_initialize_adapter(struct Masscan *masscan,
             );
     }
     if (*r_adapter_ip == 0) {
-        fprintf(stderr, "FAIL: failed to detect IP of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--adapter-ip 192.168.100.5\"\n");
+        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n", ifname);
+        fprintf(stderr, " [hint] did you spell the name correctly?\n");
+        fprintf(stderr, " [hint] if it has no IP address, manually set with \"--adapter-ip 192.168.100.5\"\n");
         return -1;
     }
 
@@ -93,7 +94,7 @@ masscan_initialize_adapter(struct Masscan *masscan,
     }
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect MAC address of interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--adapter-mac 00-11-22-33-44\"\n");
+        fprintf(stderr, " [hint] try something like \"--adapter-mac 00-11-22-33-44-55\"\n");
         return -1;
     }
 
@@ -158,7 +159,7 @@ masscan_initialize_adapter(struct Masscan *masscan,
     }
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        fprintf(stderr, "FAIL:... try something like \"--router-mac 66-55-44-33-22-11\"\n");
+        fprintf(stderr, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
 
