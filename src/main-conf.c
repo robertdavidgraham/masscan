@@ -133,6 +133,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_List:       fprintf(fp, "output-format = list\n"); break;
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
+    case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
     default:
         fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
@@ -688,6 +689,7 @@ masscan_set_parameter(struct Masscan *masscan,
         else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
         else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
         else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
+        else if (EQUALS("json", value))       masscan->nmap.format = Output_JSON;
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
         }
@@ -1037,6 +1039,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 switch (argv[i][2]) {
                 case 'A':
                     masscan->nmap.format = Output_All;
+                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
+                    exit(1);
+                    break;
+                case 'B':
+                    masscan->nmap.format = Output_Binary;
+                    break;
+                case 'J':
+                    masscan->nmap.format = Output_JSON;
                     break;
                 case 'N':
                     masscan->nmap.format = Output_Normal;

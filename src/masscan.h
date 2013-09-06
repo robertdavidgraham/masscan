@@ -31,6 +31,7 @@ enum OutpuFormat {
     Output_ScriptKiddie,
     Output_Grepable,
     Output_Binary,
+    Output_JSON,
     Output_All,
     Output_List /* specific to Masscan */
 };
@@ -93,6 +94,7 @@ struct Masscan
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
+    unsigned is_interactive:1;  /* --interactive */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

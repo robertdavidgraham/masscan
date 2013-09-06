@@ -60,7 +60,7 @@
  other records, it contains a timestamp, IP address, and port number.
  The length of the banner-text is the length
  +--------+
- |  0x01  |
+ |  0x03  |
  +--------+ . . . .
  |? length:        :
  +--------+--------+--------+--------+
@@ -74,6 +74,8 @@
  +--------+--------+ . . . . . .  .  .  .   .   .   .    .    .     .
 
 */
+#define _CRT_SECURE_NO_WARNINGS
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -176,6 +178,8 @@ const char *
 normalize_string(unsigned char *px, size_t offset, size_t length, size_t max)
 {
     size_t i=0;
+    px += offset;
+    max -= offset;
     
     for (i=offset; i<length; i++) {
         unsigned char c = px[i];
@@ -207,7 +211,6 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     struct MasscanRecord record;
     char timebuf[80];
     char addrbuf[20];
-    char reasonbuf[80];
     
     /* parse record */        
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
@@ -231,11 +234,12 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     
     
     /* output string */
-    printf("%s %-15s :%5u %s\n",
+    if (buf_length > 10)
+    printf("%s %-15s :%5u -- \"%s\"\n",
            timebuf,
            addrbuf,
            record.port,
-           normalize_string(buf, 10, buf_length, BUF_MAX)
+           normalize_string(buf, 10, buf_length-10, BUF_MAX)
            );
 }
 
@@ -323,7 +327,7 @@ void parse_file(const char *filename)
             case 3: /* BANNER */
                 parse_banner(buf, bytes_read);
                 break;
-            case 'a': /* FILEHEADER */
+            case 'm': /* FILEHEADER */
                 goto end;
             default:
                 fprintf(stderr, "file corrupt: unknown type %u\n", type);

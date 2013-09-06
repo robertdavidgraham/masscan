@@ -614,6 +614,20 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
             return;
     }
 
+    if (masscan->is_interactive) {
+         fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %.*s\n",
+            "banner",
+            port,
+            (ip>>24)&0xFF,
+            (ip>>16)&0xFF,
+            (ip>> 8)&0xFF,
+            (ip>> 0)&0xFF,
+            (unsigned)global_now,
+            length, px
+            );
+    }
+
+
     switch (masscan->nmap.format) {
     case Output_List:
         fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %.*s\n",
@@ -654,16 +668,16 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
         break;
     case Output_Binary:
         {
-            unsigned foo[256];
+            unsigned char foo[256];
 
-            if (length > 255 - 12)
-                length = 255 - 12;
+            if (length > 127 - 10)
+                length = 127 - 10;
 
             /* [TYPE] field */
             foo[0] = 3; /*banner*/
 
             /* [LENGTH] field */
-            foo[1] = length + 12;
+            foo[1] = (unsigned char)(length + 10);
 
             /* [TIMESTAMP] field */
             foo[2] = (unsigned char)(global_now>>24);
@@ -679,7 +693,6 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
             foo[10] = (unsigned char)(port>>8);
             foo[11] = (unsigned char)(port>>0);
 
-            printf("banner: %.*s\n", length, px);
             /* Banner */
             memcpy(foo+12, px, length);
 
