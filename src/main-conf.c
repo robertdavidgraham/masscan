@@ -99,7 +99,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "randomize-hosts = true\n");
     fprintf(fp, "seed = %llu\n", masscan->seed);
     fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
-
+    if (masscan->is_banners)
+        fprintf(fp, "banners = true\n");
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
     fprintf(fp, "adapter = %s\n", masscan->ifname);
@@ -364,6 +365,8 @@ parse_mac_address(const char *text, unsigned char *mac)
     return 0;
 }
 
+/***************************************************************************
+ ***************************************************************************/
 static uint64_t
 parseInt(const char *str)
 {
@@ -376,6 +379,17 @@ parseInt(const char *str)
     return result;
 }
 
+/***************************************************************************
+ * Parses the number of seconds (for rotating files mostly). We do a little
+ * more than just parse an integer. We support strings like:
+ *
+ * hourly
+ * daily
+ * Week
+ * 5days
+ * 10-months
+ * 3600
+ ***************************************************************************/
 static uint64_t
 parseTime(const char *value)
 {
@@ -398,7 +412,7 @@ parseTime(const char *value)
         num = 1;
 
     if (value[0] == '\0')
-        return 0;
+        return num;
 
     switch (tolower(value[0])) {
     case 's':
@@ -432,7 +446,15 @@ parseTime(const char *value)
 
 
 
-int EQUALS(const char *lhs, const char *rhs)
+/***************************************************************************
+ * Tests if the named parameter on the command-line. We do a little
+ * more than a straight string compare, because I get confused 
+ * whether parameter have punctuation. Is it "--excludefile" or
+ * "--exclude-file"? I don't know if it's got that dash. Screw it,
+ * I'll just make the code so it don't care.
+ ***************************************************************************/
+static int
+EQUALS(const char *lhs, const char *rhs)
 {
     for (;;) {
         while (*lhs == '-' || *lhs == '.')
@@ -472,7 +494,7 @@ masscan_set_parameter(struct Masscan *masscan,
             struct Range range;
 
             range = range_parse_ipv4(value, 0, 0);
-            if (range.begin == 0 && range.end == 0) {
+            if (range.begin > range.end) {
                 fprintf(stderr, "CONF: bad source IPv4 address: %s=%s\n", 
                         name, value);
                 return;

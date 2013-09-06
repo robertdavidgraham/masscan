@@ -19,6 +19,7 @@
 #include "string_s.h"
 
 uint64_t global_tcb_count;
+unsigned global_recv_overwhelmed;
 
 struct TCP_Control_Block
 {
@@ -339,7 +340,9 @@ tcpcon_send_packet(
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(tcpcon->packet_buffers, (void**)&response);
         if (err != 0) {
-            LOG(0, "packet buffers empty (should be impossible)\n");
+            //LOG(0, "packet buffers empty (should be impossible)\n");
+            printf("+");
+            fflush(stdout);
             pixie_usleep(100); /* no packet available */
         }
     }

@@ -725,11 +725,12 @@ main_scan(struct Masscan *masscan)
     /*
      * Allocate packet buffers for sending
      */
-    masscan->packet_buffers = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
-    masscan->transmit_queue = rte_ring_create(256, RING_F_SP_ENQ|RING_F_SC_DEQ);
+#define BUFFER_COUNT 16384
+    masscan->packet_buffers = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
+    masscan->transmit_queue = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
     {
         unsigned i;
-        for (i=0; i<255 /*TODO: why not 256???*/; i++) {
+        for (i=0; i<BUFFER_COUNT-1; i++) {
             struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
             err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
             if (err) {
