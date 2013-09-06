@@ -12,6 +12,9 @@ struct Status
     } last;
     uint64_t timer;
     unsigned charcount;
+
+    double last_rates[8];
+    unsigned last_count;
 };
 
 

@@ -515,33 +515,34 @@ receive_thread(struct Masscan *masscan,
                                     seqno_me, seqno_them+1);
                 }
 
-                tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK, 0, 0, secs, usecs);
+                tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK, 
+                    0, 0, secs, usecs, seqno_them+1);
 
             } else if (tcb) {
                 /* If this is an ACK, then handle that first */
                 if (TCP_IS_ACK(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_ACK, 0, seqno_me,
-                        secs, usecs);
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_ACK, 
+                        0, seqno_me, secs, usecs, seqno_them);
                 }
 
                 /* If this contains payload, handle that */
                 if (parsed.app_length) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_DATA, 
                         px + parsed.app_offset, parsed.app_length,
-                        secs, usecs);
+                        secs, usecs, seqno_them);
                 }
 
-                /* If this is a FIN, handle that. Note that ACK + payload + FIN
-                 * can come together */
+                /* If this is a FIN, handle that. Note that ACK + 
+                 * payload + FIN can come together */
                 if (TCP_IS_FIN(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 0, seqno_them, 
-                        secs, usecs);
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 
+                        0, 0, secs, usecs, seqno_them);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
                 if (TCP_IS_RST(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_RST, 0, 0,
-                        secs, usecs);
+                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_RST, 
+                        0, 0, secs, usecs, seqno_them);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
                 /* 

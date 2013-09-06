@@ -34,7 +34,7 @@ struct Timeouts {
     unsigned mask;
     
     struct TimeoutEntry *freed_list;
-    struct TimeoutEntry *entries[1024*8*16];
+    struct TimeoutEntry *slots[1024*1024];
 };
 
 /***************************************************************************
@@ -47,7 +47,7 @@ timeouts_create(uint64_t timestamp)
     timeouts = (struct Timeouts *)malloc(sizeof(*timeouts));
     memset(timeouts, 0, sizeof(*timeouts));
 
-    timeouts->mask = sizeof(timeouts->entries)/sizeof(timeouts->entries[0]) - 1;
+    timeouts->mask = sizeof(timeouts->slots)/sizeof(timeouts->slots[0]) - 1;
 
     timeouts->current_index = timestamp;
 
@@ -72,8 +72,8 @@ timeouts_add(struct Timeouts *timeouts, void *p, uint64_t timestamp, unsigned co
     entry->timestamp = timestamp;
     entry->pointer = p;
     entry->counter = counter;
-    entry->next = timeouts->entries[index];
-    timeouts->entries[index] = entry;
+    entry->next = timeouts->slots[index];
+    timeouts->slots[index] = entry;
     return &entry->counter;
 }
 
@@ -85,7 +85,7 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
     struct TimeoutEvent result;
 
     while (timeouts->current_index <= timestamp) {
-        struct TimeoutEntry **r_entry = &timeouts->entries[timeouts->current_index & timeouts->mask];
+        struct TimeoutEntry **r_entry = &timeouts->slots[timeouts->current_index & timeouts->mask];
 
         while (*r_entry && (*r_entry)->timestamp > timestamp)
             r_entry = &(*r_entry)->next;

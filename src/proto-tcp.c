@@ -118,7 +118,8 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
             tcb,
             TCP_WHAT_TIMEOUT, 
             0, 0,
-            secs, usecs);
+            secs, usecs,
+            0);
 
     }
 }
@@ -521,9 +522,11 @@ handle_ack(
  ***************************************************************************/
 void
 tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
-    int what, const void *payload, size_t payload_length,
-    unsigned secs, unsigned usecs)
+    int what, const void *vpayload, size_t payload_length,
+    unsigned secs, unsigned usecs,
+    unsigned seqno_them)
 {
+    const unsigned char *payload = (const unsigned char *)vpayload;
     if (tcb == NULL)
         return;
 
@@ -568,9 +571,10 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_ACK:
-        /* There's actually nothing that goes on in this state. We are just waiting
-         * for the timer to expire. In the meanwhile, though, the other side is 
-         * might acknowledge that we sent a SYN-ACK */
+        /* There's actually nothing that goes on in this state. We are
+         * just waiting for the timer to expire. In the meanwhile, 
+         * though, the other side is might acknowledge that we sent 
+         * a SYN-ACK */
 
         /* NOTE: the arg 'payload_length' was overloaded here to be the
          * 'ackno' instead */
@@ -605,7 +609,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
                 0x18, 
                 x, x_len);
             LOG(4, "%u.%u.%u.%u - sending payload %u bytes\n",
-                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, 
+                (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
                 x_len);
 
             /* Increment our sequence number */
@@ -633,11 +638,29 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         {
             unsigned err;
 
+            /* If this packet skips over a lost packet on the Internet,
+             * then we need to discard it */
+            if (seqno_them - tcb->seqno_them < 10000
+                && 0 < seqno_them - tcb->seqno_them)
+                return;
+
+            /* If this payload overlaps something we've already seen, then
+             * shrink the payload length */
+            if (tcb->seqno_them - seqno_them < 10000) {
+                unsigned already_received = tcb->seqno_them - seqno_them;
+                if (already_received >= payload_length)
+                    return;
+                else {
+                    payload += already_received;
+                    payload_length -= already_received;
+                }
+            }
+
             /* extract a banner if we can */
             err = parse_banner(
                         tcpcon,
                         tcb, 
-                        (const unsigned char*)payload, 
+                        payload, 
                         payload_length);
 
             /* move their sequence number forward */
@@ -659,7 +682,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = (uint32_t)payload_length + 1;
+        tcb->seqno_them = seqno_them + 1;
         tcpcon_send_packet(tcpcon, tcb,
                     0x14, /*reset */
                     0, 0);
@@ -737,10 +760,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
 
     
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = (uint32_t)payload_length + 1;
+        tcb->seqno_them = seqno_them + 1;
         tcpcon_send_packet(tcpcon, tcb,
             0x11, 
             0, 0);
+        tcb->seqno_me++;
         break;
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:
         tcpcon_send_packet(tcpcon, tcb,
