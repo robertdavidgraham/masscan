@@ -20,6 +20,7 @@
 
 uint64_t global_tcb_count;
 unsigned global_recv_overwhelmed;
+extern time_t global_now;
 
 struct TCP_Control_Block
 {
@@ -44,6 +45,7 @@ struct TCP_Control_Block
 
 
     unsigned short payload_length;
+    time_t when_created;
     const unsigned char *payload;
 
     unsigned char banner[128];
@@ -287,6 +289,7 @@ tcpcon_create_tcb(
             static unsigned nothing = 0;
             tcb->p_counter = &nothing;
         }
+        tcb->when_created = global_now;
         
         tcpcon->active_count++;
         global_tcb_count = tcpcon->active_count;
@@ -527,8 +530,17 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     unsigned seqno_them)
 {
     const unsigned char *payload = (const unsigned char *)vpayload;
+    
     if (tcb == NULL)
         return;
+
+    /* Make sure no connection lasts more than 20 seconds */
+    if (what == TCP_WHAT_TIMEOUT) {
+        if (tcb->when_created + 20 < secs) {
+            tcpcon_destroy_tcb(tcpcon, tcb);
+            return;
+        }
+    }
 
     LOG(10, "%u.%u.%u.%u =%s : %s                  \n", 
             (unsigned char)(tcb->ip_them>>24),

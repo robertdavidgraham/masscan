@@ -787,6 +787,11 @@ int main(int argc, char *argv[])
                 sizeof(masscan->rotate_directory),
                 ".");
 
+#if !defined(WIN32)
+    if (access("/etc/masscan/masscan.conf", 0) == 0) {
+        masscan_read_config_file(masscan, "/etc/masscan/masscan.conf");
+    }
+#endif
 
     /*
      * Read in the configuration from the command-line. We are looking for

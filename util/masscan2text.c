@@ -181,7 +181,7 @@ normalize_string(unsigned char *px, size_t offset, size_t length, size_t max)
     px += offset;
     max -= offset;
     
-    for (i=offset; i<length; i++) {
+    for (i=0; i<length; i++) {
         unsigned char c = px[i];
         
         if (isprint(c) && c != '<' && c != '>' && c != '&' && c != '\\') {
@@ -234,13 +234,16 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     
     
     /* output string */
-    if (buf_length > 10)
-    printf("%s %-15s :%5u -- \"%s\"\n",
-           timebuf,
-           addrbuf,
-           record.port,
-           normalize_string(buf, 10, buf_length-10, BUF_MAX)
-           );
+    if (buf_length > 10) {
+        const char *s;
+        s = normalize_string(buf, 10, buf_length-10, BUF_MAX);
+        printf("%s %-15s :%5u -- \"%s\"\n",
+               timebuf,
+               addrbuf,
+               record.port,
+               s
+               );
+    }
 }
 
 void parse_file(const char *filename)
