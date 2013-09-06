@@ -432,6 +432,9 @@ receive_thread(struct Masscan *masscan,
             tcpcon_timeouts(tcpcon, secs, usecs);
         }
 
+	if (length > 1514)
+		continue;
+
         /*
          * "Preprocess" the response packet. This means to go through and
          * figure out where the TCP/IP headers are and the locations of
@@ -501,7 +504,7 @@ receive_thread(struct Masscan *masscan,
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
-                    LOG(1, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
+                    LOG(2, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
                         (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
                         seqno_me-1, syn_hash(ip_them, parsed.port_src));
                     continue;
@@ -569,7 +572,7 @@ receive_thread(struct Masscan *masscan,
 
             /* verify: syn-cookies */
             if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
-                LOG(1, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
+                LOG(2, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
                     (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
                     seqno_me-1, syn_hash(ip_them, parsed.port_src));
                 continue;
