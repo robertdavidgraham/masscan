@@ -89,9 +89,10 @@ struct Masscan
      */
     unsigned retries;
 
-    unsigned is_pfring:1;
-    unsigned is_sendq:1;
-    unsigned is_banners:1;
+    unsigned is_pfring:1;       /* --pfring */
+    unsigned is_sendq:1;        /* --sendq */
+    unsigned is_banners:1;      /* --banners */
+    unsigned is_offline:1;      /* --offline */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

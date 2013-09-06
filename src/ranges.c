@@ -522,7 +522,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
 
         while (*p && isspace(*p & 0xFF))
             p++;
-        if (*p == 0)
+        if (*p == 0 || *p == '#')
             break;
 
         port = strtoul(p, &p, 0);

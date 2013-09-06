@@ -8,7 +8,7 @@ SYS := $(shell gcc -dumpmachine)
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt -ldl -rdynamic -lpthread
-INCLUDES = -I. -I../PF_RING/userland/lib
+INCLUDES = -I.
 FLAGS2 = 
 endif
 

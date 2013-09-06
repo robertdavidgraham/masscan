@@ -7,6 +7,13 @@
     * main()
     * transmit_thread() - transmits probe packets
     * receive_thread() - receives response packets
+
+    You'll be wanting to study the transmit/receive threads, because that's
+    where all the action is.
+
+    This is the lynch-pin of the entire program, so it includes a heckuva lot
+    of headers, and the functions have a lot of local variables. I'm trying
+    to make this file relative "flat" this way so that everything is visible.
 */
 #include "masscan.h"
 
@@ -19,14 +26,13 @@
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
 #include "proto-arp.h"          /* for responding to ARP requests */
-#include "proto-banner1.h"
+#include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
-
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
 #include "proto-preprocess.h"   /* quick parse of packets */
@@ -61,7 +67,7 @@ flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *pa
     while (!is_queue_empty) {
         /*
          * Only send a few packets at a time, throttled according to the max
-         * --rate set by the usser
+         * --max-rate set by the user
          */
         batch_size = throttler_next_batch(throttler, *packets_sent);
 
@@ -143,27 +149,33 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "xmit: starting transmit thread...\n");
 
-    /* Create the shuffler/randomizer */
+    /* Create the shuffler/randomizer. This creates the 'range' variable,
+     * which is simply the number of IP addresses times the number of
+     * ports */
     range = rangelist_count(&masscan->targets) 
             * rangelist_count(&masscan->ports);
     blackrock_init(&blackrock, range);
 
-    /* Seed */
+    /* This allows you to begin a scan somewhere other than the index
+     * of zero (--seed). In the future. I might automatically seed this off
+     * of thecurrent time automatically, but for the moment, I'm just 
+     * starting from zero. */
     seed = masscan->seed;
     if (seed == 0 && masscan->shard.one == 1 && masscan->shard.of == 1)
         ; //seed = time(0) % range;
 
-    /* start/end */
+    /* Calculate the 'start' and 'end' of a scan. One reason to do this is
+     * to support --shard, so that multiple machines can co-operate on
+     * the same scan. Another reason to do this is so that we can bleed
+     * a little bit past the end when we have --retries */
     if (masscan->resume.index != 0)
         start = masscan->resume.index;
     else
         start = (masscan->shard.one-1) * (range / masscan->shard.of);
-
     if (masscan->shard.of == 1)
         end = range;
     else
         end = masscan->shard.one * (range / masscan->shard.of);
-
     end += retries * rate;
 
     
@@ -179,12 +191,10 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * the scan */
     timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
 
-
-    /* TODO: this feature useless right now*/
-    //seed = masscan->resume.seed;
-
     /* Optimize target selection so it's a quick binary search instead
-     * of walking large memory tables */
+     * of walking large memory tables. When we scan the entire Internet
+     * our --excludefile will chop up our pristine 0.0.0.0/0 range into
+     * hundreds of subranges. This scans through them faster. */
     picker = rangelist_pick2_create(&masscan->targets);
 
     /* -----------------
@@ -198,7 +208,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          * Do a batch of many packets at a time. That because per-packet
          * throttling is expensive at 10-million pps, so we reduce the
          * per-packet cost by doing batches. At slower rates, the batch
-         * size will always be one.
+         * size will always be one. (--max-rate)
          */
         batch_size = throttler_next_batch(&throttler, packets_sent);
         packets_sent += batch_size;
@@ -218,11 +228,14 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              *  order. Then, once we've shuffled the index, we "pick" the
              *  the IP address and port that the index refers to.
              */
-            xXx = blackrock_shuffle(&blackrock, (i + (r--) * rate + seed) % range);
+            xXx = (i + (r--) * rate + seed);
+            while (xXx > range)
+                xXx -= range;
+            xXx = blackrock_shuffle(&blackrock,  xXx);
             ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
             port = rangelist_pick(&masscan->ports, xXx / count_ips);
 
-            /* Print packet if debugging */
+            /* Print --packet-trace if debugging */
             if (packet_trace)
                 tcpkt_trace(pkt_template, ip, port, timestamp_start);
 
@@ -253,8 +266,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              *  retransmits and sharding.
              */
             if (r == 0) {
-                i++;
-                r = retries + 1;
+                i++; /* <--------- look at that puny increment */
+                r = retries + 1; /* --retries */
             }
 
             /*
@@ -266,11 +279,11 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
         } /* end of batch */
 
-        /* Transmit packets from other thread. */
+        /* Transmit packets from other thread, when doing --banners */
         flush_packets(masscan, &throttler, &packets_sent);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
-         * the user wants to resume the scan later, we save the current
+         * the user wants to --resume the scan later, we save the current
          * state in a file */
         if (control_c_pressed) {
             masscan->resume.seed = seed;
@@ -334,7 +347,7 @@ receive_thread(struct Masscan *masscan,
 
 
     /*
-     * If configured, open a pcap file for saving raw packets. This is
+     * If configured, open a --pcap file for saving raw packets. This is
      * so that we can debug scans, but also so that we can look at the
      * strange things people send us. Note that we don't record transmitted
      * packets, just the packets we've received.
@@ -343,7 +356,8 @@ receive_thread(struct Masscan *masscan,
         pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);
 
     /*
-     * Open output. This is where results are reported.
+     * Open output. This is where results are reported when saving
+     * the --output-format to the --output-filename
      */
     out = output_create(masscan);
 
@@ -355,7 +369,7 @@ receive_thread(struct Masscan *masscan,
 
     /*
      * Create a TCP connection table for interacting with live
-     * connections
+     * connections when doing --banners
      */
     if (masscan->is_banners) {
         tcpcon = tcpcon_create_table(
@@ -366,6 +380,12 @@ receive_thread(struct Masscan *masscan,
             output_report_banner,
             out
             );
+    }
+
+    if (masscan->is_offline) {
+        while (!masscan->is_done)
+            pixie_usleep(10000);
+        return;
     }
 
     /*
@@ -387,6 +407,12 @@ receive_thread(struct Masscan *masscan,
         unsigned seqno_them;
         unsigned seqno_me;
 
+
+        /*
+         * RECIEVE
+         *
+         * This is the boring part of actually receiving a packet
+         */
         err = rawsock_recv_packet(
                     masscan->adapter,
                     &length,
@@ -400,7 +426,7 @@ receive_thread(struct Masscan *masscan,
         /*
          * Do any TCP event timeouts based on the current timestamp from
          * the packet. For example, if the connection has been open for
-         * around 10 seconds, we'll close the connection.
+         * around 10 seconds, we'll close the connection. (--banners)
          */
         if (tcpcon) {
             tcpcon_timeouts(tcpcon, secs, usecs);
@@ -427,7 +453,9 @@ receive_thread(struct Masscan *masscan,
             continue;
 
 
-        /* OOPS: handle arp instead */
+        /* OOPS: handle arp instead. Since we may completely bypass the TCP/IP
+         * stack, we may have to handle ARPs ourself, or the router will 
+         * lose track of us. */
         if (parsed.found == FOUND_ARP) {
             LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
 
@@ -446,7 +474,7 @@ receive_thread(struct Masscan *masscan,
         if (adapter_port != parsed.port_dst)
             continue;
 
-        /* Save raw packet (if configured to do so) */
+        /* Save raw packet in --pcap file */
         if (pcapfile) {
             pcapfile_writeframe(
                 pcapfile,
@@ -457,12 +485,12 @@ receive_thread(struct Masscan *masscan,
                 usecs);
         }
 
-        LOG(1, "%u.%u.%u.%u - ackno=0x%08x flags=%02x\n", 
+        LOG(5, "%u.%u.%u.%u - ackno=0x%08x flags=%02x\n", 
             (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
             seqno_me, TCP_FLAGS(px, parsed.transport_offset));
 
 
-        /* If recording banners, create a new "TCP Control Block (TCB)" */
+        /* If recording --banners, create a new "TCP Control Block (TCB)" */
         if (tcpcon) {
             struct TCP_Control_Block *tcb;
 
@@ -551,10 +579,7 @@ receive_thread(struct Masscan *masscan,
                 continue;
 
             /*
-             * XXXX
-             * TODO: add lots more verification, such as coming from one of
-             * our sending port numbers, and having the right seqno/ackno
-             * fields set.
+             * This is where we do the output
              */
             output_report(
                         out,
@@ -579,16 +604,22 @@ receive_thread(struct Masscan *masscan,
         pcapfile_close(pcapfile);
 }
 
+
 /***************************************************************************
+ * We trap the <ctrl-c> so that instead of exiting immediately, we sit in
+ * a loop for a few seconds waiting for any late response. But, the user
+ * can press <ctrl-c> a second time to exit that waiting.
  ***************************************************************************/
 static void control_c_handler(int x)
 {
     control_c_pressed = 1+x;
 }
 
+
 /***************************************************************************
- * Start the scan. This is the main function of the program.
- * Called from main()
+ * Called from main() to initiate the scan.
+ * Launches the 'transmit_thread()' and 'receive_thread()' and waits for
+ * them to exit.
  ***************************************************************************/
 static int
 main_scan(struct Masscan *masscan)
@@ -831,11 +862,9 @@ int main(int argc, char *argv[])
             x += tcpkt_selftest();
             x += ranges_selftest();
             x += pixie_time_selftest();
-            //x += xring_selftest();
             x += rte_ring_selftest();
             x += smack_selftest();
             x += banner1_selftest();
-
 
 
             if (x != 0) {

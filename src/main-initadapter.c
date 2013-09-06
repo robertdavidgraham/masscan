@@ -104,14 +104,16 @@ masscan_initialize_adapter(struct Masscan *masscan,
      * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
-    masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
-    if (masscan->adapter == 0) {
-        fprintf(stderr, "adapter[%s].init: failed\n", ifname);
-        return -1;
+    if (!masscan->is_offline) {
+        masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
+        if (masscan->adapter == 0) {
+            fprintf(stderr, "adapter[%s].init: failed\n", ifname);
+            return -1;
+        }
+        LOG(3, "rawsock: ignoring transmits\n");
+        rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+        LOG(3, "rawsock: initialization done\n");
     }
-    LOG(3, "rawsock: ignoring transmits\n");
-    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
-    LOG(3, "rawsock: initialization done\n");
 
     /*
      * ROUTER MAC ADDRESS
@@ -124,9 +126,12 @@ masscan_initialize_adapter(struct Masscan *masscan,
      * code above.
      */
     memcpy(router_mac, masscan->router_mac, 6);
-    if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
+    if (masscan->is_offline) {
+        memcpy(router_mac, "\x66\x55\x44\x33\x22\x11", 6);
+    } else if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         unsigned router_ipv4;
         int err;
+
 
         LOG(1, "rawsock: looking for default gateway\n");
         err = rawsock_get_default_gateway(ifname, &router_ipv4);

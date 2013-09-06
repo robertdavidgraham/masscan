@@ -268,6 +268,9 @@ rawsock_send_packet(
     unsigned length,
     unsigned flush)
 {
+    if (adapter == 0)
+        return 0;
+
     /* PF_RING */
     if (adapter->ring) {
         int err = PF_RING_ERROR_NO_TX_SLOT_AVAILABLE;

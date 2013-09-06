@@ -608,7 +608,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("banner1", name)) {
         banner1_test(value);
         exit(1);
-    } else if (EQUALS("banners", name)) {
+    } else if (EQUALS("banners", name) || EQUALS("banner", name)) {
         masscan->is_banners = 1;
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
@@ -667,6 +667,10 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
+    } else if (EQUALS("offline", name)) {
+        /* Run in "offline" mode where it thinks it's sending packets, but
+         * it's not */
+        masscan->is_offline = 1;
     } else if (EQUALS("open", name)) {
         masscan->nmap.open_only = 1;
     } else if (EQUALS("output-status", name)) {
@@ -687,7 +691,7 @@ masscan_set_parameter(struct Masscan *masscan,
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
         }
-    } else if (EQUALS("output-filename", name)) {
+    } else if (EQUALS("output-filename", name) || EQUALS("output-file", name)) {
         strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
     } else if (EQUALS("pcap", name)) {
         strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
@@ -715,7 +719,7 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->resume.seed = parseInt(value);
     } else if (EQUALS("resume-index", name)) {
         masscan->resume.index = parseInt(value);
-    } else if (EQUALS("retries", name)) {
+    } else if (EQUALS("retries", name) || EQUALS("retry", name)) {
         unsigned x = strtoul(value, 0, 0);
         if (x >= 1000) {
             fprintf(stderr, "error: retries=<n>: expected number less than 1000\n");
@@ -759,7 +763,7 @@ masscan_set_parameter(struct Masscan *masscan,
         return;
     } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
         masscan_set_parameter(masscan, "adapter-port", value);
-    } else if (EQUALS("shard", name)) {
+    } else if (EQUALS("shard", name) || EQUALS("shards", name)) {
         unsigned one = 0;
         unsigned of = 0;
         
@@ -846,7 +850,7 @@ is_singleton(const char *name)
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
-        "banners",
+        "banners", "banner", "offline",
         0};
     size_t i;
 
