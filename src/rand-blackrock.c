@@ -1,6 +1,8 @@
 /*
     BlackRock cipher
 
+    (h/t Marsh Ray @marshray for this idea)
+
     This is a randomization/reshuffling function based on a crypto
     "Feistal network" as describ ed in the paper:
 
@@ -89,7 +91,7 @@ uint64_t
 F(uint64_t j, uint64_t R)
 {
     static const uint64_t primes[] = {
-        961752031, 982324657, 15485843  };
+        961752031, 982324657, 15485843, 961752031,  };
 
     R = (R << (R&0x4)) + R;
 
