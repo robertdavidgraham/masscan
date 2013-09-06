@@ -18,6 +18,8 @@
 #include "output.h"
 #include "string_s.h"
 
+uint64_t global_tcb_count;
+
 struct TCP_Control_Block
 {
 
@@ -224,6 +226,7 @@ tcpcon_destroy_tcb(
             tcb->next = tcpcon->freed_list;
             tcpcon->freed_list = tcb;
             tcpcon->active_count--;
+            global_tcb_count = tcpcon->active_count;
             return;
         } else
             r_entry = &(*r_entry)->next;
@@ -284,6 +287,7 @@ tcpcon_create_tcb(
         }
         
         tcpcon->active_count++;
+        global_tcb_count = tcpcon->active_count;
     }
 
     return tcb;
