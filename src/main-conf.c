@@ -98,6 +98,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
     fprintf(fp, "seed = %llu\n", masscan->seed);
+    fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
 
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
@@ -220,9 +221,6 @@ masscan_save_state(struct Masscan *masscan)
     fprintf(fp, "\n# resume information\n");
     fprintf(fp, "resume-seed = %llu\n", masscan->resume.seed);
     fprintf(fp, "resume-index = %llu\n", masscan->resume.index);
-    fprintf(fp, "resume-range = %llu\n", masscan->lcg.m);
-    fprintf(fp, "resume-lcg-a = %llu\n", masscan->lcg.a);
-    fprintf(fp, "resume-lcg-c = %llu\n", masscan->lcg.c);
 
     masscan_echo(masscan, fp);
 
@@ -717,14 +715,6 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->resume.seed = parseInt(value);
     } else if (EQUALS("resume-index", name)) {
         masscan->resume.index = parseInt(value);
-    } else if (EQUALS("resume-range", name)) {
-        masscan->lcg.m = parseInt(value);
-    } else if (EQUALS("resume-lcg-m", name)) {
-        masscan->lcg.m = parseInt(value);
-    } else if (EQUALS("resume-lcg-a", name)) {
-        masscan->lcg.a = parseInt(value);
-    } else if (EQUALS("resume-lcg-c", name)) {
-        masscan->lcg.c = parseInt(value);
     } else if (EQUALS("retries", name)) {
         unsigned x = strtoul(value, 0, 0);
         if (x >= 1000) {
@@ -769,6 +759,31 @@ masscan_set_parameter(struct Masscan *masscan,
         return;
     } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
         masscan_set_parameter(masscan, "adapter-port", value);
+    } else if (EQUALS("shard", name)) {
+        unsigned one = 0;
+        unsigned of = 0;
+        
+        while (isdigit(*value))
+            one = one*10 + (*(value++)) - '0';
+        while (ispunct(*value))
+            value++;
+        while (isdigit(*value))
+            of = of*10 + (*(value++)) - '0';
+
+        if (one < 1) {
+            LOG(0, "FAIL: shard index can't be zero\n");
+            LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
+            exit(1);
+        }
+        if (one > of) {
+            LOG(0, "FAIL: shard spec is wrong\n");
+            LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
+            exit(1);
+        }
+
+        masscan->shard.one = one;
+        masscan->shard.of = of;
+
     } else if (EQUALS("no-stylesheet", name)) {
         masscan->nmap.stylesheet[0] = '\0';
     } else if (EQUALS("stylesheet", name)) {

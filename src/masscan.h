@@ -78,11 +78,6 @@ struct Masscan
     struct RangeList exclude_port;
 
 
-    struct LCGParms {
-        uint64_t m;     /* LCG modulus aka. the IP address range size */
-        uint64_t a;     /* LCG multiplier */
-        uint64_t c;     /* LCG increment */
-    } lcg;
 
     /**
      * Maximum rate, in packets-per-second (--rate parameter)
@@ -108,6 +103,11 @@ struct Masscan
         uint64_t seed;
         uint64_t index;
     } resume;
+
+    struct {
+        unsigned one;
+        unsigned of;
+    } shard;
 
     /**
      * The packet template we are current using

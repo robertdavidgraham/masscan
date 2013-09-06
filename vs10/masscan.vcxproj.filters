@@ -111,6 +111,9 @@
     <ClCompile Include="..\src\proto-banner1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rand-blackrock.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -192,6 +195,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-banner1.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-blackrock.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

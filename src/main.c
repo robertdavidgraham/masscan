@@ -10,6 +10,7 @@
 */
 #include "masscan.h"
 
+#include "rand-blackrock.h"     /* the BlackRock shuffling func */
 #include "rand-lcg.h"           /* the LCG randomization func */
 #include "tcpkt.h"              /* packet template, that we use to send */
 #include "rawsock.h"            /* api on top of Linux, Windows, Mac OS X*/
@@ -55,52 +56,57 @@ void
 flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *packets_sent)
 {
     uint64_t batch_size;
+    unsigned is_queue_empty = 0;
 
-    /*
-     * Only send a few packets at a time, throttled according to the max
-     * --rate set by the usser
-     */
-    batch_size = throttler_next_batch(throttler, *packets_sent);
-
-    /*
-     * Send a batch of queued packets
-     */
-    for ( ; batch_size; batch_size--) {
-        int err;
-        struct PacketBuffer *p;
+    while (!is_queue_empty) {
+        /*
+         * Only send a few packets at a time, throttled according to the max
+         * --rate set by the usser
+         */
+        batch_size = throttler_next_batch(throttler, *packets_sent);
 
         /*
-         * Get the next packet from the transmit queue. This packet was 
-         * put there by a receive thread, and will contain things like
-         * an ACK or an HTTP request
+         * Send a batch of queued packets
          */
-        err = rte_ring_sc_dequeue(masscan->transmit_queue, (void**)&p);
-        if (err)
-            break; /* queue is empty, nothing to send */
+        for ( ; batch_size; batch_size--) {
+            int err;
+            struct PacketBuffer *p;
 
-        /*
-         * Actually send the packet
-         */
-        rawsock_send_packet(masscan->adapter, p->px, (unsigned)p->length, 1);
-
-        /*
-         * Now that we are done with the packet, put it on the free list
-         * of buffers that the transmit thread can reuse
-         */
-        for (err=1; err; ) {
-            err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
+            /*
+             * Get the next packet from the transmit queue. This packet was 
+             * put there by a receive thread, and will contain things like
+             * an ACK or an HTTP request
+             */
+            err = rte_ring_sc_dequeue(masscan->transmit_queue, (void**)&p);
             if (err) {
-                LOG(0, "transmit queue full (should be impossible)\n");
-                pixie_usleep(10000);
+                is_queue_empty = 1;
+                break; /* queue is empty, nothing to send */
             }
-        }
+
+            /*
+             * Actually send the packet
+             */
+            rawsock_send_packet(masscan->adapter, p->px, (unsigned)p->length, 1);
+
+            /*
+             * Now that we are done with the packet, put it on the free list
+             * of buffers that the transmit thread can reuse
+             */
+            for (err=1; err; ) {
+                err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
+                if (err) {
+                    LOG(0, "transmit queue full (should be impossible)\n");
+                    pixie_usleep(10000);
+                }
+            }
         
 
-        /*
-         * Remember that we sent a packet, which will be used in
-         * throttling.
-         */
-        (*packets_sent)++;
+            /*
+             * Remember that we sent a packet, which will be used in
+             * throttling.
+             */
+            (*packets_sent)++;
+        }
     }
 }
 
@@ -116,15 +122,19 @@ static void
 transmit_thread(void *v) /*aka. scanning_thread() */
 {
     uint64_t i;
+    uint64_t start;
+    uint64_t end;
     struct Masscan *masscan = (struct Masscan *)v;
-    uint64_t a = masscan->lcg.a;
-    uint64_t c = masscan->lcg.c;
-    uint64_t m = masscan->lcg.m;
+    uint64_t seed;
+    unsigned retries = masscan->retries;
+    unsigned rate = (unsigned)masscan->max_rate;
+    unsigned r = retries + 1;
+    uint64_t range;
+    struct BlackRock blackrock;
     uint64_t count_ips = rangelist_count(&masscan->targets);
     struct Status status;
     struct Throttler throttler;
     struct TcpPacket *pkt_template = masscan->pkt_template;
-    uint64_t seed;
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
     unsigned *picker;
@@ -133,6 +143,30 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "xmit: starting transmit thread...\n");
 
+    /* Create the shuffler/randomizer */
+    range = rangelist_count(&masscan->targets) 
+            * rangelist_count(&masscan->ports);
+    blackrock_init(&blackrock, range);
+
+    /* Seed */
+    seed = masscan->seed;
+    if (seed == 0 && masscan->shard.one == 1 && masscan->shard.of == 1)
+        ; //seed = time(0) % range;
+
+    /* start/end */
+    if (masscan->resume.index != 0)
+        start = masscan->resume.index;
+    else
+        start = (masscan->shard.one-1) * (range / masscan->shard.of);
+
+    if (masscan->shard.of == 1)
+        end = range;
+    else
+        end = masscan->shard.one * (range / masscan->shard.of);
+
+    end += retries * rate;
+
+    
     /* "STATUS" is once-per-second <stderr> notification to the command
      * line as to what's going on */
     status_start(&status);
@@ -146,8 +180,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
 
 
-    /* Seed the LCG for randomizing the scan*/
-    seed = masscan->resume.seed;
+    /* TODO: this feature useless right now*/
+    //seed = masscan->resume.seed;
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables */
@@ -157,7 +191,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * the main loop
      * -----------------*/
     LOG(3, "xmit: starting main loop\n");
-    for (i=masscan->resume.index; i<masscan->lcg.m; ) {
+    for (i=start; i<end; ) {
         uint64_t batch_size;
 
         /*
@@ -168,48 +202,71 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          */
         batch_size = throttler_next_batch(&throttler, packets_sent);
         packets_sent += batch_size;
-        while (batch_size && i < m) {
+        while (batch_size && i < end) {
+            uint64_t xXx;
             unsigned ip;
             unsigned port;
 
-            batch_size--;
 
-            /* randomize the index. THIS IS WHERE RANDOMIZATION HAPPENS
-             *  index = lcg_rand(index, a, c, m); */
-            seed = (seed * a + c) % m;
-
-            /* Pick the IPv4 address pointed to by this index */
-            ip = rangelist_pick2(&masscan->targets, seed%count_ips, picker);
-            port = rangelist_pick(&masscan->ports, seed/count_ips);
+            /*
+             * RANDOMIZE THE TARGET:
+             *  This is kinda a tricky bit that picks a random IP and port
+             *  number in order to scan. We monotonically increment the
+             *  index 'i' from [0..range]. We then shuffle (randomly transmog)
+             *  that index into some other, but unique/1-to-1, number in the
+             *  same range. That way we visit all targets, but in a random 
+             *  order. Then, once we've shuffled the index, we "pick" the
+             *  the IP address and port that the index refers to.
+             */
+            xXx = blackrock_shuffle(&blackrock, (i + (r--) * rate + seed) % range);
+            ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
+            port = rangelist_pick(&masscan->ports, xXx / count_ips);
 
             /* Print packet if debugging */
             if (packet_trace)
                 tcpkt_trace(pkt_template, ip, port, timestamp_start);
 
-            /* Send the probe */
+            /*
+             * SEND THE PROBE
+             *  This is sorta the entire point of the program, but little
+             *  exciting happens here. The thing to note that this may
+             *  be a "raw" transmit that bypasses the kernel, meaning
+             *  we can call this function millions of times a second.
+             */
             rawsock_send_probe(
                     adapter,
                     ip,
                     port,
                     syn_hash(ip, port),
-                    !batch_size,        /* flush transmit queue on last packet */
+                    !batch_size, /* flush queue on last packet in batch */
                     pkt_template
                     );
+            batch_size--;
 
-
-            i++;
-
+            /*
+             * SEQUENTIALLY INCREMENT THROUGH THE RANGE
+             *  Yea, I know this is a puny 'i++' here, but it's a core feature
+             *  of the system that is linearly increments through the range,
+             *  but produces from that a shuffled sequence of targets (as
+             *  described above). Because we are linearly incrementing this
+             *  number, we can do lots of creative stuff, like doing clever
+             *  retransmits and sharding.
+             */
+            if (r == 0) {
+                i++;
+                r = retries + 1;
+            }
 
             /*
              * update screen about once per second with statistics,
              * namely packets/second.
              */
             if ((i & status.timer) == status.timer)
-                status_print(&status, i, m);
+                status_print(&status, i-start, end-start);
 
         } /* end of batch */
 
-        /* Transmit packets from other thread */
+        /* Transmit packets from other thread. */
         flush_packets(masscan, &throttler, &packets_sent);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
@@ -236,7 +293,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         unsigned j;
         for (j=0; j<masscan->wait && !control_c_pressed; j++) {
             unsigned k;
-            status_print(&status, i++, m);
+            status_print(&status, i++ - start, end-start);
 
             for (k=0; k<1000; k++) {
                 /* Transmit packets from other thread */
@@ -612,35 +669,7 @@ main_scan(struct Masscan *masscan)
     LOG(0, "Scanning %u hosts [%u port%s/host]\n",
         (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
 
-    /*
-     * Initialize LCG translator
-     *
-     * This can take a couple seconds on a slow CPU. We have to find all the
-     * primes out to 2^24 when doing large ranges.
-     */
-    if (masscan->resume.index && masscan->resume.seed && masscan->lcg.m
-        && masscan->lcg.a && masscan->lcg.c) {
-        if (masscan->lcg.m != count_ips * count_ports) {
-            LOG(0, "FAIL: corrupt resume data\n");
-            exit(1);
-        } else
-            LOG(0, "resuming scan...\n");
-    } else {
-        masscan->lcg.m = count_ips * count_ports;
-        lcg_calculate_constants(
-            masscan->lcg.m,
-            &masscan->lcg.a,
-            &masscan->lcg.c,
-            0);
-        LOG(2, "lcg-constants = a(%llu) c(%llu) m(%llu)\n",
-            masscan->lcg.a,
-            masscan->lcg.c,
-            masscan->lcg.m
-            );
-        masscan->resume.seed = time(0) % masscan->lcg.m;
-        masscan->resume.index = 0;
-    }
-
+    
     /*
      * trap <ctrl-c> to pause
      */
@@ -719,6 +748,8 @@ int main(int argc, char *argv[])
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
     masscan->adapter_port = 0x10000; /* value not set */
+    masscan->shard.one = 1;
+    masscan->shard.of = 1;
     strcpy_s(   masscan->rotate_directory,
                 sizeof(masscan->rotate_directory),
                 ".");
@@ -794,6 +825,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += blackrock_selftest();
             x += rawsock_selftest();
             x += randlcg_selftest();
             x += tcpkt_selftest();

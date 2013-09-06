@@ -335,6 +335,7 @@ tcpcon_send_packet(
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(tcpcon->packet_buffers, (void**)&response);
         if (err != 0) {
+            LOG(0, "packet buffers empty (should be impossible)\n");
             pixie_usleep(100); /* no packet available */
         }
     }
@@ -368,6 +369,7 @@ tcpcon_send_packet(
     for (err=1; err; ) {
         err = rte_ring_sp_enqueue(tcpcon->transmit_queue, response);
         if (err != 0) {
+            LOG(0, "transmit queue full (should be impossible)\n");
             pixie_usleep(100); /* no space available */
         }
     }
