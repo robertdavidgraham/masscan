@@ -537,7 +537,7 @@ receive_thread(struct Masscan *masscan,
 
                 /* If this is a FIN, handle that. Note that ACK + 
                  * payload + FIN can come together */
-                if (TCP_IS_FIN(px, parsed.transport_offset)) {
+                if (TCP_IS_FIN(px, parsed.transport_offset) && !TCP_IS_RST(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 
                         0, 0, secs, usecs, seqno_them);
                 }
@@ -553,6 +553,7 @@ receive_thread(struct Masscan *masscan,
                  *  This happens when we've sent a FIN, deleted our connection,
                  *  but the other side didn't get the packet.
                  */
+                if (!TCP_IS_RST(px, parsed.transport_offset))
                 tcpcon_send_FIN(
                     tcpcon,
                     ip_me, ip_them,
