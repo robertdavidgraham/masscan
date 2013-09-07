@@ -12,7 +12,7 @@ binary_out_open(struct Output *out, FILE *fp)
 
 
     memset(firstrecord, 0, 2+'a');
-    sprintf_s(firstrecord, 2+'a', "masscan/1.1");
+    sprintf_s(firstrecord, 2+'a', "masscan/1.1.01");
     fwrite( firstrecord, 1, 2+'a', fp);
 }
 
