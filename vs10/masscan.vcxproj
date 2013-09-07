@@ -20,6 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\out-binary.c" />
+    <ClCompile Include="..\src\out-null.c" />
+    <ClCompile Include="..\src\out-text.c" />
+    <ClCompile Include="..\src\out-xml.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />

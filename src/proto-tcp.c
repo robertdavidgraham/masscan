@@ -59,6 +59,7 @@ struct TCP_ConnectionTable {
     struct TCP_Control_Block *freed_list;
     unsigned count;
     unsigned mask;
+    unsigned timeout;
 
     uint64_t active_count;
 
@@ -134,13 +135,17 @@ tcpcon_create_table(    size_t entry_count,
                         PACKET_QUEUE *packet_buffers,
                         struct TcpPacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
-                        struct Output *out
+                        struct Output *out,
+                        unsigned timeout
                         )
 {
     struct TCP_ConnectionTable *tcpcon;
 
     tcpcon = (struct TCP_ConnectionTable *)malloc(sizeof(*tcpcon));
     memset(tcpcon, 0, sizeof(*tcpcon));
+    tcpcon->timeout = timeout;
+    if (tcpcon->timeout == 0)
+        tcpcon->timeout = 30; /* half a minute before destroying tcb */
 
     /* Find nearest power of 2 to the tcb count, but don't go
      * over the number 16-million */
@@ -355,8 +360,10 @@ tcpcon_send_packet(
             //LOG(0, "packet buffers empty (should be impossible)\n");
             printf("+");
             fflush(stdout);
-            pixie_usleep(wait *= 1.5); /* no packet available */
+            pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
+        if (wait != 100)
+            printf("\n");
     }
 
     /* Format the packet as requested. Note that there are really only
@@ -542,15 +549,23 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     if (tcb == NULL)
         return;
 
-    /* Make sure no connection lasts more than 20 seconds */
+    /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
-        if (tcb->when_created + 20 < secs) {
+        if (tcb->when_created + tcpcon->timeout < secs) {
+        LOG(8, "%u.%u.%u.%u:%u: %s                \n", 
+                (unsigned char)(tcb->ip_them>>24),
+                (unsigned char)(tcb->ip_them>>16),
+                (unsigned char)(tcb->ip_them>> 8),
+                (unsigned char)(tcb->ip_them>> 0),
+                tcb->port_them,
+                "CONNECTION TIMEOUT---"
+                );
             tcpcon_destroy_tcb(tcpcon, tcb);
             return;
         }
     }
 
-    LOG(10, "%u.%u.%u.%u =%s : %s                  \n", 
+    LOG(8, "%u.%u.%u.%u =%s : %s                  \n", 
             (unsigned char)(tcb->ip_them>>24),
             (unsigned char)(tcb->ip_them>>16),
             (unsigned char)(tcb->ip_them>> 8),

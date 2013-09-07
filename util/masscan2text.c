@@ -209,6 +209,7 @@ normalize_string(unsigned char *px, size_t offset, size_t length, size_t max)
 void parse_banner(unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
+    unsigned proto;
     char timebuf[80];
     char addrbuf[20];
     
@@ -216,6 +217,7 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
     record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
     record.port      = buf[8]<<8 | buf[9];
+    proto            = buf[10]<<8 | buf[11];
     
     /* format time */
     {
@@ -234,13 +236,14 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     
     
     /* output string */
-    if (buf_length > 10) {
+    if (buf_length > 12) {
         const char *s;
-        s = normalize_string(buf, 10, buf_length-10, BUF_MAX);
-        printf("%s %-15s :%5u -- \"%s\"\n",
+        s = normalize_string(buf, 12, buf_length-12, BUF_MAX);
+        printf("%s %-15s :%5u [%u] \"%s\"\n",
                timebuf,
                addrbuf,
                record.port,
+               proto,
                s
                );
     }

@@ -25,16 +25,17 @@ enum {
 };
 
 enum OutpuFormat {
-    Output_Interactive = 0,
-    Output_Normal,
-    Output_XML,
-    Output_ScriptKiddie,
-    Output_Grepable,
-    Output_Binary,
-    Output_JSON,
-    Output_All,
-    Output_List /* specific to Masscan */
+    Output_Interactive  = 0x0001,
+    Output_List         = 0x0002,
+    Output_Binary       = 0x0004,
+    Output_XML          = 0x0008,
+    Output_JSON         = 0x0010,
+    Output_Nmap         = 0x0020,
+    Output_ScriptKiddie = 0x0040,
+    Output_Grepable     = 0x0080,
+    Output_All          = 0xFFBF,
 };
+
 
 enum PortStatus {
     Port_Unknown,
@@ -164,6 +165,9 @@ struct Masscan
     PACKET_QUEUE *packet_buffers;
     PACKET_QUEUE *transmit_queue;
 
+    struct {
+        unsigned timeout;
+    } tcb;
 };
 
 

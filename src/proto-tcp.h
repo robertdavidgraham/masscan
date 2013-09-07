@@ -33,7 +33,8 @@ tcpcon_create_table(    size_t entry_count,
                         struct rte_ring *packet_buffers,
                         struct TcpPacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
-                        struct Output *out
+                        struct Output *out,
+                        unsigned timeout
                         );
 
 void

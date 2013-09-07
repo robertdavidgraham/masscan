@@ -282,7 +282,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              * namely packets/second.
              */
             if ((i & status.timer) == status.timer)
-                status_print(&status, i-start, end-start);
+                status_print(&status, i, end);
 
         } /* end of batch */
 
@@ -313,7 +313,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         unsigned j;
         for (j=0; j<masscan->wait && !control_c_pressed; j++) {
             unsigned k;
-            status_print(&status, i++ - start, end-start);
+            status_print(&status, i++, end);
 
             for (k=0; k<1000; k++) {
                 /* Transmit packets from other thread */
@@ -385,7 +385,8 @@ receive_thread(struct Masscan *masscan,
             masscan->packet_buffers,
             masscan->pkt_template,
             output_report_banner,
-            out
+            out,
+            masscan->tcb.timeout
             );
     }
 
@@ -593,7 +594,7 @@ receive_thread(struct Masscan *masscan,
             /*
              * This is where we do the output
              */
-            output_report(
+            output_report_status(
                         out,
                         status,
                         ip_them,

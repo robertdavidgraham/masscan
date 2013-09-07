@@ -209,7 +209,7 @@ masscan_save_state(struct Masscan *masscan)
     int err;
 
 
-    strcpy_s(filename, sizeof(filename), "paused.scan");
+    strcpy_s(filename, sizeof(filename), "paused.conf");
     fprintf(stderr, "                                   "
                     "                                   \r");
     fprintf(stderr, "saving resume file to: %s\n", filename);
@@ -1071,7 +1071,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     masscan->nmap.format = Output_JSON;
                     break;
                 case 'N':
-                    masscan->nmap.format = Output_Normal;
+                    masscan->nmap.format = Output_Nmap;
                     fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
                     exit(1);
                     break;

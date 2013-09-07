@@ -41,19 +41,78 @@
 extern unsigned control_c_pressed;
 
 
-
-struct Output
+/***************************************************************************
+ ***************************************************************************/
+const char *
+status_string(int x)
 {
-    struct Masscan *masscan;
-    FILE *fp;
-    time_t next_rotate;
-    time_t last_rotate;
-    unsigned period;
-    unsigned offset;
-    uint64_t open_count;
-    uint64_t closed_count;
-    uint64_t banner_count;
-};
+    switch (x) {
+    case Port_Open: return "open";
+    case Port_Closed: return "closed";
+    default: return "unknown";
+    }
+}
+const char *
+reason_string(int x, char *buffer, size_t sizeof_buffer)
+{
+    sprintf_s(buffer, sizeof_buffer, "%s%s%s%s%s%s%s%s",
+        (x&0x01)?"fin-":"",
+        (x&0x02)?"syn-":"",
+        (x&0x04)?"rst-":"",
+        (x&0x08)?"psh-":"",
+        (x&0x10)?"ack-":"",
+        (x&0x20)?"urg-":"",
+        (x&0x40)?"ece-":"",
+        (x&0x80)?"cwr-":""
+        );
+    if (buffer[0] == '\0')
+        return "none";
+    else
+        buffer[strlen(buffer)-1] = '\0';
+    return buffer;
+}
+
+const char *
+proto_string(unsigned proto)
+{
+    static char tmp[64];
+    switch (proto) {
+    case PROTO_SSH1: return "ssh";
+    case PROTO_SSH2: return "ssh";
+    case PROTO_HTTP: return "http";
+    case PROTO_FTP1: return "ftp";
+    case PROTO_FTP2: return "ftp";
+    default:
+        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
+        return tmp;
+    }
+}
+const char *
+normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
+{
+    size_t i=0;
+    size_t offset = 0;
+
+    for (i=0; i<length; i++) {
+
+        if (isprint(px[i]) && px[i] != '<' && px[i] != '>' && px[i] != '&' && px[i] != '\\') {
+            if (offset + 2 < buf_len)
+                buf[offset++] = px[i];
+        } else {
+            if (offset + 5 < buf_len) {
+                buf[offset++] = '\\';
+                buf[offset++] = 'x';
+                buf[offset++] = "0123456789abdef"[px[i]>>4];
+                buf[offset++] = "0123456789abdef"[px[i]>>0];
+            }
+        }
+    }
+
+    buf[offset] = '\0';
+
+    return buf;
+}
+
 
 
 /***************************************************************************
@@ -120,38 +179,10 @@ open_rotate(struct Output *output, const char *filename)
         return NULL;
     }
 
-    switch (masscan->nmap.format) {
-    case Output_List:
-        fprintf(fp, "#masscan\n");
-        break;
-    case Output_XML:
-        fprintf(fp, "<?xml version=\"1.0\"?>\r\n");
-        fprintf(fp, "<!-- masscan v1.0 scan -->\r\n");
-        if (masscan->nmap.stylesheet[0]) {
-            fprintf(fp, "<?xml-stylesheet href=\"%s\" type=\"text/xsl\"?>\r\n",
-                masscan->nmap.stylesheet);
-        }
-        fprintf(fp, "<nmaprun scanner=\"%s\" start=\"%u\" version=\"%s\"  xmloutputversion=\"%s\">\r\n",
-            "masscan",
-            (unsigned)time(0),
-            "1.0-BETA",
-            "1.03" /* xml output version I copied from their site */
-            );
-        fprintf(fp, "<scaninfo type=\"%s\" protocol=\"%s\" />\r\n",
-            "syn", "tcp" );
-        break;
-    case Output_Binary:
-        {
-            char firstrecord[2+'a'];
-            memset(firstrecord, 0, 2+'a');
-            sprintf_s(firstrecord, 2+'a', "masscan/1.1");
-            fwrite( firstrecord, 1, 2+'a', fp);
-        }
-        break;
-    default:
-        LOG(0, "output: ERROR: unknown format\n");
-        exit(1);
-    }
+    /*
+     * Write the format-specific headers, like <xml>
+     */
+    output->funcs->open(output, fp);
 
     return fp;
 }
@@ -162,51 +193,15 @@ open_rotate(struct Output *output, const char *filename)
 static void
 close_rotate(struct Output *out, FILE *fp)
 {
-    char buffer[256];
-    time_t now = time(0);
-    struct tm tm;
-
-    localtime_s(&tm, &now);
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-
     if (out == NULL)
         return;
     if (fp == NULL)
         return;
 
-    switch (out->masscan->nmap.format) {
-    case Output_List:
-        fprintf(fp, "# end\n");
-        break;
-    case Output_XML:
-        /*
-        */
-        fprintf(fp,
-            "<runstats>\r\n"
-              "<finished time=\"%u\" timestr=\"%s\" elapsed=\"%u\" />\r\n"
-              "<hosts up=\"%llu\" down=\"%llu\" total=\"%llu\" />\r\n"
-            "</runstats>\r\n"
-            "</nmaprun>\r\n",
-        now,                    /* time */
-        buffer,                 /* timestr */
-        now - out->last_rotate, /* elapsed */
-        out->open_count,
-        out->closed_count,
-        out->open_count + out->closed_count
-        );
-        break;
-    case Output_Binary:
-        {
-            char firstrecord[2+'a'];
-            memset(firstrecord, 0, 2+'a');
-            sprintf_s(firstrecord, 2+'a', "masscan/1.1");
-            fwrite( firstrecord, 1, 2+'a', fp);
-        }
-        break;
-    default:
-        LOG(0, "output: ERROR: unknown format\n");
-        exit(1);
-    }
+    /*
+     * Write the format-specific trailers, like </xml>
+     */
+    out->funcs->close(out, fp);
 
     out->open_count = 0;
     out->closed_count = 0;
@@ -231,25 +226,59 @@ next_rotate(time_t last_rotate, unsigned period, unsigned offset)
 
 /***************************************************************************
  ***************************************************************************/
+static int
+ends_with(const char *filename, const char *extension)
+{
+    if (filename == NULL || extension == NULL)
+        return 0;
+    if (strlen(filename) + 1 < strlen(extension))
+        return 0;
+    if (memcmp(filename + strlen(filename) - strlen(extension),
+                extension, strlen(extension)) != 0)
+        return 0;
+    if (filename[strlen(filename) - strlen(extension) - 1] != '.')
+        return 0;
+
+    return 1;
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
 struct Output *
 output_create(struct Masscan *masscan)
 {
     struct Output *out;
 
+    /* allocate/initialize memory */
     out = (struct Output *)malloc(sizeof(*out));
     if (out == NULL)
         return NULL;
     memset(out, 0, sizeof(*out));
-
     out->masscan = masscan;
     out->period = masscan->rotate_output;
     out->offset = masscan->rotate_offset;
 
+    switch (masscan->nmap.format) {
+    case Output_List:
+        out->funcs = &text_output;
+        break;
+    case Output_XML:
+        out->funcs = &xml_output;
+        break;
+    case Output_Binary:
+        out->funcs = &binary_output;
+        break;
+    default:
+        out->funcs = &null_output;
+        masscan->is_interactive = 1;
+        break;
+    }
 
     /*
      * Open the desired output file
      */
-    if (masscan->nmap.format != Output_Interactive && masscan->nmap.filename[0]) {
+    if (masscan->nmap.filename[0] && out->funcs != &null_output) {
         FILE *fp;
 
         fp = open_rotate(out, masscan->nmap.filename);
@@ -257,6 +286,7 @@ output_create(struct Masscan *masscan)
             perror(masscan->nmap.filename);
             exit(1);
         }
+
         out->fp = fp;
         out->last_rotate = time(0);
     }
@@ -274,42 +304,11 @@ output_create(struct Masscan *masscan)
             out->next_rotate = next_rotate(out->last_rotate, out->period, out->offset);
     }
 
+
+
     return out;
 }
 
-/***************************************************************************
- ***************************************************************************/
-static const char *
-status_string(int x)
-{
-    switch (x) {
-    case Port_Open: return "open";
-    case Port_Closed: return "closed";
-    default: return "unknown";
-    }
-}
-static const char *
-reason_string(int x, char *buffer, size_t sizeof_buffer)
-{
-    sprintf_s(buffer, sizeof_buffer, "%s%s%s%s%s%s%s%s",
-        (x&0x01)?"fin-":"",
-        (x&0x02)?"syn-":"",
-        (x&0x04)?"rst-":"",
-        (x&0x08)?"psh-":"",
-        (x&0x10)?"ack-":"",
-        (x&0x20)?"urg-":"",
-        (x&0x40)?"ece-":"",
-        (x&0x80)?"cwr-":""
-        );
-    if (buffer[0] == '\0')
-        return "none";
-    else
-        buffer[strlen(buffer)-1] = '\0';
-    return buffer;
-}
-
-/***************************************************************************
- ***************************************************************************/
 
 /***************************************************************************
  ***************************************************************************/
@@ -411,7 +410,8 @@ again:
 /***************************************************************************
  ***************************************************************************/
 void
-output_report(struct Output *out, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+output_report_status(struct Output *out, int status, 
+        unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
@@ -420,8 +420,9 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
     global_now = now;
 
 
-    if (masscan->nmap.format == Output_Interactive || masscan->nmap.format == Output_All) {
-        fprintf(stdout, "Discovered %s port %u/tcp on %u.%u.%u.%u                          \n",
+    if (masscan->is_interactive) {
+        fprintf(stdout, "Discovered %s port %u/tcp on %u.%u.%u.%u"
+                            "                          \n",
             status_string(status),
             port,
             (ip>>24)&0xFF,
@@ -441,6 +442,7 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
             return;
     }
 
+
     switch (status) {
     case Port_Open:
         out->open_count++;
@@ -455,136 +457,15 @@ output_report(struct Output *out, int status, unsigned ip, unsigned port, unsign
             return;
     }
 
-    switch (masscan->nmap.format) {
-    case Output_List:
-        fprintf(fp, "%s tcp %u %u.%u.%u.%u %u\n",
-            status_string(status),
-            port,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            (unsigned)global_now
-            );
-        break;
-    case Output_XML:
-        {
-        char reason_buffer[128];
-        fprintf(fp, "<host endtime=\"%u\">"
-                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
-                     "<ports>"
-                      "<port protocol=\"tcp\" portid=\"%u\">"
-                       "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
-                      "</port>"
-                     "</ports>"
-                    "</host>"
-                    "\r\n",
-            (unsigned)global_now,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            port,
-            status_string(status),
-            reason_string(reason, reason_buffer, sizeof(reason_buffer)),
-            ttl
-            );
-        }
-        break;
-    case Output_Binary:
-        {
-            unsigned char foo[256];
+    out->funcs->status(out, fp, status, ip, port, reason, ttl);
 
-            /* [TYPE] field */
-            switch (status) {
-            case Port_Open:
-                foo[0] = 1;
-                break;
-            case Port_Closed:
-                foo[0] = 2;
-                break;
-            default:
-                return;
-            }
-
-            /* [LENGTH] field */
-            foo[1] = 12;
-
-            /* [TIMESTAMP] field */
-            foo[2] = (unsigned char)(global_now>>24);
-            foo[3] = (unsigned char)(global_now>>16);
-            foo[4] = (unsigned char)(global_now>> 8);
-            foo[5] = (unsigned char)(global_now>> 0);
-
-            foo[6] = (unsigned char)(ip>>24);
-            foo[7] = (unsigned char)(ip>>16);
-            foo[8] = (unsigned char)(ip>> 8);
-            foo[9] = (unsigned char)(ip>> 0);
-
-            foo[10] = (unsigned char)(port>>8);
-            foo[11] = (unsigned char)(port>>0);
-
-            foo[12] = (unsigned char)reason;
-            foo[13] = (unsigned char)ttl;
-
-
-
-            fwrite(&foo, 1, 14, fp);
-        }
-        break;
-    default:
-        LOG(0, "output: ERROR: unknown format\n");
-        exit(1);
-
-    }
-
-}
-
-const char *
-proto_string(unsigned proto)
-{
-    static char tmp[64];
-    switch (proto) {
-    case PROTO_SSH1: return "ssh";
-    case PROTO_SSH2: return "ssh";
-    case PROTO_HTTP: return "http";
-    case PROTO_FTP1: return "ftp";
-    case PROTO_FTP2: return "ftp";
-    default:
-        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
-        return tmp;
-    }
-}
-const char *
-normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
-{
-    size_t i=0;
-    size_t offset = 0;
-
-    for (i=0; i<length; i++) {
-
-        if (isprint(px[i]) && px[i] != '<' && px[i] != '>' && px[i] != '&' && px[i] != '\\') {
-            if (offset + 2 < buf_len)
-                buf[offset++] = px[i];
-        } else {
-            if (offset + 5 < buf_len) {
-                buf[offset++] = '\\';
-                buf[offset++] = 'x';
-                buf[offset++] = "0123456789abdef"[px[i]>>4];
-                buf[offset++] = "0123456789abdef"[px[i]>>0];
-            }
-        }
-    }
-
-    buf[offset] = '\0';
-
-    return buf;
 }
 
 /***************************************************************************
  ***************************************************************************/
 void
-output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned proto, const unsigned char *px, unsigned length)
+output_report_banner(struct Output *out, unsigned ip, unsigned port,
+                unsigned proto, const unsigned char *px, unsigned length)
 {
     struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
@@ -593,8 +474,9 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
     global_now = now;
 
 
-    if (masscan->nmap.format == Output_Interactive || masscan->nmap.format == Output_All) {
-        fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s                          \n",
+    if (masscan->is_interactive) {
+        fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s"
+                                    "                          \n",
             port,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
@@ -614,99 +496,7 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port, unsigned pr
             return;
     }
 
-    if (masscan->is_interactive) {
-         fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %.*s\n",
-            "banner",
-            port,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            (unsigned)global_now,
-            length, px
-            );
-    }
-
-
-    switch (masscan->nmap.format) {
-    case Output_List:
-        fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %.*s\n",
-            "banner",
-            port,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            (unsigned)global_now,
-            length, px
-            );
-        break;
-    case Output_XML:
-        {
-        char banner_buffer[1024];
-        fprintf(fp, "<host endtime=\"%u\">"
-                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
-                     "<ports>"
-                      "<port protocol=\"tcp\" portid=\"%u\">"
-                       "<service name=\"%s\">"
-                        "<banner>%.*s</banner>"
-                       "</service>"
-                      "</port>"
-                     "</ports>"
-                    "</host>"
-                    "\r\n",
-            (unsigned)global_now,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            port,
-            proto_string(proto),
-            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
-            );
-        }
-        break;
-    case Output_Binary:
-        {
-            unsigned char foo[256];
-
-            if (length > 127 - 10)
-                length = 127 - 10;
-
-            /* [TYPE] field */
-            foo[0] = 3; /*banner*/
-
-            /* [LENGTH] field */
-            foo[1] = (unsigned char)(length + 10);
-
-            /* [TIMESTAMP] field */
-            foo[2] = (unsigned char)(global_now>>24);
-            foo[3] = (unsigned char)(global_now>>16);
-            foo[4] = (unsigned char)(global_now>> 8);
-            foo[5] = (unsigned char)(global_now>> 0);
-
-            foo[6] = (unsigned char)(ip>>24);
-            foo[7] = (unsigned char)(ip>>16);
-            foo[8] = (unsigned char)(ip>> 8);
-            foo[9] = (unsigned char)(ip>> 0);
-
-            foo[10] = (unsigned char)(port>>8);
-            foo[11] = (unsigned char)(port>>0);
-
-            /* Banner */
-            memcpy(foo+12, px, length);
-
-
-
-
-            fwrite(&foo, 1, length+12, fp);
-        }
-        break;
-    default:
-        LOG(0, "output: ERROR: unknown format\n");
-        exit(1);
-
-    }
+    out->funcs->banner(out, fp, ip, port, proto, px, length);
 
 }
 
