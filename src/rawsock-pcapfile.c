@@ -287,7 +287,7 @@ int pcapfile_readframe(
 	/* Read in the 16-byte frame header. */
 	bytes_read = fread(header, 1, 16, capfile->fp);
 	if (bytes_read < 16) {
-		if (bytes_read < 0) {
+		if (bytes_read <= 0) {
 			fprintf(stderr, "%s: failed to read header\n", capfile->filename);
 			perror(capfile->filename);
 		} else if (bytes_read == 0)
@@ -375,7 +375,7 @@ int pcapfile_readframe(
 
 		/* If we reach the end without finding a good frame, then stop */
 		if (bytes_read == 0) {
-			if (bytes_read < 0) {
+			if (bytes_read <= 0) {
 				fprintf(stderr, "%s: error at end of file\n", capfile->filename);
 				perror(capfile->filename);
 			} else
@@ -491,7 +491,7 @@ int pcapfile_readframe(
 	 */
 	bytes_read = fread(buf, 1, *r_captured_length, capfile->fp);
 	if (bytes_read < *r_captured_length) {
-		if (bytes_read < 0) {
+		if (bytes_read <= 0) {
 			fprintf(stderr, "%s: could not read packet data, frame #%" PRId64 "\n", 
                 capfile->filename, capfile->frame_number);
 			perror(capfile->filename);
@@ -558,7 +558,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 	 */
 	bytes_read = fread(buf, 1, 24, fp);
 	if (bytes_read < 24) {
-		if (bytes_read < 0) {
+		if (bytes_read <= 0) {
 			fprintf(stderr, "%s: could not read PCAP header\n", capfilename);
 			perror(capfilename);
 		} else if (bytes_read == 0)
@@ -768,7 +768,6 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 	case 0xd4c3b2a1:	byte_order = CAPFILE_LITTLEENDIAN; break;
 	default:
 		fprintf(stderr, "%s: unknown byte-order in cap file\n", capfilename);
-		byte_order = CAPFILE_ENDIANUNKNOWN; 
 		fclose(fp);
 		return pcapfile_openappend(capfilename, linktype);
 	}

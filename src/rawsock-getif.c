@@ -82,7 +82,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     err = write(fd, (char *)rtm, sizeof_buffer);
     if (err < 0 || err != sizeof_buffer) {
         perror("write(RTM_GET)");
-        printf("----%u %u\n", err, sizeof_buffer);
+        printf("----%u %u\n", err, (unsigned)sizeof_buffer);
         close(fd);
         free(rtm);
         return -1;

@@ -59,8 +59,13 @@ void output_report_banner(
                 const unsigned char *px, unsigned length);
 
 
+
 #ifndef UNUSEDPARM
+#if defined(_MSC_VER)
 #define UNUSEDPARM(x) x
+#else
+#define UNUSEDPARM(x) (x)=(x)
+#endif
 #endif
 
 const char *status_string(int x);

@@ -44,9 +44,9 @@ xml_out_close(struct Output *out, FILE *fp)
             "<hosts up=\"%llu\" down=\"%llu\" total=\"%llu\" />\r\n"
         "</runstats>\r\n"
         "</nmaprun>\r\n",
-    now,                    /* time */
+    (unsigned)now,                    /* time */
     buffer,                 /* timestr */
-    now - out->last_rotate, /* elapsed */
+    (unsigned)(now - out->last_rotate), /* elapsed */
     out->open_count,
     out->closed_count,
     out->open_count + out->closed_count
@@ -57,7 +57,8 @@ xml_out_close(struct Output *out, FILE *fp)
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+xml_out_status(struct Output *out, FILE *fp, int status, 
+               unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
     UNUSEDPARM(out);
@@ -97,7 +98,7 @@ xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
                     "<ports>"
                     "<port protocol=\"tcp\" portid=\"%u\">"
                     "<service name=\"%s\">"
-                    "<banner>%.*s</banner>"
+                    "<banner>%s</banner>"
                     "</service>"
                     "</port>"
                     "</ports>"

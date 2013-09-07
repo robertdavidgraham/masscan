@@ -288,15 +288,15 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
         for (j=0; non_factors[j] && j < 5; j++)
             a *= non_factors[j];
     } else {
-        unsigned j;
+        //unsigned j;
         a = 1;
         for (i=0; factors[i]; i++)
             a = a * factors[i];
         if ((m % 4) == 0)
             a *= 2;
 
-        for (j=0; j<0 && non_factors[j]; j++)
-            a *= non_factors[j];
+        /*for (j=0; j<0 && non_factors[j]; j++)
+            a *= non_factors[j];*/
     }
     a += 1;
 

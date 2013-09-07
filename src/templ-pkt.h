@@ -16,8 +16,8 @@ enum TemplateProtocol {
     Proto_ICMP,
     Proto_ARP,
     Proto_IP,
-    Proto_Custom,
-    Proto_Count
+    //Proto_Custom,
+    //Proto_Count
 };
 
 struct TemplatePayload {

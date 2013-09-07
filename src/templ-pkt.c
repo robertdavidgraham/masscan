@@ -329,6 +329,8 @@ template_set_target(
     } else if (port == 65536*3+2) {
         tmpl = &tmplset->pkts[Proto_IP];
         port = 1;
+    } else {
+        return;
     }
 
     /* Create some shorter local variables to work with */
@@ -562,10 +564,10 @@ template_packet_init(
                     );
 
     /* [ARP] */
-    _template_init( &templset->pkts[Proto_ICMP],
+    _template_init( &templset->pkts[Proto_ARP],
                     source_ip, source_mac, router_mac,
                     default_icmp_template,
-                    sizeof(default_sctp_template)-1
+                    sizeof(default_arp_template)-1
                     );
 }
 

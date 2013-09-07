@@ -755,7 +755,7 @@ rawsock_selftest_if(const char *ifname)
         }
 
         memset(router_mac, 0, 6);
-        err = arp_resolve_sync(
+        arp_resolve_sync(
                 adapter,
                 ipv4,
                 mac,
