@@ -236,8 +236,15 @@ tcpcon_destroy_tcb(
             r_entry = &(*r_entry)->next;
     }
 
-    fprintf(stderr, "tcpcon:internal error\n");
-    exit(1);
+    fprintf(stderr, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
+            (tcb->ip_them>>24)&0xFF,
+            (tcb->ip_them>>16)&0xFF,
+            (tcb->ip_them>> 8)&0xFF,
+            (tcb->ip_them>> 0)&0xFF,
+            tcb->port_them,
+            tcb->seqno_them
+            );
+    //exit(1);
 
 }
 
@@ -336,6 +343,7 @@ tcpcon_send_packet(
 {
     struct PacketBuffer *response = 0;
     int err = 0;
+    uint64_t wait = 100;
     
     
     /* Get a buffer for sending the response packet. This thread doesn't
@@ -347,7 +355,7 @@ tcpcon_send_packet(
             //LOG(0, "packet buffers empty (should be impossible)\n");
             printf("+");
             fflush(stdout);
-            pixie_usleep(100); /* no packet available */
+            pixie_usleep(wait *= 1.5); /* no packet available */
         }
     }
 
