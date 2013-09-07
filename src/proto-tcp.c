@@ -696,8 +696,9 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_FIN:
         tcb->seqno_them = seqno_them + 1;
         tcpcon_send_packet(tcpcon, tcb,
-                    0x14, /*reset */
+                    0x11, /*reset */
                     0, 0);
+        tcpcon_destroy_tcb(tcpcon, tcb);
         break;
 
    case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_SYNACK:

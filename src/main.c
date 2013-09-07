@@ -42,7 +42,14 @@
 #include <stdlib.h>
 #include <signal.h>
 
-
+#if defined(WIN32)
+#include <WinSock.h>
+#pragma comment(lib, "Ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#endif
 
 unsigned control_c_pressed = 0;
 time_t global_now;
@@ -742,7 +749,30 @@ main_scan(struct Masscan *masscan)
     }
 
 
+#if 0
+    {
+        int fd = (int)socket(AF_INET, SOCK_STREAM, 0);
+        if (fd <= 0) {
+            perror("socket");
+        } else  {
+            struct sockaddr_in sin;
+            memset(&sin, 0, sizeof(sin));
+            sin.sin_family = AF_INET;
+            sin.sin_port = htons((unsigned short)masscan->adapter_port);
+            sin.sin_addr.s_addr = 0;
 
+            if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) != 0) {
+                perror("bind");
+            } else {
+                int x = listen(fd, 5);
+                if (x != 0)
+                    perror("listen");
+            }
+            
+        }
+    }
+#endif
+    
 
     /*
      * Start the scanning thread.
@@ -761,7 +791,6 @@ main_scan(struct Masscan *masscan)
             adapter_mac);
 
 
-
     return 0;
 }
 
@@ -771,6 +800,10 @@ main_scan(struct Masscan *masscan)
 int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
+
+#if defined(WIN32)
+    {WSADATA x; WSAStartup(0x101, &x);}
+#endif
 
     global_now = time(0);
 
