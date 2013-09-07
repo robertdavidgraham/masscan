@@ -5,7 +5,7 @@
     basic raw sockets, bypassing libpcap for better performance.
 */
 #include "rawsock.h"
-#include "tcpkt.h"
+#include "templ-pkt.h"
 #include "logger.h"
 
 #include "string_s.h"
@@ -249,8 +249,8 @@ char *adapter_from_index(unsigned index)
     }
 }
 
-extern unsigned ip_checksum(struct TcpPacket *pkt);
-extern unsigned tcp_checksum(struct TcpPacket *pkt);
+extern unsigned ip_checksum(struct TemplatePacket *pkt);
+extern unsigned tcp_checksum(struct TemplatePacket *pkt);
 
 
 /***************************************************************************
@@ -380,23 +380,22 @@ void
 rawsock_send_probe(
     struct Adapter *adapter,
     unsigned ip, unsigned port, unsigned seqno, unsigned flush,
-    struct TcpPacket *pkt)
+    struct TemplateSet *tmplset)
 {
     /*
      * Construct the destination packet
      */
-    tcp_set_target(pkt, ip, port, seqno);
-    if (pkt->length < 60)
-        pkt->length = 60;
+    template_set_target(tmplset, ip, port, seqno);
+    if (tmplset->length < 60)
+        tmplset->length = 60;
 
     /*
      * Send it
      */
-    rawsock_send_packet(adapter, pkt->packet, pkt->length, flush);
+    rawsock_send_packet(adapter, tmplset->px, tmplset->length, flush);
 
     /*
-     * Verify I'm doing the checksum correctly ('cause I ain't, I got
-     * a bug right now).
+     * Verify I'm doing the checksum correctly in case I develope a bug
      */
     /*if (ip_checksum(pkt) != 0xFFFF)
         LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));

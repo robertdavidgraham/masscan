@@ -11,7 +11,7 @@
 #include "event-timeout.h"      /* for tracking future events */
 #include "rawsock.h"
 #include "logger.h"
-#include "tcpkt.h"
+#include "templ-pkt.h"
 #include "pixie-timer.h"
 #include "packet-queue.h"
 #include "proto-banner1.h"
@@ -64,7 +64,7 @@ struct TCP_ConnectionTable {
     uint64_t active_count;
 
     struct Timeouts *timeouts;
-    struct TcpPacket *pkt_template;
+    struct TemplatePacket *pkt_template;
     PACKET_QUEUE *transmit_queue;
     PACKET_QUEUE *packet_buffers;
 
@@ -133,7 +133,7 @@ struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
                         PACKET_QUEUE *transmit_queue,
                         PACKET_QUEUE *packet_buffers,
-                        struct TcpPacket *pkt_template,
+                        struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
                         unsigned timeout

@@ -30,9 +30,6 @@
     <ClCompile Include="..\src\rawsock.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\tcpkt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\logger.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -126,6 +123,9 @@
     <ClCompile Include="..\src\out-null.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\templ-pkt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -141,9 +141,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rawsock.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\tcpkt.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\logger.h">
@@ -210,6 +207,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-blackrock.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-pkt.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

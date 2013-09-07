@@ -57,7 +57,7 @@
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\syn-cookie.c" />
-    <ClCompile Include="..\src\tcpkt.c" />
+    <ClCompile Include="..\src\templ-pkt.c" />
     <ClCompile Include="..\src\xring.c" />
   </ItemGroup>
   <ItemGroup>
@@ -87,7 +87,7 @@
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\syn-cookie.h" />
-    <ClInclude Include="..\src\tcpkt.h" />
+    <ClInclude Include="..\src\templ-pkt.h" />
     <ClInclude Include="..\src\xring.h" />
   </ItemGroup>
   <ItemGroup>

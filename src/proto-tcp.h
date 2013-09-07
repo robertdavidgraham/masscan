@@ -3,7 +3,7 @@
 
 struct Adapter;
 struct TCP_Control_Block;
-struct TcpPacket;
+struct TemplatePacket;
 #include "packet-queue.h"
 #include "output.h"
 
@@ -31,7 +31,7 @@ struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
                         struct rte_ring *transmit_queue,
                         struct rte_ring *packet_buffers,
-                        struct TcpPacket *pkt_template,
+                        struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
                         unsigned timeout

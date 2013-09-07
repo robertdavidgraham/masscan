@@ -19,7 +19,7 @@
 
 #include "rand-blackrock.h"     /* the BlackRock shuffling func */
 #include "rand-lcg.h"           /* the LCG randomization func */
-#include "tcpkt.h"              /* packet template, that we use to send */
+#include "templ-pkt.h"          /* packet template, that we use to send */
 #include "rawsock.h"            /* api on top of Linux, Windows, Mac OS X*/
 #include "logger.h"             /* adjust with -v command-line opt */
 #include "main-status.h"        /* printf() regular status updates */
@@ -147,7 +147,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t count_ips = rangelist_count(&masscan->targets);
     struct Status status;
     struct Throttler throttler;
-    struct TcpPacket *pkt_template = masscan->pkt_template;
+    struct TemplateSet *pkt_template = masscan->pkt_template;
     unsigned packet_trace = masscan->nmap.packet_trace;
     double timestamp_start;
     unsigned *picker;
@@ -244,7 +244,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
             /* Print --packet-trace if debugging */
             if (packet_trace)
-                tcpkt_trace(pkt_template, ip, port, timestamp_start);
+                template_packet_trace(pkt_template, ip, port, timestamp_start);
 
             /*
              * SEND THE PROBE
@@ -383,7 +383,7 @@ receive_thread(struct Masscan *masscan,
             (size_t)(masscan->max_rate/5), 
             masscan->transmit_queue, 
             masscan->packet_buffers,
-            masscan->pkt_template,
+            &masscan->pkt_template->pkts[Proto_TCP],
             output_report_banner,
             out,
             masscan->tcb.timeout
@@ -637,7 +637,7 @@ static void control_c_handler(int x)
 static int
 main_scan(struct Masscan *masscan)
 {
-    struct TcpPacket pkt[1];
+    struct TemplateSet tmplset[1];
     uint64_t count_ips;
     uint64_t count_ports;
     unsigned adapter_ip = 0;
@@ -689,24 +689,25 @@ main_scan(struct Masscan *masscan)
      * we adjust the template with additional features, such as the IP address
      * and so on.
      */
-    tcp_init_packet(pkt,
-        adapter_ip,
-        adapter_mac,
-        router_mac);
-    masscan->pkt_template = pkt;
+    template_packet_init(
+                tmplset,
+                adapter_ip,
+                adapter_mac,
+                router_mac);
+    masscan->pkt_template = tmplset;
 
     /*
      * Reconfigure the packet template according to command-line options
      */
     if (masscan->adapter_port < 0x10000)
-        tcpkt_set_source_port(pkt, masscan->adapter_port);
+        template_set_source_port(tmplset, masscan->adapter_port);
     if (masscan->nmap.ttl)
-        tcpkt_set_ttl(pkt, masscan->nmap.ttl);
+        template_set_ttl(tmplset, masscan->nmap.ttl);
 
     /*
      * Read back what we've set
      */
-    adapter_port = tcpkt_get_source_port(pkt);
+    adapter_port = template_get_source_port(tmplset);
 
 
 
@@ -904,7 +905,7 @@ int main(int argc, char *argv[])
             x += blackrock_selftest();
             x += rawsock_selftest();
             x += randlcg_selftest();
-            x += tcpkt_selftest();
+            x += template_selftest();
             x += ranges_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();

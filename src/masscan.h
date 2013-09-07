@@ -10,7 +10,7 @@
 #include "packet-queue.h"
 
 struct Adapter;
-struct TcpPacket;
+struct TemplateSet;
 struct Banner1;
 
 extern time_t global_now;
@@ -116,7 +116,7 @@ struct Masscan
     /**
      * The packet template we are current using
      */
-    struct TcpPacket *pkt_template;
+    struct TemplateSet *pkt_template;
 
     /**
      * Are we there yet? The scanning thread sets this to 1 when its done.

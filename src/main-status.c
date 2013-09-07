@@ -94,7 +94,7 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
         if (rate)
             finished  = (1.0 - percent_done/100.0) * (max_count / rate);
         /* (%u-days %02u:%02u:%02u remaining) */
-        fprintf(stderr, "rate%6.2f-kpps, %5.2f%% done, %u:%02u:%02u remaining, %llutcbs             \r",
+        fprintf(stderr, "rate:%6.2f-kpps, %5.2f%% done, %u:%02u:%02u remaining, %llu-tcbs             \r",
                         rate/1000.0,
                         percent_done,
             (unsigned)(finished/60/60),

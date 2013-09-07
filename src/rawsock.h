@@ -5,7 +5,7 @@
 #define RAWSOCK_H
 #include <stdio.h>
 struct Adapter;
-struct TcpPacket;
+struct TemplateSet;
 #include "packet-queue.h"
 
 
@@ -27,7 +27,7 @@ void
 rawsock_send_probe(
     struct Adapter *adapter,
     unsigned ip, unsigned port, unsigned seqno, unsigned flush,
-    struct TcpPacket *pkt);
+    struct TemplateSet *tmplset);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);
 int rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
