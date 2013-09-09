@@ -1,6 +1,7 @@
 #ifndef TCP_PACKET_H
 #define TCP_PACKET_H
 #include <stdio.h>
+struct NmapPayloads;
 
 /**
  * @return
@@ -37,7 +38,7 @@ struct TemplatePacket {
     unsigned checksum_tcp;
     unsigned ip_id;
     enum TemplateProtocol proto;
-    struct TemplatePayload **payloads;
+    struct NmapPayloads *payloads;
 };
 
 struct TemplateSet
@@ -71,7 +72,8 @@ template_packet_init(
     struct TemplateSet *templset,
     unsigned source_ip,
     const unsigned char *source_mac,
-    const unsigned char *router_mac);
+    const unsigned char *router_mac,
+    struct NmapPayloads *payloads);
 
 /**
  * Sets the target/destination IP address of the packet, the destination port

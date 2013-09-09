@@ -36,6 +36,7 @@
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
 #include "proto-preprocess.h"   /* quick parse of packets */
+#include "templ-payloads.h"     /* UDP packet payloads */
 
 #include <string.h>
 #include <time.h>
@@ -716,8 +717,15 @@ main_scan(struct Masscan *masscan)
                 tmplset,
                 adapter_ip,
                 adapter_mac,
-                router_mac);
+                router_mac,
+                masscan->payloads);
     masscan->pkt_template = tmplset;
+    
+    /*
+     * trim the nmap UDP payloads down to only those ports we are using. This 
+     * makes lookups faster at high packet rates.
+     */
+    payloads_trim(masscan->payloads, &masscan->ports);
 
     /*
      * Reconfigure the packet template according to command-line options
@@ -726,6 +734,9 @@ main_scan(struct Masscan *masscan)
         template_set_source_port(tmplset, masscan->adapter_port);
     if (masscan->nmap.ttl)
         template_set_ttl(tmplset, masscan->nmap.ttl);
+
+    
+
 
     /*
      * Read back what we've set
@@ -845,6 +856,7 @@ int main(int argc, char *argv[])
     masscan->adapter_port = 0x10000; /* value not set */
     masscan->shard.one = 1;
     masscan->shard.of = 1;
+    masscan->payloads = payloads_create();
     strcpy_s(   masscan->rotate_directory,
                 sizeof(masscan->rotate_directory),
                 ".");
@@ -925,6 +937,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
             x += randlcg_selftest();

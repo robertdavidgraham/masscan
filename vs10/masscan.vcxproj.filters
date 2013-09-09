@@ -126,6 +126,9 @@
     <ClCompile Include="..\src\templ-pkt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\templ-payloads.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -210,6 +213,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\templ-pkt.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-payloads.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

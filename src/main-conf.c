@@ -16,6 +16,7 @@
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
+#include "templ-payloads.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -705,6 +706,18 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
+    } else if (EQUALS("nmap-payloads", name)) {
+        FILE *fp;
+        int err;
+        err = fopen_s(&fp, value, "rt");
+        if (err || fp == NULL) {
+            perror(value);
+        } else {
+            if (masscan->payloads == NULL)
+                masscan->payloads = payloads_create();
+            payloads_read_file(fp, value, masscan->payloads);
+            fclose(fp);
+        }
     } else if (EQUALS("offline", name)) {
         /* Run in "offline" mode where it thinks it's sending packets, but
          * it's not */

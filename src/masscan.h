@@ -171,6 +171,8 @@ struct Masscan
     struct {
         unsigned timeout;
     } tcb;
+
+    struct NmapPayloads *payloads;
 };
 
 

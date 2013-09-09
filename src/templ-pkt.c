@@ -13,6 +13,7 @@
 #include "pixie-timer.h"
 #include "proto-preprocess.h"
 #include "logger.h"
+#include "templ-payloads.h"
 
 #include <assert.h>
 #include <string.h>
@@ -316,7 +317,7 @@ udp_checksum(struct TemplatePacket *tmpl)
 /***************************************************************************
  ***************************************************************************/
 unsigned
-icmp_checksum2(const unsigned char *px, unsigned offset_ip,
+icmp_checksum2(const unsigned char *px,
               unsigned offset_icmp, size_t icmp_length)
 {
     uint64_t xsum = 0;
@@ -341,7 +342,6 @@ icmp_checksum(struct TemplatePacket *tmpl)
 {
     return icmp_checksum2(
                          tmpl->packet,
-                         tmpl->offset_ip,
                          tmpl->offset_tcp,
                          tmpl->length - tmpl->offset_tcp);
 }
@@ -508,22 +508,11 @@ template_set_target(
     px[offset_ip+10] = (unsigned char)(xsum >> 8);
     px[offset_ip+11] = (unsigned char)(xsum & 0xFF);
 
-    /*
-     * If this port has a payload to go with it, then copy
-     * over that special payload. This is used heavily in
-     * UDP
-     */
-    if (tmpl->payloads && tmpl->payloads[port]) {
-        xsum = tmpl->payloads[port]->checksum;
-        memcpy(&px[tmpl->offset_app],
-               tmpl->payloads[port]->buf,
-               tmpl->payloads[port]->length);
-    } else
-        xsum = 0;
 
     /*
      * Now do the checksum for the higher layer protocols
      */
+    xsum = 0;
     switch (tmpl->proto) {
     case Proto_TCP:
         px[offset_tcp+ 2] = (unsigned char)(port >> 8);
@@ -546,18 +535,33 @@ template_set_target(
         px[offset_tcp+17] = (unsigned char)(xsum >>  0);
         break;
     case Proto_UDP:
-        px[offset_tcp+ 2] = (unsigned char)(port >> 8);
-        px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
-        xsum += (uint64_t)tmpl->checksum_tcp
-                + (uint64_t)ip
-                + (uint64_t)port
-                + (uint64_t)seqno;
-        xsum = (xsum >> 16) + (xsum & 0xFFFF);
-        xsum = (xsum >> 16) + (xsum & 0xFFFF);
-        xsum = (xsum >> 16) + (xsum & 0xFFFF);
-        xsum = ~xsum;
-        px[offset_tcp+4] = (unsigned char)(xsum >>  8);
-        px[offset_tcp+5] = (unsigned char)(xsum >>  0);
+        {
+#if 0
+            const unsigned char *px2;
+            unsigned length2;
+            unsigned source_port2;
+            if (payloads_lookup(tmpl->payloads, port, ) {
+                xsum = tmpl->payloads[port]->checksum;
+                memcpy(&px[tmpl->offset_app],
+                       tmpl->payloads[port]->buf,
+                       tmpl->payloads[port]->length);
+            } else
+                xsum = 0;
+
+            px[offset_tcp+ 2] = (unsigned char)(port >> 8);
+            px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
+            xsum += (uint64_t)tmpl->checksum_tcp
+                    + (uint64_t)ip
+                    + (uint64_t)port
+                    + (uint64_t)seqno;
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = ~xsum;
+            px[offset_tcp+4] = (unsigned char)(xsum >>  8);
+            px[offset_tcp+5] = (unsigned char)(xsum >>  0);
+#endif
+        }
         break;
     case Proto_SCTP:
         break;
@@ -620,11 +624,9 @@ _template_init(
      * Parse the existing packet template. We support TCP, UDP, ICMP,
      * and ARP packets.
      */
-again:
     x = preprocess_frame(px, tmpl->length, 1 /*enet*/, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
         LOG(0, "ERROR: bad packet template\n");
-        goto again;
         exit(1);
     }
     tmpl->offset_ip = parsed.ip_offset;
@@ -704,7 +706,8 @@ template_packet_init(
     struct TemplateSet *templset,
     unsigned source_ip,
     const unsigned char *source_mac,
-    const unsigned char *router_mac)
+    const unsigned char *router_mac,
+    struct NmapPayloads *payloads)
 {
     /* [TCP] */
     _template_init( &templset->pkts[Proto_TCP],
@@ -718,6 +721,7 @@ template_packet_init(
                     default_udp_template,
                     sizeof(default_udp_template)-1
                     );
+    templset->pkts[Proto_UDP].payloads = payloads;
 
     /* [SCTP] */
     _template_init( &templset->pkts[Proto_SCTP],
@@ -853,7 +857,8 @@ template_selftest()
             tmplset,
             0x12345678,
             (const unsigned char*)"\x00\x11\x22\x33\x44\x55",
-            (const unsigned char*)"\x66\x55\x44\x33\x22\x11"
+            (const unsigned char*)"\x66\x55\x44\x33\x22\x11",
+            0
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;

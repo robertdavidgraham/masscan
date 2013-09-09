@@ -14,6 +14,22 @@
 
 #define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
 
+
+/***************************************************************************
+ ***************************************************************************/
+int
+rangelist_is_contains(const struct RangeList *task, unsigned number)
+{
+    unsigned i;
+    for (i=0; i<task->count; i++) {
+        struct Range *range = &task->list[i];
+
+        if (range->begin <= number && number <= range->end)
+            return 1;
+    }
+    return 0;
+}
+
 /***************************************************************************
  * ???
  ***************************************************************************/
@@ -511,7 +527,7 @@ regress_pick2()
 
 /***************************************************************************
  ***************************************************************************/
-void
+const char *
 rangelist_parse_ports(struct RangeList *ports, const char *string)
 {
     char *p = (char*)string;
@@ -552,10 +568,8 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
             p += 2;
         }
         
-        if (!isdigit(p[0] & 0xFF)) {
-            fprintf(stderr, "CONF: bad port charactern = 0x%02x\n", p[0]);
-            exit(1);
-        }
+        if (!isdigit(p[0] & 0xFF))
+            break;
 
         port = strtoul(p, &p, 0);
         end = port;
@@ -563,8 +577,6 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
             p++;
             end = strtoul(p, &p, 0);
         }
-        if (*p == ',')
-            p++;
 
         if (port > 0xFFFF || end > 0xFFFF || end < port) {
             fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
@@ -572,7 +584,13 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
         } else {
             rangelist_add_range(ports, port+proto_offset, end+proto_offset);
         }
+        if (*p == ',')
+            p++;
+        else
+            break;
     }
+
+    return p;
 }
 
 
