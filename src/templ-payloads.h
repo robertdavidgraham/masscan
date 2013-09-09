@@ -1,6 +1,7 @@
 #ifndef TEMPL_PAYLOADS_H
 #define TEMPL_PAYLOADS_H
 #include <stdio.h>
+#include <stdint.h>
 struct RangeList;
 
 int payloads_selftest();
@@ -22,7 +23,13 @@ void
 payloads_trim(struct NmapPayloads *payloadsd, const struct RangeList *ports);
 
 int
-payloads_lookup(const struct NmapPayloads *payloads, unsigned port, const unsigned char **px, unsigned *length, unsigned *source_port, unsigned *xsum);
+payloads_lookup(
+                const struct NmapPayloads *payloads, 
+                unsigned port, 
+                const unsigned char **px, 
+                unsigned *length, 
+                unsigned *source_port, 
+                uint64_t *xsum);
 
 
 

@@ -162,37 +162,6 @@ static unsigned char default_arp_template[] =
     "\0\0\0\0"      /* length */
 ;
 
-/***************************************************************************
- ***************************************************************************/
-struct UDP_Payloads {
-    unsigned port;
-    unsigned payload_length;
-    unsigned seqno_offset;
-    unsigned seqno_length;
-    const unsigned char *payload;
-} udp_payloads[] = {
-    {53, 31, 0, 2, (const unsigned char*)
-        "\x00\x00" /* transaction ID */
-        "\x01\x00" /* standard query */
-        "\x00\x01\x00\x00\x00\x00\x00\x00" /* 1 query */
-        "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
-        "\x00\x01\x00\x01" /* A IN */
-    },
-    {5060, 0, 0, 0, (const unsigned char*)
-        "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
-        "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
-        "Max-Forwards: 70\r\n"
-        "To: <sip:carol@chicago.com>\r\n"
-        "From: Alice <sip:alice@atlanta.com>;tag=1928301774\r\n"
-        "Call-ID: a84b4c76e66710\r\n"
-        "CSeq: 63104 OPTIONS\r\n"
-        "Contact: <sip:alice@pc33.atlanta.com>\r\n"
-        "Accept: application/sdp\r\n"
-        "Content-Length: 0\r\n"
-    },
-        
-    {0,0,0}    
-};
 
 /***************************************************************************
  ***************************************************************************/
@@ -536,31 +505,37 @@ template_set_target(
         break;
     case Proto_UDP:
         {
-#if 0
             const unsigned char *px2;
-            unsigned length2;
+            unsigned length2 = 0;
             unsigned source_port2;
-            if (payloads_lookup(tmpl->payloads, port, ) {
-                xsum = tmpl->payloads[port]->checksum;
-                memcpy(&px[tmpl->offset_app],
-                       tmpl->payloads[port]->buf,
-                       tmpl->payloads[port]->length);
+            
+            payloads_lookup(tmpl->payloads,
+                                         port,
+                                         &px2,
+                                         &length2,
+                                         &source_port2,
+                                         &xsum);
+            
+            if (length2) {
+                memcpy(&px[tmpl->offset_app], px2, length2);
             } else
                 xsum = 0;
-
+            tmpl->length = offset_tcp + length2 + 8;
+            
             px[offset_tcp+ 2] = (unsigned char)(port >> 8);
             px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
+            px[offset_tcp+ 4] = (unsigned char)((length2+8)>>8);
+            px[offset_tcp+ 5] = (unsigned char)((length2+8)&0xFF);
             xsum += (uint64_t)tmpl->checksum_tcp
                     + (uint64_t)ip
                     + (uint64_t)port
-                    + (uint64_t)seqno;
+                    + (uint64_t)length2;
             xsum = (xsum >> 16) + (xsum & 0xFFFF);
             xsum = (xsum >> 16) + (xsum & 0xFFFF);
             xsum = (xsum >> 16) + (xsum & 0xFFFF);
             xsum = ~xsum;
-            px[offset_tcp+4] = (unsigned char)(xsum >>  8);
-            px[offset_tcp+5] = (unsigned char)(xsum >>  0);
-#endif
+            px[offset_tcp+6] = (unsigned char)(xsum >>  8);
+            px[offset_tcp+7] = (unsigned char)(xsum >>  0);
         }
         break;
     case Proto_SCTP:
