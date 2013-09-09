@@ -39,18 +39,18 @@ xml_out_close(struct Output *out, FILE *fp)
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
 
     fprintf(fp,
-        "<runstats>\r\n"
-            "<finished time=\"%u\" timestr=\"%s\" elapsed=\"%u\" />\r\n"
-            "<hosts up=\"%llu\" down=\"%llu\" total=\"%llu\" />\r\n"
-        "</runstats>\r\n"
-        "</nmaprun>\r\n",
-    (unsigned)now,                    /* time */
-    buffer,                 /* timestr */
-    (unsigned)(now - out->last_rotate), /* elapsed */
-    out->open_count,
-    out->closed_count,
-    out->open_count + out->closed_count
-    );
+             "<runstats>\r\n"
+              "<finished time=\"%u\" timestr=\"%s\" elapsed=\"%u\" />\r\n"
+              "<hosts up=\"%llu\" down=\"%llu\" total=\"%llu\" />\r\n"
+             "</runstats>\r\n"
+            "</nmaprun>\r\n",
+            (unsigned)now,                    /* time */
+            buffer,                 /* timestr */
+            (unsigned)(now - out->last_rotate), /* elapsed */
+            out->counts.tcp.open,
+            out->counts.tcp.closed,
+            out->counts.tcp.open + out->counts.tcp.closed
+            );
     
 }
 

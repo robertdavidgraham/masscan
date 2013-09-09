@@ -6,6 +6,7 @@ struct BlackRock {
     uint64_t range;
     uint64_t a;
     uint64_t b;
+    uint64_t seed;
     unsigned rounds;
 };
 
@@ -17,7 +18,7 @@ struct BlackRock {
  *      The size of the range of numbers needing to be
  *      shuffled/randomized.
  */
-void blackrock_init(struct BlackRock *br, uint64_t range);
+void blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed);
 
 /**
  * Given a number within a range, produce a different number with

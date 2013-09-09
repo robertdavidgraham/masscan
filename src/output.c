@@ -47,9 +47,12 @@ const char *
 status_string(int x)
 {
     switch (x) {
-    case Port_Open: return "open";
-    case Port_Closed: return "closed";
-    default: return "unknown";
+        case Port_Open: return "open";
+        case Port_Closed: return "closed";
+        case Port_UdpOpen: return "open";
+        case Port_UdpClosed: return "closed";
+        case Port_IcmpEchoResponse: return "exists";
+        default: return "unknown";
     }
 }
 const char *
@@ -203,10 +206,8 @@ close_rotate(struct Output *out, FILE *fp)
      */
     out->funcs->close(out, fp);
 
-    out->open_count = 0;
-    out->closed_count = 0;
-    out->last_rotate = time(0);
-
+    memset(&out->counts, 0, sizeof(out->counts));
+ 
     fflush(fp);
     fclose(fp);
 }
@@ -407,6 +408,18 @@ again:
     return out->fp;
 }
 
+const char *
+proto_from_status(unsigned status)
+{
+    switch (status) {
+        case Port_Open: return "tcp";
+        case Port_Closed: return "tcp";
+        case Port_IcmpEchoResponse: return "icmp";
+        case Port_UdpOpen: return "udp";
+        case Port_UdpClosed: return "udp";
+        default: return "err";
+    }
+}
 /***************************************************************************
  ***************************************************************************/
 void
@@ -421,10 +434,24 @@ output_report_status(struct Output *out, int status,
 
 
     if (masscan->is_interactive) {
-        fprintf(stdout, "Discovered %s port %u/tcp on %u.%u.%u.%u"
+        if (status == Port_IcmpEchoResponse) {
+            fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
+                    "                          \n",
+                    status_string(status),
+                    port,
+                    proto_from_status(status),
+                    (ip>>24)&0xFF, 
+                    (ip>>16)&0xFF,
+                    (ip>> 8)&0xFF,
+                    (ip>> 0)&0xFF
+                    );
+            
+        } else
+        fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
                             "                          \n",
             status_string(status),
             port,
+            proto_from_status(status),
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,
@@ -444,17 +471,29 @@ output_report_status(struct Output *out, int status,
 
 
     switch (status) {
-    case Port_Open:
-        out->open_count++;
-        break;
-    case Port_Closed:
-        out->closed_count++;
-        if (masscan->nmap.open_only)
-            return;
-        break;
-    default:
-        if (masscan->nmap.open_only)
-            return;
+        case Port_Open:
+            out->counts.tcp.open++;
+            break;
+        case Port_Closed:
+            out->counts.tcp.closed++;
+            if (masscan->nmap.open_only)
+                return;
+            break;
+        case Port_IcmpEchoResponse:
+            out->counts.icmp.echo++;
+            break;
+        case Port_UdpOpen:
+            out->counts.udp.open++;
+            break;
+        case Port_UdpClosed:
+            out->counts.udp.closed++;
+            if (masscan->nmap.open_only)
+                return;
+            break;
+        default:
+            LOG(0, "unknown status type: %u\n", status);
+            if (masscan->nmap.open_only)
+                return;
     }
 
     out->funcs->status(out, fp, status, ip, port, reason, ttl);

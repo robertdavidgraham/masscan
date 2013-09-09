@@ -551,7 +551,8 @@ masscan_set_parameter(struct Masscan *masscan,
             while (value[i]) {
                 char c = value[i];
                 if (c < '0' || '9' < c) {
-                    fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n", name, value);
+                    fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n", 
+                            name, value);
                     return;
                 }
                 rate += (c - '0')/point;
@@ -569,8 +570,15 @@ masscan_set_parameter(struct Masscan *masscan,
     }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         rangelist_parse_ports(&masscan->exclude_port, value);
-    }
-    else if (EQUALS("range", name) || EQUALS("ranges", name) || EQUALS("ip", name) || EQUALS("ipv4", name)) {
+    } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
+        /* Add ICMP ping request */
+        struct Range range;
+        range.begin = 65536*3;
+        range.end = 65536*3;
+        rangelist_add_range(&masscan->ports, range.begin, range.end);
+        LOG(5, "--ping\n");
+    } else if (EQUALS("range", name) || EQUALS("ranges", name) 
+               || EQUALS("ip", name) || EQUALS("ipv4", name)) {
         const char *ranges = value;
         unsigned offset = 0;
         unsigned max_offset = (unsigned)strlen(ranges);
@@ -654,7 +662,14 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan_echo(masscan, stdout);
         exit(1);
     } else if (EQUALS("excludefile", name)) {
+        unsigned count1 = masscan->exclude_ip.count;
+        unsigned count2;
+        LOG(1, "EXCLUDING: %s\n", value);
         ranges_from_file(&masscan->exclude_ip, value);
+        count2 = masscan->exclude_ip.count;
+        if (count2 - count1)
+        fprintf(stderr, "%s: excluding %u ranges from file\n", 
+                value, count2 - count1);
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
@@ -874,7 +889,7 @@ is_singleton(const char *name)
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
-        "banners", "banner", "offline",
+        "banners", "banner", "offline", "ping", "ping-sweep",
         0};
     size_t i;
 

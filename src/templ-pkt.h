@@ -13,9 +13,10 @@ enum TemplateProtocol {
     Proto_TCP,
     Proto_UDP,
     Proto_SCTP,
-    Proto_ICMP,
+    Proto_ICMP_ping,
+    Proto_ICMP_timestamp,
     Proto_ARP,
-    Proto_IP,
+    //Proto_IP,
     //Proto_Custom,
     //Proto_Count
 };

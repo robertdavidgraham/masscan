@@ -138,7 +138,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t start;
     uint64_t end;
     struct Masscan *masscan = (struct Masscan *)v;
-    uint64_t seed;
     unsigned retries = masscan->retries;
     unsigned rate = (unsigned)masscan->max_rate;
     unsigned r = retries + 1;
@@ -161,15 +160,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * ports */
     range = rangelist_count(&masscan->targets) 
             * rangelist_count(&masscan->ports);
-    blackrock_init(&blackrock, range);
-
-    /* This allows you to begin a scan somewhere other than the index
-     * of zero (--seed). In the future. I might automatically seed this off
-     * of thecurrent time automatically, but for the moment, I'm just 
-     * starting from zero. */
-    seed = masscan->seed;
-    if (seed == 0 && masscan->shard.one == 1 && masscan->shard.of == 1)
-        ; //seed = time(0) % range;
+    blackrock_init(&blackrock, range, masscan->seed);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
      * to support --shard, so that multiple machines can co-operate on
@@ -235,8 +226,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              *  order. Then, once we've shuffled the index, we "pick" the
              *  the IP address and port that the index refers to.
              */
-            xXx = (i + (r--) * rate + seed);
-            while (xXx > range)
+            xXx = (i + (r--) * rate);
+            while (xXx >= range)
                 xXx -= range;
             xXx = blackrock_shuffle(&blackrock,  xXx);
             ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
@@ -293,7 +284,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          * the user wants to --resume the scan later, we save the current
          * state in a file */
         if (control_c_pressed) {
-            masscan->resume.seed = seed;
             masscan->resume.index = i;
             masscan_save_state(masscan);
             fprintf(stderr, "waiting %u seconds to exit...\n", masscan->wait);
@@ -464,22 +454,54 @@ receive_thread(struct Masscan *masscan,
             continue;
 
 
-        /* OOPS: handle arp instead. Since we may completely bypass the TCP/IP
-         * stack, we may have to handle ARPs ourself, or the router will 
-         * lose track of us. */
-        if (parsed.found == FOUND_ARP) {
-            LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
+        /*
+         * Handle non-TCP protocols
+         */
+        switch (parsed.found) {
+            case FOUND_ARP:
+                /* OOPS: handle arp instead. Since we may completely bypass the TCP/IP
+                 * stack, we may have to handle ARPs ourself, or the router will 
+                 * lose track of us. */
+                LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
+                arp_response(
+                             adapter_ip, adapter_mac, px, length,
+                             masscan->packet_buffers,
+                             masscan->transmit_queue);
+                continue;
+            case FOUND_UDP:
+                if (adapter_port != parsed.port_dst)
+                    continue;
+                LOG(4, "found udp 0x%08x\n", parsed.ip_dst);
+                continue;
+            case FOUND_ICMP:
+                seqno_me = px[parsed.transport_offset+4]<<24
+                            | px[parsed.transport_offset+5]<<16
+                            | px[parsed.transport_offset+6]<<8
+                            | px[parsed.transport_offset+7]<<0;
+                
+                if (syn_hash(ip_them, 65536*3+0) == seqno_me ) {
+                    LOG(4, "%u.%u.%u.%u - ICMP echo response: 0x%08x\n", 
+                        (ip_them>>24)&0xff, (ip_them>>16)&0xff, 
+                        (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
+                        seqno_me);
+                    output_report_status(
+                                         out,
+                                         Port_IcmpEchoResponse,
+                                         ip_them,
+                                         0,
+                                         0,
+                                         0);
 
-            arp_response(
-                adapter_ip, adapter_mac, px, length,
-                masscan->packet_buffers,
-                masscan->transmit_queue);
-            continue;
+                }
+
+                continue;
+            case FOUND_TCP:
+                /* fall down to below */
+                break;
+            default:
+                continue;
         }
 
-        /* verify: TCP */
-        if (parsed.found != FOUND_TCP)
-            continue; /*TODO: fix for UDP-scan and ICMP-scan */
 
         /* verify: my port number */
         if (adapter_port != parsed.port_dst)
@@ -545,7 +567,8 @@ receive_thread(struct Masscan *masscan,
 
                 /* If this is a FIN, handle that. Note that ACK + 
                  * payload + FIN can come together */
-                if (TCP_IS_FIN(px, parsed.transport_offset) && !TCP_IS_RST(px, parsed.transport_offset)) {
+                if (TCP_IS_FIN(px, parsed.transport_offset) 
+                    && !TCP_IS_RST(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN, 
                         0, 0, secs, usecs, seqno_them);
                 }
@@ -581,7 +604,7 @@ receive_thread(struct Masscan *masscan,
 
             /* verify: syn-cookies */
             if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
-                LOG(2, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
+                LOG(5, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
                     (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
                     seqno_me-1, syn_hash(ip_them, parsed.port_src));
                 continue;

@@ -124,8 +124,10 @@ parse_ipv4:
         offset += header_length;
         info->transport_offset = offset;
         switch (info->ip_protocol) {
-        case 6: goto parse_tcp;
-        case 17: goto parse_udp;
+        case   1: goto parse_icmp;
+        case   6: goto parse_tcp;
+        case  17: goto parse_udp;
+        case 132: goto parse_sctp;
         default: return 0; /* todo: should add more protocols, like ICMP */
         }
     }
@@ -159,6 +161,18 @@ parse_udp:
         if (info->port_dst == 53 || info->port_src == 53) {
             goto parse_dns;
         }
+        return 1;
+    }
+    
+parse_icmp:
+    {
+        VERIFY_REMAINING(4, FOUND_ICMP);
+        return 1;
+    }
+    
+parse_sctp:
+    {
+        VERIFY_REMAINING(4, FOUND_SCTP);
         return 1;
     }
 

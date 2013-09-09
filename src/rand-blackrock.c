@@ -47,53 +47,74 @@
     This is a class of "format-preserving encryption". There are 
     probably better constructions than what I'm using.
 */
-
+#include "rand-blackrock.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
+#include <time.h>
 
 #if defined(_MSC_VER)
 #define inline _inline
 #endif
 
-struct BlackRock {
-    uint64_t range;
-    uint64_t a;
-    uint64_t b;
-    unsigned rounds;
-};
 
 
 /***************************************************************************
  ***************************************************************************/
 void
-blackrock_init(struct BlackRock *br, uint64_t range)
+blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed)
 {
     double foo = sqrt(range * 1.0);
 
-    br->range = range;
-    br->a = (uint64_t)(foo - 1);
-    br->b = (uint64_t)(foo + 1);
+    switch (range) {
+        case 0:
+            br->a = 0;
+            br->b = 0;
+            break;
+        case 1:
+            br->a = 1;
+            br->b = 1;
+            break;
+        case 2:
+            br->a = 1;
+            br->b = 2;
+            break;
+        case 3:
+            br->a = 2;
+            br->b = 2;
+            break;
+        case 4:
+            br->a = 2;
+            br->b = 3;
+            break;
+        default:
+            br->range = range;
+            br->a = (uint64_t)(foo - 1);
+            br->b = (uint64_t)(foo + 1);
+            break;
+    }
 
     while (br->a * br->b <= range)
         br->b++;
 
     br->rounds = 3;
+    br->seed = seed;
+    br->range = range;
 }
 
 
 /***************************************************************************
  ***************************************************************************/
-uint64_t
-F(uint64_t j, uint64_t R)
+static inline uint64_t
+F(uint64_t j, uint64_t R, uint64_t seed)
 {
     static const uint64_t primes[] = {
         961752031, 982324657, 15485843, 961752031,  };
 
-    R = (R << (R&0x4)) + R;
+    R = (R << (R&0x4)) + R + seed;
 
     /* some random and meaningless function */
     return (((primes[j] * R + 25ULL) ^ R) + j);
@@ -108,7 +129,7 @@ F(uint64_t j, uint64_t R)
  *      http://www.cs.ucdavis.edu/~rogaway/papers/subset.pdf
  ***************************************************************************/
 static inline uint64_t
-fe(unsigned r, uint64_t a, uint64_t b, uint64_t m)
+fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 {
     uint64_t L, R;
     unsigned j;
@@ -119,9 +140,9 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m)
     
     for (j=1; j<=r; j++) {
         if (j & 1) {
-            tmp = (L + F(j, R)) % a;
+            tmp = (L + F(j, R, seed)) % a;
         } else {
-            tmp = (L + F(j, R)) % b;
+            tmp = (L + F(j, R, seed)) % b;
         }
         L = R;
         R = tmp;
@@ -140,9 +161,9 @@ blackrock_shuffle(const struct BlackRock *br, uint64_t m)
 {
     uint64_t c;
 
-    c = fe(br->rounds, br->a, br->b, m);
+    c = fe(br->rounds, br->a, br->b, m, br->seed);
     while (c >= br->range)
-        c = fe(br->rounds, br->a, br->b,  c);
+        c = fe(br->rounds, br->a, br->b,  c, br->seed);
 
     return c;
 }
@@ -199,7 +220,7 @@ blackrock_selftest()
         range += 10 + i;
         range *= 2;
 
-        blackrock_init(&br, range);
+        blackrock_init(&br, range, time(0));
 
         is_success = blackrock_verify(&br, range);
 

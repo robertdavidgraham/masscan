@@ -15,6 +15,7 @@ enum {
     FOUND_ICMP,
     FOUND_TCP,
     FOUND_UDP,
+    FOUND_SCTP,
     FOUND_DNS,
     FOUND_IPV6_HOP,
     FOUND_8021Q,

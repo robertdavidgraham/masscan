@@ -49,7 +49,7 @@ static unsigned char default_udp_template[] =
     "\x08\x00"      /* Etenrent type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
-    "\x00\x1c"      /* total length = 40 bytes */
+    "\x00\x1c"      /* total length = 28 bytes */
     "\x00\x00"      /* identification */
     "\x00\x00"      /* fragmentation flags */
     "\xFF\x11"      /* TTL=255, proto=UDP */
@@ -58,9 +58,9 @@ static unsigned char default_udp_template[] =
     "\0\0\0\0"      /* destination address */
 
     "\xfe\xdc"      /* source port */
-    "\0\0"          /* destination port */
-    "\0\0\0\0"      /* checksum */
-    "\0\0\0\0"      /* length */
+    "\x00\x00"      /* destination port */
+    "\x00\x08"      /* length */
+    "\x00\x00"      /* checksum */
 ;
 
 static unsigned char default_sctp_template[] =
@@ -84,25 +84,62 @@ static unsigned char default_sctp_template[] =
 ;
 
 
-static unsigned char default_icmp_template[] =
+static unsigned char default_icmp_ping_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x08\x00"      /* Etherent type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
-    "\x00\x1c"      /* total length = 40 bytes */
+    "\x00\x4c"      /* total length = 76 bytes */
     "\x00\x00"      /* identification */
     "\x00\x00"      /* fragmentation flags */
-    "\xFF\x11"      /* TTL=255, proto=UDP */
+    "\xFF\x01"      /* TTL=255, proto=UDP */
     "\xFF\xFF"      /* checksum */
     "\0\0\0\0"      /* source address */
     "\0\0\0\0"      /* destination address */
 
-    "\xfe\xdc"      /* source port */
-    "\0\0"          /* destination port */
-    "\0\0\0\0"      /* checksum */
-    "\0\0\0\0"      /* length */
+    "\x08\x00"      /* Ping Request */
+    "\x00\x00"      /* checksum */
+
+    "\x00\x00\x00\x00" /* ID, seqno */
+    
+    "\x08\x09\x0a\x0b" /* payload */
+    "\x0c\x0d\x0e\x0f"
+    "\x10\x11\x12\x13"
+    "\x14\x15\x16\x17"
+    "\x18\x19\x1a\x1b"
+    "\x1c\x1d\x1e\x1f"
+    "\x20\x21\x22\x23"
+    "\x24\x25\x26\x27"
+    "\x28\x29\x2a\x2b"
+    "\x2c\x2d\x2e\x2f"
+    "\x30\x31\x32\x33"
+    "\x34\x35\x36\x37"
 ;
+
+static unsigned char default_icmp_timestamp_template[] =
+"\0\1\2\3\4\5"  /* Ethernet: destination */
+"\6\7\x8\x9\xa\xb"  /* Ethernet: source */
+"\x08\x00"      /* Etenrent type: IPv4 */
+"\x45"          /* IP type */
+"\x00"
+"\x00\x28"      /* total length = 84 bytes */
+"\x00\x00"      /* identification */
+"\x00\x00"      /* fragmentation flags */
+"\xFF\x01"      /* TTL=255, proto=UDP */
+"\xFF\xFF"      /* checksum */
+"\0\0\0\0"      /* source address */
+"\0\0\0\0"      /* destination address */
+
+"\x0d\x00"  /* timestamp request */
+"\x00\x00"  /* checksum */
+"\x00\x00"  /* identifier */
+"\x00\x00"  /* sequence number */
+"\x00\x00\x00\x00"
+"\x00\x00\x00\x00"
+"\x00\x00\x00\x00"
+;
+
 
 static unsigned char default_arp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
@@ -126,6 +163,38 @@ static unsigned char default_arp_template[] =
 
 /***************************************************************************
  ***************************************************************************/
+struct UDP_Payloads {
+    unsigned port;
+    unsigned payload_length;
+    unsigned seqno_offset;
+    unsigned seqno_length;
+    const unsigned char *payload;
+} udp_payloads[] = {
+    {53, 31, 0, 2, (const unsigned char*)
+        "\x00\x00" /* transaction ID */
+        "\x01\x00" /* standard query */
+        "\x00\x01\x00\x00\x00\x00\x00\x00" /* 1 query */
+        "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
+        "\x00\x01\x00\x01" /* A IN */
+    },
+    {5060, 0, 0, 0, (const unsigned char*)
+        "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
+        "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
+        "Max-Forwards: 70\r\n"
+        "To: <sip:carol@chicago.com>\r\n"
+        "From: Alice <sip:alice@atlanta.com>;tag=1928301774\r\n"
+        "Call-ID: a84b4c76e66710\r\n"
+        "CSeq: 63104 OPTIONS\r\n"
+        "Contact: <sip:alice@pc33.atlanta.com>\r\n"
+        "Accept: application/sdp\r\n"
+        "Content-Length: 0\r\n"
+    },
+        
+    {0,0,0}    
+};
+
+/***************************************************************************
+ ***************************************************************************/
 static unsigned
 ip_checksum(struct TemplatePacket *tmpl)
 {
@@ -144,41 +213,13 @@ ip_checksum(struct TemplatePacket *tmpl)
 
 /***************************************************************************
  ***************************************************************************/
-static unsigned
-tcp_checksum(struct TemplatePacket *tmpl)
-{
-    const unsigned char *px = tmpl->packet;
-    unsigned xsum = 0;
-    unsigned i;
-
-    /* pseudo checksum */
-    xsum = 6;
-    xsum += tmpl->offset_app - tmpl->offset_tcp;
-    xsum += px[tmpl->offset_ip + 12] << 8 | px[tmpl->offset_ip + 13];
-    xsum += px[tmpl->offset_ip + 14] << 8 | px[tmpl->offset_ip + 15];
-    xsum += px[tmpl->offset_ip + 16] << 8 | px[tmpl->offset_ip + 17];
-    xsum += px[tmpl->offset_ip + 18] << 8 | px[tmpl->offset_ip + 19];
-
-    /* tcp checksum */
-    for (i=tmpl->offset_tcp; i<tmpl->offset_app; i += 2) {
-        xsum += tmpl->packet[i]<<8 | tmpl->packet[i+1];
-    }
-    xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    xsum = (xsum & 0xFFFF) + (xsum >> 16);
-
-    return xsum;
-}
-
-/***************************************************************************
- ***************************************************************************/
 unsigned
 tcp_checksum2(const unsigned char *px, unsigned offset_ip,
-    unsigned offset_tcp, size_t tcp_length)
+              unsigned offset_tcp, size_t tcp_length)
 {
     uint64_t xsum = 0;
     unsigned i;
-
+    
     /* pseudo checksum */
     xsum = 6;
     xsum += tcp_length;
@@ -186,19 +227,125 @@ tcp_checksum2(const unsigned char *px, unsigned offset_ip,
     xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
-
+    
     /* tcp checksum */
     for (i=0; i<tcp_length; i += 2) {
         xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
     }
-
+    
     xsum -= (tcp_length & 1) * px[offset_tcp + i - 1]; /* yea I know going off end of packet is bad so sue me */
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-
+    
     return (unsigned)xsum;
 }
+
+/***************************************************************************
+ ***************************************************************************/
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+tcp_checksum(struct TemplatePacket *tmpl)
+{
+    const unsigned char *px = tmpl->packet;
+    unsigned xsum = 0;
+    unsigned i;
+    
+    /* pseudo checksum */
+    xsum = 6;
+    xsum += tmpl->offset_app - tmpl->offset_tcp;
+    xsum += px[tmpl->offset_ip + 12] << 8 | px[tmpl->offset_ip + 13];
+    xsum += px[tmpl->offset_ip + 14] << 8 | px[tmpl->offset_ip + 15];
+    xsum += px[tmpl->offset_ip + 16] << 8 | px[tmpl->offset_ip + 17];
+    xsum += px[tmpl->offset_ip + 18] << 8 | px[tmpl->offset_ip + 19];
+    
+    /* tcp checksum */
+    for (i=tmpl->offset_tcp; i<tmpl->offset_app; i += 2) {
+        xsum += tmpl->packet[i]<<8 | tmpl->packet[i+1];
+    }
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    
+    return xsum;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+udp_checksum2(const unsigned char *px, unsigned offset_ip,
+              unsigned offset_tcp, size_t tcp_length)
+{
+    uint64_t xsum = 0;
+    unsigned i;
+    
+    /* pseudo checksum */
+    xsum = 6;
+    xsum += tcp_length;
+    xsum += px[offset_ip + 12] << 8 | px[offset_ip + 13];
+    xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
+    xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
+    xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
+    
+    /* tcp checksum */
+    for (i=0; i<tcp_length; i += 2) {
+        xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
+    }
+    
+    xsum -= (tcp_length & 1) * px[offset_tcp + i - 1]; /* yea I know going off end of packet is bad so sue me */
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    
+    return (unsigned)xsum;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+udp_checksum(struct TemplatePacket *tmpl)
+{
+    return udp_checksum2(
+                         tmpl->packet,
+                         tmpl->offset_ip,
+                         tmpl->offset_tcp,
+                         tmpl->length - tmpl->offset_app);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+icmp_checksum2(const unsigned char *px, unsigned offset_ip,
+              unsigned offset_icmp, size_t icmp_length)
+{
+    uint64_t xsum = 0;
+    unsigned i;
+    
+    for (i=0; i<icmp_length; i += 2) {
+        xsum += px[offset_icmp + i]<<8 | px[offset_icmp + i + 1];
+    }
+    
+    xsum -= (icmp_length & 1) * px[offset_icmp + i - 1]; /* yea I know going off end of packet is bad so sue me */
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
+    
+    return (unsigned)xsum;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+icmp_checksum(struct TemplatePacket *tmpl)
+{
+    return icmp_checksum2(
+                         tmpl->packet,
+                         tmpl->offset_ip,
+                         tmpl->offset_tcp,
+                         tmpl->length - tmpl->offset_tcp);
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -276,7 +423,8 @@ tcp_create_packet(
     px[offset_tcp+16] = (unsigned char)(0 >>  8);
     px[offset_tcp+17] = (unsigned char)(0 >>  0);
 
-    xsum = tcp_checksum2(px, tmpl->offset_ip, tmpl->offset_tcp, new_length - tmpl->offset_tcp);
+    xsum = tcp_checksum2(px, tmpl->offset_ip, tmpl->offset_tcp, 
+                         new_length - tmpl->offset_tcp);
     xsum = ~xsum;
 
     px[offset_tcp+16] = (unsigned char)(xsum >>  8);
@@ -321,13 +469,13 @@ template_set_target(
         tmpl = &tmplset->pkts[Proto_SCTP];
         port &= 0xFFFF;
     } else if (port == 65536*3) {
-        tmpl = &tmplset->pkts[Proto_ICMP];
+        tmpl = &tmplset->pkts[Proto_ICMP_ping];
         port = 1;
     } else if (port == 65536*3+1) {
-        tmpl = &tmplset->pkts[Proto_ARP];
+        tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
         port = 1;
     } else if (port == 65536*3+2) {
-        tmpl = &tmplset->pkts[Proto_IP];
+        tmpl = &tmplset->pkts[Proto_ARP];
         port = 1;
     } else {
         return;
@@ -413,13 +561,23 @@ template_set_target(
         break;
     case Proto_SCTP:
         break;
-    case Proto_ICMP:
+    case Proto_ICMP_ping:
+    case Proto_ICMP_timestamp:
+            px[offset_tcp+ 4] = (unsigned char)(seqno >> 24);
+            px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
+            px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
+            px[offset_tcp+ 7] = (unsigned char)(seqno >>  0);
+            xsum = (uint64_t)tmpl->checksum_tcp
+                    + (uint64_t)seqno;
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = (xsum >> 16) + (xsum & 0xFFFF);
+            xsum = ~xsum;
+            px[offset_tcp+2] = (unsigned char)(xsum >>  8);
+            px[offset_tcp+3] = (unsigned char)(xsum >>  0);
         break;
     case Proto_ARP:
         /* don't do any checksumming */
-        break;
-    case Proto_IP:
-        /*TODO: this is just a place holder */
         break;
     }
 
@@ -462,9 +620,11 @@ _template_init(
      * Parse the existing packet template. We support TCP, UDP, ICMP,
      * and ARP packets.
      */
+again:
     x = preprocess_frame(px, tmpl->length, 1 /*enet*/, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
         LOG(0, "ERROR: bad packet template\n");
+        goto again;
         exit(1);
     }
     tmpl->offset_ip = parsed.ip_offset;
@@ -504,14 +664,23 @@ _template_init(
     memset(px + tmpl->offset_ip + 10, 0, 2); /* checksum */
     memset(px + tmpl->offset_ip + 16, 0, 4); /* destination IP address */
     tmpl->checksum_ip = ip_checksum(tmpl);
-    tmpl->proto = Proto_IP;
 
     /*
-     * Higher layer protocols: zero out dest/checksum fields
+     * Higher layer protocols: zero out dest/checksum fields, then calculate
+     * a partial checksum
      */
     switch (parsed.ip_protocol) {
     case 1: /* ICMP */
-        tmpl->proto = Proto_ICMP;
+            tmpl->checksum_tcp = icmp_checksum(tmpl);
+            switch (px[tmpl->offset_tcp]) {
+                case 8: 
+                    tmpl->proto = Proto_ICMP_ping;
+                    break;
+                case 13:
+                    tmpl->proto = Proto_ICMP_timestamp;
+                    break;
+            }
+            break;
         break;
     case 6: /* TCP */
         /* zero out fields that'll be overwritten */
@@ -522,7 +691,7 @@ _template_init(
         break;
     case 17: /* UDP */
         memset(px + tmpl->offset_tcp + 6, 0, 2); /* checksum */
-        tmpl->checksum_tcp = tcp_checksum(tmpl);
+        tmpl->checksum_tcp = udp_checksum(tmpl);
         tmpl->proto = Proto_UDP;
         break;
     }
@@ -556,17 +725,24 @@ template_packet_init(
                     default_sctp_template,
                     sizeof(default_sctp_template)-1
                     );
-    /* [ICMP] */
-    _template_init( &templset->pkts[Proto_ICMP],
-                    source_ip, source_mac, router_mac,
-                    default_icmp_template,
-                    sizeof(default_icmp_template)-1
-                    );
-
+    /* [ICMP ping] */
+    _template_init( &templset->pkts[Proto_ICMP_ping],
+                   source_ip, source_mac, router_mac,
+                   default_icmp_ping_template,
+                   sizeof(default_icmp_ping_template)-1
+                   );
+    
+    /* [ICMP timestamp] */
+    _template_init( &templset->pkts[Proto_ICMP_timestamp],
+                   source_ip, source_mac, router_mac,
+                   default_icmp_timestamp_template,
+                   sizeof(default_icmp_timestamp_template)-1
+                   );
+    
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
                     source_ip, source_mac, router_mac,
-                    default_icmp_template,
+                    default_arp_template,
                     sizeof(default_arp_template)-1
                     );
 }
@@ -681,9 +857,10 @@ template_selftest()
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;
-    failures += tmplset->pkts[Proto_SCTP].proto != Proto_SCTP;
-    failures += tmplset->pkts[Proto_ICMP].proto != Proto_ICMP;
-    failures += tmplset->pkts[Proto_ARP].proto  != Proto_ARP;
+    //failures += tmplset->pkts[Proto_SCTP].proto != Proto_SCTP;
+    failures += tmplset->pkts[Proto_ICMP_ping].proto != Proto_ICMP_ping;
+    //failures += tmplset->pkts[Proto_ICMP_timestamp].proto != Proto_ICMP_timestamp;
+    //failures += tmplset->pkts[Proto_ARP].proto  != Proto_ARP;
 
     if (failures)
         fprintf(stderr, "template: failed\n");

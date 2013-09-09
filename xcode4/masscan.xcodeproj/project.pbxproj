@@ -127,6 +127,7 @@
 		11A921D217DBCC7E00DDFD32 /* templ-pkt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-pkt.h"; sourceTree = "<group>"; };
 		11A921D317DBCC7E00DDFD32 /* xring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xring.c; sourceTree = "<group>"; };
 		11A921D417DBCC7E00DDFD32 /* xring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xring.h; sourceTree = "<group>"; };
+		11A921FB17DBD17600DDFD32 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +144,7 @@
 		11A9217A17DBCB3200DDFD32 = {
 			isa = PBXGroup;
 			children = (
+				11A921FB17DBD17600DDFD32 /* README.md */,
 				11A9219217DBCC7E00DDFD32 /* src */,
 				11A9218617DBCB3200DDFD32 /* Products */,
 			);

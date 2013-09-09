@@ -519,11 +519,43 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
     while (*p) {
         unsigned port;
         unsigned end;
+        unsigned proto_offset = 0;
 
+        /* skip whitespace */
         while (*p && isspace(*p & 0xFF))
             p++;
+        
+        /* end at comment */
         if (*p == 0 || *p == '#')
             break;
+        
+        /* special processing. Nmap allows ports to be prefixed with a
+         * characters to clarify TCP, UDP, or SCTP */
+        if (isalpha(*p&0xFF) && p[1] == ':') {
+            switch (*p) {
+                case 'T': case 't':
+                    proto_offset = 0;
+                    break;
+                case 'U': case 'u':
+                    proto_offset = 65536;
+                    break;
+                case 'S': case 's':
+                    proto_offset = 65536*2;
+                    break;
+                case 'I': case 'i':
+                    proto_offset = 65536*3;
+                    break;
+                default:
+                    fprintf(stderr, "CONF: bad port charactern = %c\n", p[0]);
+                    exit(1);
+            }
+            p += 2;
+        }
+        
+        if (!isdigit(p[0] & 0xFF)) {
+            fprintf(stderr, "CONF: bad port charactern = 0x%02x\n", p[0]);
+            exit(1);
+        }
 
         port = strtoul(p, &p, 0);
         end = port;
@@ -538,7 +570,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
             fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
             break;
         } else {
-            rangelist_add_range(ports, port, end);
+            rangelist_add_range(ports, port+proto_offset, end+proto_offset);
         }
     }
 }

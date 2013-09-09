@@ -533,10 +533,13 @@ rawsock_close_adapter(struct Adapter *adapter)
     free(adapter);
 }
 
-/***************************************************************************
+/********************
+ *******************************************************
  ***************************************************************************/
 struct Adapter *
-rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_sendq)
+rawsock_init_adapter(const char *adapter_name, 
+                     unsigned is_pfring, 
+                     unsigned is_sendq)
 {
     struct Adapter *adapter;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -553,7 +556,8 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
 
         new_adapter_name = adapter_from_index(atoi(adapter_name));
         if (new_adapter_name == 0) {
-            fprintf(stderr, "pcap_open_live(%s) error: bad index\n", adapter_name);
+            fprintf(stderr, "pcap_open_live(%s) error: bad index\n", 
+                    adapter_name);
             return 0;
         } else
             adapter_name = new_adapter_name;
@@ -580,12 +584,15 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
          * transmit and one receive thread, so I don't think we need it.
          * Also, this reduces performance in half, from 12-mpps to
          * 6-mpps.
+         * NOTE: I don't think it needs the "re-entrant" flag, because it
+         * transmit and receive are separate functions?
          */
         LOG(2, "pfring:'%s': opening...\n", adapter_name);
-        adapter->ring = PFRING.open(adapter_name, 1500, 0); //PF_RING_REENTRANT);
+        adapter->ring = PFRING.open(adapter_name, 1500, 0);//PF_RING_REENTRANT);
         adapter->pcap = (pcap_t*)adapter->ring;
         if (adapter->ring == NULL) {
-            LOG(0, "pfring:'%s': OPEN ERROR: %s\n", adapter_name, strerror_x(errno));
+            LOG(0, "pfring:'%s': OPEN ERROR: %s\n", 
+                adapter_name, strerror_x(errno));
             return 0;
         } else
             LOG(1, "pfring:'%s': successfully opened\n", adapter_name);
@@ -603,7 +610,8 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
         LOG(2, "pfring:'%s': setting direction\n", adapter_name);
         err = PFRING.set_direction(adapter->ring, rx_only_direction);
         if (err) {
-            fprintf(stderr, "pfring:'%s': setdirection = %d\n", adapter_name, err);
+            fprintf(stderr, "pfring:'%s': setdirection = %d\n", 
+                    adapter_name, err);
         } else
             LOG(2, "pfring:'%s': direction success\n", adapter_name);
 
@@ -615,7 +623,8 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
         LOG(2, "pfring:'%s': activating\n", adapter_name);
         err = PFRING.enable_ring(adapter->ring);
         if (err != 0) {
-                LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", adapter_name, strerror_x(errno));
+                LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", 
+                    adapter_name, strerror_x(errno));
                 PFRING.close(adapter->ring);
                 adapter->ring = 0;
                 return 0;
@@ -643,7 +652,8 @@ rawsock_init_adapter(const char *adapter_name, unsigned is_pfring, unsigned is_s
             LOG(0, "FAIL: %s\n", errbuf);
             if (strstr(errbuf, "perm")) {
                 LOG(0, " [hint] need to sudo or run as root or something\n");
-                LOG(0, " [hint] I've got some local priv escalation 0days that might work\n");
+                LOG(0, " [hint] I've got some local priv escalation "
+                        "0days that might work\n");
             }
             return 0;
         } else

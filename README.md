@@ -1,23 +1,13 @@
-# MASSCAN: Mass IPv4 port scanner
+# MASSCAN: Mass IP port scanner
 
-This is a port scanner. It spews out packets at a high rate, up to 10 million
-packets-per-second, fast enough to scan the entire Internet for one port
-in 6 minutes. I can do this because it's *asynchronous*: one thread transmits
-packets, another thread receives them, without much communication between
-the treads, or remembering *state* about each packet that was sent.
+This is the fastest Internet port scanner. It can scan the entire Internet
+in under 6 minutes, transmitting 10 million packets per second.
 
-This program looks a lot like the most famous port scanner, `nmap`, but
-because it's *asynchronous*, it's less feature rich (albeit 10,000 times
-faster).
-
-This is a 48-bit scanner: scanning all ports (16-bits) on all
-IPv4 addresses (32-bits). It's also useful on smaller problems, such as the
-10.x.x.x address space within a company.
-
-This randomizes the IPv4+port combination, whereas `nmap` only randomizes the
-IPv4 address. That means we don't produce complete output *per host*, but
-output *per host+port* combination. By randomizing the port alongside the IP
-address, target networks won't get overwhelmed.
+It produces results similar to `nmap`, the most famous port scanner.
+Internally, it operates more like `scanrand`, `unicornscan`, and `ZMap`, using
+asynchronous transmission. The major difference is that it's faster than these
+other scanners. In addition, it's more flexible, allowing arbitrary address
+ranges and port ranges.
 
 
 # Building
@@ -28,48 +18,36 @@ On Debian/Ubuntu, it goes something like this:
 	$ cd masscan
 	$ sudo apt-get install libpcap-dev
 	$ make
-	$ make regresss
 
 This puts the program in the `masscan/bin` subdirectory. You'll have to
 manually copy it to something like `/usr/local/bin` if you want to
 install it elsewhere on the system.
 
 While Linux is the primary target platform, the code runs well on many other
-systems. Here's some additional info:
-* Windows:Visual Studio: use the VS10 project in the `vs10` subdirectory
-* Windows:MingGW: just type `make`
-* Windows:cygwin: won't work, I hate cygwin
-* Mac OS X: once you install the development tools, just type `make`
-* FreeBSD: type `gmake`, probably will have some problems
-* other: won't work, don't care
-
-Linux and Windows (both 64-bit) are what I use every day, so that's what's
-likely to work best. If you are having some problem on another platform,
-try going back a version or two.
+systems. Here's some additional build info:
+* Windows w/ Visual Studio: use the VS10 project
+* Windows w/ MingGW: just type `make`
+* Windows w/ cygwin: won't work
+* Mac OS X /w XCode: use the XCode4 project
+* Mac OS X /w cmdline: just type `make`
+* FreeBSD: type `gmake`
+* other: I don't know, don't care
 
 
 ## PF_RING
 
-Because of Linux kernel overhead, the transmit rate is limited to about
-2 million packets/second. To go faster, a "zero-overhead" driver is needed
-that bypasses the Linux kernel. One such driver is known as PF_RING DNA. Using
-this driver, the code can run at 10 million packets/second. And really, it's
-only that slow because since I don't have an Internet connection that fast,
-I haven't had a time to optimize it further. I'm pretty sure I coiuld get 
-20 million packets/second with a minor amount of tuning.
+To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
+adapter and a special driver known as "PF_RING DNA" from http://www.netop.org.
+Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
+you need to build the following components:
+* `libpfring.so` (installed in /usr/lib/libpfring.so)
+* `pf_ring.ko` (their kernel driver)
+* `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
 
-The PF_RING drivers must be installed separately. You need to install the
-`pf_ring.ko` driver, as well as replace the `ixgbe.ko` driver for Intel
-cards. You need the shared library `/usr/lib/libpfring.so` in the
-proper directory. You probably need to reconfigure things so that the 
-drivers install automatically on bootup.
+You don't need to build their version of `libpcap.so`.
 
-As for `masscan`, no special build instructions are needed. Indeed, you
-can use a binary built before the installation of any PF_RING files. The
-program will automatically detect if PF_RING is available and use it. You
-can force the issue with the `--pfring` command-line option, which will 
-force `masscan` to fail if it can't use PF_RING, and print diagnostic 
-information why.
+When Masscan detects that an adapter is named something like `dna0` instead
+of something like `eth0`, it'll automatically switch to PF_RING mode.
 
 
 ## Regression testing
@@ -80,26 +58,30 @@ The project contains a built-in self-test:
 	bin/masscan --regress
 	selftest: success!
 
-If the self-test fails, the program returns an exit code of '1' and an
-error message particular to which module and subtest failed.
+This tests a lot of tricky bits of the code. You should do this after building.
 
-NOTE: The regression test is completely offline: it doesn't send any packets.
-It's just testing the invidual units within the program. I plan to create
-an online test, where a second program listens on the network to verify
-that what's transmitted is the same thing that was specified to be sent.
+
+## Performance testing
 
 To test performance, run something like the following:
 
 	$ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --router-mac 66-55-44-33-22-11
 
-By setting a bogus MAC address for the local router, the packets won't
-go anywhere. This will benchmark how fast the program will run on the 
-local system, and will also stress test the local switch.
+The bogus `--router-mac` keeps packets on the local network segments so that
+they won't go out to the Internet.
+
+You can also test in "offline" mode, which is how fast the program runs
+without the transmit overhead:
+
+	$ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --offline
+    
+This second benchmark shows roughly how fast the program would run if it were
+using PF_RING, which has near zero overhead.
 
 
 # Usage
 
-Usage is similar to `nmap`, such as the following scan:
+Usage is similar to `nmap`. To scan a network segment for some ports:
 
 	# masscan -p80,8000-8100 10.0.0.0/8
 
@@ -118,27 +100,23 @@ into the program:
 
 ## How to scan the entire Internet
 
-The program is designed to scan everything. Therefore, you can do something
-like the following:
+While useful for smaller, internal networks, the program is designed really
+with the entire Internet in mind. It might look something like this:
 
 	# masscan 0.0.0.0/0 -p0-65535
 
-This actually won't work, warning you that you don't have any `--exclude`
-ranges defined. That's because indiscriminate scanning of the entire Internet
-quickly gets your IP address on ban lists, causing your IP address to get
-filtered before you complete the scan. Thus, but excluding the ranges of
-people who don't want to be scanned, you can avoid such bans. I hate it when
-I do this accidentally, so I've put this warning mechanism in to prevent
-accidental mistakes when scanning any range larger than a billion addresses.
-
-Therefore, what your command will really look like is the following:
+Scanning the entire Internet is bad. For one thing, parts of the Internet react
+badly to being scanned. For another thing, some sites track scans and add you
+to a ban list, which will get you firewalled from useful parts of the Internet.
+Therefore, you want to exlude a lot of ranges. To blacklist or exclude ranges,
+you want to use the following syntax:
 
 	# masscan 0.0.0.0/0 -p0-65535 --excludefile exclude.txt
 
-But this just prints the results to the command-line. You probably want them
+This just prints the results to the command-line. You probably want them
 saved to a file instead. Therefore, you want something like:
 
-	# masscan 0.0.0.0/0 -p0-65535 --excludefile exclude.txt -oX scan.xml
+	# masscan 0.0.0.0/0 -p0-65535 -oX scan.xml
 
 This saves the results in an XML file, allowing you to easily dump the
 results in a database or something.
@@ -146,7 +124,7 @@ results in a database or something.
 But, this only goes at the default rate of 100 packets/second, which will
 take forever to scan the Internet. You need to speed it up as so:
 
-	# masscan 0.0.0.0/0 -p0-65535 --excludefile exclude.txt -oX scan.xml --max-rate 100000
+	# masscan 0.0.0.0/0 -p0-65535 --max-rate 100000
 
 This increases the rate to 100,000 packets/second, which will scan the
 entire Internet (minus excludes) in about 10 hours per port (or 655,360 hours
@@ -156,7 +134,7 @@ The thing to notice about this command-line is that these are all `nmap`
 compatible options. In addition, "invisible" options compatible with `nmap`
 are also set for you: `-sS -Pn -n --randomize-hosts --send-eth`. Likewise,
 the format of the XML file is inspired by `nmap`. There are, of course, a
-lot of minor differences, because the *asynchronous* nature of the program
+lot of differences, because the *asynchronous* nature of the program
 leads to a fundamentally different approach to the problem.
 
 The above command-line is a bit cumbersome. Instead of putting everything
@@ -178,6 +156,23 @@ To use this configuration file, use the `-c`:
 
 This also makes things easier when you repeat a scan.
 
+By default, masscan first loads the configuration file 
+`/etc/masscan/masscan.conf`. Any later configuration parameters override what's
+in this default configuration file. That's where I put my "excludefile" 
+parameter, so that I don't ever forget it. It just works automatically.
+
+## Getting output
+
+The are two primary formats for output. The first is XML, which products
+fairly large files, but is easy to import into anything. Just use the
+parameter `-oX <filename>`. Or, use the parameters `--output-format xml` and
+`--output-filename <filename>`.
+
+The second is the binary format. This produces much smaller files, so that
+when I scan the Internet my disk doesn't fill up. They need to be parsed,
+though. In the `util` subdirectory there is a program `scan2text.c` that will
+scan in the binary format and produce text.
+
 
 ## Comparison with Nmap
 
@@ -187,7 +182,7 @@ differences are:
 
 * no default ports to scan, you must specify `-p <ports>`
 * target hosts are IP addresses or simple ranges, not DNS names, nor 
-  the funky subnet ranges `nmap` can use.
+  the funky subnet ranges `nmap` can use (like `10.0.0-255.0-255`).
 
 You can think of `masscan` as having the following settings permanently
 enabled:
@@ -202,6 +197,7 @@ command:
 
 	# masscan --nmap
 
+
 ## Transmit rate (IMPORTANT!!)
 
 This program spews out packets very fast. On Windows, or from VMs,
@@ -214,69 +210,203 @@ IP addresses so that it shouldn't overwhelm any distant network.
 By default, the rate is set to 100 packets/second. To increase the rate to
 a million use something like `--rate 1000000`.
 
-It's floating point. So if you want one packet ever 10 seconds, use the value
-`--rate 0.1`.
 
 
 # Design
 
-This is an *asynchronous* design. In other words, it is to `nmap` what
-the `nginx` web-server is to `Apache`. It doesn't keep track of which
-packets were sent. Instead, it puts a *syncookie* in the packets it
-transmits, so that when it receives a response, it can figure out what
-was originally transmitted. This allows the *transmit-thread* to
-work completely independently from the *receive-thread*.
-
-All asynchronous port scanners share this basic design. Others that use
-it are `scanrand`, `unicornscan`, and `ZMap`.
-
-The major benefit of `masscan` is speed. It can use a *zero-overhead* driver
-in order to bypass the kernel. This allows it go at 10 million packets/second,
-which is fast enough to scan the entire Internet for one port in about
-six minutes. This assumes, of course, that you have an Internet connection
-that supports such speeds. Actually, this limitation is purely arbitrary
-because we are using only a single transmit-thread. We could create 
-multiple transmit/recieve queues, and multiple threads, and run much
-faster. This is a purely academic problem, since already the 10 million
-rate is faster than networks support.
-
-Also, the code is more portable. It runs on Windows and Macintosh as well
-as Linux. This is mostly because Windows and Mac are friendlier development
-environments to work from, they are both significantly slower than Linux
-in terms of scan speed (though both can reach the 100,000 packets/second
-speed, which you don't want to exceed if you want to avoid causing
-problems in your network).
+This section describes the major design issues of the program.
 
 ## Code Layout
 
 The file `main.c` contains the `main()` function, as you'd expect. It also
 contains the `transmit_thread()` and `receive_thread()` functions. These
-functions are fairly large, trying to expose all the details you need to
-worry about in order to see how the program works.
+functions have been deliberately flattened and heavily commented so that you
+can read the design of the program simply by stepping line-by-line through
+each of these.
 
-## Randomization (LCG)
+## Asynchronous
 
-Packets are sent in a random order, randomizing simultaneously the IPv4
-address and the port.
+This is an *asynchronous* design. In other words, it is to `nmap` what
+the `nginx` web-server is to `Apache`. It has separate transmit and receive
+threads that are largely independent from each other. It's the same sort of
+design found in `scanrand`, `unicornscan`, and `ZMap`.
 
-In other words, if you are scanning the entire Internet at a very fast
-rate, somebody owning a Class C network will see a very slow rate of
-packets.
+Because it's asynchronous, it runs as fast as the underlying packet transmit
+allows.
 
-The way we do this randomization is that we assign every IP/port combo
-a sequence number, then use a function that looks like:
 
-	seqno = translate(seqno);
+## Randomization
 
-The `translate()` function uses some quirky math, based on the LCG PRNG
-(the basic random number generator we are all familiar with) to do this
-translation.
+A key difference between Masscan and other scanners is the way it randomizes
+targets.
 
-The key property here is that we can completely randomize the order
-without keeping any state in memory. In other words, scanning the 
-entire Internet for all ports is a 48-bit problem (32-bit address and
-16-bit port), but we accomplish this with only a few kilobytes of
-memory.
+The fundamental principle is to have a single index variable that starts at
+zero and is incremented by one for every probe. In C code, this is expressed
+as:
+
+    for (i = 0; i < range; i++) {
+        scan(i);
+    }
+
+We have to translate the index into an IP address. Let's say that you want to
+scan all "private" IP addresses. That would be the table of ranges like:
+    
+    192.168.0.0/16
+    10.0.0.0/8
+    172.16.0.0/20
+
+In this example, the first 64k indexes are appended to 192.168.x.x to form
+the target address. Then, the next 16-million are appenedd to 10.x.x.x.
+The remaining indexes in the range are applied to 172.16.x.x.
+
+In this example, we only have three ranges. When scanning the entire Internet,
+we have in practice more than 100 ranges. That's because you have to blacklist
+or exlude a lot of sub-ranges. This chops up the desired range into hundreds
+of smaller ranges.
+
+This leads to one of the slowest parts of the code. We transmit 10 million
+packets per second, and have to convert an index variable to an IP address
+for each and every probe. We solve this by doing a "binary search" in a small
+amount of memory. At this packet rate, cache efficiencies start to dominate
+over algorithm efficiencies. There are a lot of more efficient techniques in
+theory, but they all require so much memory as to be slower in practice.
+
+We call the function that translates from an index into an IP address
+the `pick()` function. In use, it looks like:
+
+    for (i = 0; i < range; i++) {
+        ip = pick(addresses, i);
+        scan(ip);
+    }
+
+Masscan supports not only IP address ranges, but also port ranges. This means
+we need to pick from the index variable both an IP address and a port. This
+is fairly straight forward:
+
+    range = ip_count * port_count;
+    for (i = 0; i < range; i++) {
+        ip   = pick(addresses, i / port_count);
+        port = pick(ports,     i % port_count);
+        scan(ip, port);
+    }
+
+This leads to another expensive part of the code. The division/modulus
+instructions are around 90 clock cycles, or 30 nanoseconds, on x86 CPUs. When
+transmitting at a rate of 10 million packets/second, we have only
+100 nanoseconds per packet. I see now way to optimize this any better. Luckily,
+though, two such operations can be executed simultaneously, so doing two 
+of these as shown above is no more expesive than doing one.
+
+There are actually some easy optimizations for the above performance problems,
+but they all rely upon `i++`, the fact that the index variable increases one
+by one through the scan. Actually, we need to randomize this variable. We
+need to randomize the order of IP addresses that we scan or we'll blast the
+heck out of target networks that aren't built for this level of speed. We 
+need to spread our traffic evenly over the target.
+
+The way we randomize is simply by encrypting the index variable. By definition,
+encryption is random, and creates a 1-to-1 mapping between the original index
+variable and the output. This means that while we linearly go through the
+range, the output IP addresse are completely random. In code, this looks like:
+
+    range = ip_count * port_count;
+    for (i = 0; i < range; i++) {
+        x = encrypt(i);
+        ip   = pick(addresses, x / port_count);
+        port = pick(ports,     x % port_count);
+        scan(ip, port);
+    }
+
+This also has a major cost. Since the range is an unpredictable size instead
+of a nice even power of 2, we can't use cheap binary techniques like
+AND (&) and XOR (^). Instead, we have to use expensive operations like 
+MODULUS (%). In my current benchmarks, it's taking 40 nanoseconds to
+encrypt the variable.
+
+This architecture allows for lots of cool features. For example, it supports
+"shards". You can setup 5 machines each doing a fifth of the scan, or
+`range / shard_count`. Shards can be multiple machines, or simply multiple
+network adapters on the same machine, or even (if you want) multiple IP
+source addresses on the same network adapter
+
+Or, you can use a 'seed' or 'key' to the encryption function, so that you get
+a different order each time you scan, like `x = encrypt(seed, i)`.
+
+We can also pause the scan by exiting out of the program, and simply
+remembering the current value of `i`, and restart it later. I do that a lot
+during development. I see something going wrong with my Internet scan, so
+I hit <ctrl-c> to stop the scan, then restart it after I've fixed the bug.
+
+Another feature is retransmits/retries. Packets sometimes get dropped on the
+Internet, so you can send two packets back-to-back. However, something that
+drops one packet may drop the immediately following packet. Therefore, you
+want to send the copy about 1 second apart. This is simple. We already have
+a 'rate' variable, which is the number of packets-per-second rate we are
+transmitting at, so the retransmit function is simply to use `i + rate`
+as the index. One of these days I'm going to do a study of the Internet,
+and differentiate "back-to-back", "1 second", "10 second", and "1 minute"
+retransmits this way in order to see if there is any difference in what
+gets dropped.
+
+
+
+## C10 Scalability
+
+The asynchronous technique is known as a solution to the "c10k problem".
+Masscan is designed for the next level of scalability, the "C10M problem".
+
+The C10M solution is to bypass the kernel. There are three primary kernel
+bypasses in Masscan:
+* custom network driver
+* user-mode TCP stack
+* user-mode synchronization
+
+Masscan can use the PF_RING DNA driver. This driver DMA's packets directly
+from user-mode memory to the network driver with zero kernel involvement.
+That allows software, even with a slow CPU, to transmit packets at the maximum
+rate the hardware allows. If you put 8 10-gbps network cards in a computer,
+this means it could transmit at 100-million packets/second.
+
+Masscan has it's own built-in TCP stack for grabbing banners from TCP
+connections. It means it can easily support 10 million concurrent TCP
+connections, assuming of course that the computer has enough memory.
+
+Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
+but they have two problems. The first problem is that they cause cache-lines
+to bounce quickly back-and-forth between CPUs. The second is that when there
+is contention, they'll do a system call into the kernel, which kills
+performance. Mutexes on the fast path of a program severely limits scalability.
+Instead, Masscan uses "rings" to synchronize things, such as when the
+user-mode TCP stack in the receive thread needs to transmit a packet without
+interferring with the transmit thread.
+
+
+## Portability
+
+The code runs well on Linux, Windows, and Mac OS X. All the importnat bits are
+in standard C (C90). It therefore compiles on Visual Studio with Microsoft's
+compiler, the Clang/LLVM compiler on Mac OS X, and GCC on Linux.
+
+Windows and Macs aren't tuned for packet transmit, and get only about 300,000
+packets-per-second whereas Linux can do 1,500,000 packets/second. That's
+probably faster than you want anyway.
+
+
+## Safe code
+
+A bounty is offered for vulnerabilities, see the VULNINFO.md file for more
+information.
+
+This project uses safe functions like `strcpy_s()` instead of unsafe functions
+like `strcpy()`.
+
+This project as automated unit regression tests (`make regress`).
+
+
+## Compatibility
+
+A lot of effort has been made in make the input/output look like `nmap`, which
+everyone who does port scans is (or should be) familiar with.
 
 
 # Authors

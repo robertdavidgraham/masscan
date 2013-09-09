@@ -25,11 +25,24 @@ struct Output
     time_t last_rotate;
     unsigned period;
     unsigned offset;
-    uint64_t open_count;
-    uint64_t closed_count;
-    uint64_t banner_count;
+    struct {
+        struct {
+            uint64_t open;
+            uint64_t closed;
+            uint64_t banner;
+        } tcp;
+        struct {
+            uint64_t open;
+            uint64_t closed;
+        } udp;
+        struct {
+            uint64_t echo;
+            uint64_t timestamp;
+        } icmp;
+    } counts;
 };
 
+const char *proto_from_status(unsigned status);
 const char *proto_string(unsigned proto);
 const char *normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len);
 
