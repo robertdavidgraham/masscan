@@ -28,6 +28,8 @@
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
+#include "proto-preprocess.h"   /* quick parse of packets */
+#include "proto-icmp.h"         /* handle ICMP responses */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
@@ -35,7 +37,6 @@
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
-#include "proto-preprocess.h"   /* quick parse of packets */
 #include "templ-payloads.h"     /* UDP packet payloads */
 
 #include <string.h>
@@ -475,26 +476,7 @@ receive_thread(struct Masscan *masscan,
                 LOG(4, "found udp 0x%08x\n", parsed.ip_dst);
                 continue;
             case FOUND_ICMP:
-                seqno_me = px[parsed.transport_offset+4]<<24
-                            | px[parsed.transport_offset+5]<<16
-                            | px[parsed.transport_offset+6]<<8
-                            | px[parsed.transport_offset+7]<<0;
-                
-                if (syn_hash(ip_them, 65536*3+0) == seqno_me ) {
-                    LOG(4, "%u.%u.%u.%u - ICMP echo response: 0x%08x\n", 
-                        (ip_them>>24)&0xff, (ip_them>>16)&0xff, 
-                        (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
-                        seqno_me);
-                    output_report_status(
-                                         out,
-                                         Port_IcmpEchoResponse,
-                                         ip_them,
-                                         0,
-                                         0,
-                                         0);
-
-                }
-
+                handle_icmp(out, px, length, &parsed);
                 continue;
             case FOUND_TCP:
                 /* fall down to below */
@@ -730,8 +712,9 @@ main_scan(struct Masscan *masscan)
     /*
      * Reconfigure the packet template according to command-line options
      */
-    if (masscan->adapter_port < 0x10000)
-        template_set_source_port(tmplset, masscan->adapter_port);
+    if (masscan->adapter_port == 0x10000)
+        masscan->adapter_port = 40000 + time(0) % 20000;
+    template_set_source_port(tmplset, masscan->adapter_port);
     if (masscan->nmap.ttl)
         template_set_ttl(tmplset, masscan->nmap.ttl);
 

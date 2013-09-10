@@ -167,6 +167,8 @@ parse_udp:
 parse_icmp:
     {
         VERIFY_REMAINING(4, FOUND_ICMP);
+        info->port_src = px[offset+0];
+        info->port_dst = px[offset+1];
         return 1;
     }
     

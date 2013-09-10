@@ -18,7 +18,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include <WinSock.h>
 static unsigned char default_tcp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
@@ -241,6 +241,8 @@ tcp_checksum(struct TemplatePacket *tmpl)
     return xsum;
 }
 
+
+
 /***************************************************************************
  ***************************************************************************/
 unsigned
@@ -251,7 +253,7 @@ udp_checksum2(const unsigned char *px, unsigned offset_ip,
     unsigned i;
     
     /* pseudo checksum */
-    xsum = 6;
+    xsum = 17;
     xsum += tcp_length;
     xsum += px[offset_ip + 12] << 8 | px[offset_ip + 13];
     xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
@@ -280,7 +282,7 @@ udp_checksum(struct TemplatePacket *tmpl)
                          tmpl->packet,
                          tmpl->offset_ip,
                          tmpl->offset_tcp,
-                         tmpl->length - tmpl->offset_app);
+                         tmpl->length - tmpl->offset_tcp);
 }
 
 /***************************************************************************
@@ -407,6 +409,32 @@ tcp_create_packet(
 }
 
 /***************************************************************************
+ ***************************************************************************/
+static void
+udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
+{
+    const unsigned char *px2 = 0;
+    unsigned length2 = 0;
+    unsigned source_port2 = 0x1000;
+    uint64_t xsum2 = 0;
+    unsigned char *px = tmpl->packet;
+            
+    payloads_lookup(tmpl->payloads,
+                    port,
+                    &px2,
+                    &length2,
+                    &source_port2,
+                    &xsum2);
+
+    memcpy( px+tmpl->offset_app,
+            px2,
+            length2);
+
+    tmpl->length = tmpl->offset_app + length2;
+}
+
+
+/***************************************************************************
  * Here we take a packet template, parse it, then make it easier to work
  * with.
  ***************************************************************************/
@@ -422,7 +450,7 @@ template_set_target(
     uint64_t xsum;
     unsigned ip_id;
     struct TemplatePacket *tmpl = NULL;
-
+    
     /*
      * Find out which packet template to use. This is because we can
      * simultaneously scan for both TCP and UDP (and others). We've
@@ -434,6 +462,7 @@ template_set_target(
     else if (port < 65536*2) {
         tmpl = &tmplset->pkts[Proto_UDP];
         port &= 0xFFFF;
+        udp_payload_fixup(tmpl, port, seqno);
     } else if (port < 65536*3) {
         tmpl = &tmplset->pkts[Proto_SCTP];
         port &= 0xFFFF;
@@ -460,6 +489,11 @@ template_set_target(
      * Fill in the empty fields in the IP header and then re-calculate
      * the checksum.
      */
+    {
+        unsigned total_length = tmpl->length - tmpl->offset_ip;
+        px[offset_ip+2] = (unsigned char)(total_length>>8);
+        px[offset_ip+3] = (unsigned char)(total_length>>0);
+    }
     px[offset_ip+4] = (unsigned char)(ip_id >> 8);
     px[offset_ip+5] = (unsigned char)(ip_id & 0xFF);
     px[offset_ip+16] = (unsigned char)((ip >> 24) & 0xFF);
@@ -468,6 +502,7 @@ template_set_target(
     px[offset_ip+19] = (unsigned char)((ip >>  0) & 0xFF);
 
     xsum = tmpl->checksum_ip;
+    xsum += tmpl->length - tmpl->offset_app;
     xsum += (ip_id&0xFFFF);
     xsum += ip;
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
@@ -504,39 +539,25 @@ template_set_target(
         px[offset_tcp+17] = (unsigned char)(xsum >>  0);
         break;
     case Proto_UDP:
-        {
-            const unsigned char *px2;
-            unsigned length2 = 0;
-            unsigned source_port2;
-            
-            payloads_lookup(tmpl->payloads,
-                                         port,
-                                         &px2,
-                                         &length2,
-                                         &source_port2,
-                                         &xsum);
-            
-            if (length2) {
-                memcpy(&px[tmpl->offset_app], px2, length2);
-            } else
-                xsum = 0;
-            tmpl->length = offset_tcp + length2 + 8;
-            
-            px[offset_tcp+ 2] = (unsigned char)(port >> 8);
-            px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
-            px[offset_tcp+ 4] = (unsigned char)((length2+8)>>8);
-            px[offset_tcp+ 5] = (unsigned char)((length2+8)&0xFF);
-            xsum += (uint64_t)tmpl->checksum_tcp
-                    + (uint64_t)ip
-                    + (uint64_t)port
-                    + (uint64_t)length2;
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = ~xsum;
-            px[offset_tcp+6] = (unsigned char)(xsum >>  8);
-            px[offset_tcp+7] = (unsigned char)(xsum >>  0);
-        }
+        px[offset_tcp+ 2] = (unsigned char)(port >> 8);
+        px[offset_tcp+ 3] = (unsigned char)(port & 0xFF);
+        px[offset_tcp+ 4] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)>>8);
+        px[offset_tcp+ 5] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)&0xFF);
+        
+        px[offset_tcp+6] = (unsigned char)(0);
+        px[offset_tcp+7] = (unsigned char)(0);
+        xsum = udp_checksum(tmpl);
+        /*xsum += (uint64_t)tmpl->checksum_tcp
+                + (uint64_t)ip
+                + (uint64_t)port
+                + (uint64_t)2*(tmpl->length - tmpl->offset_app);
+        xsum = (xsum >> 16) + (xsum & 0xFFFF);
+        xsum = (xsum >> 16) + (xsum & 0xFFFF);
+        xsum = (xsum >> 16) + (xsum & 0xFFFF);
+        printf("%04x\n", xsum);*/
+        xsum = ~xsum;
+        px[offset_tcp+6] = (unsigned char)(xsum >>  8);
+        px[offset_tcp+7] = (unsigned char)(xsum >>  0);
         break;
     case Proto_SCTP:
         break;

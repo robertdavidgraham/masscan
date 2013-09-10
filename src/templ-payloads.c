@@ -30,7 +30,7 @@ struct NmapPayloads {
 };
 
 struct Payload2 hard_coded_payloads[] = {
-    {161, 65536, 56, 0, 
+    {161, 65536, 57, 0, 
         "\x30" "\x37"
         "\x02\x01\x00"                    /* version */
         "\x04\x06" "public"               /* community = public */
@@ -51,7 +51,7 @@ struct Payload2 hard_coded_payloads[] = {
         "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
         "\x00\x01\x00\x01" /* A IN */
     },
-    {5060, 65536, -1, 0,
+    {5060, 65536, 0xFFFFFFFF, 0,
         "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
         "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
         "Max-Forwards: 70\r\n"
@@ -184,7 +184,6 @@ is_comment(const char *line)
         return 1;
     else
         return 0;
-    return 0;
 }
 
 /***************************************************************************
@@ -519,8 +518,8 @@ payloads_create()
         range.end = range.begin;
         
         length = hard_coded_payloads[i].length;
-        if (length == -1)
-            length = strlen(hard_coded_payloads[i].buf);
+        if (length == 0xFFFFFFFF)
+            length = (unsigned)strlen(hard_coded_payloads[i].buf);
         
         /* Add this to our real payloads. This will get overwritten
          * if the user adds their own with the same port */
