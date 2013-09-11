@@ -41,3 +41,32 @@ LOG(int level, const char *fmt, ...)
     va_end(marker);
 }
 
+/***************************************************************************
+ ***************************************************************************/
+void
+vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
+{
+    if (level <= verbosity) {
+        char sz_ip[16];
+        
+        sprintf_s(sz_ip, sizeof(sz_ip), "%u.%u.%u.%u", 
+            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF);
+        fprintf(stderr, "%-15s:%5u: ", sz_ip, port);
+        vfprintf(stderr, fmt, marker);
+        fflush(stderr);
+    }
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+void
+LOGip(int level, unsigned ip, unsigned port, const char *fmt, ...)
+{
+    va_list marker;
+
+    va_start(marker, fmt);
+    vLOGip(level, ip, port, fmt, marker);
+    va_end(marker);
+}
+

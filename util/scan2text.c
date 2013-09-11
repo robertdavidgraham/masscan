@@ -287,7 +287,10 @@ void parse_file(const char *filename)
         unsigned type;
         unsigned length;
 
-        /* get type field */
+        /* [TYPE]
+         * This is one or more bytes indicating the type of type of the
+         * record
+         */
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
@@ -302,7 +305,10 @@ void parse_file(const char *filename)
         if (type == 'a')
             break; /* end record */
         
-        /* get length field */
+        /* [LENGTH]
+         * Is one byte for lengths smaller than 127 bytes, or two
+         * bytes for lengths up to 16384.
+         */
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
@@ -311,7 +317,7 @@ void parse_file(const char *filename)
             bytes_read = fread(buf, 1, 1, fp);
             if (bytes_read != 1)
                 break;
-            length = (type << 7) | (buf[0] & 0x7F);
+            length = (length << 7) | (buf[0] & 0x7F);
         }
         if (length > BUF_MAX) {
             fprintf(stderr, "file corrupt\n");

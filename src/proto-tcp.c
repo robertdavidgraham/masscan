@@ -536,6 +536,7 @@ handle_ack(
     tcb->ackno_them = ackno;
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 void
@@ -552,25 +553,15 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
         if (tcb->when_created + tcpcon->timeout < secs) {
-        LOG(8, "%u.%u.%u.%u:%u: %s                \n", 
-                (unsigned char)(tcb->ip_them>>24),
-                (unsigned char)(tcb->ip_them>>16),
-                (unsigned char)(tcb->ip_them>> 8),
-                (unsigned char)(tcb->ip_them>> 0),
-                tcb->port_them,
-                "CONNECTION TIMEOUT---"
-                );
+        LOGip(8, tcb->ip_them, tcb->port_them,
+            "%s                \n",
+            "CONNECTION TIMEOUT---");
             tcpcon_destroy_tcb(tcpcon, tcb);
             return;
         }
     }
 
-    LOG(8, "%u.%u.%u.%u =%s : %s                  \n", 
-            (unsigned char)(tcb->ip_them>>24),
-            (unsigned char)(tcb->ip_them>>16),
-            (unsigned char)(tcb->ip_them>> 8),
-            (unsigned char)(tcb->ip_them>> 0),
-
+    LOGip(8, tcb->ip_them, tcb->port_them, "=%s : %s                  \n", 
             state_to_string(tcb->tcpstate), 
             what_to_string(what));
 
@@ -643,9 +634,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             tcpcon_send_packet(tcpcon, tcb,
                 0x18, 
                 x, x_len);
-            LOG(4, "%u.%u.%u.%u - sending payload %u bytes\n",
-                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, 
-                (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+            LOGip(4, tcb->ip_them, tcb->port_them,
+                "sending payload %u bytes\n",
                 x_len);
 
             /* Increment our sequence number */
@@ -771,8 +761,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
                 0x18, 
                 tcb->payload + tcb->payload_length - len,
                 len);
-            LOG(4, "%u.%u.%u.%u - re-sending payload %u bytes\n",
-                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF, 
+            LOGip(4, tcb->ip_them, tcb->port_them,
+                "- re-sending payload %u bytes\n",
                 len);
             tcb->seqno_me += len;
 
@@ -816,7 +806,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         break;
 
     default:
-        LOG(3, "tcp: unknown event %s : %s\n", 
+        LOGip(3, tcb->ip_them, tcb->port_them, "tcb: unknown event %s : %s\n", 
             state_to_string(tcb->tcpstate), 
             what_to_string(what));
     }

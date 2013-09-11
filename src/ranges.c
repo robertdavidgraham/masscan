@@ -385,7 +385,25 @@ end:
 /***************************************************************************
  ***************************************************************************/
 uint64_t
-rangelist_count(struct RangeList *targets)
+rangelist_exclude(  struct RangeList *targets, 
+              const struct RangeList *excludes)
+{
+    uint64_t count = 0;
+    unsigned i;
+
+    for (i=0; i<excludes->count; i++) {
+        struct Range range = excludes->list[i];
+        count += range.end - range.begin + 1;
+        rangelist_remove_range(targets, range.begin, range.end);
+    }
+
+    return count;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+uint64_t
+rangelist_count(const struct RangeList *targets)
 {
     unsigned i;
     uint64_t result = 0;
@@ -407,7 +425,7 @@ rangelist_count(struct RangeList *targets)
  * will get fragmented, and the linear search will take too long.
  ***************************************************************************/
 unsigned
-rangelist_pick(struct RangeList *targets, uint64_t index)
+rangelist_pick(const struct RangeList *targets, uint64_t index)
 {
     unsigned i;
 

@@ -132,6 +132,12 @@
     <ClCompile Include="..\src\proto-icmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-http.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ssh.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -222,6 +228,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-icmp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-http.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ssh.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

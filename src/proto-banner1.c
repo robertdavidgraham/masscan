@@ -5,17 +5,13 @@
 #include "rawsock-pcapfile.h"
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
+#include "proto-http.h"
+#include "proto-ssh.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
 
-struct Patterns {
-    const char *pattern;
-    unsigned pattern_length;
-    unsigned id;
-    unsigned is_anchored;
-};
 
 struct Patterns patterns[] = {
     {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN},
@@ -26,179 +22,8 @@ struct Patterns patterns[] = {
     {0,0}
 };
 
-enum {
-    HTTPFIELD_INCOMPLETE,
-    HTTPFIELD_SERVER,
-    HTTPFIELD_UNKNOWN,
-    HTTPFIELD_NEWLINE,
-};
-struct Patterns http_fields[] = {
-    {"Server:",     7, HTTPFIELD_SERVER, SMACK_ANCHOR_BEGIN},
-    {":",           1, HTTPFIELD_UNKNOWN, 0},
-    {"\n",          1, HTTPFIELD_NEWLINE, 0}, 
-    {0,0,0,0}
-};
-
-struct Banner1
-{
-    struct SMACK *smack;
-    struct SMACK *http_fields;
-};
 
 
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-b_http(  struct Banner1 *banner1,
-        unsigned state,
-        const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max)
-{
-    unsigned i;
-    unsigned state2;
-    size_t id;
-    enum {
-        FIELD_START = 9,
-        FIELD_NAME,
-        FIELD_COLON,
-        FIELD_VALUE,
-
-    };
-
-    state2 = (state>>16) & 0xFFFF;
-    id = (state>>8) & 0xFF;
-    state = (state>>0) & 0xFF;
-
-    for (i=0; i<length; i++)
-    switch (state) {
-    case 0: case 1: case 2: case 3: case 4:
-        if (toupper(px[i]) != "HTTP/"[state])
-            state = STATE_DONE;
-        else
-            state++;
-        break;
-    case 5:
-        if (px[i] == '.')
-            state++;
-        else if (!isdigit(px[i]))
-            state = STATE_DONE;
-        break;
-    case 6:
-        if (isspace(px[i]))
-            state++;
-        else if (!isdigit(px[i]))
-            state = STATE_DONE;
-        break;
-    case 7:
-        /* TODO: look for 1xx response code */
-        if (px[i] == '\n')
-            state = FIELD_START;
-        break;
-    case FIELD_START:
-        if (px[i] == '\r')
-            break;
-        else if (px[i] == '\n') {
-            state = STATE_DONE;
-            break;
-        } else {
-            state2 = 0;
-            state = FIELD_NAME;
-            /* drop down */
-        }
-
-    case FIELD_NAME:
-        if (px[i] == '\r')
-            break;
-        id = smack_search_next(
-                        banner1->http_fields,
-                        &state2, 
-                        px, &i, (unsigned)length);
-        if (id == HTTPFIELD_NEWLINE) {
-            state2 = 0;
-            state = FIELD_START;
-        } else if (id == SMACK_NOT_FOUND)
-            ; /* continue here */
-        else if (id == HTTPFIELD_UNKNOWN) {
-            size_t id2;
-
-            id2 = smack_next_match(banner1->http_fields, &state2);
-            if (id2 != SMACK_NOT_FOUND)
-                id = id2;
-        
-            state = FIELD_COLON;
-        } else
-            state = STATE_DONE;
-        break;
-    case FIELD_COLON:
-        if (px[i] == '\n') {
-            state = FIELD_START;
-            break;
-        } else if (isspace(px[i])) {
-            break;
-        } else {
-            state = FIELD_VALUE;
-            /* drop down */
-        }
-
-    case FIELD_VALUE:
-        if (px[i] == '\r')
-            break;
-        else if (px[i] == '\n') {
-            state = FIELD_START;
-            break;
-        }
-        if (id == HTTPFIELD_SERVER) {
-            if (*banner_offset < banner_max) {
-                banner[(*banner_offset)++] = px[i];
-            }
-        }
-        break;
-
-    case STATE_DONE:
-    default:
-        i = (unsigned)length;
-        break;
-    }
-
-
-    if (state == STATE_DONE)
-        return state;
-    else
-        return (state2 & 0xFFFF) << 16
-                | (id & 0xFF) << 8
-                | (state & 0xFF);
-}
-
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-b_ssh(  struct Banner1 *banner1,
-        unsigned state,
-        const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max)
-{
-    unsigned i;
-
-    banner1=banner1;
-
-    for (i=0; i<length; i++)
-    switch (state) {
-    case 0:
-        if (px[i] == '\r')
-            continue;
-        if (px[i] == '\n' || px[i] == '\0' || !isprint(px[i])) {
-            state = STATE_DONE;
-            continue;
-        }
-        if (*banner_offset < banner_max)
-            banner[(*banner_offset)++] = px[i];
-        break;
-    default:
-        i = (unsigned)length;
-        break;
-    }
-    return state;
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -229,6 +54,8 @@ banner1_parse(
             for (i=0; patterns[i].id != *proto; i++)
                 ;
 
+            *banner_offset = 0;
+
             state = banner1_parse(
                             banner1, 
                             state, proto, 
@@ -239,18 +66,24 @@ banner1_parse(
                             state, proto, 
                             px+offset, length-offset,
                             banner, banner_offset, banner_max);
+        } else {
+            size_t len = length;
+            if (len > banner_max - *banner_offset)
+                len = banner_max = *banner_offset;
+            memcpy(banner + *banner_offset, px, len);
+            (*banner_offset) += (unsigned)len;
         }
         break;
     case PROTO_SSH1:
     case PROTO_SSH2:
     case PROTO_FTP1:
     case PROTO_FTP2:
-        state = b_ssh(banner1, state,
+        state = banner_ssh(banner1, state,
                         px, length,
                         banner, banner_offset, banner_max);
         break;
     case PROTO_HTTP:
-        state = b_http(banner1, state,
+        state = banner_http(banner1, state,
                         px, length,
                         banner, banner_offset, banner_max);
         break;

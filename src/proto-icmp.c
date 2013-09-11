@@ -63,6 +63,10 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
         break;
     case 3: /* destination unreachable */
         switch (code) {
+        case 0: /* net unreachable */
+        case 1: /* host unreachable */
+        case 2: /* protocol unreachable */
+            break;
         case 3: /* port unreachable */
             if (length - parsed->transport_offset > 8) {
                 unsigned ip_me2, ip_them2, port_me2, port_them2;

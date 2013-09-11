@@ -12,6 +12,19 @@ enum {
     PROTO_FTP2,
 };
 
+struct Banner1
+{
+    struct SMACK *smack;
+    struct SMACK *http_fields;
+};
+
+struct Patterns {
+    const char *pattern;
+    unsigned pattern_length;
+    unsigned id;
+    unsigned is_anchored;
+};
+
 struct Banner1 *
 banner1_create(void);
 

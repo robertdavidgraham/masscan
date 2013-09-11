@@ -464,7 +464,7 @@ receive_thread(struct Masscan *masscan,
                 /* OOPS: handle arp instead. Since we may completely bypass the TCP/IP
                  * stack, we may have to handle ARPs ourself, or the router will 
                  * lose track of us. */
-                LOG(2, "found arp 0x%08x\n", parsed.ip_dst);
+                LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
                 arp_response(
                              adapter_ip, adapter_mac, px, length,
                              masscan->packet_buffers,
@@ -501,10 +501,13 @@ receive_thread(struct Masscan *masscan,
                 usecs);
         }
 
-        LOG(5, "%u.%u.%u.%u - ackno=0x%08x flags=%02x\n", 
-            (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
-            seqno_me, TCP_FLAGS(px, parsed.transport_offset));
-
+        {
+            char buf[64];
+            LOGip(5, ip_them, parsed.port_src, "-> TCP ackno=0x%08x flags=0x%02x(%s)\n", 
+                seqno_me, 
+                TCP_FLAGS(px, parsed.transport_offset),
+                reason_string(TCP_FLAGS(px, parsed.transport_offset), buf, sizeof(buf)));
+        }
 
         /* If recording --banners, create a new "TCP Control Block (TCB)" */
         if (tcpcon) {
@@ -871,21 +874,9 @@ int main(int argc, char *argv[])
      * of their ranges, and when doing wide scans, add the exclude list to
      * prevent them from being scanned.
      */
-    {
-        unsigned i;
-
-        for (i=0; i<masscan->exclude_ip.count; i++) {
-            struct Range range = masscan->exclude_ip.list[i];
-            rangelist_remove_range(&masscan->targets, range.begin, range.end);
-        }
-
-        for (i=0; i<masscan->exclude_port.count; i++) {
-            struct Range range = masscan->exclude_port.list[i];
-            rangelist_remove_range(&masscan->ports, range.begin, range.end);
-        }
-
-        rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
-    }
+    rangelist_exclude(&masscan->targets, &masscan->exclude_ip);
+    rangelist_exclude(&masscan->ports, &masscan->exclude_port);
+    rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
 
 
 

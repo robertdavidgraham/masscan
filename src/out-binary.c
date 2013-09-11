@@ -92,7 +92,7 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
     /* [TYPE] field */
     foo[0] = 3; /*banner*/
 
-    /* [LENGTH] field */
+    /* [LENGTH] field*/
     if (length >= 128 * 128 - 12)
         return;
     if (length <= 128 - 12) {
@@ -101,7 +101,7 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
     } else {
         foo[1] = (unsigned char)((length + 12)>>7) | 0x80;
         foo[2] = (unsigned char)((length + 12) & 0x7F);
-        i = 2;
+        i = 3;
     }
 
     /* [TIMESTAMP] field */
