@@ -18,7 +18,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <WinSock.h>
+
 static unsigned char default_tcp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */

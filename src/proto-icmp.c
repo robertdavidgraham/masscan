@@ -99,7 +99,8 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
         }
         break;
     default:
-        printf(".");
+	;
     }
+
 }
 

@@ -9,7 +9,7 @@
     be redirected to a file.
 */
 #include "logger.h"
-
+#include "string_s.h"
 #include <stdarg.h>
 #include <stdio.h>
 

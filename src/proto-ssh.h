@@ -1,5 +1,6 @@
 #ifndef PROTO_SSH_H
 #define PROTO_SSH_H
+#include <stdio.h>
 struct Banner1;
 
 unsigned

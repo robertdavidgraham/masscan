@@ -1,6 +1,7 @@
 #include "proto-banner1.h"
 #include "smack.h"
 #include <ctype.h>
+#include <stdint.h>
 
 enum {
     HTTPFIELD_INCOMPLETE,

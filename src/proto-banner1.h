@@ -1,7 +1,8 @@
 #ifndef PROTO_BANNER1_H
 #define PROTO_BANNER1_H
-
+#include <stdint.h>
 #define STATE_DONE 0xFFFFFFFF
+#include <stdio.h>
 
 enum {
     PROTO_UNKNOWN,
