@@ -177,6 +177,7 @@ open_rotate(struct Output *output, const char *filename)
 #endif
 
     if (fp == NULL) {
+        fprintf(stderr, "out: could not open file for %s\n", is_append?"appending":"writing");
         perror(filename);
         control_c_pressed = 1;
         return NULL;

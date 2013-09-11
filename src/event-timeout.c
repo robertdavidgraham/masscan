@@ -59,6 +59,8 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     entry->next = timeouts->slots[index];
     timeouts->slots[index] = entry;
     entry->prev = &timeouts->slots[index];
+    if (entry->next)
+        entry->next->prev = &entry->next;
 }
 
 /***************************************************************************

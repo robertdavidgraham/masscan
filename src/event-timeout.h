@@ -22,16 +22,20 @@ struct TimeoutEntry {
 static inline void
 timeout_unlink(struct TimeoutEntry *entry)
 {
+    if (entry->prev == 0 && entry->next == 0)
+        return;
     *(entry->prev) = entry->next;
+    if (entry->next)
+        entry->next->prev = entry->prev;
     entry->next = 0;
-    entry->prev = &entry->next;
+    entry->prev = 0;
 }
 
 static inline void
 timeout_init(struct TimeoutEntry *entry)
 {
     entry->next = 0;
-    entry->prev = &entry->next;
+    entry->prev = 0;
 }
 
 
