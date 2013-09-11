@@ -1,19 +1,46 @@
 #ifndef EVENT_TIMEOUT_H
 #define EVENT_TIMEOUT_H
 #include <stdint.h>
+#include <stdio.h>
+#include <stddef.h> /* offsetof*/
 
 struct Timeouts;
 struct TimeoutEntry;
 
-struct TimeoutEvent {
-    void *p;
-    unsigned counter;
+/***************************************************************************
+ ***************************************************************************/
+struct TimeoutEntry {
+    /** 
+     * In units of 1/10000 of a second
+     */
+    uint64_t timestamp;
+    struct TimeoutEntry *next;
+    struct TimeoutEntry **prev;
+    unsigned offset;
 };
+
+static inline void
+timeout_unlink(struct TimeoutEntry *entry)
+{
+    *(entry->prev) = entry->next;
+    entry->next = 0;
+    entry->prev = &entry->next;
+}
+
+static inline void
+timeout_init(struct TimeoutEntry *entry)
+{
+    entry->next = 0;
+    entry->prev = &entry->next;
+}
 
 
 struct Timeouts *timeouts_create(uint64_t timestamp);
-unsigned *timeouts_add(struct Timeouts *timeouts, void *p, uint64_t timestamp, unsigned counter);
-struct TimeoutEvent timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp);
+
+void timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry, 
+                  size_t offset, uint64_t timestamp);
+
+void *timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp);
 
 #define TICKS_FROM_SECS(secs) ((secs)*16384ULL)
 #define TICKS_FROM_USECS(usecs) ((usecs)/16384ULL)

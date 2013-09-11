@@ -814,32 +814,6 @@ template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
 }
 
 
-/***************************************************************************
- * Print packet info, when using nmap-style --packet-trace option
- ***************************************************************************/
-void
-template_packet_trace(struct TemplateSet *pkt_template, 
-    unsigned ip, unsigned port, double timestamp_start)
-{
-    char from[32];
-    char to[32];
-    unsigned src_ip = template_get_source_ip(pkt_template);
-    unsigned src_port = template_get_source_port(pkt_template);
-    double timestamp = 1.0 * pixie_gettime() / 1000000.0;
-
-    sprintf_s(from, sizeof(from), "%u.%u.%u.%u:%u",
-        (src_ip>>24)&0xFF, (src_ip>>16)&0xFF,
-        (src_ip>>8)&0xFF, (src_ip>>0)&0xFF,
-        src_port);
-
-    sprintf_s(to, sizeof(to), "%u.%u.%u.%u:%u",
-        (ip>>24)&0xFF, (ip>>16)&0xFF,
-        (ip>>8)&0xFF, (ip>>0)&0xFF,
-        port);
-
-    fprintf(stderr, "SENT (%5.4f) TCP %-21s > %-21s SYN\n",
-        timestamp - timestamp_start, from, to);
-}
 
 /***************************************************************************
  ***************************************************************************/

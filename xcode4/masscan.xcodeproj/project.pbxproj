@@ -45,6 +45,10 @@
 		11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */; };
 		11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D117DBCC7E00DDFD32 /* templ-pkt.c */; };
 		11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D317DBCC7E00DDFD32 /* xring.c */; };
+		11AC80ED17E0DAD4001BCE3A /* proto-http.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E717E0DAD4001BCE3A /* proto-http.c */; };
+		11AC80EE17E0DAD4001BCE3A /* proto-icmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E917E0DAD4001BCE3A /* proto-icmp.c */; };
+		11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */; };
+		11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80F517E0ED47001BCE3A /* main-ptrace.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
 /* End PBXBuildFile section */
 
@@ -129,6 +133,14 @@
 		11A921D317DBCC7E00DDFD32 /* xring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xring.c; sourceTree = "<group>"; };
 		11A921D417DBCC7E00DDFD32 /* xring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xring.h; sourceTree = "<group>"; };
 		11A921FB17DBD17600DDFD32 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		11AC80E717E0DAD4001BCE3A /* proto-http.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-http.c"; sourceTree = "<group>"; };
+		11AC80E817E0DAD4001BCE3A /* proto-http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-http.h"; sourceTree = "<group>"; };
+		11AC80E917E0DAD4001BCE3A /* proto-icmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-icmp.c"; sourceTree = "<group>"; };
+		11AC80EA17E0DAD4001BCE3A /* proto-icmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-icmp.h"; sourceTree = "<group>"; };
+		11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ssh.c"; sourceTree = "<group>"; };
+		11AC80EC17E0DAD4001BCE3A /* proto-ssh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssh.h"; sourceTree = "<group>"; };
+		11AC80F517E0ED47001BCE3A /* main-ptrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-ptrace.c"; sourceTree = "<group>"; };
+		11AC80F817E0EDA7001BCE3A /* main-ptrace.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "main-ptrace.h"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -164,6 +176,12 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11AC80E717E0DAD4001BCE3A /* proto-http.c */,
+				11AC80E817E0DAD4001BCE3A /* proto-http.h */,
+				11AC80E917E0DAD4001BCE3A /* proto-icmp.c */,
+				11AC80EA17E0DAD4001BCE3A /* proto-icmp.h */,
+				11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */,
+				11AC80EC17E0DAD4001BCE3A /* proto-ssh.h */,
 				11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */,
 				11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
@@ -232,6 +250,8 @@
 				11A921D217DBCC7E00DDFD32 /* templ-pkt.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
+				11AC80F517E0ED47001BCE3A /* main-ptrace.c */,
+				11AC80F817E0EDA7001BCE3A /* main-ptrace.h */,
 			);
 			name = src;
 			path = ../src;
@@ -326,6 +346,10 @@
 				11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */,
 				11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */,
 				11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */,
+				11AC80ED17E0DAD4001BCE3A /* proto-http.c in Sources */,
+				11AC80EE17E0DAD4001BCE3A /* proto-icmp.c in Sources */,
+				11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */,
+				11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -12,24 +12,6 @@
 
 /***************************************************************************
  ***************************************************************************/
-struct TimeoutEntry {
-    /** 
-     * In units of 1/10000 of a second
-     */
-    uint64_t timestamp;
-
-    struct TimeoutEntry *next;
-
-    /**
-     * A pointer to our custom data structure 
-     */
-    void *pointer;
-
-    unsigned counter;
-};
-
-/***************************************************************************
- ***************************************************************************/
 struct Timeouts {
     uint64_t current_index;
     unsigned mask;
@@ -57,59 +39,62 @@ timeouts_create(uint64_t timestamp)
 
 /***************************************************************************
  ***************************************************************************/
-unsigned *
-timeouts_add(struct Timeouts *timeouts, void *p, uint64_t timestamp, unsigned counter)
+void
+timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
+             size_t offset, uint64_t timestamp)
 {
-    struct TimeoutEntry *entry;
-    unsigned index = timestamp & timeouts->mask;
+    unsigned index;
 
-    entry = timeouts->freed_list;
-    if (entry)
-        timeouts->freed_list = entry->next;
-    else {
-        entry = (struct TimeoutEntry *)malloc(sizeof(*entry));
-    }
-        
+    /* Initialize the new entry */    
     entry->timestamp = timestamp;
-    entry->pointer = p;
-    entry->counter = counter;
+    entry->offset = (unsigned)offset;
+
+    
+    /* Unlink from whereas the entry came from */
+    timeout_unlink(entry);
+    
+    
+    /* Link it into it's new location */
+    index = timestamp & timeouts->mask;
     entry->next = timeouts->slots[index];
     timeouts->slots[index] = entry;
-    return &entry->counter;
+    entry->prev = &timeouts->slots[index];
 }
 
 /***************************************************************************
  ***************************************************************************/
-struct TimeoutEvent
+void *
 timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
 {
-    struct TimeoutEvent result;
+    struct TimeoutEntry *entry = NULL;
 
+    /* Search until we find one */
     while (timeouts->current_index <= timestamp) {
-        struct TimeoutEntry **r_entry = &timeouts->slots[timeouts->current_index & timeouts->mask];
+        
+        /* Start at the current slot */
+        entry = timeouts->slots[timeouts->current_index & timeouts->mask];
 
-        while (*r_entry && (*r_entry)->timestamp > timestamp)
-            r_entry = &(*r_entry)->next;
-
-        if (*r_entry) {
-            struct TimeoutEntry *entry = *r_entry;
-            void *p = entry->pointer;
-            unsigned counter = entry->counter;
-            (*r_entry) = entry->next;
-            entry->next = timeouts->freed_list;
-            timeouts->freed_list = entry;
-
-            result.p = p;
-            result.counter = counter;
-            return result;
-        } else {
-            timeouts->current_index++;
-        }
+        /* enumerate throug the linked list until we find one */
+        while (entry && entry->timestamp > timestamp)
+            entry = entry->next;
+        if (entry)
+            break;
+    
+        /* found nothing at this slot, so move to next slot */
+        timeouts->current_index++;
     }
 
-    result.p = 0;
-    result.counter = 0;
-    return result;
+    if (entry == NULL) {
+        /* we've caught up to the current time, and there's nothing
+         * left to timeout, so return NULL */
+        return NULL;
+    }
+    
+    /* unlink this entry from the timeout system */
+    timeout_unlink(entry);
+ 
+    /* return a pointer to the structure holding this entry */
+    return ((char*)entry) - entry->offset;
 }
 
 

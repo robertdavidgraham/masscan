@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stddef.h>
 #include "syn-cookie.h"
 #include "event-timeout.h"      /* for tracking future events */
 #include "rawsock.h"
@@ -37,10 +38,8 @@ struct TCP_Control_Block
     uint32_t ackno_them;
 
     struct TCP_Control_Block *next;
-
-    time_t  furthest_timeout;
-    unsigned counter;
-    unsigned *p_counter;
+    struct TimeoutEntry timeout[1];
+    
     unsigned tcpstate:4;
 
 
@@ -80,6 +79,8 @@ enum {
     STATE_WAITING_FOR_RESPONSE,
 };
 
+
+
 /***************************************************************************
  * Process all events, up to the current time, that need timing out.
  ***************************************************************************/
@@ -89,31 +90,13 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
     uint64_t timestamp = TICKS_FROM_TV(secs, usecs);
 
     for (;;) {
-        struct TimeoutEvent e;
         struct TCP_Control_Block *tcb;
         
         /* Remove any/all timeouts older than the current time */
-        e = timeouts_remove(tcpcon->timeouts, timestamp);
-        tcb = (struct TCP_Control_Block *)e.p;
-
-        /* If this is NULL, it means we've done processing all timeouts
-         * up to this point in time */
+        tcb = (struct TCP_Control_Block *)timeouts_remove(tcpcon->timeouts, 
+                                                          timestamp);
         if (tcb == NULL)
             break;
-
-        /* Check for stale timeouts. Incoming traffic may change the
-         * the timeout, leaving behind stale ones that should be ignored
-         * in deference to the newer ones */
-        if (tcb->counter != e.counter) {
-            LOG(15, "%u.%u.%u.%u: stale counter: event=%u tcb=%u\n",
-                (unsigned char)(tcb->ip_them>>24),
-                (unsigned char)(tcb->ip_them>>16),
-                (unsigned char)(tcb->ip_them>> 8),
-                (unsigned char)(tcb->ip_them>> 0),
-                e.counter,
-                tcb->counter);
-            continue;
-        }
 
         /* Process this timeout */
         tcpcon_handle(
@@ -216,7 +199,6 @@ tcpcon_destroy_tcb(
                         tcb->port_me ^ tcb->port_them);
 
     r_entry = &tcpcon->entries[index & tcpcon->mask];
-
     while (*r_entry) {
         if (*r_entry == tcb) {
             if (tcb->banner_length || tcb->banner_proto) {
@@ -228,9 +210,8 @@ tcpcon_destroy_tcb(
                     tcb->banner,
                     tcb->banner_length);
             }
-            tcb->counter += 100;
-            *tcb->p_counter = 0;
-
+            timeout_unlink(tcb->timeout);
+            
             (*r_entry) = tcb->next;
             tcb->next = tcpcon->freed_list;
             tcpcon->freed_list = tcb;
@@ -240,7 +221,10 @@ tcpcon_destroy_tcb(
         } else
             r_entry = &(*r_entry)->next;
     }
-
+    
+    /* TODO: this should be impossible, but it's happening anyway, about
+     * 20 times on a full Internet scan. I don't know why, and I'm too
+     * lazy to fix it right now, but I'll get around to eventually */
     fprintf(stderr, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
             (tcb->ip_them>>24)&0xFF,
             (tcb->ip_them>>16)&0xFF,
@@ -295,14 +279,10 @@ tcpcon_create_tcb(
         tcb->seqno_them = seqno_them;
         tcb->ackno_me = seqno_them;
         tcb->ackno_them = seqno_me;
-        tcb->counter = seqno_me ^ seqno_them ^ ip_them;
-        tcb->counter += (tcb->counter == 0); /* must not be zero */
-        {
-            static unsigned nothing = 0;
-            tcb->p_counter = &nothing;
-        }
         tcb->when_created = global_now;
         
+        timeout_init(tcb->timeout);
+
         tcpcon->active_count++;
         global_tcb_count = tcpcon->active_count;
     }
@@ -588,12 +568,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
          * Wait 1 second for "server hello" (like SSH), and if that's
          * not found, then transmit a "client hello"
          */
-        *tcb->p_counter = 0;
-        tcb->p_counter = timeouts_add(   
-                        tcpcon->timeouts, 
-                        tcb, 
-                        TICKS_FROM_TV(secs+2,usecs),
-                        ++tcb->counter);
+        timeouts_add(   tcpcon->timeouts, 
+                        tcb->timeout,
+                        offsetof(struct TCP_Control_Block, timeout),
+                        TICKS_FROM_TV(secs+2,usecs)
+                        );
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_ACK:
@@ -647,12 +626,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
 
             /* Add a timeout so that we can resend the data in case it
              * goes missing */
-            *tcb->p_counter = 0;
-            tcb->p_counter = timeouts_add(   
-                            tcpcon->timeouts, 
-                            tcb, 
-                            TICKS_FROM_TV(secs+1,usecs),
-                            ++tcb->counter);
+            timeouts_add(   tcpcon->timeouts, 
+                            tcb->timeout,
+                            offsetof(struct TCP_Control_Block, timeout),
+                            TICKS_FROM_TV(secs+1,usecs)
+                         );
 
         }
         break;
@@ -730,20 +708,18 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
         if (tcb->ackno_them - tcb->seqno_me == 0) {
             /* Now wait for response */
             tcb->tcpstate = STATE_WAITING_FOR_RESPONSE;
-            *tcb->p_counter = 0;
-            tcb->p_counter = timeouts_add(   
-                            tcpcon->timeouts, 
-                            tcb, 
-                            TICKS_FROM_TV(secs+10,usecs),
-                            ++tcb->counter);
+            timeouts_add(   tcpcon->timeouts, 
+                            tcb->timeout,
+                            offsetof(struct TCP_Control_Block, timeout),
+                            TICKS_FROM_TV(secs+10,usecs)
+                            );
         } else {
             /* Reset the timeout, waiting for more data to arrive */
-            *tcb->p_counter = 0;
-            tcb->p_counter = timeouts_add(   
-                            tcpcon->timeouts, 
-                            tcb, 
-                            TICKS_FROM_TV(secs+1,usecs),
-                            ++tcb->counter);
+            timeouts_add(   tcpcon->timeouts, 
+                            tcb->timeout, 
+                            offsetof(struct TCP_Control_Block, timeout),
+                            TICKS_FROM_TV(secs+1,usecs)
+                            );
 
         }
         break;
@@ -768,12 +744,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
 
 
             /*  */
-            *tcb->p_counter = 0;
-            tcb->p_counter = timeouts_add(   
-                            tcpcon->timeouts, 
-                            tcb, 
-                            TICKS_FROM_TV(secs+2,usecs),
-                            ++tcb->counter);
+            timeouts_add(   tcpcon->timeouts, 
+                            tcb->timeout,
+                            offsetof(struct TCP_Control_Block, timeout),
+                            TICKS_FROM_TV(secs+2,usecs)
+                         );
         }
         break;
     case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_FIN:

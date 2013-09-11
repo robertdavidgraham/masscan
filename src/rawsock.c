@@ -7,6 +7,7 @@
 #include "rawsock.h"
 #include "templ-pkt.h"
 #include "logger.h"
+#include "main-ptrace.h"
 
 #include "string_s.h"
 
@@ -51,6 +52,7 @@ struct Adapter
     pcap_t *pcap;
     pcap_send_queue *sendq;
     pfring *ring;
+    unsigned is_packet_trace:1; /* is --packet-trace option set? */
 };
 
 #define SENDQ_SIZE 65536 * 8
@@ -270,6 +272,11 @@ rawsock_send_packet(
 {
     if (adapter == 0)
         return 0;
+    
+    /* Print --packet-trace if debugging */
+    if (adapter->is_packet_trace) {
+        packet_trace(stdout, packet, length, 1);
+    }
 
     /* PF_RING */
     if (adapter->ring) {
@@ -353,7 +360,7 @@ int rawsock_recv_packet(
         *secs = hdr.ts.tv_sec;
         *usecs = hdr.ts.tv_usec;
 
-    } else {
+    } else if (adapter->pcap) {
         struct pcap_pkthdr hdr;
 
 
@@ -366,6 +373,13 @@ int rawsock_recv_packet(
         *secs = hdr.ts.tv_sec;
         *usecs = hdr.ts.tv_usec;
     }
+    
+    /* if '--packet-trace' nmap option is sent, print decode to 
+     * command-line */
+    if (adapter->is_packet_trace) {
+        packet_trace(stdout, *packet, *length, 0);
+    }
+
     return 0;
 }
 
@@ -539,13 +553,19 @@ rawsock_close_adapter(struct Adapter *adapter)
 struct Adapter *
 rawsock_init_adapter(const char *adapter_name, 
                      unsigned is_pfring, 
-                     unsigned is_sendq)
+                     unsigned is_sendq,
+                     unsigned is_packet_trace,
+                     unsigned is_offline)
 {
     struct Adapter *adapter;
     char errbuf[PCAP_ERRBUF_SIZE];
 
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
     memset(adapter, 0, sizeof(*adapter));
+    adapter->is_packet_trace = is_packet_trace;
+    
+    if (is_offline)
+        return adapter;
 
     /*----------------------------------------------------------------
      * PORTABILITY: WINDOWS
@@ -756,7 +776,7 @@ rawsock_selftest_if(const char *ifname)
             (unsigned char)(router_ipv4>>0));
 
 
-        adapter = rawsock_init_adapter(ifname, 0, 0);
+        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0);
         if (adapter == 0) {
             printf("adapter[%s]: failed\n", ifname);
             return -1;

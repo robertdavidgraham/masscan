@@ -25,6 +25,7 @@
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
+#include "main-ptrace.h"
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
@@ -149,8 +150,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     struct Status status;
     struct Throttler throttler;
     struct TemplateSet *pkt_template = masscan->pkt_template;
-    unsigned packet_trace = masscan->nmap.packet_trace;
-    double timestamp_start;
     unsigned *picker;
     struct Adapter *adapter = masscan->adapter;
     uint64_t packets_sent = 0;
@@ -189,7 +188,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     /* needed for --packet-trace option so that we know when we started
      * the scan */
-    timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
+    global_timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
@@ -234,11 +233,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             xXx = blackrock_shuffle(&blackrock,  xXx);
             ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
             port = rangelist_pick(&masscan->ports, xXx / count_ips);
-
-            /* Print --packet-trace if debugging */
-            if (packet_trace)
-                template_packet_trace(pkt_template, ip, port, timestamp_start);
-
+            
             /*
              * SEND THE PROBE
              *  This is sorta the entire point of the program, but little
@@ -267,7 +262,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              */
             if (r == 0) {
                 i++; /* <--------- look at that puny increment */
-                r = retries + 1; /* --retries */
+                r = retries + 1;
             }
 
             /*
@@ -422,6 +417,7 @@ receive_thread(struct Masscan *masscan,
 
         if (err != 0)
             continue;
+        
 
         /*
          * Do any TCP event timeouts based on the current timestamp from
@@ -432,8 +428,8 @@ receive_thread(struct Masscan *masscan,
             tcpcon_timeouts(tcpcon, secs, usecs);
         }
 
-	if (length > 1514)
-		continue;
+        if (length > 1514)
+            continue;
 
         /*
          * "Preprocess" the response packet. This means to go through and
@@ -847,6 +843,14 @@ int main(int argc, char *argv[])
                 sizeof(masscan->rotate_directory),
                 ".");
 
+    /*
+     * On non-Windows systems, read the defaults from the file in
+     * the /etc directory. These defaults will contain things
+     * like the output directory, max packet rates, and so on. Most
+     * importanlty, the master "--excludefile" might be placed here,
+     * so that blacklisted ranges won't be scanned, even if the user
+     * makes a mistake
+     */
 #if !defined(WIN32)
     if (access("/etc/masscan/masscan.conf", 0) == 0) {
         masscan_read_config_file(masscan, "/etc/masscan/masscan.conf");

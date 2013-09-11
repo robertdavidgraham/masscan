@@ -15,7 +15,8 @@
  * in the configuration file.
  ***************************************************************************/
 int
-masscan_initialize_adapter(struct Masscan *masscan,
+masscan_initialize_adapter(
+    struct Masscan *masscan,
     unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac)
@@ -104,16 +105,19 @@ masscan_initialize_adapter(struct Masscan *masscan,
      * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
-    if (!masscan->is_offline) {
-        masscan->adapter = rawsock_init_adapter(ifname, masscan->is_pfring, masscan->is_sendq);
-        if (masscan->adapter == 0) {
-            fprintf(stderr, "adapter[%s].init: failed\n", ifname);
-            return -1;
-        }
-        LOG(3, "rawsock: ignoring transmits\n");
-        rawsock_ignore_transmits(masscan->adapter, adapter_mac);
-        LOG(3, "rawsock: initialization done\n");
+    masscan->adapter = rawsock_init_adapter(    ifname, 
+                                            masscan->is_pfring, 
+                                            masscan->is_sendq,
+                                            masscan->nmap.packet_trace,
+                                            masscan->is_offline);
+    if (masscan->adapter == 0) {
+        fprintf(stderr, "adapter[%s].init: failed\n", ifname);
+        return -1;
     }
+    LOG(3, "rawsock: ignoring transmits\n");
+    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+    LOG(3, "rawsock: initialization done\n");
+
 
     /*
      * ROUTER MAC ADDRESS
@@ -167,6 +171,8 @@ masscan_initialize_adapter(struct Masscan *masscan,
         fprintf(stderr, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
+
+
 
     LOG(1, "adapter initialization done.\n");
     return 0;
