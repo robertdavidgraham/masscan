@@ -63,16 +63,16 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
                 case 1:strcpy_s(sz_type, sizeof(sz_type), "response"); break;
                 default: sprintf_s(sz_type, sizeof(sz_type), "unknown(%u)", type); break;
             }
-            fprintf(stderr, "%s (%5.4f) ARP  %-21s > %-21s %s\n", direction,
+            fprintf(fp, "%s (%5.4f) ARP  %-21s > %-21s %s\n", direction,
                     timestamp - global_timestamp_start, from, to, sz_type);
             break;
         case FOUND_DNS:
         case FOUND_UDP:
-            fprintf(stderr, "%s (%5.4f) UDP  %-21s > %-21s \n", direction,
+            fprintf(fp, "%s (%5.4f) UDP  %-21s > %-21s \n", direction,
                     timestamp - global_timestamp_start, from, to);
             break;
         case FOUND_ICMP:
-            fprintf(stderr, "%s (%5.4f) ICMP %-21s > %-21s \n", direction,
+            fprintf(fp, "%s (%5.4f) ICMP %-21s > %-21s \n", direction,
                     timestamp - global_timestamp_start, from, to);
             break;
         case FOUND_TCP:
@@ -103,13 +103,13 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
                               );
                     break;
             }
-            fprintf(stderr, "%s (%5.4f) TCP  %-21s > %-21s %s\n", direction,
+            fprintf(fp, "%s (%5.4f) TCP  %-21s > %-21s %s\n", direction,
                     timestamp - global_timestamp_start, from, to, sz_type);
             break;
         case FOUND_IPV6:
             break;
         default:
-            fprintf(stderr, "%s (%5.4f) UNK  %-21s > %-21s [%u]\n", direction, 
+            fprintf(fp, "%s (%5.4f) UNK  %-21s > %-21s [%u]\n", direction, 
                     timestamp - global_timestamp_start, from, to, parsed.found);
             break;
     }

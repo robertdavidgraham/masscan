@@ -45,13 +45,13 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
 {
     unsigned index;
 
+    /* Unlink from wherever the entry came from */
+    timeout_unlink(entry);
+
     /* Initialize the new entry */    
     entry->timestamp = timestamp;
     entry->offset = (unsigned)offset;
 
-    
-    /* Unlink from whereas the entry came from */
-    timeout_unlink(entry);
     
     
     /* Link it into it's new location */

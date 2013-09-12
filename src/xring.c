@@ -194,7 +194,6 @@ xring_selftest()
         struct Test test[1];
 
         result = run_test(test);
-        printf(".");
         if (result != 500500) {
             printf("xring: selftest failed with %llu\n", result);
             return 1;

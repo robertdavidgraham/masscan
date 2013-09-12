@@ -107,6 +107,11 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
             secs, usecs,
             0);
 
+        /* If the TCB hasn't been destroyed, then we need to make sure
+         * there is a timeout associated with it */
+        if (tcb->timeout->prev == 0 && tcb->ip_them != 0 && tcb->port_them != 0) {
+            timeouts_add(tcpcon->timeouts, tcb->timeout, offsetof(struct TCP_Control_Block, timeout), TICKS_FROM_TV(secs+2, usecs));
+        }
     }
 }
 
@@ -212,6 +217,11 @@ tcpcon_destroy_tcb(
             }
             timeout_unlink(tcb->timeout);
             
+            tcb->ip_them = 0;
+            tcb->port_them = 0;
+            tcb->ip_me = 0;
+            tcb->port_me = 0;
+
             (*r_entry) = tcb->next;
             tcb->next = tcpcon->freed_list;
             tcpcon->freed_list = tcb;
@@ -533,9 +543,9 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
     /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
         if (tcb->when_created + tcpcon->timeout < secs) {
-        LOGip(8, tcb->ip_them, tcb->port_them,
-            "%s                \n",
-            "CONNECTION TIMEOUT---");
+            LOGip(8, tcb->ip_them, tcb->port_them,
+                "%s                \n",
+                "CONNECTION TIMEOUT---");
             tcpcon_destroy_tcb(tcpcon, tcb);
             return;
         }
@@ -602,30 +612,27 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             default:
                 x = 0;
             }
-            if (!x) {
-                break;
+            if (x) {
+                /* send request */
+                x_len = strlen((const char*)x);
+                tcpcon_send_packet(tcpcon, tcb,
+                    0x18, 
+                    x, x_len);
+                LOGip(4, tcb->ip_them, tcb->port_them,
+                    "sending payload %u bytes\n",
+                    x_len);
+
+                /* Increment our sequence number */
+                tcb->seqno_me += (uint32_t)x_len;
+
+                /* change our state to reflect that we are now waiting for 
+                 * acknowledgement of the data we've sent */
+                tcb->tcpstate = STATE_PAYLOAD_SENT;
             }
 
-
-
-            /* send request */
-            x_len = strlen((const char*)x);
-            tcpcon_send_packet(tcpcon, tcb,
-                0x18, 
-                x, x_len);
-            LOGip(4, tcb->ip_them, tcb->port_them,
-                "sending payload %u bytes\n",
-                x_len);
-
-            /* Increment our sequence number */
-            tcb->seqno_me += (uint32_t)x_len;
-
-            /* change our state to reflect that we are now waiting for 
-             * acknowledgement of the data we've sent */
-            tcb->tcpstate = STATE_PAYLOAD_SENT;
-
             /* Add a timeout so that we can resend the data in case it
-             * goes missing */
+             * goes missing. Note that we put this back in the timeout
+             * system regardless if we've sent data. */
             timeouts_add(   tcpcon->timeouts, 
                             tcb->timeout,
                             offsetof(struct TCP_Control_Block, timeout),

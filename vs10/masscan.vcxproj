@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-text.c" />
@@ -68,6 +69,7 @@
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\logger.h" />
     <ClInclude Include="..\src\main-dedup.h" />
+    <ClInclude Include="..\src\main-ptrace.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />

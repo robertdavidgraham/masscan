@@ -3,9 +3,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h> /* offsetof*/
-
+#if defined(_MSC_VER)
+#undef inline
+#define inline _inline
+#endif
 struct Timeouts;
-struct TimeoutEntry;
 
 /***************************************************************************
  ***************************************************************************/
@@ -29,6 +31,7 @@ timeout_unlink(struct TimeoutEntry *entry)
         entry->next->prev = entry->prev;
     entry->next = 0;
     entry->prev = 0;
+    entry->timestamp = 0;
 }
 
 static inline void

@@ -138,6 +138,9 @@
     <ClCompile Include="..\src\proto-ssh.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-ptrace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -234,6 +237,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-ssh.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-ptrace.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
