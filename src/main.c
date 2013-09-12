@@ -230,7 +230,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             xXx = (i + (r--) * rate);
             while (xXx >= range)
                 xXx -= range;
-            xXx = blackrock_shuffle(&blackrock,  xXx);
+            //xXx = blackrock_shuffle(&blackrock,  xXx);
             ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
             port = rangelist_pick(&masscan->ports, xXx / count_ips);
             

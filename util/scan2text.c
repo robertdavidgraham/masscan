@@ -80,6 +80,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdint.h>
 
 struct MasscanRecord {
     unsigned timestamp;
@@ -202,10 +203,26 @@ normalize_string(unsigned char *px, size_t offset, size_t length, size_t max)
     return (char*)px;
 }
 
-/**
+/***************************************************************************
+ ***************************************************************************/
+const char *
+banner_protocol_string(unsigned proto)
+{
+    switch (proto) {
+    case 0: return "generic";
+    case 1: return "SSHv1";
+    case 2: return "SSHv2";
+    case 3: return "HTTP";
+    case 4: return "FTP";
+    case 5: return "FTP";
+    default: return "UNKNOWN";
+    }
+}
+
+/***************************************************************************
  * Parse the BANNER record, extracting the timestamp, IP addres, and port
  * number. We also convert the banner string into a safer form.
- */
+ ***************************************************************************/
 void parse_banner(unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
@@ -213,13 +230,17 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     char timebuf[80];
     char addrbuf[20];
     
-    /* parse record */        
+    /*
+     * Parse the parts that are common to most records
+     */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
     record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
     record.port      = buf[8]<<8 | buf[9];
     proto            = buf[10]<<8 | buf[11];
     
-    /* format time */
+    /*
+     * Pretty-print the timestamp format
+     */
     {
         time_t timestamp = (time_t)record.timestamp;
         struct tm *tm;
@@ -239,21 +260,37 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     if (buf_length > 12) {
         const char *s;
         s = normalize_string(buf, 12, buf_length-12, BUF_MAX);
-        printf("%s %-15s :%5u [%u] \"%s\"\n",
+        printf("%s %-15s :%5u %s \"%s\"\n",
                timebuf,
                addrbuf,
                record.port,
-               proto,
+               banner_protocol_string(proto),
                s
                );
     }
 }
 
-void parse_file(const char *filename)
+/***************************************************************************
+ ***************************************************************************/
+char buf2[65536];
+unsigned buf2len;
+char buf3[65536];
+unsigned buf3len;
+
+/***************************************************************************
+ * Read in the file, one record at a time.
+ * @param filename
+ *      The file we read.
+ * @return
+ *      the number of records successfully parsed
+ ***************************************************************************/
+uint64_t
+parse_file(const char *filename)
 {
     FILE *fp = 0;
     unsigned char *buf = 0;
     int bytes_read;
+    uint64_t total_records = 0;
     
     buf = (unsigned char *)malloc(BUF_MAX);
     if (buf == 0) {
@@ -287,6 +324,10 @@ void parse_file(const char *filename)
         unsigned type;
         unsigned length;
 
+        buf3len = buf2len;
+        memcpy(buf3, buf2, buf2len);
+        buf2len = 0;
+
         /* [TYPE]
          * This is one or more bytes indicating the type of type of the
          * record
@@ -294,16 +335,15 @@ void parse_file(const char *filename)
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
+        buf2[buf2len++] = buf[0];
         type = buf[0] & 0x7F;
         while (buf[0] & 0x80) {
             bytes_read = fread(buf, 1, 1, fp);
             if (bytes_read != 1)
                 break;
             type = (type << 7) | (buf[0] & 0x7F);
+            buf2[buf2len++] = buf[0];
         }
-        
-        if (type == 'a')
-            break; /* end record */
         
         /* [LENGTH]
          * Is one byte for lengths smaller than 127 bytes, or two
@@ -312,12 +352,14 @@ void parse_file(const char *filename)
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
+        buf2[buf2len++] = buf[0];
         length = buf[0] & 0x7F;
         while (buf[0] & 0x80) {
             bytes_read = fread(buf, 1, 1, fp);
             if (bytes_read != 1)
                 break;
             length = (length << 7) | (buf[0] & 0x7F);
+            buf2[buf2len++] = buf[0];
         }
         if (length > BUF_MAX) {
             fprintf(stderr, "file corrupt\n");
@@ -329,7 +371,9 @@ void parse_file(const char *filename)
         bytes_read = fread(buf, 1, length, fp);
         if (bytes_read < length)
             break; /* eof */
-        
+        memcpy(buf2+buf2len, buf, length);
+        buf2len += length;
+
         /* Depending on record type, do something different */
         switch (type) {
             case 1: /* STATUS: open */
@@ -340,11 +384,13 @@ void parse_file(const char *filename)
                 parse_banner(buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
-                goto end;
+                //goto end;
+                break;
             default:
                 fprintf(stderr, "file corrupt: unknown type %u\n", type);
                 goto end;
         }
+        total_records++;
     }
 
 end:
@@ -352,19 +398,26 @@ end:
         free(buf);
     if (fp)
         fclose(fp);
+    return total_records;
 }
 
-int main(int argc, char *argv[])
+/***************************************************************************
+ ***************************************************************************/
+int
+main(int argc, char *argv[])
 {
     int i;
+    uint64_t total_records = 0;
 
     if (argc <= 1) {
         printf("usage:\n masscan2text <scanfile>\ndecodes and prints text\n");
         return 1;
     }
+    fprintf(stderr, "--- scan2text for masscan/1.1 format ---\n");
     for (i=1; i<argc; i++) {
-        parse_file(argv[i]);
+        total_records += parse_file(argv[i]);
     }
+    fprintf(stderr, "--- %llu records scanned  ---\n", total_records);
 
     return 0;
 }
