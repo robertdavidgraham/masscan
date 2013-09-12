@@ -69,7 +69,7 @@ banner1_parse(
         } else {
             size_t len = length;
             if (len > banner_max - *banner_offset)
-                len = banner_max = *banner_offset;
+                len = banner_max - *banner_offset;
             memcpy(banner + *banner_offset, px, len);
             (*banner_offset) += (unsigned)len;
         }

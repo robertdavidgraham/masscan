@@ -49,7 +49,7 @@ endif
 CC = gcc
 
 DEFINES = 
-CFLAGS = -g $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
+CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 
 # just compile everything in the 'src' directory. Using this technique
