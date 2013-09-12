@@ -322,8 +322,10 @@ rawsock_send_packet(
     }
 
     /* LIBPCAP */
-    return pcap_sendpacket(adapter->pcap, packet, length);
+    if (adapter->pcap)
+        return pcap_sendpacket(adapter->pcap, packet, length);
 
+    return 0;
 }
 extern unsigned control_c_pressed;
 
