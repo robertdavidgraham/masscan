@@ -51,19 +51,17 @@ struct Masscan
     int op;
 
     /**
-     * The network interface to use for scanning
+     * One or more network adapters that we'll use for scanning.
      */
-    char ifname[256];
-
-    /**
-     * The network adapter we'll use for transmitting packets
-     */
-    struct Adapter *adapter;
-
-    unsigned adapter_ip;
-    unsigned adapter_port;
-    unsigned char adapter_mac[6];
-    unsigned char router_mac[6];
+    struct {
+        char ifname[256];
+        struct Adapter *adapter;
+        unsigned adapter_ip;
+        unsigned adapter_port;
+        unsigned char adapter_mac[6];
+        unsigned char router_mac[6];
+    } nic[8];
+    unsigned nic_count;
 
     /**
      * The target ranges of IPv4 addresses that are included in the scan.
@@ -122,12 +120,6 @@ struct Masscan
     struct TemplateSet *pkt_template;
 
     /**
-     * Are we there yet? The scanning thread sets this to 1 when its done.
-     * The receive thread will wait a bit after this, then exit.
-     */
-    unsigned is_done;
-
-    /**
      * When we should rotate output into the target directory
      */
     unsigned rotate_output;
@@ -165,8 +157,8 @@ struct Masscan
     char rotate_directory[256];
     char pcap_filename[256];
 
-    PACKET_QUEUE *packet_buffers;
-    PACKET_QUEUE *transmit_queue;
+    //PACKET_QUEUE *packet_buffers;
+    //PACKET_QUEUE *transmit_queue;
 
     struct {
         unsigned timeout;
@@ -182,7 +174,9 @@ void masscan_usage();
 void masscan_save_state(struct Masscan *masscan);
 
 int
-masscan_initialize_adapter(struct Masscan *masscan,
+masscan_initialize_adapter(
+    struct Masscan *masscan,
+    unsigned index,
     unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac);

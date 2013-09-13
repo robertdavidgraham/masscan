@@ -14,6 +14,7 @@
 #include "proto-preprocess.h"
 #include "logger.h"
 #include "templ-payloads.h"
+#include "unusedparm.h"
 
 #include <assert.h>
 #include <string.h>
@@ -418,7 +419,9 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
     unsigned source_port2 = 0x1000;
     uint64_t xsum2 = 0;
     unsigned char *px = tmpl->packet;
-            
+
+    UNUSEDPARM(seqno);
+
     payloads_lookup(tmpl->payloads,
                     port,
                     &px2,

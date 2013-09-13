@@ -30,7 +30,7 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
         direction = "RCVD";
 
     /* parse the packet */
-    x = preprocess_frame(px, length, 1, &parsed);
+    x = preprocess_frame(px, (unsigned)length, 1, &parsed);
     if (!x)
         return;
     offset = parsed.found_offset;

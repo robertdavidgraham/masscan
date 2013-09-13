@@ -1,23 +1,19 @@
 /*
-    for printing the status to the command-line roughly once per second
+    prints "status" message once per second to the commandline
 
-    the complication is that we cann't afford a "time" check for each
-    packet, since it's a system call, so we try to keep a rough
-    approximation of when to print a status.
+    The status message indicates:
+    - the rate in packets-per-second
+    - %done
+    - estimated time remaining of the scan
+    - number of 'tcbs' (TCP control blocks) of active TCP connections
 
 */
 #include "main-status.h"
 #include "pixie-timer.h"
+#include "unusedparm.h"
 #include <stdio.h>
 #include <string.h>
 
-#ifndef UNUSEDPARM
-#ifdef _MSC_VER
-#define UNUSEDPARM(x) x
-#else
-#define UNUSEDPARM(x)
-#endif
-#endif
 
 extern time_t global_now;
 extern uint64_t global_tcb_count;
@@ -28,10 +24,17 @@ extern uint64_t global_tcb_count;
  * packet is slow.
  ***************************************************************************/
 void
-status_print(struct Status *status, uint64_t count, uint64_t max_count)
+status_print(
+    struct Status *status, 
+    uint64_t count, 
+    uint64_t max_count, 
+    double x)
 {
-    double elapsed;
-    uint64_t now;
+    double elapsed_time;
+    double rate;
+    double now;
+    double percent_done;
+    double time_remaining;
 
     /*
      * ####  FUGGLY TIME HACK  ####
@@ -44,44 +47,30 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
      */
     global_now = time(0);
 
-    /* speed up or slow down how often we report so that we get about
-     * 1-second between reports */
-    {
-        time_t t = time(0);
-        if ((int)t == (int)status->last.time) {
-            status->timer <<= 1;
-            status->timer |= 1;
-        } else {
-            status->timer >>= 1;
-            status->timer |= 1;
-        }
-        status->last.time = t;
-    }
-
-    /* If nothing's changed, then stop here, because otherwise we'll
-     * be dividing by zero or something */
-    if (count <= status->last.count)
-        return;
-
 
     /* Get the time. NOTE: this is CLOCK_MONOTONIC_RAW on Linux, not
      * wall-clock time. */
-    now = pixie_gettime();
-    elapsed = ((double)now - (double)status->last.clock)/(double)1000000.0;
-    if (elapsed == 0)
+    now = (double)pixie_gettime();
+
+    /* Figure how many SECONDS have elapsed, in a floating point value.
+     * Since the above timestamp is in microseconds, we need to 
+     * shift it by 1-million
+     */
+    elapsed_time = (now - status->last.clock)/1000000.0;
+    if (elapsed_time == 0)
         return;
-    status->last.clock = now;
+
+    /* Figure out the "packets-per-second" number, which is just:
+     *
+     *  rate = packets_sent / elapsed_time;
+     */
+    rate = (count - status->last.count)*1.0/elapsed_time;
 
     /*
-     * Print the message to <stderr> so that <stdout> can be redirected
-     * to a file (<stdout> reports what systems were found).
+     * Smooth the number by averaging over the last 8 seconds 
      */
-    {
-        double rate = ((double)(count - status->last.count)*1.0/elapsed);
-        double percent_done = (double)(count*100.0/max_count);
-        double finished = 0;
-        status->last_rates[status->last_count++ & 0x7] = rate;
-        rate = status->last_rates[0]
+     status->last_rates[status->last_count++ & 0x7] = rate;
+     rate =     status->last_rates[0]
                 + status->last_rates[1]
                 + status->last_rates[2]
                 + status->last_rates[3]
@@ -90,21 +79,42 @@ status_print(struct Status *status, uint64_t count, uint64_t max_count)
                 + status->last_rates[6]
                 + status->last_rates[7]
                 ;
-        rate /= 8;
-        if (rate)
-            finished  = (1.0 - percent_done/100.0) * (max_count / rate);
-        /* (%u-days %02u:%02u:%02u remaining) */
-        fprintf(stderr, "rate:%6.2f-kpps, %5.2f%% done, %u:%02u:%02u remaining, %llu-tcbs             \r",
-                        rate/1000.0,
-                        percent_done,
-            (unsigned)(finished/60/60),
-            (unsigned)(finished/60)%60,
-            (unsigned)(finished)%60,
-            global_tcb_count
-                        );
-        fflush(stderr);
-    }
+    rate /= 8;
+    if (rate == 0)
+        return;
 
+    /*
+     * Calculate "percent-done", which is just the total number of
+     * packets sent divided by the number we need to send.
+     */
+    percent_done = (double)(count*100.0/max_count);
+
+
+    /*
+     * Calulate the time remaining in the scan
+     */
+    time_remaining  = (1.0 - percent_done/100.0) * (max_count / rate);
+
+
+    /*
+     * Print the message to <stderr> so that <stdout> can be redirected
+     * to a file (<stdout> reports what systems were found).
+     */
+    fprintf(stderr, "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs,     \r",
+                    x/1000.0,
+                    percent_done,
+                    (unsigned)(time_remaining/60/60),
+                    (unsigned)(time_remaining/60)%60,
+                    (unsigned)(time_remaining)%60,
+                    global_tcb_count
+                    //(unsigned)rate
+                    );
+    fflush(stderr);
+
+    /*
+     * Remember the values to be diffed against the next time around
+     */
+    status->last.clock = now;
     status->last.count = count;
 }
 
@@ -114,6 +124,8 @@ void
 status_finish(struct Status *status)
 {
     UNUSEDPARM(status);
+    fprintf(stderr, 
+"                                                                             \r");
 }
 
 /***************************************************************************

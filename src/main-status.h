@@ -6,7 +6,7 @@
 struct Status
 {
     struct {
-        uint64_t clock;
+        double clock;
         time_t time;
         uint64_t count;
     } last;
@@ -18,7 +18,7 @@ struct Status
 };
 
 
-void status_print(struct Status *status, uint64_t count, uint64_t max_count);
+void status_print(struct Status *status, uint64_t count, uint64_t max_count, double x);
 void status_finish(struct Status *status);
 void status_start(struct Status *status);
 

@@ -17,6 +17,8 @@ uint64_t pixie_nanotime();
  */
 void pixie_usleep(uint64_t usec);
 
+void pixie_mssleep(unsigned milliseconds);
+
 int pixie_time_selftest();
 
 

@@ -101,6 +101,7 @@ again:
      */
     current_rate = 1.0*(packet_count - old_packet_count)/((timestamp - old_timestamp)/1000000.0);
 
+    
     /*
      * If we've been going too fast, then <pause> for a moment, then
      * try again.
@@ -110,14 +111,14 @@ again:
 
         /* calculate waittime, in seconds */
         waittime = (current_rate - max_rate) / throttler->max_rate;
-
+        waittime *= 0.1;
         if (waittime > 0.1)
             waittime = 0.1;
 
         pixie_usleep((uint64_t)(waittime * 1000000.0));
 
         throttler->batch_size *= 0.999;
-        goto again;
+        return (uint64_t)throttler->batch_size;
     }
 
     /*
@@ -132,5 +133,8 @@ again:
     if (throttler->batch_size > 10000)
         throttler->batch_size = 10000;
     throttler->current_rate = current_rate;
+
+    throttler->test_timestamp = timestamp;
+    throttler->test_packet_count = packet_count;
     return (uint64_t)throttler->batch_size;
 }

@@ -87,6 +87,46 @@ print_nmap_help(void)
 
 
 /***************************************************************************
+ * Echoes the configuration for one nic
+ ***************************************************************************/
+static void
+masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
+{
+    char zzz[64];
+
+    /* If we have only one adapter, then don't print the array indexes.
+     * Otherwise, we need to print the array indexes to distinguish
+     * the NICs from each other */
+    if (masscan->nic_count <= 1)
+        zzz[0] = '\0';
+    else
+        sprintf_s(zzz, sizeof(zzz), "[%u]", i);
+
+    fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
+    fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
+        (masscan->nic[i].adapter_ip>>24)&0xFF,
+        (masscan->nic[i].adapter_ip>>16)&0xFF,
+        (masscan->nic[i].adapter_ip>> 8)&0xFF,
+        (masscan->nic[i].adapter_ip>> 0)&0xFF
+        );
+    fprintf(fp, "adapter-mac = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+            masscan->nic[i].adapter_mac[0],
+            masscan->nic[i].adapter_mac[1],
+            masscan->nic[i].adapter_mac[2],
+            masscan->nic[i].adapter_mac[3],
+            masscan->nic[i].adapter_mac[4],
+            masscan->nic[i].adapter_mac[5]);
+    fprintf(fp, "router-mac = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+            masscan->nic[i].router_mac[0],
+            masscan->nic[i].router_mac[1],
+            masscan->nic[i].router_mac[2],
+            masscan->nic[i].router_mac[3],
+            masscan->nic[i].router_mac[4],
+            masscan->nic[i].router_mac[5]);
+
+}
+
+/***************************************************************************
  * Prints the current configuration to the command-line then exits.
  * Use#1: create a template file of all setable parameters.
  * Use#2: make sure your configuration was interpreted correctly.
@@ -104,27 +144,13 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         fprintf(fp, "banners = true\n");
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
-    fprintf(fp, "adapter = %s\n", masscan->ifname);
-    fprintf(fp, "adapter-ip = %u.%u.%u.%u\n",
-        (masscan->adapter_ip>>24)&0xFF,
-        (masscan->adapter_ip>>16)&0xFF,
-        (masscan->adapter_ip>> 8)&0xFF,
-        (masscan->adapter_ip>> 0)&0xFF
-        );
-    fprintf(fp, "adapter-mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
-            masscan->adapter_mac[0],
-            masscan->adapter_mac[1],
-            masscan->adapter_mac[2],
-            masscan->adapter_mac[3],
-            masscan->adapter_mac[4],
-            masscan->adapter_mac[5]);
-    fprintf(fp, "router-mac = %02x:%02x:%02x:%02x:%02x:%02x\n",
-            masscan->router_mac[0],
-            masscan->router_mac[1],
-            masscan->router_mac[2],
-            masscan->router_mac[3],
-            masscan->router_mac[4],
-            masscan->router_mac[5]);
+    if (masscan->nic_count == 0)
+        masscan_echo_nic(masscan, fp, 0);
+    else {
+        for (i=0; i<masscan->nic_count; i++)
+            masscan_echo_nic(masscan, fp, i);
+    }
+
 
     /*
      * Output information
@@ -458,10 +484,12 @@ static int
 EQUALS(const char *lhs, const char *rhs)
 {
     for (;;) {
-        while (*lhs == '-' || *lhs == '.')
+        while (*lhs == '-' || *lhs == '.' || *lhs == '_')
             lhs++;
-        while (*rhs == '-' || *rhs == '.')
+        while (*rhs == '-' || *rhs == '.' || *rhs == '_')
             rhs++;
+        if (*lhs == '\0' && *rhs == '[')
+            return 1; /*arrays*/
         if (tolower(*lhs & 0xFF) != tolower(*rhs & 0xFF))
             return 0;
         if (*lhs == '\0')
@@ -469,6 +497,17 @@ EQUALS(const char *lhs, const char *rhs)
         lhs++;
         rhs++;
     }
+}
+
+static unsigned
+ARRAY(const char *rhs)
+{
+    const char *p = strchr(rhs, '[');
+    if (p == NULL)
+        return 0;
+    else
+        p++;
+    return (unsigned)parseInt(p);
 }
 
 /***************************************************************************
@@ -479,14 +518,25 @@ void
 masscan_set_parameter(struct Masscan *masscan, 
                       const char *name, const char *value)
 {
+    unsigned index = ARRAY(name);
+    if (index >= 8) {
+        fprintf(stderr, "%s: bad index\n", name);
+        exit(1);
+    }
 
     if (EQUALS("conf", name) || EQUALS("config", name)) {
         masscan_read_config_file(masscan, value);
     } else if (EQUALS("adapter", name) || EQUALS("if", name) || EQUALS("interface", name)) {
-        if (masscan->ifname[0]) {
-            fprintf(stderr, "CONF: overwriting \"adapter=%s\"\n", masscan->ifname);
+        if (masscan->nic[index].ifname[0]) {
+            fprintf(stderr, "CONF: overwriting \"adapter=%s\"\n", masscan->nic[index].ifname);
         }
-        sprintf_s(masscan->ifname, sizeof(masscan->ifname), "%s", value);
+        if (masscan->nic_count < index + 1)
+            masscan->nic_count = index + 1;
+        sprintf_s(  masscan->nic[index].ifname, 
+                    sizeof(masscan->nic[index].ifname), 
+                    "%s",
+                    value);
+
     }
     else if (EQUALS("adapter-ip", name) || EQUALS("source-ip", name) 
              || EQUALS("source-address", name) || EQUALS("spoof-ip", name)
@@ -501,7 +551,7 @@ masscan_set_parameter(struct Masscan *masscan,
                 return;
             }
 
-            masscan->adapter_ip = range.begin;
+            masscan->nic[index].adapter_ip = range.begin;
     } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)) {
         /* Send packets FROM this port number */
         unsigned x = strtoul(value, 0, 0);
@@ -509,7 +559,7 @@ masscan_set_parameter(struct Masscan *masscan,
             fprintf(stderr, "error: %s=<n>: expected number less than 1000\n", 
                     name);
         } else {
-            masscan->adapter_port = x;
+            masscan->nic[index].adapter_port = x;
         }
     } else if (EQUALS("adapter-mac", name) || EQUALS("spoof-mac", name)
                || EQUALS("source-mac", name)) {
@@ -521,7 +571,7 @@ masscan_set_parameter(struct Masscan *masscan,
             return;
         }
 
-        memcpy(masscan->adapter_mac, mac, 6);
+        memcpy(masscan->nic[index].adapter_mac, mac, 6);
     }
     else if (EQUALS("router-mac", name) || EQUALS("router", name)) {
         unsigned char mac[6];
@@ -531,7 +581,7 @@ masscan_set_parameter(struct Masscan *masscan,
             return;
         }
 
-        memcpy(masscan->router_mac, mac, 6);
+        memcpy(masscan->nic[index].router_mac, mac, 6);
     }
     else if (EQUALS("rate", name) || EQUALS("max-rate", name) ) {
         double rate = 0.0;

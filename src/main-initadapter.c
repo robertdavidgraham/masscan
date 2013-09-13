@@ -17,6 +17,7 @@
 int
 masscan_initialize_adapter(
     struct Masscan *masscan,
+    unsigned index,
     unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac)
@@ -33,8 +34,8 @@ masscan_initialize_adapter(
      * the best Interface to use. We do this by choosing the first
      * interface with a "default route" (aka. "gateway") defined
      */
-    if (masscan->ifname && masscan->ifname[0])
-        ifname = masscan->ifname;
+    if (masscan->nic[index].ifname && masscan->nic[index].ifname[0])
+        ifname = masscan->nic[index].ifname;
     else {
         /* no adapter specified, so find a default one */
         int err;
@@ -57,7 +58,7 @@ masscan_initialize_adapter(
      * is done by queryin the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
-    *r_adapter_ip = masscan->adapter_ip;
+    *r_adapter_ip = masscan->nic[index].adapter_ip;
     if (*r_adapter_ip == 0) {
         *r_adapter_ip = rawsock_get_adapter_ip(ifname);
         LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
@@ -81,7 +82,7 @@ masscan_initialize_adapter(
      * matter what this address is, but to be a "responsible" citizen we
      * try to use the hardware address in the network card.
      */
-    memcpy(adapter_mac, masscan->adapter_mac, 6);
+    memcpy(adapter_mac, masscan->nic[index].adapter_mac, 6);
     if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
         rawsock_get_adapter_mac(ifname, adapter_mac);
         LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
@@ -105,17 +106,18 @@ masscan_initialize_adapter(
      * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
-    masscan->adapter = rawsock_init_adapter(    ifname, 
+    masscan->nic[index].adapter = rawsock_init_adapter(   
+                                            ifname, 
                                             masscan->is_pfring, 
                                             masscan->is_sendq,
                                             masscan->nmap.packet_trace,
                                             masscan->is_offline);
-    if (masscan->adapter == 0) {
+    if (masscan->nic[index].adapter == 0) {
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;
     }
     LOG(3, "rawsock: ignoring transmits\n");
-    rawsock_ignore_transmits(masscan->adapter, adapter_mac);
+    rawsock_ignore_transmits(masscan->nic[index].adapter, adapter_mac);
     LOG(3, "rawsock: initialization done\n");
 
 
@@ -129,7 +131,7 @@ masscan_initialize_adapter(
      * Note: in order to ARP the router, we need to first enable the libpcap
      * code above.
      */
-    memcpy(router_mac, masscan->router_mac, 6);
+    memcpy(router_mac, masscan->nic[index].router_mac, 6);
     if (masscan->is_offline) {
         memcpy(router_mac, "\x66\x55\x44\x33\x22\x11", 6);
     } else if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
@@ -148,7 +150,7 @@ masscan_initialize_adapter(
                 );
 
             arp_resolve_sync(
-                    masscan->adapter,
+                    masscan->nic[index].adapter,
                     *r_adapter_ip,
                     adapter_mac,
                     router_ipv4,

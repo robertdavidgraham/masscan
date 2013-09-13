@@ -30,7 +30,7 @@ endif
 # intended environment, so it make break in the future.
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -I. -Ivs10/include
-LIBS = -L vs10/lib -lwpcap -lIPHLPAPI
+LIBS = -L vs10/lib -lwpcap -lIPHLPAPI -lWs2_32
 FLAGS2 = -march=i686
 endif
 

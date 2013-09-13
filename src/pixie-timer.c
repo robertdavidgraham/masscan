@@ -118,6 +118,12 @@ pixie_nanotime()
 }
 
 void
+pixie_mssleep(unsigned waitTime)
+{
+    Sleep(waitTime);
+}
+
+void
 pixie_usleep(uint64_t waitTime)
 {
     /*
@@ -140,6 +146,12 @@ pixie_usleep(uint64_t waitTime)
 }
 #elif defined(CLOCK_MONOTONIC)
 #include <unistd.h>
+
+void
+pixie_mssleep(unsigned milliseconds)
+{
+    pixie_usleep(milliseconds * 1000ULL);
+}
 
 void
 pixie_usleep(uint64_t microseconds)

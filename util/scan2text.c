@@ -92,6 +92,68 @@ struct MasscanRecord {
 
 static const size_t BUF_MAX = 1024*1024;
 
+struct BannerRecord {
+    unsigned count;
+    unsigned length;
+    struct BannerRecord *next;
+    char str[1];
+};
+
+#define BUCKET_COUNT (1024*1024)
+struct BannerDB
+{
+    struct BannerRecord *records[BUCKET_COUNT];
+} *mydb;
+
+void
+db_print(const struct BannerDB *db)
+{
+    unsigned i;
+    for (i=0; i<BUCKET_COUNT; i++) {
+        struct BannerRecord *rec = db->records[i];
+        while (rec) {
+            printf("%8u %.*s\n", rec->count, rec->length, rec->str);
+            rec = rec->next;
+        }
+    }
+}
+
+void
+db_lookup(struct BannerDB *db, const unsigned char *str, unsigned length)
+{
+    struct BannerRecord *rec;
+    uint64_t hash = 0;
+    unsigned i;
+
+    for (i=0; i<length; i++) {
+        hash += str[i];
+        hash += str[i]<<8;
+        hash ^= str[i]<<4;
+    }
+
+    /* lookup */
+    rec = db->records[hash & (BUCKET_COUNT-1)];
+    while (rec) {
+        if (rec->length == length && memcmp(rec->str, str, length) == 0)
+            break;
+        else
+            rec = rec->next;
+    }
+    if (rec == NULL) {
+        rec = (struct BannerRecord *)malloc(sizeof(*rec) + length);
+        rec->count = 0;
+        rec->length = length;
+        memcpy(rec->str, str, length);
+
+        rec->next = db->records[hash & (BUCKET_COUNT-1)];
+        db->records[hash & (BUCKET_COUNT-1)] = rec;
+    }
+
+    rec->count++;
+}
+
+
+
 const char *
 reason_string(unsigned x, char *buffer, size_t sizeof_buffer)
 {
@@ -260,13 +322,16 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     if (buf_length > 12) {
         const char *s;
         s = normalize_string(buf, 12, buf_length-12, BUF_MAX);
-        printf("%s %-15s :%5u %s \"%s\"\n",
+        /*printf("%s %-15s :%5u %s \"%s\"\n",
                timebuf,
                addrbuf,
                record.port,
                banner_protocol_string(proto),
                s
-               );
+               );*/
+        if (proto == 1 || proto == 2) {
+            db_lookup(mydb, s, strlen(s));
+        }
     }
 }
 
@@ -378,7 +443,7 @@ parse_file(const char *filename)
         switch (type) {
             case 1: /* STATUS: open */
             case 2: /* STATUS: closed */
-                parse_status(buf, bytes_read);
+                //parse_status(buf, bytes_read);
                 break;
             case 3: /* BANNER */
                 parse_banner(buf, bytes_read);
@@ -391,6 +456,8 @@ parse_file(const char *filename)
                 goto end;
         }
         total_records++;
+        if ((total_records & 0xFFFF) == 0)
+            fprintf(stderr, "%s: %8llu\r", filename, total_records);
     }
 
 end:
@@ -409,6 +476,9 @@ main(int argc, char *argv[])
     int i;
     uint64_t total_records = 0;
 
+    mydb = (struct BannerDB*)malloc(sizeof(*mydb));
+    memset(mydb, 0, sizeof(*mydb));
+
     if (argc <= 1) {
         printf("usage:\n masscan2text <scanfile>\ndecodes and prints text\n");
         return 1;
@@ -419,5 +489,6 @@ main(int argc, char *argv[])
     }
     fprintf(stderr, "--- %llu records scanned  ---\n", total_records);
 
+    db_print(mydb);
     return 0;
 }

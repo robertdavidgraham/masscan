@@ -18,7 +18,12 @@ struct OutputType {
 
 struct Output
 {
-    struct Masscan *masscan;
+    const struct Masscan *masscan;
+    struct {
+        unsigned ip_me;
+        unsigned port_me;
+    } nics[8];
+
     FILE *fp;
     const struct OutputType *funcs;
     time_t next_rotate;
@@ -53,7 +58,7 @@ extern const struct OutputType binary_output;
 extern const struct OutputType null_output;
 
 
-struct Output *output_create(struct Masscan *masscan);
+struct Output *output_create(const struct Masscan *masscan);
 void output_destroy(struct Output *output);
 
 void output_report_status(struct Output *output, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);

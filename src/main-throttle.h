@@ -14,6 +14,10 @@ struct Throttler
         uint64_t timestamp;
         uint64_t packet_count;
     } buckets[256];
+
+    uint64_t test_timestamp;
+    uint64_t test_packet_count;
+
 };
 
 

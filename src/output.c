@@ -129,7 +129,7 @@ FILE *
 open_rotate(struct Output *output, const char *filename)
 {
     FILE *fp;
-    struct Masscan *masscan = output->masscan;
+    const struct Masscan *masscan = output->masscan;
     unsigned is_append =masscan->nmap.append;
 
 #if defined(WIN32)
@@ -228,7 +228,7 @@ next_rotate(time_t last_rotate, unsigned period, unsigned offset)
 
 /***************************************************************************
  ***************************************************************************/
-static int
+int
 ends_with(const char *filename, const char *extension)
 {
     if (filename == NULL || extension == NULL)
@@ -248,9 +248,10 @@ ends_with(const char *filename, const char *extension)
 /***************************************************************************
  ***************************************************************************/
 struct Output *
-output_create(struct Masscan *masscan)
+output_create(const struct Masscan *masscan)
 {
     struct Output *out;
+    unsigned i;
 
     /* allocate/initialize memory */
     out = (struct Output *)malloc(sizeof(*out));
@@ -260,6 +261,10 @@ output_create(struct Masscan *masscan)
     out->masscan = masscan;
     out->period = masscan->rotate_output;
     out->offset = masscan->rotate_offset;
+
+    for (i=0; i<8; i++) {
+        out->nics[i].ip_me = masscan->nic[i].adapter_ip;
+    }
 
     switch (masscan->nmap.format) {
     case Output_List:
@@ -273,7 +278,7 @@ output_create(struct Masscan *masscan)
         break;
     default:
         out->funcs = &null_output;
-        masscan->is_interactive = 1;
+        //masscan->is_interactive = 1;
         break;
     }
 
@@ -427,17 +432,17 @@ void
 output_report_status(struct Output *out, int status, 
         unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
-    struct Masscan *masscan = out->masscan;
+    const struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
     time_t now = time(0);
 
     global_now = now;
 
 
-    if (masscan->is_interactive) {
+    if (masscan->is_interactive || fp == NULL) {
         if (status == Port_IcmpEchoResponse) {
             fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
-                    "                          \n",
+                    "                               \n",
                     status_string(status),
                     port,
                     proto_from_status(status),
@@ -449,7 +454,7 @@ output_report_status(struct Output *out, int status,
             
         } else
         fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
-                            "                          \n",
+                            "                               \n",
             status_string(status),
             port,
             proto_from_status(status),
@@ -507,16 +512,16 @@ void
 output_report_banner(struct Output *out, unsigned ip, unsigned port,
                 unsigned proto, const unsigned char *px, unsigned length)
 {
-    struct Masscan *masscan = out->masscan;
+    const struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
     time_t now = time(0);
 
     global_now = now;
 
 
-    if (masscan->is_interactive) {
-        fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s"
-                                    "                          \n",
+    if (masscan->is_interactive || fp == NULL) {
+        unsigned count;
+        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s",
             port,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
@@ -524,6 +529,11 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port,
             (ip>> 0)&0xFF,
             length, px
             );
+        if (count < 80)
+            fprintf(stdout, "%.*s\n", (size_t)(79-count),
+"                                                                                    ");
+        else
+            fprintf(stdout, "\n");
     }
 
 

@@ -108,6 +108,6 @@ void rangelist_free(struct RangeList *list);
 unsigned *rangelist_pick2_create(struct RangeList *targets);
 void rangelist_pick2_destroy(unsigned *picker);
 
-unsigned rangelist_pick2(struct RangeList *targets, uint64_t index, unsigned *picker);
+unsigned rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker);
 
 #endif

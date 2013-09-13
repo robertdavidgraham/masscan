@@ -5,6 +5,19 @@
 #include "output.h"
 #include "masscan.h"
 
+
+int
+matches_me(struct Output *out, unsigned ip, unsigned port)
+{
+    unsigned i;
+
+    for (i=0; i<8; i++) {
+        if (ip == out->nics[i].ip_me && port == out->nics[i].port_me)
+            return 1;
+    }
+    return 0;
+}
+
 int
 parse_port_unreachable(const unsigned char *px, unsigned length,
         unsigned *r_ip_me, unsigned *r_ip_them,
@@ -32,11 +45,11 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
     unsigned type = parsed->port_src;
     unsigned code = parsed->port_dst;
     unsigned seqno_me;
-    unsigned ip_me;
+    //unsigned ip_me;
     unsigned ip_them;
 
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
+    /*ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;*/
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
@@ -80,10 +93,7 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
                 if (err)
                     return;
 
-                if (ip_me2 != ip_me)
-                    return;
-
-                if (port_me2 != out->masscan->adapter_port)
+                if (!matches_me(out, ip_me2, port_me2))
                     return;
 
                 output_report_status(

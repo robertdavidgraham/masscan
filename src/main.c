@@ -25,7 +25,7 @@
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
-#include "main-ptrace.h"
+#include "main-ptrace.h"        /* for nmap --packet-trace feature */
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
@@ -40,23 +40,86 @@
 #include "pixie-threads.h"      /* portable threads */
 #include "templ-payloads.h"     /* UDP packet payloads */
 
+#include <limits.h>
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <stdint.h>
 
 #if defined(WIN32)
 #include <WinSock.h>
+#if defined(_MSC_VER)
 #pragma comment(lib, "Ws2_32.lib")
+#endif
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #endif
 
+/*
+ * yea I know globals suck
+ */
 unsigned control_c_pressed = 0;
+static unsigned control_c_pressed_again = 0;
 time_t global_now;
+static unsigned wait = 10;
 
+uint64_t foo_timestamp = 0;
+uint64_t foo_count = 0;
+
+/***************************************************************************
+ * Parameters we send to each thread-PAIR. Threads come in pairs, a
+ * transmit and receive thread, that share the same configuration.
+ ***************************************************************************/
+struct ThreadPair {
+    /** This points to the central configuration. Note that it's 'const',
+     * meaning that the thread cannot change the contents. That'd be
+     * unsafe */
+    const struct Masscan *masscan;
+
+    /** The adapter used by the threads. Normally, thread-pairs have
+     * their own network adapter, especially when doing PF_RING
+     * clustering. */
+    struct Adapter *adapter;
+
+    /**
+     * The thread-pair use a "packet_buffer" and "transmit_queue" to 
+     * send packets to each other */
+    PACKET_QUEUE *packet_buffers;
+    PACKET_QUEUE *transmit_queue;
+
+    /**
+     * The index of the network adapter that we are using for this
+     * thread-pair
+     */
+    unsigned nic_index;
+
+    /**
+     * This is an optimized binary-search when looking up IP addresses
+     * based on the index.
+     */
+    unsigned *picker;
+
+    /* the master 'i' variable */
+    uint64_t my_index;
+
+
+    /* This is used both by the transmit and receive thread for
+     * formatting packets */
+    struct TemplateSet tmplset[1];
+
+    unsigned adapter_ip;
+    unsigned adapter_port;
+    unsigned char adapter_mac[6];
+    unsigned char router_mac[6];
+
+    unsigned done_transmitting;
+    unsigned done_receiving;
+
+    struct Throttler throttler[1];
+};
 
 
 /***************************************************************************
@@ -69,7 +132,10 @@ time_t global_now;
  * don't really care about latency.
  ***************************************************************************/
 void
-flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *packets_sent)
+flush_packets(struct Adapter *adapter,
+    PACKET_QUEUE *packet_buffers,
+    PACKET_QUEUE *transmit_queue,
+    struct Throttler *throttler, uint64_t *packets_sent)
 {
     uint64_t batch_size;
     unsigned is_queue_empty = 0;
@@ -93,7 +159,7 @@ flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *pa
              * put there by a receive thread, and will contain things like
              * an ACK or an HTTP request
              */
-            err = rte_ring_sc_dequeue(masscan->transmit_queue, (void**)&p);
+            err = rte_ring_sc_dequeue(transmit_queue, (void**)&p);
             if (err) {
                 is_queue_empty = 1;
                 break; /* queue is empty, nothing to send */
@@ -102,14 +168,14 @@ flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *pa
             /*
              * Actually send the packet
              */
-            rawsock_send_packet(masscan->adapter, p->px, (unsigned)p->length, 1);
+            rawsock_send_packet(adapter, p->px, (unsigned)p->length, 1);
 
             /*
              * Now that we are done with the packet, put it on the free list
              * of buffers that the transmit thread can reuse
              */
             for (err=1; err; ) {
-                err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
+                err = rte_ring_sp_enqueue(packet_buffers, p);
                 if (err) {
                     LOG(0, "transmit queue full (should be impossible)\n");
                     pixie_usleep(10000);
@@ -137,24 +203,25 @@ flush_packets(struct Masscan *masscan, struct Throttler *throttler, uint64_t *pa
 static void
 transmit_thread(void *v) /*aka. scanning_thread() */
 {
+    struct ThreadPair *parms = (struct ThreadPair *)v;
     uint64_t i;
     uint64_t start;
     uint64_t end;
-    struct Masscan *masscan = (struct Masscan *)v;
+    const struct Masscan *masscan = parms->masscan;
     unsigned retries = masscan->retries;
     unsigned rate = (unsigned)masscan->max_rate;
     unsigned r = retries + 1;
     uint64_t range;
     struct BlackRock blackrock;
     uint64_t count_ips = rangelist_count(&masscan->targets);
-    struct Status status;
-    struct Throttler throttler;
-    struct TemplateSet *pkt_template = masscan->pkt_template;
-    unsigned *picker;
-    struct Adapter *adapter = masscan->adapter;
+    struct Throttler *throttler = parms->throttler;
+    struct TemplateSet *pkt_template = parms->tmplset;
+    unsigned *picker = parms->picker;
+    struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
+    unsigned increment = masscan->shard.of + masscan->nic_count;
 
-    LOG(1, "xmit: starting transmit thread...\n");
+    LOG(1, "xmit: starting transmit thread #%u\n", parms->my_index);
 
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
@@ -166,40 +233,23 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
      * to support --shard, so that multiple machines can co-operate on
      * the same scan. Another reason to do this is so that we can bleed
-     * a little bit past the end when we have --retries */
-    if (masscan->resume.index != 0)
-        start = masscan->resume.index;
-    else
-        start = (masscan->shard.one-1) * (range / masscan->shard.of);
-    if (masscan->shard.of == 1)
-        end = range;
-    else
-        end = masscan->shard.one * (range / masscan->shard.of);
+     * a little bit past the end when we have --retries. Yet another
+     * thing to do here is deal with multiple network adapters, which
+     * is essentially the same logic as shards. */
+    start = masscan->resume.index + (masscan->shard.one-1) + parms->nic_index;
+    end = range;
     end += retries * rate;
 
     
-    /* "STATUS" is once-per-second <stderr> notification to the command
-     * line as to what's going on */
-    status_start(&status);
 
     /* "THROTTLER" rate-limits how fast we transmit, set with the
      * --max-rate parameter */
-    throttler_start(&throttler, masscan->max_rate);
-
-    /* needed for --packet-trace option so that we know when we started
-     * the scan */
-    global_timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
-
-    /* Optimize target selection so it's a quick binary search instead
-     * of walking large memory tables. When we scan the entire Internet
-     * our --excludefile will chop up our pristine 0.0.0.0/0 range into
-     * hundreds of subranges. This scans through them faster. */
-    picker = rangelist_pick2_create(&masscan->targets);
+    throttler_start(throttler, masscan->max_rate/masscan->nic_count);
 
     /* -----------------
      * the main loop
      * -----------------*/
-    LOG(3, "xmit: starting main loop\n");
+    LOG(3, "xmit: starting main loop: [%llu..%llu]\n", start, end);
     for (i=start; i<end; ) {
         uint64_t batch_size;
 
@@ -209,7 +259,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          * per-packet cost by doing batches. At slower rates, the batch
          * size will always be one. (--max-rate)
          */
-        batch_size = throttler_next_batch(&throttler, packets_sent);
+        batch_size = throttler_next_batch(throttler, packets_sent);
         packets_sent += batch_size;
         while (batch_size && i < end) {
             uint64_t xXx;
@@ -250,6 +300,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     pkt_template
                     );
             batch_size--;
+            foo_count++;
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -261,34 +312,28 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              *  retransmits and sharding.
              */
             if (r == 0) {
-                i++; /* <--------- look at that puny increment */
+                i += increment; /* <------ increment by 1 normally, more with shards/nics */
                 r = retries + 1;
             }
-
-            /*
-             * update screen about once per second with statistics,
-             * namely packets/second.
-             */
-            if ((i & status.timer) == status.timer)
-                status_print(&status, i, end);
 
         } /* end of batch */
 
         /* Transmit packets from other thread, when doing --banners */
-        flush_packets(masscan, &throttler, &packets_sent);
+        flush_packets(adapter, parms->packet_buffers, parms->transmit_queue, 
+                        throttler, &packets_sent);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to --resume the scan later, we save the current
          * state in a file */
         if (control_c_pressed) {
-            masscan->resume.index = i;
-            masscan_save_state(masscan);
-            fprintf(stderr, "waiting %u seconds to exit...\n", masscan->wait);
-            fflush(stderr);
-            control_c_pressed = 0; /* a second ^C press exits faster */
             break;
         }
+
+        /* save our current location for resuming, if the user pressed
+         * <ctrl-c> to exit early */
+        parms->my_index = i;
     }
+
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -296,27 +341,45 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * packets to arrive. Pressing <ctrl-c> a second time will exit this
      * prematurely.
      */
-    {
-        unsigned j;
-        for (j=0; j<masscan->wait && !control_c_pressed; j++) {
-            unsigned k;
-            status_print(&status, i++, end);
+    while (!control_c_pressed_again) {
+        unsigned k;
 
-            for (k=0; k<1000; k++) {
-                /* Transmit packets from other thread */
-                flush_packets(masscan, &throttler, &packets_sent);
+        for (k=0; k<1000; k++) {
+            /* Transmit packets from the receive thread */
+            flush_packets(  adapter, 
+                            parms->packet_buffers, 
+                            parms->transmit_queue, 
+                            throttler, 
+                            &packets_sent);
 
-                pixie_usleep(1000);
-            }
+            pixie_usleep(1000);
         }
-        fprintf(stderr, "                                                                      \r");
     }
 
-    /* Tell the other threads it's time to exit the program */
-    masscan->is_done = 1;
+    /* Thread is about to exit */
+    parms->done_transmitting = 1;
+    LOG(1, "xmit: stopping transmit thread #%u\n", parms->my_index);
 }
 
 
+unsigned
+is_my_ip_address(const struct Masscan *masscan, unsigned ip)
+{
+    unsigned i;
+    for (i=0; i<masscan->nic_count; i++)
+        if (ip == masscan->nic[i].adapter_ip)
+            return 1;
+    return 0;
+}
+unsigned
+is_my_port(const struct Masscan *masscan, unsigned ip)
+{
+    unsigned i;
+    for (i=0; i<masscan->nic_count; i++)
+        if (ip == masscan->nic[i].adapter_port)
+            return 1;
+    return 0;
+}
 
 /***************************************************************************
  * 
@@ -328,17 +391,18 @@ transmit_thread(void *v) /*aka. scanning_thread() */
  * use to match up requests with responses.
  ***************************************************************************/
 static void
-receive_thread(struct Masscan *masscan,
-    unsigned adapter_ip,
-    unsigned adapter_port,
-    const unsigned char *adapter_mac)
+receive_thread(void *v)
 {
+    struct ThreadPair *parms = (struct ThreadPair *)v;
+    const struct Masscan *masscan = parms->masscan;
+
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
     struct TCP_ConnectionTable *tcpcon = 0;
 
 
+    LOG(1, "recv: start receive thread#%u\n", parms->my_index);
 
     /*
      * If configured, open a --pcap file for saving raw packets. This is
@@ -346,8 +410,8 @@ receive_thread(struct Masscan *masscan,
      * strange things people send us. Note that we don't record transmitted
      * packets, just the packets we've received.
      */
-    if (masscan->pcap_filename[0])
-        pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);
+    /*if (masscan->pcap_filename[0])
+        pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);*/
 
     /*
      * Open output. This is where results are reported when saving
@@ -367,10 +431,10 @@ receive_thread(struct Masscan *masscan,
      */
     if (masscan->is_banners) {
         tcpcon = tcpcon_create_table(
-            (size_t)(masscan->max_rate/5), 
-            masscan->transmit_queue, 
-            masscan->packet_buffers,
-            &masscan->pkt_template->pkts[Proto_TCP],
+            (size_t)((masscan->max_rate/5) / masscan->nic_count), 
+            parms->transmit_queue, 
+            parms->packet_buffers,
+            &parms->tmplset->pkts[Proto_TCP],
             output_report_banner,
             out,
             masscan->tcb.timeout
@@ -378,8 +442,9 @@ receive_thread(struct Masscan *masscan,
     }
 
     if (masscan->is_offline) {
-        while (!masscan->is_done)
+        while (!control_c_pressed_again)
             pixie_usleep(10000);
+        parms->done_receiving = 1;
         return;
     }
 
@@ -388,7 +453,7 @@ receive_thread(struct Masscan *masscan,
      * them to the terminal.
      */
     LOG(1, "begin receive thread\n");
-    while (!masscan->is_done) {
+    while (!control_c_pressed_again) {
         int status;
         unsigned length;
         unsigned secs;
@@ -409,7 +474,7 @@ receive_thread(struct Masscan *masscan,
          * This is the boring part of actually receiving a packet
          */
         err = rawsock_recv_packet(
-                    masscan->adapter,
+                    parms->adapter,
                     &length,
                     &secs,
                     &usecs,
@@ -448,7 +513,7 @@ receive_thread(struct Masscan *masscan,
 
 
         /* verify: my IP address */
-        if (adapter_ip != ip_me)
+        if (parms->adapter_ip != ip_me)
             continue;
 
 
@@ -461,13 +526,14 @@ receive_thread(struct Masscan *masscan,
                  * stack, we may have to handle ARPs ourself, or the router will 
                  * lose track of us. */
                 LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
-                arp_response(
-                             adapter_ip, adapter_mac, px, length,
-                             masscan->packet_buffers,
-                             masscan->transmit_queue);
+                arp_response(   parms->adapter_ip,
+                                parms->adapter_mac,
+                                px, length,
+                                parms->packet_buffers,
+                                parms->transmit_queue);
                 continue;
             case FOUND_UDP:
-                if (adapter_port != parsed.port_dst)
+                if (!is_my_port(masscan, parsed.port_dst))
                     continue;
                 LOG(4, "found udp 0x%08x\n", parsed.ip_dst);
                 continue;
@@ -483,7 +549,7 @@ receive_thread(struct Masscan *masscan,
 
 
         /* verify: my port number */
-        if (adapter_port != parsed.port_dst)
+        if (parms->adapter_port != parsed.port_dst)
             continue;
 
         /* Save raw packet in --pcap file */
@@ -587,7 +653,8 @@ receive_thread(struct Masscan *masscan,
             /* verify: syn-cookies */
             if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
                 LOG(5, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
-                    (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
+                    (ip_them>>24)&0xff, (ip_them>>16)&0xff, 
+                    (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
                     seqno_me-1, syn_hash(ip_them, parsed.port_src));
                 continue;
             }
@@ -611,7 +678,7 @@ receive_thread(struct Masscan *masscan,
     }
 
 
-    LOG(1, "end receive thread\n");
+    LOG(1, "recv: end receive thread#%u\n", parms->my_index);
 
     /*
      * cleanup
@@ -620,6 +687,9 @@ receive_thread(struct Masscan *masscan,
     output_destroy(out);
     if (pcapfile)
         pcapfile_close(pcapfile);
+
+    /* Thread is about to exit */
+    parms->done_receiving = 1;
 }
 
 
@@ -630,8 +700,16 @@ receive_thread(struct Masscan *masscan,
  ***************************************************************************/
 static void control_c_handler(int x)
 {
-    control_c_pressed = 1+x;
+    if (control_c_pressed == 0) {
+        fprintf(stderr, 
+"waiting %u seconds to exit...                                            \n", wait);
+        fflush(stderr);
+        control_c_pressed = 1+x;
+    } else
+        control_c_pressed_again = 1;
+
 }
+
 
 
 /***************************************************************************
@@ -642,14 +720,15 @@ static void control_c_handler(int x)
 static int
 main_scan(struct Masscan *masscan)
 {
-    struct TemplateSet tmplset[1];
+    struct ThreadPair parms_array[8];
     uint64_t count_ips;
     uint64_t count_ports;
-    unsigned adapter_ip = 0;
-    unsigned adapter_port;
-    unsigned char adapter_mac[6];
-    unsigned char router_mac[6];
-    int err;
+    uint64_t range;
+    unsigned index;
+    unsigned *picker;
+    time_t now = time(0);
+    struct Status status;
+    uint64_t min_index = UINT64_MAX;
 
     /*
      * Initialize the task size
@@ -668,8 +747,13 @@ main_scan(struct Masscan *masscan)
         LOG(0, " [hint] try something like \"--ports 0-65535\"\n");
         return 1;
     }
-    /* If the IP address range is very big, then require that that the 
-     * user apply an exclude range */
+    range = count_ips * count_ports + (uint64_t)(masscan->retries * masscan->max_rate);
+
+
+    /* 
+     * If the IP address range is very big, then require that that the 
+     * user apply an exclude range 
+     */
     if (count_ips > 1000000000ULL && rangelist_count(&masscan->exclude_ip) == 0) {
         LOG(0, "FAIL: range too big, need confirmation\n");
         LOG(0, " [hint] to prevent acccidents, at least one --exclude must be specified\n");
@@ -678,64 +762,125 @@ main_scan(struct Masscan *masscan)
     }
 
     /*
-     * Turn the adapter on, and get the running configuration
-     */
-    err = masscan_initialize_adapter(
-                        masscan,
-                        &adapter_ip,
-                        adapter_mac,
-                        router_mac);
-    if (err != 0)
-        return err;
-
-    /*
-     * Initialize the TCP packet template. The way this works is that we parse
-     * an existing TCP packet, and use that as the template for scanning. Then,
-     * we adjust the template with additional features, such as the IP address
-     * and so on.
-     */
-    template_packet_init(
-                tmplset,
-                adapter_ip,
-                adapter_mac,
-                router_mac,
-                masscan->payloads);
-    masscan->pkt_template = tmplset;
-    
-    /*
      * trim the nmap UDP payloads down to only those ports we are using. This 
      * makes lookups faster at high packet rates.
      */
     payloads_trim(masscan->payloads, &masscan->ports);
 
+    /* Optimize target selection so it's a quick binary search instead
+     * of walking large memory tables. When we scan the entire Internet
+     * our --excludefile will chop up our pristine 0.0.0.0/0 range into
+     * hundreds of subranges. This scans through them faster. */
+    picker = rangelist_pick2_create(&masscan->targets);
+
+    /* needed for --packet-trace option so that we know when we started
+     * the scan */
+    global_timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
+
+    foo_timestamp = pixie_gettime();
+
     /*
-     * Reconfigure the packet template according to command-line options
+     * Start scanning threats for each adapter
      */
-    if (masscan->adapter_port == 0x10000)
-        masscan->adapter_port = 40000 + time(0) % 20000;
-    template_set_source_port(tmplset, masscan->adapter_port);
-    if (masscan->nmap.ttl)
-        template_set_ttl(tmplset, masscan->nmap.ttl);
+    for (index=0; index<masscan->nic_count; index++) {
+        struct ThreadPair *parms = &parms_array[index];
+        int err;
+
+        parms->masscan = masscan;
+        parms->nic_index = index;
+        parms->picker = picker;
+        parms->my_index = masscan->resume.index;
+        parms->done_transmitting = 0;
+        parms->done_receiving = 0;
+        
 
     
+        /*
+         * Turn the adapter on, and get the running configuration
+         */
+        err = masscan_initialize_adapter(
+                            masscan,
+                            index,
+                            &parms->adapter_ip,
+                            parms->adapter_mac,
+                            parms->router_mac);
+        if (err != 0)
+            exit(1);
+        parms->adapter = masscan->nic[index].adapter;
 
+        /*
+         * Initialize the TCP packet template. The way this works is that we parse
+         * an existing TCP packet, and use that as the template for scanning. Then,
+         * we adjust the template with additional features, such as the IP address
+         * and so on.
+         */
+        template_packet_init(
+                    parms->tmplset,
+                    parms->adapter_ip,
+                    parms->adapter_mac,
+                    parms->router_mac,
+                    masscan->payloads);
 
-    /*
-     * Read back what we've set
-     */
-    adapter_port = template_get_source_port(tmplset);
+        /*
+         * Set the "source port" of everything we transmit.
+         */
+        if (masscan->nic[index].adapter_port == 0x10000)
+            masscan->nic[index].adapter_port = 40000 + now % 20000;
+        template_set_source_port(   parms->tmplset, 
+                                    masscan->nic[index].adapter_port);
 
-
-
-    LOG(0, "Scanning %u hosts [%u port%s/host]\n",
-        (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
+        /*
+         * Set the "TTL" (IP time-to-live) of everything we send.
+         */
+        if (masscan->nmap.ttl)
+            template_set_ttl(parms->tmplset, masscan->nmap.ttl);
 
     
-    /*
-     * trap <ctrl-c> to pause
-     */
-    signal(SIGINT, control_c_handler);
+        /*
+         * Read back what we've set
+         */
+        parms->adapter_port = template_get_source_port(parms->tmplset);
 
+        /*
+         * trap <ctrl-c> to pause
+         */
+        signal(SIGINT, control_c_handler);
+
+
+        /*
+         * Allocate packet buffers for sending
+         */
+#define BUFFER_COUNT 16384
+        parms->packet_buffers = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        parms->transmit_queue = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
+        {
+            unsigned i;
+            for (i=0; i<BUFFER_COUNT-1; i++) {
+                struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
+                err = rte_ring_sp_enqueue(parms->packet_buffers, p);
+                if (err) {
+                    /* I dunno why but I can't queue all 256 packets, just 255 */
+                    LOG(0, "packet_buffers: enqueue: error %d\n", err);
+                }
+            }
+        }
+
+
+        /*
+         * Start the scanning thread.
+         * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
+         * RATE OF SPEED.
+         */
+        pixie_begin_thread(transmit_thread, 0, parms);
+
+
+        /*
+         * Start the MATCHING receive thread. Transmit and receive threads
+         * come in matching pairs.
+         */
+        pixie_begin_thread(receive_thread, 0, parms);
+
+    }
 
     /*
      * Print helpful text
@@ -747,72 +892,106 @@ main_scan(struct Masscan *masscan)
 
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
-        LOG(0, "\nStarting masscan 1.0 (http://github.com/robertdavidgraham/masscan) at %s\n", buffer);
+        LOG(0, "\nStarting masscan 1.0 (http://bit.ly/14GZzcT) at %s\n", buffer);
+        LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+        LOG(0, "Initiating SYN Stealth Scan\n");
+        LOG(0, "Scanning %u hosts [%u port%s/host]\n",
+            (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
     }
-    LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
-    LOG(0, "Initiating SYN Stealth Scan\n");
 
     /*
-     * Allocate packet buffers for sending
+     * Now wait for <ctrl-c> to be pressed OR for threads to exit
      */
-#define BUFFER_COUNT 16384
-    masscan->packet_buffers = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
-    masscan->transmit_queue = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
-    {
+    status_start(&status);
+    while (!control_c_pressed) {
         unsigned i;
-        for (i=0; i<BUFFER_COUNT-1; i++) {
-            struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
-            err = rte_ring_sp_enqueue(masscan->packet_buffers, p);
-            if (err) {
-                /* I dunno why but I can't queue all 256 packets, just 255 */
-                LOG(0, "packet_buffers: enqueue: error %d\n", err);
-            }
+        double rate = 0;
+        
+        min_index = UINT64_MAX;
+
+        /* Find the minimum index of all the threads */
+        min_index = UINT64_MAX;
+        for (i=0; i<masscan->nic_count; i++) {
+            struct ThreadPair *parms = &parms_array[i];
+
+            if (min_index > parms->my_index)
+                min_index = parms->my_index;
+
+            rate += parms->throttler->current_rate;
         }
+
+        if (min_index >= range) {
+            control_c_pressed = 1;
+        }
+
+        /*
+         * update screen about once per second with statistics,
+         * namely packets/second.
+         */
+        status_print(&status, min_index, range, rate);
+        
+        /* Sleep for almost a second */
+        pixie_mssleep(750);
     }
 
+    /*
+     * If we haven't completed the scan, then save the resume
+     * information.
+     */
+    if (min_index < count_ips * count_ports) {
+        masscan->resume.index = min_index;
+        masscan_save_state(masscan);
+    }
 
 #if 0
+    /* I'm figuring a bug in the status_print() function, it's reporting
+     * values that are twice the correct value. This double checks that */
     {
-        int fd = (int)socket(AF_INET, SOCK_STREAM, 0);
-        if (fd <= 0) {
-            perror("socket");
-        } else  {
-            struct sockaddr_in sin;
-            memset(&sin, 0, sizeof(sin));
-            sin.sin_family = AF_INET;
-            sin.sin_port = htons((unsigned short)masscan->adapter_port);
-            sin.sin_addr.s_addr = 0;
+        double elapsed = pixie_gettime() - foo_timestamp;
+        double rate;
 
-            if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) != 0) {
-                perror("bind");
-            } else {
-                int x = listen(fd, 5);
-                if (x != 0)
-                    perror("listen");
-            }
-            
-        }
+        rate = ((1000000.0 * foo_count) / elapsed);
+
+        printf("\nrate = %5.3f\n", rate);
     }
 #endif
-    
+            
 
     /*
-     * Start the scanning thread.
-     * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
-     * RATE OF SPEED.
+     * Now wait for all threads to exit
      */
-    pixie_begin_thread(transmit_thread, 0, masscan);
+    now = time(0);
+    for (;;) {
+        unsigned transmit_count = 0;
+        unsigned receive_count = 0;
+        unsigned i;
+        
+        pixie_mssleep(750);
+        
+        status_print(&status, masscan->resume.index, range, 0);
+
+        if (time(0) - now >= masscan->wait)
+            control_c_pressed_again = 1;
+
+        for (i=0; i<masscan->nic_count; i++) {
+            struct ThreadPair *parms = &parms_array[i];
+
+            transmit_count += parms->done_transmitting;
+            receive_count += parms->done_receiving;
+
+        }
+
+        if (transmit_count < masscan->nic_count)
+            continue;
+        control_c_pressed = 1;
+        control_c_pressed_again = 1;
+        if (receive_count < masscan->nic_count)
+            continue;
+        break;
+    }    
 
 
-    /*
-     * Start the receive thread
-     */
-    receive_thread(masscan,
-            adapter_ip,
-            adapter_port,
-            adapter_mac);
-
-
+    status_finish(&status);
     return 0;
 }
 
@@ -822,6 +1001,7 @@ main_scan(struct Masscan *masscan)
 int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
+    unsigned i;
 
 #if defined(WIN32)
     {WSADATA x; WSAStartup(0x101, &x);}
@@ -835,7 +1015,9 @@ int main(int argc, char *argv[])
     memset(masscan, 0, sizeof(*masscan));
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
-    masscan->adapter_port = 0x10000; /* value not set */
+    for (i=0; i<8; i++)
+        masscan->nic[i].adapter_port = 0x10000; /* value not set */
+    masscan->nic_count = 1;
     masscan->shard.one = 1;
     masscan->shard.of = 1;
     masscan->payloads = payloads_create();
@@ -906,7 +1088,8 @@ int main(int argc, char *argv[])
         break;
 
     case Operation_DebugIF:
-        rawsock_selftest_if(masscan->ifname);
+        for (i=0; i<masscan->nic_count; i++)
+            rawsock_selftest_if(masscan->nic[i].ifname);
         return 0;
 
     case Operation_Selftest:

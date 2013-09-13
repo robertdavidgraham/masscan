@@ -461,7 +461,7 @@ rangelist_pick2_destroy(unsigned *picker)
         free(picker);
 }
 unsigned
-rangelist_pick2(struct RangeList *targets, uint64_t index, unsigned *picker)
+rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker)
 {
     unsigned maxmax = targets->count;
     unsigned min = 0;
