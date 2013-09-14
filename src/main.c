@@ -64,7 +64,7 @@
 unsigned control_c_pressed = 0;
 static unsigned control_c_pressed_again = 0;
 time_t global_now;
-static unsigned wait = 10;
+static unsigned global_wait = 10;
 
 uint64_t foo_timestamp = 0;
 uint64_t foo_count = 0;
@@ -238,6 +238,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * is essentially the same logic as shards. */
     start = masscan->resume.index + (masscan->shard.one-1) + parms->nic_index;
     end = range;
+    if (masscan->resume.count && end > start + masscan->resume.count)
+        end = start + masscan->resume.count;
     end += retries * rate;
 
     
@@ -702,7 +704,9 @@ static void control_c_handler(int x)
 {
     if (control_c_pressed == 0) {
         fprintf(stderr, 
-"waiting %u seconds to exit...                                            \n", wait);
+                "waiting %u seconds to exit..."
+                "                                            \n", 
+                global_wait);
         fflush(stderr);
         control_c_pressed = 1+x;
     } else
@@ -907,8 +911,7 @@ main_scan(struct Masscan *masscan)
         unsigned i;
         double rate = 0;
         
-        min_index = UINT64_MAX;
-
+        
         /* Find the minimum index of all the threads */
         min_index = UINT64_MAX;
         for (i=0; i<masscan->nic_count; i++) {
@@ -1081,6 +1084,11 @@ int main(int argc, char *argv[])
          * THIS IS THE NORMAL THING
          */
         return main_scan(masscan);
+            
+        case Operation_ListScan:
+            /* Create a randomized list of IP addresses */
+            main_listscan(masscan);
+            return 0;
 
     case Operation_List_Adapters:
         /* List the network adapters we might want to use for scanning */

@@ -206,13 +206,18 @@ pixie_nanotime()
 
     return tv.tv_sec * 1000000000 + tv.tv_nsec;
 }
-#elif defined(__MACH__) /* works for Apple */
+#elif defined(__MACH__) || defined(__FreeBSD__) /* works for Apple */
 #include <unistd.h>
 #include <mach/mach_time.h>
 
 void pixie_usleep(uint64_t microseconds)
 {
     usleep(microseconds);
+}
+void
+pixie_mssleep(unsigned milliseconds)
+{
+    pixie_usleep(milliseconds * 1000ULL);
 }
 uint64_t
 pixie_gettime()

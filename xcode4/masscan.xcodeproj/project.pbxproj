@@ -49,6 +49,7 @@
 		11AC80EE17E0DAD4001BCE3A /* proto-icmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E917E0DAD4001BCE3A /* proto-icmp.c */; };
 		11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */; };
 		11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80F517E0ED47001BCE3A /* main-ptrace.c */; };
+		11B039C117E506B400925E7E /* main-listscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C017E506B400925E7E /* main-listscan.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
 /* End PBXBuildFile section */
 
@@ -141,6 +142,7 @@
 		11AC80EC17E0DAD4001BCE3A /* proto-ssh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssh.h"; sourceTree = "<group>"; };
 		11AC80F517E0ED47001BCE3A /* main-ptrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-ptrace.c"; sourceTree = "<group>"; };
 		11AC80F817E0EDA7001BCE3A /* main-ptrace.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "main-ptrace.h"; sourceTree = "<group>"; };
+		11B039C017E506B400925E7E /* main-listscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-listscan.c"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -196,6 +198,7 @@
 				11A9219C17DBCC7E00DDFD32 /* main-status.h */,
 				11A9219D17DBCC7E00DDFD32 /* main-throttle.c */,
 				11A9219E17DBCC7E00DDFD32 /* main-throttle.h */,
+				11B039C017E506B400925E7E /* main-listscan.c */,
 				11A9219F17DBCC7E00DDFD32 /* main.c */,
 				11A921A017DBCC7E00DDFD32 /* masscan.h */,
 				11A921A117DBCC7E00DDFD32 /* out-binary.c */,
@@ -350,6 +353,7 @@
 				11AC80EE17E0DAD4001BCE3A /* proto-icmp.c in Sources */,
 				11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */,
 				11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */,
+				11B039C117E506B400925E7E /* main-listscan.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

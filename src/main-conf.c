@@ -109,14 +109,14 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
         (masscan->nic[i].adapter_ip>> 8)&0xFF,
         (masscan->nic[i].adapter_ip>> 0)&0xFF
         );
-    fprintf(fp, "adapter-mac = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+    fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
             masscan->nic[i].adapter_mac[0],
             masscan->nic[i].adapter_mac[1],
             masscan->nic[i].adapter_mac[2],
             masscan->nic[i].adapter_mac[3],
             masscan->nic[i].adapter_mac[4],
             masscan->nic[i].adapter_mac[5]);
-    fprintf(fp, "router-mac = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+    fprintf(fp, "router-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
             masscan->nic[i].router_mac[0],
             masscan->nic[i].router_mac[1],
             masscan->nic[i].router_mac[2],
@@ -617,7 +617,8 @@ masscan_set_parameter(struct Masscan *masscan,
     }
     else if (EQUALS("ports", name) || EQUALS("port", name)) {
         rangelist_parse_ports(&masscan->ports, value);
-        masscan->op = Operation_Scan;
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         rangelist_parse_ports(&masscan->exclude_port, value);
@@ -650,7 +651,8 @@ masscan_set_parameter(struct Masscan *masscan,
             else
                 offset++; /* skip comma */
         }
-        masscan->op = Operation_Scan;
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     }
     else if (
                 EQUALS("exclude", name) ||
@@ -679,7 +681,8 @@ masscan_set_parameter(struct Masscan *masscan,
             else
                 offset++; /* skip comma */
         }
-        masscan->op = Operation_Scan;
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     } else if (EQUALS("append-output", name) || EQUALS("output-append", name)) {
         if (EQUALS("overwrite", name))
             masscan->nmap.append = 0;
@@ -821,6 +824,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->resume.seed = parseInt(value);
     } else if (EQUALS("resume-index", name)) {
         masscan->resume.index = parseInt(value);
+    } else if (EQUALS("resume-count", name)) {
+        masscan->resume.count = parseInt(value);
     } else if (EQUALS("retries", name) || EQUALS("retry", name)) {
         unsigned x = strtoul(value, 0, 0);
         if (x >= 1000) {
@@ -1230,8 +1235,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         fprintf(stderr, "nmap(%s): Zombie scans will never be supported\n", argv[i]);
                         exit(1);
                     case 'L': /* List Scan - simply list targets to scan */
-                        fprintf(stderr, "nmap(%s): list scan unsupported\n", argv[i]);
-                        exit(1);
+                        masscan->op = Operation_ListScan;
+                        break;
                     case 'M':
                         fprintf(stderr, "nmap(%s): Maimon scan not yet supported\n", argv[i]);
                         exit(1);

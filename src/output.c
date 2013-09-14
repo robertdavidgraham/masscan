@@ -530,7 +530,7 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port,
             length, px
             );
         if (count < 80)
-            fprintf(stdout, "%.*s\n", (size_t)(79-count),
+            fprintf(stdout, "%.*s\n", (int)(79-count),
 "                                                                                    ");
         else
             fprintf(stdout, "\n");
