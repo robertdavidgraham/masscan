@@ -349,7 +349,7 @@ int rawsock_recv_packet(
                         &hdr,
                         0   /* return immediately */
                         );
-        if (err == PF_RING_ERROR_NO_PKT_AVAILABLE) {
+        if (err == PF_RING_ERROR_NO_PKT_AVAILABLE || hdr.caplen == 0) {
             PFRING.poll(adapter->ring, 1);
             if (control_c_pressed)
                 return 1;
