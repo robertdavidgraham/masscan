@@ -140,6 +140,7 @@ again:
 #include <ifaddrs.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 #ifdef AF_LINK
 #   include <net/if_dl.h>
