@@ -1,5 +1,6 @@
 #include "proto-ssh.h"
 #include "proto-banner1.h"
+#include "unusedparm.h"
 #include <ctype.h>
 
 
@@ -13,7 +14,7 @@ banner_ssh(  struct Banner1 *banner1,
 {
     unsigned i;
 
-    banner1=banner1;
+    UNUSEDPARM(banner1);
 
     for (i=0; i<length; i++)
     switch (state) {
