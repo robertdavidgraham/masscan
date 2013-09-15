@@ -82,7 +82,7 @@ void output_report_banner(
 #if defined(_MSC_VER)
 #define UNUSEDPARM(x) x
 #else
-#define UNUSEDPARM(x) (x)=(x)
+#define UNUSEDPARM(x) (void) x
 #endif
 #endif
 
