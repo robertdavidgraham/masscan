@@ -141,6 +141,9 @@
     <ClCompile Include="..\src\main-ptrace.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-listscan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">

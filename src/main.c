@@ -221,7 +221,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t packets_sent = 0;
     unsigned increment = masscan->shard.of + masscan->nic_count;
 
-    LOG(1, "xmit: starting transmit thread #%u\n", parms->my_index);
+    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
@@ -360,7 +360,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     /* Thread is about to exit */
     parms->done_transmitting = 1;
-    LOG(1, "xmit: stopping transmit thread #%u\n", parms->my_index);
+    LOG(1, "xmit: stopping transmit thread #%u\n", parms->nic_index);
 }
 
 
@@ -404,7 +404,7 @@ receive_thread(void *v)
     struct TCP_ConnectionTable *tcpcon = 0;
 
 
-    LOG(1, "recv: start receive thread#%u\n", parms->my_index);
+    LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
 
     /*
      * If configured, open a --pcap file for saving raw packets. This is
@@ -680,7 +680,7 @@ receive_thread(void *v)
     }
 
 
-    LOG(1, "recv: end receive thread#%u\n", parms->my_index);
+    LOG(1, "recv: end receive thread #%u\n", parms->nic_index);
 
     /*
      * cleanup

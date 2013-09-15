@@ -37,7 +37,7 @@ main_listscan(struct Masscan *masscan)
     end = range;
     if (masscan->resume.count && end > start + masscan->resume.count)
         end = start + masscan->resume.count;
-    end += masscan->retries * masscan->max_rate;
+    end += (uint64_t)(masscan->retries * masscan->max_rate);
 
     
     for (i=start; i<end; ) {
@@ -46,7 +46,7 @@ main_listscan(struct Masscan *masscan)
         unsigned port;
         
         
-        xXx = (i + (r--) * masscan->max_rate);
+        xXx = (i + (uint64_t)((r--) * masscan->max_rate));
         while (xXx >= range)
             xXx -= range;
         xXx = blackrock_shuffle(&blackrock,  xXx);

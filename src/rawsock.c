@@ -549,8 +549,49 @@ rawsock_close_adapter(struct Adapter *adapter)
     free(adapter);
 }
 
-/********************
- *******************************************************
+/***************************************************************************
+ * Does the name look like a PF_RING DNA adapter? Common names are:
+ * dna0
+ * dna1
+ * dna0@1
+ *
+ ***************************************************************************/
+static int
+is_pfring_dna(const char *name)
+{
+    if (strlen(name) < 4)
+        return 0;
+    if (memcmp(name, "dna", 3) != 0)
+        return 0;
+
+    name +=3;
+
+    if (!isdigit(name[0]&0xFF))
+        return 0;
+    while (isdigit(name[0]&0xFF))
+        name++;
+
+    if (name[0] == '\0')
+        return 1;
+
+    if (name[0] != '@')
+        return 0;
+    else
+        name++;
+
+    if (!isdigit(name[0]&0xFF))
+        return 0;
+    while (isdigit(name[0]&0xFF))
+        name++;
+
+    if (name[0] == '\0')
+        return 1;
+    else
+        return 0;
+}
+
+
+/***************************************************************************
  ***************************************************************************/
 struct Adapter *
 rawsock_init_adapter(const char *adapter_name, 
@@ -592,10 +633,7 @@ rawsock_init_adapter(const char *adapter_name,
      *  Since a lot of things can go wrong, we do a lot of extra
      *  logging here.
      *----------------------------------------------------------------*/
-    if (is_pfring || (
-            strlen(adapter_name) == 4 
-            && memcmp("dna", adapter_name, 3) == 0
-            && isdigit(adapter_name[3]))) {
+    if (is_pfring || is_pfring_dna(adapter_name)) {
         int err;
         unsigned version;
 

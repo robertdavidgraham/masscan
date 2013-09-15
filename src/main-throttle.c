@@ -111,14 +111,37 @@ again:
 
         /* calculate waittime, in seconds */
         waittime = (current_rate - max_rate) / throttler->max_rate;
+
+        /* At higher rates of speed, we don't actually need to wait the full
+         * interval. It's better to have a much smaller interval, so that
+         * we converge back on the true rate faster */
         waittime *= 0.1;
+
+        /* This is in case of gross failure of the system. This should never
+         * actually happen, unless there is a bug. Really, I ought to make
+         * this an 'assert()' instead to fail and fix the bug rather than
+         * silently continueing, but I'm too lazy */
         if (waittime > 0.1)
             waittime = 0.1;
 
+        /* Since we've exceeded the speed limit, we should reduce the 
+         * batch size slightly. We don't do it only by a little bit to
+         * avoid over-correcting. We want to converge on the correct
+         * speed gradually. Note that since this happens hundres or
+         * thousands of times a second, the convergence is very fast
+         * even with 0.1% adjustment */
+        throttler->batch_size *= 0.999;
+
+        /* Now we wait for a bit */
         pixie_usleep((uint64_t)(waittime * 1000000.0));
 
-        throttler->batch_size *= 0.999;
-        return (uint64_t)throttler->batch_size;
+        /* There are two choices here. We could either return immediately,
+         * or we can loop around again. Right now, the code loops around
+         * again in order to support very slow rates, such as 0.5 packets
+         * per second. Nobody would want to run a scanner that slowly of
+         * course, but it's great for testing */
+        //return (uint64_t)throttler->batch_size;
+        goto again;
     }
 
     /*
