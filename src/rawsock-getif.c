@@ -9,7 +9,7 @@
 
 #include "ranges.h" /*for parsing IPv4 addresses */
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net/route.h>

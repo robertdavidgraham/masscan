@@ -44,6 +44,12 @@ LIBS = -lwpcap
 FLAGS2 = 
 endif
 
+# OpenBSD
+ifneq (, $(findstring openbsd, $(SYS)))
+LIBS = -lpcap -lm -pthread
+INCLUDES = -I.
+FLAGS2 = 
+endif
 
 # this works on llvm or real gcc
 CC = gcc
