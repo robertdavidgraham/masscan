@@ -759,7 +759,11 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
-    } else if (EQUALS("nmap-payloads", name)) {
+    } else if (EQUALS("pcap-payloads", name) || EQUALS("pcap-payload", name)) {
+        if (masscan->payloads == NULL)
+            masscan->payloads = payloads_create();
+        payloads_read_pcap(value, masscan->payloads);
+    } else if (EQUALS("nmap-payloads", name) || EQUALS("nmap-payload", name)) {
         FILE *fp;
         int err;
         err = fopen_s(&fp, value, "rt");

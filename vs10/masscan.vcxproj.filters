@@ -144,6 +144,12 @@
     <ClCompile Include="..\src\main-listscan.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-udp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-dns.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -243,6 +249,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-ptrace.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-udp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-dns.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,20 @@
 /*
-    reads in the "nmap-payloads" file containing UDP payloads
+    Reads in UDP payload templates.
+
+    This supports two formats. The first format is the "nmap-payloads" file
+    included with the nmap port scanner.
+
+    The second is the "libpcap" format that reads in real packets,
+    extracting just the payloads, associated them with the destination
+    UDP port.
+
  */
 #include "templ-payloads.h"
-#include "ranges.h"
+#include "rawsock-pcapfile.h"   /* for reading payloads from pcap files */
+#include "proto-preprocess.h"   /* parse packets */
+#include "ranges.h"             /* for parsing IP addresses */
+#include "logger.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -10,7 +22,7 @@
 
 struct Payload {
     unsigned port;
-    unsigned source_port;
+    unsigned source_port; /* not used yet */
     unsigned length;
     unsigned xsum;
     unsigned char buf[1];
@@ -45,7 +57,17 @@ struct Payload2 hard_coded_payloads[] = {
         "\x30\x0c"
         "\x06\x08\x2b\x06\x01\x02\x01\x01\x05\x00" /*sysDesc*/
         "\x05\x00"},
-    {53, 65536, 31, 0,         "\x00\x00" /* transaction ID */
+    {53, 65536, 38, 0,
+            "\x50\xb6"  /* transaction id */
+            "\x01\x20"  /* quer y*/
+            "\x00\x01"  /* query = 1 */
+            "\x00\x00\x00\x00\x00\x00"
+            "\x07" "version"  "\x04" "bind" "\x00"
+            "\x00\x10" /* TXT */
+            "\x00\x03" /* CHAOS */
+                                
+    
+    "\x00\x00" /* transaction ID */
         "\x01\x00" /* standard query */
         "\x00\x01\x00\x00\x00\x00\x00\x00" /* 1 query */
         "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
@@ -337,11 +359,12 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
 
 /***************************************************************************
  ***************************************************************************/
-static void
+static unsigned
 payload_add(struct NmapPayloads *payloads,
             const unsigned char *buf, size_t length, 
             struct RangeList *ports, unsigned source_port)
 {
+    unsigned count = 1;
     struct Payload *p;
     uint64_t port_count = rangelist_count(ports);
     uint64_t i;
@@ -375,23 +398,112 @@ payload_add(struct NmapPayloads *payloads,
                 if (p->port <= payloads->list[j]->port)
                     break;
             }
+
             if (j < payloads->count) {
-                if (p->port == payloads->list[j]->port)
+                if (p->port == payloads->list[j]->port) {
                     free(payloads->list[j]);
-                else
-                memmove(    payloads->list + j + 1,
+                    count = 0; /* don't increment count */
+                } else
+                    memmove(payloads->list + j + 1,
                             payloads->list + j, 
                             (payloads->count-j) * sizeof(payloads->list[0]));
             }
             payloads->list[j] = p;
 
-            payloads->count++;
+            payloads->count += count;
         }
     }
-
+    return count; /* zero or one */
 }
 
 /***************************************************************************
+ * Called during processing of the "--pcap-payloads <filename>" directive.
+ ***************************************************************************/
+void
+payloads_read_pcap(const char *filename, 
+                   struct NmapPayloads *payloads)
+{
+    struct PcapFile *pcap;
+    unsigned count = 0;
+ 
+    LOG(2, "payloads:'%s': opening packet capture\n", filename);
+
+    pcap = pcapfile_openread(filename);
+    if (pcap == NULL) {
+        fprintf(stderr, "payloads: can't read from file '%s'\n", filename);
+        return;
+    }
+
+
+    for (;;) {
+        unsigned x;
+        unsigned captured_length;
+        unsigned char buf[65536];
+        struct PreprocessedInfo parsed;
+        struct RangeList ports[1];
+        struct Range range[1];
+
+        /*
+         * Read the next packet from the capture file
+         */
+        {
+            unsigned time_secs;
+            unsigned time_usecs;
+            unsigned original_length;
+
+            x = pcapfile_readframe(pcap, 
+                    &time_secs, &time_usecs,
+                    &original_length, &captured_length,
+                    buf, (unsigned)sizeof(buf));
+        }
+        if (!x)
+            break;
+
+        /*
+         * Parse the packet up to its headers
+         */
+        x = preprocess_frame(buf, captured_length, 1, &parsed);
+        if (!x)
+            continue; /* corrupt packet */
+
+        /*
+         * Make sure it has UDP
+         */
+        switch (parsed.found) {
+        case FOUND_DNS:
+        case FOUND_UDP:
+            break;
+        default:
+            continue;
+        }
+
+        /*
+         * Kludge: mark the port in the format the API wants
+         */
+        ports->list = range;
+        ports->count = 1;
+        ports->max = 1;
+        range->begin = parsed.port_dst;
+        range->end = range->begin;
+
+        /*
+         * Now we've completely parsed the record, so add it to our
+         * list of payloads
+         */
+        count += payload_add(   payloads, 
+                                buf + parsed.app_offset, 
+                                parsed.app_length,
+                                ports, 
+                                0x10000);
+    }
+
+    LOG(2, "payloads:'%s': imported %u unique payloads\n", filename, count);
+    LOG(2, "payloads:'%s': closed packet capture\n", filename);
+    pcapfile_close(pcap);
+}
+
+/***************************************************************************
+ * Called during processing of the "--nmap-payloads <filename>" directive.
  ***************************************************************************/
 void
 payloads_read_file(FILE *fp, const char *filename, 

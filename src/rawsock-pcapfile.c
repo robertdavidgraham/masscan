@@ -288,8 +288,8 @@ int pcapfile_readframe(
 	bytes_read = fread(header, 1, 16, capfile->fp);
 	if (bytes_read < 16) {
 		if (bytes_read <= 0) {
-			fprintf(stderr, "%s: failed to read header\n", capfile->filename);
-			perror(capfile->filename);
+			//fprintf(stderr, "%s: failed to read header\n", capfile->filename);
+			//perror(capfile->filename);
 		} else if (bytes_read == 0)
 			; /* normal end-of-file */
 		else

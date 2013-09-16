@@ -27,6 +27,7 @@
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-xml.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
+    <ClCompile Include="..\src\proto-dns.c" />
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
@@ -45,6 +46,7 @@
     <ClCompile Include="..\src\pixie-threads.c" />
     <ClCompile Include="..\src\pixie-timer.c" />
     <ClCompile Include="..\src\proto-preprocess.c" />
+    <ClCompile Include="..\src\proto-udp.c" />
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
@@ -80,11 +82,13 @@
     <ClInclude Include="..\src\pixie-timer.h" />
     <ClInclude Include="..\src\proto-arp.h" />
     <ClInclude Include="..\src\proto-banner1.h" />
+    <ClInclude Include="..\src\proto-dns.h" />
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
+    <ClInclude Include="..\src\proto-udp.h" />
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />

@@ -136,8 +136,7 @@ rawsock_init()
     }
 
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
-        pAdapter = pAdapterInfo;
-        while (pAdapter) {
+        for (pAdapter = pAdapterInfo; pAdapter; pAdapter = pAdapter->Next) {
             if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
                 continue;
 
@@ -179,8 +178,6 @@ rawsock_init()
                 adapter_name_count++;
             }
 
-            //printf("\tGateway: \t%s\n", pAdapter->GatewayList.IpAddress.String);
-            pAdapter = pAdapter->Next;
         }
     } else {
         printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);

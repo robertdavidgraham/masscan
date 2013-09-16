@@ -31,6 +31,7 @@
 #include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
 #include "proto-icmp.h"         /* handle ICMP responses */
+#include "proto-udp.h"          /* handle UDP responses */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
@@ -535,9 +536,10 @@ receive_thread(void *v)
                                 parms->transmit_queue);
                 continue;
             case FOUND_UDP:
+            case FOUND_DNS:
                 if (!is_my_port(masscan, parsed.port_dst))
                     continue;
-                LOG(4, "found udp 0x%08x\n", parsed.ip_dst);
+                handle_udp(out, px, length, &parsed);
                 continue;
             case FOUND_ICMP:
                 handle_icmp(out, px, length, &parsed);

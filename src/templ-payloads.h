@@ -12,8 +12,17 @@ payloads_create();
 void
 payloads_destroy(struct NmapPayloads *payloads);
 
+/**
+ * Read payloads from an "nmap-payloads" formatted file
+ */
 void
 payloads_read_file(FILE *fp, const char *filename, struct NmapPayloads *payloads);
+
+/**
+ * Read payloads from a libpcap formatted file.
+ */
+void
+payloads_read_pcap(const char *filename, struct NmapPayloads *payloads);
 
 /**
  * Called to remove any payloads that aren't be used in the scan. This makes
