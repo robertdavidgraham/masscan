@@ -7,17 +7,6 @@
 #include "masscan.h"
 #include "unusedparm.h"
 
-static int
-matches_me(struct Output *out, unsigned ip, unsigned port)
-{
-    unsigned i;
-
-    for (i=0; i<8; i++) {
-        if (ip == out->nics[i].ip_me && port == out->nics[i].port_me)
-            return 1;
-    }
-    return 0;
-}
 
 
 void handle_udp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
