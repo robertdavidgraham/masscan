@@ -22,7 +22,7 @@ to buffer-overflow the scanner, or even cause it to crash.
 
 But I'd consider other vulnerabilities as well. Does Kali ship this with suid
 and there's a preload bug? That's not really a vuln in this code, but if it's 
-something I could fix, I'd consider it paying a bounty for it.
+something I could fix, I'd consider paying a bounty for it.
 
 
 ## Disclosure policy
@@ -35,7 +35,7 @@ heavily used software, so I'm lax on this.
 
 ## Threats
 
-The primary threat is from hostile targets on the Internet sending back back
+The primary threat is from hostile targets on the Internet sending back
 responses in order to:
 * exploit a buffer-overflow vulnerability
 * spoof packets trying to give fraudulent scan results (mitigated with our
