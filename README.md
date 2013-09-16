@@ -88,10 +88,10 @@ Usage is similar to `nmap`. To scan a network segment for some ports:
 This will:
 * scan the 10.x.x.x subnet, all 16 million addresses
 * scans port 80 and the range 8000 to 8100, or 102 addresses total
-* print output to <stdout> that can be redirected to a file
+* print output to `<stdout>` that can be redirected to a file
 
 To see the complete list of options, use the `--echo` feature. This
-dumps the current configuration and exits. This ouput can be used as input back
+dumps the current configuration and exits. This output can be used as input back
 into the program:
 
 	# masscan -p80,8000-8100 10.0.0.0/8 --echo > xxx.conf
@@ -108,7 +108,7 @@ with the entire Internet in mind. It might look something like this:
 Scanning the entire Internet is bad. For one thing, parts of the Internet react
 badly to being scanned. For another thing, some sites track scans and add you
 to a ban list, which will get you firewalled from useful parts of the Internet.
-Therefore, you want to exlude a lot of ranges. To blacklist or exclude ranges,
+Therefore, you want to exclude a lot of ranges. To blacklist or exclude ranges,
 you want to use the following syntax:
 
 	# masscan 0.0.0.0/0 -p0-65535 --excludefile exclude.txt
@@ -186,7 +186,7 @@ differences are:
 
 You can think of `masscan` as having the following settings permanently
 enabled:
-* `-sS`: this does SYN scan only (currently, will change in future)
+* `-sS`: this does SYN scan only (currently, will change in the future)
 * `-Pn`: doesn't ping hosts first, which is fundamental to the async operation
 * `-n`: no DNS resolution happens
 * `--randomize-hosts`: scan completely randomized
@@ -201,7 +201,7 @@ command:
 ## Transmit rate (IMPORTANT!!)
 
 This program spews out packets very fast. On Windows, or from VMs,
-it can do 300,000 packets/second. On a Linux (no virtualization) it'll
+it can do 300,000 packets/second. On Linux (no virtualization) it'll
 do 1.6 million packets-per-second. That's fast enough to melt most networks.
 
 Note that it'll only melt your own network. It randomizes the target
@@ -256,12 +256,12 @@ scan all "private" IP addresses. That would be the table of ranges like:
     172.16.0.0/20
 
 In this example, the first 64k indexes are appended to 192.168.x.x to form
-the target address. Then, the next 16-million are appenedd to 10.x.x.x.
+the target address. Then, the next 16-million are appended to 10.x.x.x.
 The remaining indexes in the range are applied to 172.16.x.x.
 
 In this example, we only have three ranges. When scanning the entire Internet,
 we have in practice more than 100 ranges. That's because you have to blacklist
-or exlude a lot of sub-ranges. This chops up the desired range into hundreds
+or exclude a lot of sub-ranges. This chops up the desired range into hundreds
 of smaller ranges.
 
 This leads to one of the slowest parts of the code. We transmit 10 million
@@ -281,7 +281,7 @@ the `pick()` function. In use, it looks like:
 
 Masscan supports not only IP address ranges, but also port ranges. This means
 we need to pick from the index variable both an IP address and a port. This
-is fairly straight forward:
+is fairly straightforward:
 
     range = ip_count * port_count;
     for (i = 0; i < range; i++) {
@@ -293,9 +293,9 @@ is fairly straight forward:
 This leads to another expensive part of the code. The division/modulus
 instructions are around 90 clock cycles, or 30 nanoseconds, on x86 CPUs. When
 transmitting at a rate of 10 million packets/second, we have only
-100 nanoseconds per packet. I see now way to optimize this any better. Luckily,
+100 nanoseconds per packet. I see no way to optimize this any better. Luckily,
 though, two such operations can be executed simultaneously, so doing two 
-of these as shown above is no more expesive than doing one.
+of these as shown above is no more expensive than doing one.
 
 There are actually some easy optimizations for the above performance problems,
 but they all rely upon `i++`, the fact that the index variable increases one
@@ -307,7 +307,7 @@ need to spread our traffic evenly over the target.
 The way we randomize is simply by encrypting the index variable. By definition,
 encryption is random, and creates a 1-to-1 mapping between the original index
 variable and the output. This means that while we linearly go through the
-range, the output IP addresse are completely random. In code, this looks like:
+range, the output IP addresses are completely random. In code, this looks like:
 
     range = ip_count * port_count;
     for (i = 0; i < range; i++) {
@@ -327,7 +327,7 @@ This architecture allows for lots of cool features. For example, it supports
 "shards". You can setup 5 machines each doing a fifth of the scan, or
 `range / shard_count`. Shards can be multiple machines, or simply multiple
 network adapters on the same machine, or even (if you want) multiple IP
-source addresses on the same network adapter
+source addresses on the same network adapter.
 
 Or, you can use a 'seed' or 'key' to the encryption function, so that you get
 a different order each time you scan, like `x = encrypt(seed, i)`.
@@ -361,14 +361,14 @@ bypasses in Masscan:
 * user-mode TCP stack
 * user-mode synchronization
 
-Masscan can use the PF_RING DNA driver. This driver DMA's packets directly
+Masscan can use the PF_RING DNA driver. This driver DMAs packets directly
 from user-mode memory to the network driver with zero kernel involvement.
 That allows software, even with a slow CPU, to transmit packets at the maximum
 rate the hardware allows. If you put 8 10-gbps network cards in a computer,
 this means it could transmit at 100-million packets/second.
 
-Masscan has it's own built-in TCP stack for grabbing banners from TCP
-connections. It means it can easily support 10 million concurrent TCP
+Masscan has its own built-in TCP stack for grabbing banners from TCP
+connections. This means it can easily support 10 million concurrent TCP
 connections, assuming of course that the computer has enough memory.
 
 Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
@@ -378,17 +378,17 @@ is contention, they'll do a system call into the kernel, which kills
 performance. Mutexes on the fast path of a program severely limits scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
-interferring with the transmit thread.
+interfering with the transmit thread.
 
 
 ## Portability
 
-The code runs well on Linux, Windows, and Mac OS X. All the importnat bits are
+The code runs well on Linux, Windows, and Mac OS X. All the important bits are
 in standard C (C90). It therefore compiles on Visual Studio with Microsoft's
 compiler, the Clang/LLVM compiler on Mac OS X, and GCC on Linux.
 
 Windows and Macs aren't tuned for packet transmit, and get only about 300,000
-packets-per-second whereas Linux can do 1,500,000 packets/second. That's
+packets-per-second, whereas Linux can do 1,500,000 packets/second. That's
 probably faster than you want anyway.
 
 
@@ -400,12 +400,12 @@ information.
 This project uses safe functions like `strcpy_s()` instead of unsafe functions
 like `strcpy()`.
 
-This project as automated unit regression tests (`make regress`).
+This project has automated unit regression tests (`make regress`).
 
 
 ## Compatibility
 
-A lot of effort has been made in make the input/output look like `nmap`, which
+A lot of effort has gone into making the input/output look like `nmap`, which
 everyone who does port scans is (or should be) familiar with.
 
 
