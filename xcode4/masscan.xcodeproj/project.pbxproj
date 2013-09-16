@@ -50,6 +50,8 @@
 		11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */; };
 		11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80F517E0ED47001BCE3A /* main-ptrace.c */; };
 		11B039C117E506B400925E7E /* main-listscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C017E506B400925E7E /* main-listscan.c */; };
+		11B039C717E7834000925E7E /* proto-dns.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C317E7834000925E7E /* proto-dns.c */; };
+		11B039C817E7834000925E7E /* proto-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C517E7834000925E7E /* proto-udp.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
 /* End PBXBuildFile section */
 
@@ -143,6 +145,10 @@
 		11AC80F517E0ED47001BCE3A /* main-ptrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-ptrace.c"; sourceTree = "<group>"; };
 		11AC80F817E0EDA7001BCE3A /* main-ptrace.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "main-ptrace.h"; sourceTree = "<group>"; };
 		11B039C017E506B400925E7E /* main-listscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-listscan.c"; sourceTree = "<group>"; };
+		11B039C317E7834000925E7E /* proto-dns.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-dns.c"; sourceTree = "<group>"; };
+		11B039C417E7834000925E7E /* proto-dns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns.h"; sourceTree = "<group>"; };
+		11B039C517E7834000925E7E /* proto-udp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-udp.c"; sourceTree = "<group>"; };
+		11B039C617E7834000925E7E /* proto-udp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-udp.h"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -178,6 +184,10 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11B039C317E7834000925E7E /* proto-dns.c */,
+				11B039C417E7834000925E7E /* proto-dns.h */,
+				11B039C517E7834000925E7E /* proto-udp.c */,
+				11B039C617E7834000925E7E /* proto-udp.h */,
 				11AC80E717E0DAD4001BCE3A /* proto-http.c */,
 				11AC80E817E0DAD4001BCE3A /* proto-http.h */,
 				11AC80E917E0DAD4001BCE3A /* proto-icmp.c */,
@@ -354,6 +364,8 @@
 				11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */,
 				11AC80F617E0ED47001BCE3A /* main-ptrace.c in Sources */,
 				11B039C117E506B400925E7E /* main-listscan.c in Sources */,
+				11B039C717E7834000925E7E /* proto-dns.c in Sources */,
+				11B039C817E7834000925E7E /* proto-udp.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
