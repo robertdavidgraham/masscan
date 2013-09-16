@@ -82,6 +82,26 @@
 #include <time.h>
 #include <stdint.h>
 
+
+enum {
+    PROTO_UNKNOWN,
+    PROTO_SSH1,
+    PROTO_SSH2,
+    PROTO_HTTP,
+    PROTO_FTP1,
+    PROTO_FTP2,
+    PROTO_DNS_VERSIONBIND,
+};
+
+struct Configuration {
+    unsigned do_ssh;
+    unsigned do_http;
+    unsigned do_dns_version;
+    unsigned do_xml;
+    unsigned is_quiet;
+};
+
+
 struct MasscanRecord {
     unsigned timestamp;
     unsigned ip;
@@ -277,6 +297,7 @@ banner_protocol_string(unsigned proto)
     case 3: return "HTTP";
     case 4: return "FTP";
     case 5: return "FTP";
+        case PROTO_DNS_VERSIONBIND: return "DNS-VER";
     default: return "UNKNOWN";
     }
 }
@@ -285,7 +306,8 @@ banner_protocol_string(unsigned proto)
  * Parse the BANNER record, extracting the timestamp, IP addres, and port
  * number. We also convert the banner string into a safer form.
  ***************************************************************************/
-void parse_banner(unsigned char *buf, size_t buf_length)
+void
+parse_banner(const struct Configuration *conf, unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
     unsigned proto;
@@ -322,35 +344,45 @@ void parse_banner(unsigned char *buf, size_t buf_length)
     if (buf_length > 12) {
         const char *s;
         s = normalize_string(buf, 12, buf_length-12, BUF_MAX);
-        /*printf("%s %-15s :%5u %s \"%s\"\n",
+        if (!conf->is_quiet)
+        printf("%s %-15s :%5u %s \"%s\"\n",
                timebuf,
                addrbuf,
                record.port,
                banner_protocol_string(proto),
                s
-               );*/
-        if (proto == 1 || proto == 2) {
-            db_lookup(mydb, s, strlen(s));
+               );
+        switch (proto) {
+            case PROTO_SSH1:
+            case PROTO_SSH2:
+                if (conf->do_ssh)
+                    db_lookup(mydb, s, strlen(s));
+                break;
+            case PROTO_HTTP:
+                if (conf->do_http)
+                    db_lookup(mydb, s, strlen(s));
+                break;
+            case PROTO_DNS_VERSIONBIND:
+                if (conf->do_dns_version)
+                    db_lookup(mydb, s, strlen(s));
+                break;
         }
     }
 }
 
-/***************************************************************************
- ***************************************************************************/
-char buf2[65536];
-unsigned buf2len;
-char buf3[65536];
-unsigned buf3len;
 
 /***************************************************************************
  * Read in the file, one record at a time.
+ *
+ * @param conf
+ *      Configuration settings telling us what to look for
  * @param filename
  *      The file we read.
  * @return
  *      the number of records successfully parsed
  ***************************************************************************/
 uint64_t
-parse_file(const char *filename)
+parse_file(const struct Configuration *conf, const char *filename)
 {
     FILE *fp = 0;
     unsigned char *buf = 0;
@@ -389,9 +421,6 @@ parse_file(const char *filename)
         unsigned type;
         unsigned length;
 
-        buf3len = buf2len;
-        memcpy(buf3, buf2, buf2len);
-        buf2len = 0;
 
         /* [TYPE]
          * This is one or more bytes indicating the type of type of the
@@ -400,14 +429,12 @@ parse_file(const char *filename)
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
-        buf2[buf2len++] = buf[0];
         type = buf[0] & 0x7F;
         while (buf[0] & 0x80) {
             bytes_read = fread(buf, 1, 1, fp);
             if (bytes_read != 1)
                 break;
             type = (type << 7) | (buf[0] & 0x7F);
-            buf2[buf2len++] = buf[0];
         }
         
         /* [LENGTH]
@@ -417,14 +444,12 @@ parse_file(const char *filename)
         bytes_read = fread(buf, 1, 1, fp);
         if (bytes_read != 1)
             break;
-        buf2[buf2len++] = buf[0];
         length = buf[0] & 0x7F;
         while (buf[0] & 0x80) {
             bytes_read = fread(buf, 1, 1, fp);
             if (bytes_read != 1)
                 break;
             length = (length << 7) | (buf[0] & 0x7F);
-            buf2[buf2len++] = buf[0];
         }
         if (length > BUF_MAX) {
             fprintf(stderr, "file corrupt\n");
@@ -436,17 +461,16 @@ parse_file(const char *filename)
         bytes_read = fread(buf, 1, length, fp);
         if (bytes_read < length)
             break; /* eof */
-        memcpy(buf2+buf2len, buf, length);
-        buf2len += length;
 
         /* Depending on record type, do something different */
         switch (type) {
             case 1: /* STATUS: open */
             case 2: /* STATUS: closed */
-                //parse_status(buf, bytes_read);
+                if (!conf->is_quiet)
+                    parse_status(buf, bytes_read);
                 break;
             case 3: /* BANNER */
-                parse_banner(buf, bytes_read);
+                parse_banner(conf, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;
@@ -475,18 +499,51 @@ main(int argc, char *argv[])
 {
     int i;
     uint64_t total_records = 0;
-
-    mydb = (struct BannerDB*)malloc(sizeof(*mydb));
-    memset(mydb, 0, sizeof(*mydb));
-
+    struct Configuration conf[1];
+    
+    memset(conf, 0, sizeof(conf[0]));
+    
     if (argc <= 1) {
         printf("usage:\n masscan2text <scanfile>\ndecodes and prints text\n");
         return 1;
     }
-    fprintf(stderr, "--- scan2text for masscan/1.1 format ---\n");
+    
+    /*
+     * Go through and look for some options
+     */
     for (i=1; i<argc; i++) {
-        total_records += parse_file(argv[i]);
+        if (strcmp(argv[i], "--ssh") == 0)
+            conf->do_ssh = 1;
+        else if (strcmp(argv[i], "--http") == 0)
+            conf->do_http = 1;
+        else if (strcmp(argv[i], "--quiet") == 0)
+            conf->is_quiet = 1;
+        else if (strcmp(argv[i], "--dns-version") == 0)
+            conf->do_dns_version = 1;
+        else if (strcmp(argv[i], "--xml") == 0)
+            conf->do_xml = 1;
+        else if (argv[i][0] == '\0')
+            fprintf(stderr, "%s: unknown option\n", argv[i]);
     }
+    
+    /*
+     * Create a table for storing banners
+     */
+    mydb = (struct BannerDB*)malloc(sizeof(*mydb));
+    memset(mydb, 0, sizeof(*mydb));
+
+    
+    fprintf(stderr, "--- scan2text for masscan/1.1 format ---\n");
+    
+    /*
+     * go through all files
+     */
+    for (i=1; i<argc; i++) {
+        if (argv[i][0] == '-')
+            continue;
+        total_records += parse_file(conf, argv[i]);
+    }
+    
     fprintf(stderr, "--- %llu records scanned  ---\n", total_records);
 
     db_print(mydb);
