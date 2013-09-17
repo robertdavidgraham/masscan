@@ -106,6 +106,7 @@
     <ClInclude Include="..\src\xring.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\doc\masscan.8.markdown" />
     <None Include="..\LICENSE" />
     <None Include="..\Makefile" />
     <None Include="..\README.md" />

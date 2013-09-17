@@ -263,5 +263,6 @@
     <None Include="..\LICENSE" />
     <None Include="..\Makefile" />
     <None Include="..\VULNINFO.md" />
+    <None Include="..\doc\masscan.8.markdown" />
   </ItemGroup>
 </Project>

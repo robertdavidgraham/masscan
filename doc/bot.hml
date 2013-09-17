@@ -1,0 +1,17 @@
+<html>
+<head>
+<title>Masscan/1.0 - fast port scanner</title>
+</head>
+<body>
+<h1>Masscan/1.0 - fast port scanner</h1>
+
+<p>This tool is not a web spider, but a port scanner. It'll make only one request to a website, usually for the root / webpage. It then records the <b>Server:</b> field from the HTTP header, the <b>&lt;title&gt;</b> from the page contents, and possibly a few other interesting fields.</p>
+
+<p>This does not follow links, it doesn't scan your web pages, but the ports on your machine.</p>
+
+<p>The source code for this tool is at <a href="https://github.com/robertdavidgraham/masscan/">https://github.com/robertdavidgraham/masscan/</a>. This is an open source project, so that this means it's not me (Robert Graham) who is using this tool to scan your website, but likely somebody else. I can't speak for their intentions, but this tool is more useful at doing surveys of the Internet than trying to hack in (tools like 'nmap' or 'nessus' are more often used for that).</p>
+
+
+
+</body>
+</html>

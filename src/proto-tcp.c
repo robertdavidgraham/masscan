@@ -603,8 +603,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             switch (tcb->port_them) {
             case 80: 
                 x = (const unsigned char *)
-                    "HEAD / HTTP/1.0\r\n"
-                    "User-Agent: test\r\n"
+                    "GET / HTTP/1.0\r\n"
+                    "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
                     "Connection: Keep-Alive\r\n"
                     "Content-Length: 0\r\n"
                     "\r\n"; 

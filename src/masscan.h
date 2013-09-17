@@ -105,7 +105,6 @@ struct Masscan
 
 
     struct {
-        uint64_t seed;
         uint64_t index;
         uint64_t count;
     } resume;

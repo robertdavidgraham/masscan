@@ -248,7 +248,6 @@ masscan_save_state(struct Masscan *masscan)
     }
 
     fprintf(fp, "\n# resume information\n");
-    fprintf(fp, "resume-seed = %llu\n", masscan->resume.seed);
     fprintf(fp, "resume-index = %llu\n", masscan->resume.index);
 
     masscan_echo(masscan, fp);
@@ -779,7 +778,7 @@ masscan_set_parameter(struct Masscan *masscan,
         /* Run in "offline" mode where it thinks it's sending packets, but
          * it's not */
         masscan->is_offline = 1;
-    } else if (EQUALS("open", name)) {
+    } else if (EQUALS("open", name) || EQUALS("open-only", name)) {
         masscan->nmap.open_only = 1;
     } else if (EQUALS("output-status", name)) {
         if (EQUALS("open", value))
@@ -801,6 +800,8 @@ masscan_set_parameter(struct Masscan *masscan,
             fprintf(stderr, "error: %s=%s\n", name, value);
         }
     } else if (EQUALS("output-filename", name) || EQUALS("output-file", name)) {
+        if (masscan->nmap.format == 0)
+            masscan->nmap.format = Output_XML;
         strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
     } else if (EQUALS("pcap", name)) {
         strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
@@ -824,8 +825,6 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("resume", name)) {
         masscan_read_config_file(masscan, value);
         masscan_set_parameter(masscan, "output-append", "true");
-    } else if (EQUALS("resume-seed", name)) {
-        masscan->resume.seed = parseInt(value);
     } else if (EQUALS("resume-index", name)) {
         masscan->resume.index = parseInt(value);
     } else if (EQUALS("resume-count", name)) {
@@ -861,7 +860,10 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): TCP scan flags not yet supported\n", name);
         exit(1);
     } else if (EQUALS("seed", name)) {
-        masscan->seed = parseInt(value);
+        if (EQUALS("time", value))
+            masscan->seed = time(0);
+        else
+            masscan->seed = parseInt(value);
     } else if (EQUALS("sendq", name)) {
         masscan->is_sendq = 1;
     } else if (EQUALS("send-eth", name)) {
