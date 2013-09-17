@@ -1,7 +1,19 @@
-Copyright (c) 2013 Robert Graham
+Copyright (c) 2013 Robert David Graham
 
-There is no license.
+This program, "masscan", is not completely free software. It may not be
+used by the United States Department of Defense (DoD) or National Security
+Agency (NSA), or by agents acting on their behalf, such as contractors, 
+sub-contractors, and so on. These entitities must contact me to acquire
+a different license.
 
-You do not have permission to use/run this code.
+Barring the above exception, you can use, redistribute, and/or modify
+this code under the terms of the GNU Affero General Public License
+version 3.
 
-You can read it, though.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
