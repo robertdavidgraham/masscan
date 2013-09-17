@@ -221,7 +221,7 @@ When the user presses <ctrl-c>, the scan will stop, and the current
 state of the scan will be saved in the file 'paused.conf'. The scan
 can be resumed with the `--resume` option:
 
-  # masscan --resume paused.conf
+	# masscan --resume paused.conf
 
 The program will not exit immediately, but will wait a default of 10
 seconds to receive results from the Internet and save the results before
@@ -233,12 +233,12 @@ exiting completely. This time can be changed with the `--wait` option.
 The following example scans all private networks for webservers, and prints
 all open ports that were found.
 
-  # masscan 10.0.0.0/8 192.168.0.0/16 172.16.0.0/12 -p80 --open-only
+	# masscan 10.0.0.0/8 192.168.0.0/16 172.16.0.0/12 -p80 --open-only
 
 The following example scans the entire Internet for DNS servers, grabbing
 their versions, then saves the results in an XML file.
 
-  # masscan 0.0.0.0/0 --excludefile no-dod.txt -pU:53 --banners --output-filename dns.xml
+	# masscan 0.0.0.0/0 --excludefile no-dod.txt -pU:53 --banners --output-filename dns.xml
 
 You should be able to import the XML into databases and such.
 
@@ -252,8 +252,16 @@ using the following command-lines:
 	# masscan 0.0.0.0/0 -p0-65535 --shard 2/3
 	# masscan 0.0.0.0/0 -p0-65535 --shard 3/3
 
+## COMPATIBILITY
+
+While not listed in this document, a lot of parameters compatible with
+`nmap` will also work.
 
 ## SEE ALSO
 
-nmap(8)
+nmap(8), pcap(3)
 
+## AUTHORS
+
+This tool was written by Robert Graham. The source code is available at
+https://github.com/robertdavidgraham/masscan.
