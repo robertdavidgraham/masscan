@@ -12,6 +12,11 @@
 #include <errno.h>
 #endif
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+
 #ifndef UNUSEDPARM
 #ifdef _MSC_VER
 #define UNUSEDPARM(x) x
@@ -31,7 +36,7 @@ DWORD_PTR result;
 	if (result == 0) {
 		fprintf(stderr, "set_priority: returned error win32:%u\n", (unsigned)GetLastError());
 	}
-#elif defined(__GNUC__)
+#elif defined(__linux__) && defined(__GNUC__)
 	pthread_t thread = pthread_self();
     pthread_attr_t thAttr;
     int policy = 0;
@@ -69,7 +74,7 @@ pixie_cpu_set_affinity(unsigned processor)
 	if (result == 0) {
 		fprintf(stderr, "set_affinity: returned error win32:%u\n", (unsigned)GetLastError());
 	}
-#elif defined(__GNUC__)
+#elif defined(__linux__) && defined(__GNUC__)
 	int x;
 	pthread_t thread = pthread_self();
 	cpu_set_t cpuset;
@@ -117,7 +122,7 @@ pixie_cpu_get_count()
 		return 1;
 	else
 		return count;
-#elif defined __APPLE__
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 	/* BSD - use sysctl() function */
 		int x;
 		int mib[2];
