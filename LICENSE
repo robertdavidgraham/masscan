@@ -1,12 +1,6 @@
 Copyright (c) 2013 Robert David Graham
 
-This program, "masscan", is not completely free software. It may not be
-used by the United States Department of Defense (DoD) or National Security
-Agency (NSA), or by agents acting on their behalf, such as contractors, 
-sub-contractors, and so on. These entitities must contact me to acquire
-a different license.
-
-Barring the above exception, you can use, redistribute, and/or modify
+You can use, redistribute, and/or modify
 this code under the terms of the GNU Affero General Public License
 version 3.
 
