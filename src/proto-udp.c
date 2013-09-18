@@ -1,5 +1,6 @@
 #include "proto-udp.h"
 #include "proto-dns.h"
+#include "proto-snmp.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
 #include "logger.h"
@@ -19,13 +20,16 @@ void handle_udp(struct Output *out, const unsigned char *px, unsigned length, st
 
     output_report_status(
                         out,
-                        Port_UdpClosed,
+                        Port_UdpOpen,
                         ip_them,
                         port_them,
                         0,
                         0);
 
     switch (port_them) {
+    case 161:
+        handle_snmp(out, px, length, parsed);
+        break;
     case 53:
         handle_dns(out, px, length, parsed);
         break;

@@ -373,11 +373,6 @@ int rawsock_recv_packet(
         *usecs = hdr.ts.tv_usec;
     }
     
-    /* if '--packet-trace' nmap option is sent, print decode to 
-     * command-line */
-    if (adapter->is_packet_trace) {
-        packet_trace(stdout, *packet, *length, 0);
-    }
 
     return 0;
 }

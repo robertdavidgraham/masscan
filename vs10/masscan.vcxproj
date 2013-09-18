@@ -30,6 +30,7 @@
     <ClCompile Include="..\src\proto-dns.c" />
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
+    <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
     <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
@@ -86,6 +87,7 @@
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
+    <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-udp.h" />

@@ -40,6 +40,7 @@
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
 #include "templ-payloads.h"     /* UDP packet payloads */
+#include "proto-snmp.h"         /* parse SNMP responses */
 
 #include <limits.h>
 #include <string.h>
@@ -545,6 +546,11 @@ receive_thread(void *v)
         if (parms->adapter_ip != ip_me)
             continue;
 
+        /* if '--packet-trace' nmap option is sent, print decode to 
+         * command-line */
+        if (parms->masscan->nmap.packet_trace) {
+            packet_trace(stdout, px, length, 0);
+        }
 
         /*
          * Handle non-TCP protocols
@@ -1081,6 +1087,9 @@ int main(int argc, char *argv[])
      * for Windows and PF_RING. */
     rawsock_init();
 
+    /* Init some protocol parser data structures */
+    snmp_init();
+
     /* Set randomization seed for SYN-cookies */
     syn_set_entropy(masscan->seed);
 
@@ -1134,6 +1143,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += snmp_selftest();
             x += payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();

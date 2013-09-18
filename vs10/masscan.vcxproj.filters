@@ -150,6 +150,9 @@
     <ClCompile Include="..\src\proto-dns.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-snmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -257,12 +260,23 @@
     <ClInclude Include="..\src\proto-dns.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\proto-snmp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
-    <None Include="..\LICENSE" />
-    <None Include="..\Makefile" />
-    <None Include="..\VULNINFO.md" />
-    <None Include="..\doc\masscan.8.markdown" />
+    <None Include="..\LICENSE">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Makefile">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\doc\masscan.8.markdown">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\VULNINFO.md">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

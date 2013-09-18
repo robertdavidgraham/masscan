@@ -22,6 +22,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+
 int
 rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
 {
