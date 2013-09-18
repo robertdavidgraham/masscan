@@ -52,6 +52,7 @@
 		11B039C117E506B400925E7E /* main-listscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C017E506B400925E7E /* main-listscan.c */; };
 		11B039C717E7834000925E7E /* proto-dns.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C317E7834000925E7E /* proto-dns.c */; };
 		11B039C817E7834000925E7E /* proto-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C517E7834000925E7E /* proto-udp.c */; };
+		11B039CB17EA092B00925E7E /* proto-snmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C917EA092B00925E7E /* proto-snmp.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
 /* End PBXBuildFile section */
 
@@ -149,6 +150,8 @@
 		11B039C417E7834000925E7E /* proto-dns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns.h"; sourceTree = "<group>"; };
 		11B039C517E7834000925E7E /* proto-udp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-udp.c"; sourceTree = "<group>"; };
 		11B039C617E7834000925E7E /* proto-udp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-udp.h"; sourceTree = "<group>"; };
+		11B039C917EA092B00925E7E /* proto-snmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-snmp.c"; sourceTree = "<group>"; };
+		11B039CA17EA092B00925E7E /* proto-snmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-snmp.h"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -184,6 +187,8 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11B039C917EA092B00925E7E /* proto-snmp.c */,
+				11B039CA17EA092B00925E7E /* proto-snmp.h */,
 				11B039C317E7834000925E7E /* proto-dns.c */,
 				11B039C417E7834000925E7E /* proto-dns.h */,
 				11B039C517E7834000925E7E /* proto-udp.c */,
@@ -366,6 +371,7 @@
 				11B039C117E506B400925E7E /* main-listscan.c in Sources */,
 				11B039C717E7834000925E7E /* proto-dns.c in Sources */,
 				11B039C817E7834000925E7E /* proto-udp.c in Sources */,
+				11B039CB17EA092B00925E7E /* proto-snmp.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -221,7 +221,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t result = 0;
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
-            sprintf_s(foo, sizeof(foo), "%llu", foo);
+            sprintf_s(foo, sizeof(foo), "%llu", result);
             if (*banner_offset + strlen(foo) < banner_max) {
                 memcpy(banner + *banner_offset, foo, strlen(foo));
                 *banner_offset += (unsigned)strlen(foo);
