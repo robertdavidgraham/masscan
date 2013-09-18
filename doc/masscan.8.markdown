@@ -7,7 +7,7 @@ masscan <ip addresses/ranges> -p <ports> <options>
 
 ## DESCRIPTION
 
-**masscan** is an Internet-scale port scanner, useful for large scal surveys
+**masscan** is an Internet-scale port scanner, useful for large scale surveys
 of the Internet, or of internal networks. While the default transmit rate
 is only 100 packets/second, it can optional go as fast as 25 million
 packets/second, a rate sufficient to scan the Internet in 3 minutes for
@@ -27,9 +27,9 @@ one port.
   * `--range <ip/range>`: the same as target range spec described above,
     except as a named parameter instead of an unnamed one.
 
-  * `-p <ports`, `--ports <ports>`: specifies the port(s) to be scanned. A single
-    port can be specified, like `-p80`. A range of ports can be specified,
-	like `-p 20-25`. A list of ports/ranges can be specified, like
+  * `-p <ports`, `--ports <ports>`: specifies the port(s) to be scanned. A 
+    single port can be specified, like `-p80`. A range of ports can be 
+    specified, like `-p 20-25`. A list of ports/ranges can be specified, like
 	`-p80,20-25`. UDP ports can also be specified, like
 	`--ports U:161,U:1024-1100`.
 
@@ -38,12 +38,12 @@ one port.
 	supported.
 
   * `--rate <packets-per-second>`: specifies the desired rate for transmitting
-    packets. This can be very small numbers, like `0.1` for transmitting packets
-	at rates of one every 10 seconds, for very large numbers like 10000000,
-	which attempts to transmit at 10 million packets/second. In my experience,
-	Windows and can do 250 thousand packets per second, and latest versions of
-	Linux can do 2.5 million packets per second. The PF_RING driver is needed
-	to get to 25 million packets/second.
+    packets. This can be very small numbers, like `0.1` for transmitting 
+    packets at rates of one every 10 seconds, for very large numbers like 
+    10000000, which attempts to transmit at 10 million packets/second. In my
+    experience, Windows and can do 250 thousand packets per second, and latest
+    versions of Linux can do 2.5 million packets per second. The PF_RING driver
+    is needed to get to 25 million packets/second.
 
   * `-c <filename>`, `--conf <filename>`: reads in a configuration file. The
     format of the configuration file is described below.
@@ -185,6 +185,18 @@ one port.
     addresses. This is useful for importing into other tools. The options
 	`--shard`, `--resume-index`, and `--resume-count` can be useful with
 	this feature.
+    
+  * `-oX <filename>`: sets the output format to XML and saves the output in the
+    given filename. This is equivelent to using the `--output-format` and
+    `--output-filename` parameters.
+    
+  * `-oB <filename>`: sets the output format to binary and saves the output in
+    the given filename. This is equivelent to using the `--output-format` and
+    `--output-filename` parameters. The tool `scan2text` can then be used to
+    read the binary file. Binary files are mush smaller than their XML
+    equivelents, but require a separate step to convert back into XML or
+    another readable format.
+    
 
 ## CONFIGURATION FILE FORMAT
 
@@ -251,6 +263,62 @@ using the following command-lines:
 	# masscan 0.0.0.0/0 -p0-65535 --shard 1/3
 	# masscan 0.0.0.0/0 -p0-65535 --shard 2/3
 	# masscan 0.0.0.0/0 -p0-65535 --shard 3/3
+    
+## SPURIOUS RESETS
+
+When scanning TCP using the default IP address of your adapter, the built-in
+stack will generate RST packets. This will prevent banner grabbing. There are
+are two ways to solve this. The first way is to create a firewall rule
+to block that port from being seen by the stack. How this works is dependent
+on the operating system, but on Linux this looks something like:
+
+    # iptables -A INPUT -p tcp -i eth0 --dport 61234 -j DROP
+
+Then, when scanning, that same port must be used as the source:
+
+    # masscan 10.0.0.0/8 -p80 --banners --adapter-port 61234
+    
+An alternative is to "spoof" a different IP address. This IP address must be
+within the range of the local network, but must not otherwise be in use by
+either your own computer or another computer on the network. An example of this
+would look like:
+
+    # masscan 10.0.0.0/8 -p80 --banners --adapter-ip 192.168.1.101
+
+Setting your source IP address this way is the preferred way of running this
+scanner.
+
+
+## ABUSE COMPLAINTS
+
+This scanner is designed for large-scale surveys, of either an organization,
+or of the Internet as a whole. This scanning will be noticed by those 
+monitoring their logs, which will generate complaints.
+
+If you are scanning your own organization, this may lead to you being fired.
+Never scan outside your local subnet without getting permission from your boss,
+with a clear written declaration of why you are scanning.
+
+The same applies to scanning the Internet from your employer. This is another
+good way to get fired, as your IT department gets flooded with complaints as
+to why your organization is hacking them.
+
+When scanning on your own, such as your home Internet or ISP, this will likely
+cause them to cancel your account due to the abuse complaints.
+
+One solution is to work with your ISP, to be clear about precisely what we are
+doing, to prove to them that we are researching the Internet, not "hacking" it.
+We have our ISP send the abuse complaints directly to us. For anyone that asks,
+we add them to our "--excludefile", blacklisting them so that we won't scan
+them again. While interacting with such people, some instead add us to their
+whitelist, so that their firewalls won't log us anymore (they'll still block
+us, of course, they just won't log that fact to avoid filling up their logs
+with our scans).
+
+Ultimately, I don't know if it's possible to completely solve this problem.
+Despite the Internet being a public, end-to-end network, you are still
+"guilty until proven innocent" when you do a scan.
+
 
 ## COMPATIBILITY
 

@@ -19,6 +19,7 @@ struct Banner1
 {
     struct SMACK *smack;
     struct SMACK *http_fields;
+    struct SMACK *html_fields;
 };
 
 struct Patterns {
@@ -40,6 +41,9 @@ banner1_parse(
         unsigned state, unsigned *proto,
         const unsigned char *px, size_t length,
         char *banner, unsigned *banner_offset, size_t banner_max);
+
+void
+banner_append(const void *src, size_t src_len, void *banner, unsigned *banner_offset, size_t banner_max);
 
 /**
  * Test the banner protocol-parsing system by reading

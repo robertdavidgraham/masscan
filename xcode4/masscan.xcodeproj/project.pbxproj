@@ -187,6 +187,7 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */,
 				11B039C917EA092B00925E7E /* proto-snmp.c */,
 				11B039CA17EA092B00925E7E /* proto-snmp.h */,
 				11B039C317E7834000925E7E /* proto-dns.c */,
@@ -229,7 +230,6 @@
 				11A921AB17DBCC7E00DDFD32 /* pixie-timer.h */,
 				11A921AC17DBCC7E00DDFD32 /* proto-arp.c */,
 				11A921AD17DBCC7E00DDFD32 /* proto-arp.h */,
-				11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */,
 				11A921AF17DBCC7E00DDFD32 /* proto-banner1.h */,
 				11A921B017DBCC7E00DDFD32 /* proto-preprocess.c */,
 				11A921B117DBCC7E00DDFD32 /* proto-preprocess.h */,

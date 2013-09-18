@@ -37,6 +37,19 @@ tcpcon_create_table(    size_t entry_count,
                         unsigned timeout
                         );
 
+/**
+ * Gracefully destroy a TCP connection table. This is the last chance for any
+ * partial banners (like HTTP server version) to be sent to the output. At the
+ * end of a scan, you'll see a bunch of banners all at once due to this call.
+ *
+ * @param tcpcon
+ *      A TCP connection table created with a matching call to
+ *      'tcpcon_create_table()'.
+ */
+void
+tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon);
+
+
 void
 tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usecs);
 

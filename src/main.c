@@ -719,6 +719,8 @@ receive_thread(void *v)
     /*
      * cleanup
      */
+    if (tcpcon)
+        tcpcon_destroy_table(tcpcon);
     dedup_destroy(dedup);
     output_destroy(out);
     if (pcapfile)

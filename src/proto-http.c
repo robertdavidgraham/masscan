@@ -1,3 +1,4 @@
+#include "proto-http.h"
 #include "proto-banner1.h"
 #include "smack.h"
 #include <ctype.h>
@@ -6,18 +7,97 @@
 enum {
     HTTPFIELD_INCOMPLETE,
     HTTPFIELD_SERVER,
+    HTTPFIELD_CONTENT_LENGTH,
+    HTTPFIELD_CONTENT_TYPE,
+    HTTPFIELD_VIA,
+    HTTPFIELD_LOCATION,
     HTTPFIELD_UNKNOWN,
     HTTPFIELD_NEWLINE,
 };
 struct Patterns http_fields[] = {
-    {"Server:",     7, HTTPFIELD_SERVER, SMACK_ANCHOR_BEGIN},
-    {":",           1, HTTPFIELD_UNKNOWN, 0},
-    {"\n",          1, HTTPFIELD_NEWLINE, 0}, 
+    {"Server:",          7, HTTPFIELD_SERVER,           SMACK_ANCHOR_BEGIN},
+    //{"Content-Length:", 15, HTTPFIELD_CONTENT_LENGTH,   SMACK_ANCHOR_BEGIN},
+    //{"Content-Type:",   13, HTTPFIELD_CONTENT_TYPE,     SMACK_ANCHOR_BEGIN},
+    {"Via:",             4, HTTPFIELD_VIA,              SMACK_ANCHOR_BEGIN},
+    {"Location:",        9, HTTPFIELD_LOCATION,         SMACK_ANCHOR_BEGIN},
+    {":",                1, HTTPFIELD_UNKNOWN, 0},
+    {"\n",               1, HTTPFIELD_NEWLINE, 0}, 
+    {0,0,0,0}
+};
+enum {
+    HTML_INCOMPLETE,
+    HTML_TITLE,
+    HTML_UNKNOWN,
+};
+struct Patterns html_fields[] = {
+    {"<Title",          6, HTML_TITLE, 0},
     {0,0,0,0}
 };
 
 
+/*****************************************************************************
+ *****************************************************************************/
+static void
+field_name(void *banner, unsigned *banner_offset, size_t banner_max, unsigned id, struct Patterns *http_fields)
+{
+    unsigned i;
+    if (id == HTTPFIELD_INCOMPLETE)
+        return;
+    if (id == HTTPFIELD_UNKNOWN)
+        return;
+    if (id == HTTPFIELD_NEWLINE)
+        return;
+    for (i=0; http_fields[i].pattern; i++) {
+        if (http_fields[i].id == id) {
+            if (*banner_offset != 0)
+                banner_append("\n", 1, banner, banner_offset, banner_max);
+            banner_append(http_fields[i].pattern 
+                            + ((http_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
+                          http_fields[i].pattern_length
+                            - ((http_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
+                          banner,
+                          banner_offset,
+                          banner_max);
+            return;
+        }
+    }
+}
 
+/*****************************************************************************
+ * Initialize some stuff that's part of the HTTP state-machine-parser.
+ *****************************************************************************/
+void
+http_init(struct Banner1 *b)
+{
+    unsigned i;
+    
+    /*
+     * These match HTTP Header-Field: names
+     */
+    b->http_fields = smack_create("http", SMACK_CASE_INSENSITIVE);
+    for (i=0; http_fields[i].pattern; i++)
+        smack_add_pattern(
+                          b->http_fields,
+                          http_fields[i].pattern,
+                          http_fields[i].pattern_length,
+                          http_fields[i].id,
+                          http_fields[i].is_anchored);
+    smack_compile(b->http_fields);
+    
+    /*
+     * These match HTML <tag names
+     */
+    b->html_fields = smack_create("html", SMACK_CASE_INSENSITIVE);
+    for (i=0; html_fields[i].pattern; i++)
+        smack_add_pattern(
+                          b->html_fields,
+                          html_fields[i].pattern,
+                          html_fields[i].pattern_length,
+                          html_fields[i].id,
+                          html_fields[i].is_anchored);
+    smack_compile(b->html_fields);
+    
+}
 
 /***************************************************************************
  * BIZARRE CODE ALERT!
@@ -51,7 +131,9 @@ banner_http(  struct Banner1 *banner1,
         FIELD_NAME,
         FIELD_COLON,
         FIELD_VALUE,
-
+        CONTENT,
+        CONTENT_TAG,
+        CONTENT_FIELD
     };
 
     state2 = (state>>16) & 0xFFFF;
@@ -87,7 +169,8 @@ banner_http(  struct Banner1 *banner1,
         if (px[i] == '\r')
             break;
         else if (px[i] == '\n') {
-            state = STATE_DONE;
+            state2 = 0;
+            state = CONTENT;
             break;
         } else {
             state2 = 0;
@@ -102,12 +185,16 @@ banner_http(  struct Banner1 *banner1,
                         banner1->http_fields,
                         &state2, 
                         px, &i, (unsigned)length);
+        i--;
         if (id == HTTPFIELD_NEWLINE) {
             state2 = 0;
             state = FIELD_START;
         } else if (id == SMACK_NOT_FOUND)
             ; /* continue here */
         else if (id == HTTPFIELD_UNKNOWN) {
+            /* Oops, at this point, both ":" and "Server:" will match.
+             * Therefore, we need to make sure ":" was found, and not
+             * a known field like "Server:" */
             size_t id2;
 
             id2 = smack_next_match(banner1->http_fields, &state2);
@@ -116,7 +203,7 @@ banner_http(  struct Banner1 *banner1,
         
             state = FIELD_COLON;
         } else
-            state = STATE_DONE;
+            state = FIELD_COLON;
         break;
     case FIELD_COLON:
         if (px[i] == '\n') {
@@ -125,6 +212,7 @@ banner_http(  struct Banner1 *banner1,
         } else if (isspace(px[i])) {
             break;
         } else {
+            field_name(banner, banner_offset, banner_max, id, http_fields);
             state = FIELD_VALUE;
             /* drop down */
         }
@@ -136,13 +224,48 @@ banner_http(  struct Banner1 *banner1,
             state = FIELD_START;
             break;
         }
-        if (id == HTTPFIELD_SERVER) {
-            if (*banner_offset < banner_max) {
-                banner[(*banner_offset)++] = px[i];
+        switch (id) {
+        case HTTPFIELD_SERVER:
+        case HTTPFIELD_LOCATION:
+        case HTTPFIELD_VIA:
+            banner_append(&px[i], 1, banner, banner_offset, banner_max);
+            break;
+        case HTTPFIELD_CONTENT_LENGTH:
+                if (isdigit(px[i]&0xFF)) {
+                    ; /*todo: add content length parsing */
+                } else {
+                    id = 0;
+                }
+            break;
+        }
+        break;
+    case CONTENT:
+            id = smack_search_next(
+                                   banner1->html_fields,
+                                   &state2, 
+                                   px, &i, (unsigned)length);
+            i--;
+            if (id != SMACK_NOT_FOUND) {
+                field_name(banner, banner_offset, banner_max, id, html_fields);
+                banner_append(":", 1, banner, banner_offset, banner_max);
+                state = CONTENT_TAG;
+            }
+            break;
+    case CONTENT_TAG:
+        for (; i<length; i++) {
+            if (px[i] == '>') {
+                state = CONTENT_FIELD;
+                break;
             }
         }
         break;
-
+    case CONTENT_FIELD:
+        if (px[i] == '<')
+            state = CONTENT;
+        else {
+            banner_append(&px[i], 1, banner, banner_offset, banner_max);
+        }
+        break;
     case STATE_DONE:
     default:
         i = (unsigned)length;

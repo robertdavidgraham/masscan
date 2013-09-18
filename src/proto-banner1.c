@@ -120,21 +120,27 @@ banner1_create(void)
                     patterns[i].is_anchored);
     smack_compile(b->smack);
 
-    /*
-     * These match HTTP Header-Field: names
-     */
-    b->http_fields = smack_create("http", SMACK_CASE_INSENSITIVE);
-    for (i=0; http_fields[i].pattern; i++)
-        smack_add_pattern(
-                    b->http_fields,
-                    http_fields[i].pattern,
-                    http_fields[i].pattern_length,
-                    http_fields[i].id,
-                    http_fields[i].is_anchored);
-    smack_compile(b->http_fields);
+    http_init(b);
 
     return b;
 }
+
+/***************************************************************************
+ ***************************************************************************/
+void
+banner_append(const void *vsrc, size_t src_len,
+              void *vbanner, unsigned *banner_offset, size_t banner_max)
+{
+    const unsigned char *src = (const unsigned char *)vsrc;
+    unsigned char *banner = (unsigned char *)vbanner;
+    size_t i;
+    
+    for (i=0; i<src_len; i++) {
+        if (*banner_offset < banner_max)
+            banner[(*banner_offset)++] = src[i];
+    }
+}
+
 
 /***************************************************************************
  ***************************************************************************/

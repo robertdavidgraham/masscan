@@ -2,8 +2,9 @@
 #define PROTO_HTTP_H
 #include "proto-banner1.h"
 
-extern struct Patterns http_fields[];
 
+void
+http_init(struct Banner1 *b);
 
 unsigned
 banner_http(  struct Banner1 *banner1,

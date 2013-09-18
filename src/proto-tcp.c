@@ -248,6 +248,38 @@ tcpcon_destroy_tcb(
 }
 
 
+/***************************************************************************
+ ***************************************************************************/
+void
+tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon)
+{
+    unsigned i;
+    
+    if (tcpcon == NULL)
+        return;
+    
+    /*
+     * Do a graceful destruction of all the entires. If they have banners,
+     * they will be sent to the output
+     */
+    for (i=0; i<=tcpcon->mask; i++) {
+        while (tcpcon->entries[i])
+            tcpcon_destroy_tcb(tcpcon, tcpcon->entries[i]);
+    }
+    
+    /*
+     * Now free the memory
+     */
+    while (tcpcon->freed_list) {
+        struct TCP_Control_Block *tcb = tcpcon->freed_list;
+        tcpcon->freed_list = tcb->next;
+        free(tcb);
+    }
+    
+    free(tcpcon->entries);
+    free(tcpcon);
+}
+
 
 /***************************************************************************
  *
@@ -605,8 +637,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
                 x = (const unsigned char *)
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
-                    "Connection: Keep-Alive\r\n"
-                    "Content-Length: 0\r\n"
+                    //"Connection: Keep-Alive\r\n"
+                    //"Content-Length: 0\r\n"
                     "\r\n"; 
                     break;
             default:
