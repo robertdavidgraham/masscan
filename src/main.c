@@ -221,7 +221,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned *picker = parms->picker;
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
-    unsigned increment = masscan->shard.of + masscan->nic_count;
+    unsigned increment = (masscan->shard.of-1) + masscan->nic_count;
 
     LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
