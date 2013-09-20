@@ -263,6 +263,21 @@ using the following command-lines:
 	# masscan 0.0.0.0/0 -p0-65535 --shard 1/3
 	# masscan 0.0.0.0/0 -p0-65535 --shard 2/3
 	# masscan 0.0.0.0/0 -p0-65535 --shard 3/3
+
+An alternative is with the "resume" feature. A scan has an internal index that
+goes from zero to the number of ports times then number of IP addresses. The
+following example shows splitting up a scan into chunks of a 1000 items each:
+
+	# masscan 0.0.0.0/0 -p0-65535 --resume-index 0 --resume-count 1000
+	# masscan 0.0.0.0/0 -p0-65535 --resume-index 1000 --resume-count 1000
+	# masscan 0.0.0.0/0 -p0-65535 --resume-index 2000 --resume-count 1000
+	# masscan 0.0.0.0/0 -p0-65535 --resume-index 3000 --resume-count 1000
+
+A script can use this to split smaller tasks across many other machines,
+such as Amazon EC2 instances. As each instance completes a job, the
+script might send a request to a central coordinating server for more 
+work.
+
     
 ## SPURIOUS RESETS
 
