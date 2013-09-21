@@ -9,6 +9,7 @@
 #include "unusedparm.h"
 
 
+
 struct DomainPointer
 {
     const unsigned char *name;
@@ -324,34 +325,52 @@ proto_dns_parse(struct DNS_Incoming *dns, const unsigned char px[], unsigned off
     return;
 }
 
-void handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+unsigned
+dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
+{
+    if (length > 2) {
+        px[0] = (unsigned char)(seqno >> 8);
+        px[1] = (unsigned char)(seqno >> 0);
+        return seqno & 0xFFFF;
+    } else
+        return 0;
+}
+
+unsigned
+handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
     unsigned port_them = parsed->port_src;
     struct DNS_Incoming dns[1];
     unsigned offset;
+    unsigned seqno;
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
+    seqno = syn_hash(ip_them, port_them | 0x10000);
+
     proto_dns_parse(dns, px, parsed->app_offset, parsed->app_offset + parsed->app_length);
 
+    if ((seqno & 0xFFFF) != dns->id)
+        return 1;
+
     if (dns->qr != 1)
-        return;
+        return 0;
     if (dns->rcode != 0)
-        return;
+        return 0;
     if (dns->qdcount != 1)
-        return;
+        return 0;
     if (dns->ancount < 1)
-        return;
+        return 0;
     if (dns->rr_count < 2)
-        return;
+        return 0;
 
 
     offset = dns->rr_offset[1];
     offset = dns_name_skip(px, offset, length);
     if (offset + 10 >= length)
-        return;
+        return 0;
 
     {
         unsigned type = px[offset+0]<<8 | px[offset+1];
@@ -360,9 +379,9 @@ void handle_dns(struct Output *out, const unsigned char *px, unsigned length, st
         unsigned txtlen = px[offset+10];
         
         if (rrlen == 0 || txtlen > rrlen-1)
-            return;
+            return 0;
         if (type != 0x10 || xclass != 3)
-            return;
+            return 0;
 
         offset += 11;
 
@@ -371,8 +390,7 @@ void handle_dns(struct Output *out, const unsigned char *px, unsigned length, st
                 ip_them, port_them, 
                 PROTO_DNS_VERSIONBIND,
                 px + offset, txtlen);
-
-        
-        
     }
+
+    return 0;
 }

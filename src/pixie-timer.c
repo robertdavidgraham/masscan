@@ -142,7 +142,7 @@ pixie_usleep(uint64_t waitTime)
     start = pixie_gettime();
 
     if (waitTime > 1000)
-        Sleep(waitTime/1000);
+        Sleep((DWORD)(waitTime/1000));
 
     while (pixie_gettime() - start < waitTime)
         ;

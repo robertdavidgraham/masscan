@@ -31,6 +31,8 @@ payloads_read_pcap(const char *filename, struct NmapPayloads *payloads);
 void
 payloads_trim(struct NmapPayloads *payloadsd, const struct RangeList *ports);
 
+typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length, uint64_t seqno);
+
 int
 payloads_lookup(
                 const struct NmapPayloads *payloads, 
@@ -38,7 +40,8 @@ payloads_lookup(
                 const unsigned char **px, 
                 unsigned *length, 
                 unsigned *source_port, 
-                uint64_t *xsum);
+                uint64_t *xsum,
+                SET_COOKIE *set_cookie);
 
 
 

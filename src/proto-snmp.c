@@ -7,6 +7,7 @@
 #include "output.h"
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
+#include "syn-cookie.h"
 
 static struct SMACK *global_mib;
 
@@ -221,7 +222,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t result = 0;
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
-            sprintf_s(foo, sizeof(foo), "%llu", result);
+            sprintf_s(foo, sizeof(foo), "%llu", foo);
             if (*banner_offset + strlen(foo) < banner_max) {
                 memcpy(banner + *banner_offset, foo, strlen(foo));
                 *banner_offset += (unsigned)strlen(foo);
@@ -254,7 +255,8 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
  ****************************************************************************/
 void
 snmp_parse(const unsigned char *px, uint64_t length,
-    unsigned char *banner, unsigned *banner_offset, unsigned banner_max)
+    unsigned char *banner, unsigned *banner_offset, unsigned banner_max,
+    unsigned *request_id)
 {
 	uint64_t offset=0;
 	uint64_t outer_length;
@@ -293,6 +295,7 @@ snmp_parse(const unsigned char *px, uint64_t length,
 
 	/* Request ID */
 	snmp->request_id = asn1_integer(px, length, &offset);
+    *request_id = (unsigned)snmp->request_id;
 	snmp->error_status = asn1_integer(px, length, &offset);
 	snmp->error_index = asn1_integer(px, length, &offset);
 
@@ -347,6 +350,80 @@ snmp_parse(const unsigned char *px, uint64_t length,
             snmp_banner(oid, oid_length, var_tag, var, var_length, banner, banner_offset, banner_max);
 		}
 	}
+}
+
+/****************************************************************************
+ ****************************************************************************/
+unsigned
+snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
+{
+	uint64_t offset=0;
+	uint64_t outer_length;
+    uint64_t version;
+    uint64_t tag;
+    uint64_t len;
+
+
+	/* tag */
+	if (asn1_tag(px, length, &offset) != 0x30)
+		return 0;
+
+	/* length */
+	outer_length = asn1_length(px, length, &offset);
+	if (length > outer_length + offset)
+		length = outer_length + offset;
+
+	/* Version */
+	version = asn1_integer(px, length, &offset);
+	if (version != 0)
+		return 0;
+
+	/* Community */
+	if (asn1_tag(px, length, &offset) != 0x04)
+		return 0;
+	offset += asn1_length(px, length, &offset);
+
+	/* PDU */
+	tag = asn1_tag(px, length, &offset);
+	if (tag < 0xA0 || 0xA5 < tag)
+		return 0;
+	outer_length = asn1_length(px, length, &offset);
+	if (length > outer_length + offset)
+		length = outer_length + offset;
+
+	/* Request ID */
+	tag = asn1_tag(px, length, &offset);
+    len = asn1_length(px, length, &offset);
+    switch (len) {
+    case 0: 
+        return 0;
+    case 1: 
+        px[offset+0] = (unsigned char)(seqno>>0)&0x7F;
+        return seqno & 0x7F;
+    case 2:
+        px[offset+0] = (unsigned char)(seqno>>8)&0x7F;
+        px[offset+1] = (unsigned char)(seqno>>0);
+        return seqno & 0x7fff;
+    case 3:
+        px[offset+0] = (unsigned char)(seqno>>16)&0x7F;
+        px[offset+1] = (unsigned char)(seqno>>8);
+        px[offset+2] = (unsigned char)(seqno>>0);
+        return seqno & 0x7fffFF;
+    case 4:
+        px[offset+0] = (unsigned char)(seqno>>24)&0x7F;
+        px[offset+1] = (unsigned char)(seqno>>16);
+        px[offset+2] = (unsigned char)(seqno>>8);
+        px[offset+3] = (unsigned char)(seqno>>0);
+        return seqno & 0x7fffFFFF;
+    case 5: 
+        px[offset+0] = 0;
+        px[offset+1] = (unsigned char)(seqno>>24);
+        px[offset+2] = (unsigned char)(seqno>>16);
+        px[offset+3] = (unsigned char)(seqno>>8);
+        px[offset+4] = (unsigned char)(seqno>>0);
+        return seqno & 0xffffFFFF;
+    }
+    return 0;
 }
 
 #define TWO_BYTE       ((~0)<<7)
@@ -410,30 +487,43 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 
 /****************************************************************************
  ****************************************************************************/
-void handle_snmp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+unsigned
+handle_snmp(struct Output *out, 
+            const unsigned char *px, unsigned length, 
+            struct PreprocessedInfo *parsed
+            )
 {
     unsigned char banner[1024];
     unsigned banner_offset = 0;
     unsigned banner_length = sizeof(banner);
     unsigned ip_them;
+    unsigned port_them = parsed->port_src;
+    unsigned seqno;
+    unsigned request_id;
     
     UNUSEDPARM(length);
 
     snmp_parse(px + parsed->app_offset, parsed->app_length,
-        banner, &banner_offset, banner_length);
-    if (!banner_offset)
-        return;
+        banner, &banner_offset, banner_length,
+        &request_id);
+
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
-    output_report_banner(
+    seqno = syn_hash(ip_them, port_them | 0x10000);
+    if ((seqno&0x7FFFffff) != request_id)
+        return 1;
+
+    if (banner_offset) {
+        output_report_banner(
             out,
             ip_them, parsed->port_src, 
             PROTO_SNMP,
             banner, banner_offset);
+    }
 
-
+    return 0;
 }
 
 
@@ -481,11 +571,11 @@ static int
 snmp_selftest_banner()
 {
     static const unsigned char snmp_response[] = {
-        0x30, 0x3b, 
+        0x30, 0x38, 
          0x02, 0x01, 0x00, 
          0x04, 0x06, 0x70, 0x75, 0x62, 0x6C, 0x69, 0x63, 
-         0xA2, 0x2e, 
-           0x02, 0x04, 0x00, 0x00, 0x00, 0x26, 
+         0xA2, 0x2B, 
+           0x02, 0x01, 0x26, 
            0x02, 0x01, 0x00, 
            0x02, 0x01, 0x00, 
            0x30, 0x20, 
@@ -498,10 +588,13 @@ snmp_selftest_banner()
     unsigned char banner[256];
     unsigned banner_offset = 0;
     unsigned banner_max = sizeof(banner);
+    unsigned request_id;
 
     snmp_parse(snmp_response, sizeof(snmp_response),
-                banner, &banner_offset, banner_max);
+                banner, &banner_offset, banner_max, &request_id);
 
+    if (request_id != 0x26)
+        return 1;
 
     return memcmp(banner, "sysObjectID:okidata.1.1.1.297.93", 30) != 0;
 }

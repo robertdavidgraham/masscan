@@ -14,25 +14,29 @@ void handle_udp(struct Output *out, const unsigned char *px, unsigned length, st
 {
     unsigned ip_them;
     unsigned port_them = parsed->port_src;
+    unsigned status = 0;
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
-    output_report_status(
+
+
+    switch (port_them) {
+    case 161:
+        status = handle_snmp(out, px, length, parsed);
+        break;
+    case 53:
+        status = handle_dns(out, px, length, parsed);
+        break;
+    }
+
+    if (status == 0)
+        output_report_status(
                         out,
                         Port_UdpOpen,
                         ip_them,
                         port_them,
                         0,
                         0);
-
-    switch (port_them) {
-    case 161:
-        handle_snmp(out, px, length, parsed);
-        break;
-    case 53:
-        handle_dns(out, px, length, parsed);
-        break;
-    }
 
 }

@@ -38,7 +38,7 @@ struct Patterns html_fields[] = {
 /*****************************************************************************
  *****************************************************************************/
 static void
-field_name(void *banner, unsigned *banner_offset, size_t banner_max, unsigned id, struct Patterns *http_fields)
+field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, struct Patterns *http_fields)
 {
     unsigned i;
     if (id == HTTPFIELD_INCOMPLETE)

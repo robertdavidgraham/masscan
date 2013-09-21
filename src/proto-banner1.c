@@ -247,7 +247,7 @@ int banner1_selftest()
                     px+i, 1,
                     banner, &banner_offset, sizeof(banner)
                     );
-    if (memcmp(banner, "YTS/1.20.13", 11) != 0) {
+    if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");
         return 1;
     }
@@ -268,7 +268,7 @@ int banner1_selftest()
                     px, length,
                     banner, &banner_offset, sizeof(banner)
                     );
-    if (memcmp(banner, "YTS/1.20.13", 11) != 0) {
+    if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");
         return 1;
     }

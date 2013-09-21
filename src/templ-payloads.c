@@ -25,6 +25,7 @@ struct Payload {
     unsigned source_port; /* not used yet */
     unsigned length;
     unsigned xsum;
+    SET_COOKIE set_cookie;
     unsigned char buf[1];
 };
 struct Payload2 {
@@ -32,7 +33,9 @@ struct Payload2 {
     unsigned source_port;
     unsigned length;
     unsigned xsum;
+    SET_COOKIE set_cookie; 
     char *buf;
+
 };
 
 struct NmapPayloads {
@@ -41,8 +44,11 @@ struct NmapPayloads {
     struct Payload **list;
 };
 
+extern unsigned snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
+extern unsigned dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
+
 struct Payload2 hard_coded_payloads[] = {
-    {161, 65536, 57, 0, 
+    {161, 65536, 57, 0, snmp_set_cookie,
         "\x30" "\x37"
         "\x02\x01\x00"                    /* version */
         "\x04\x06" "public"               /* community = public */
@@ -57,7 +63,7 @@ struct Payload2 hard_coded_payloads[] = {
         "\x30\x0c"
         "\x06\x08\x2b\x06\x01\x02\x01\x01\x05\x00" /*sysDesc*/
         "\x05\x00"},
-    {53, 65536, 38, 0,
+    {53, 65536, 38, 0, dns_set_cookie,
             "\x50\xb6"  /* transaction id */
             "\x01\x20"  /* quer y*/
             "\x00\x01"  /* query = 1 */
@@ -73,7 +79,7 @@ struct Payload2 hard_coded_payloads[] = {
         "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
         "\x00\x01\x00\x01" /* A IN */
     },
-    {5060, 65536, 0xFFFFFFFF, 0,
+    {5060, 65536, 0xFFFFFFFF, 0, 0,
         "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
         "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
         "Max-Forwards: 70\r\n"
@@ -123,7 +129,8 @@ payloads_lookup(
         const unsigned char **px, 
         unsigned *length, 
         unsigned *source_port, 
-        uint64_t *xsum)
+        uint64_t *xsum,
+        SET_COOKIE *set_cookie)
 {
     unsigned i;
     if (payloads == 0)
@@ -137,6 +144,7 @@ payloads_lookup(
             *length = payloads->list[i]->length;
             *source_port = payloads->list[i]->source_port;
             *xsum = payloads->list[i]->xsum;
+            *set_cookie = payloads->list[i]->set_cookie;
             return 1;
         }
     }
@@ -362,7 +370,8 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
 static unsigned
 payload_add(struct NmapPayloads *payloads,
             const unsigned char *buf, size_t length, 
-            struct RangeList *ports, unsigned source_port)
+            struct RangeList *ports, unsigned source_port,
+            SET_COOKIE set_cookie)
 {
     unsigned count = 1;
     struct Payload *p;
@@ -389,6 +398,7 @@ payload_add(struct NmapPayloads *payloads,
         p->length = (unsigned)length;
         memcpy(p->buf, buf, length);
         p->xsum = partial_checksum(buf, length);
+        p->set_cookie = set_cookie;
 
         /* insert in sorted order */
         {
@@ -494,7 +504,8 @@ payloads_read_pcap(const char *filename,
                                 buf + parsed.app_offset, 
                                 parsed.app_length,
                                 ports, 
-                                0x10000);
+                                0x10000,
+                                0);
     }
 
     LOG(2, "payloads:'%s': imported %u unique payloads\n", filename, count);
@@ -574,7 +585,7 @@ payloads_read_file(FILE *fp, const char *filename,
          * Now we've completely parsed the record, so add it to our
          * list of payloads
          */
-        payload_add(payloads, buf, buf_length, ports, source_port);
+        payload_add(payloads, buf, buf_length, ports, source_port, 0);
 
         rangelist_free(ports);
     }
@@ -639,7 +650,8 @@ payloads_create()
                     (const unsigned char*)hard_coded_payloads[i].buf,
                     length,
                     &list,
-                    hard_coded_payloads[i].source_port);
+                    hard_coded_payloads[i].source_port,
+                    hard_coded_payloads[i].set_cookie);
     }
     return payloads;
 }

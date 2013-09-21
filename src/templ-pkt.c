@@ -419,6 +419,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
     unsigned source_port2 = 0x1000;
     uint64_t xsum2 = 0;
     unsigned char *px = tmpl->packet;
+    SET_COOKIE set_cookie;
 
     UNUSEDPARM(seqno);
 
@@ -427,11 +428,17 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
                     &px2,
                     &length2,
                     &source_port2,
-                    &xsum2);
+                    &xsum2,
+                    &set_cookie);
 
     memcpy( px+tmpl->offset_app,
             px2,
             length2);
+
+    if (set_cookie)
+        xsum2 += set_cookie(px+tmpl->offset_app,
+                    length2,
+                    seqno);
 
     tmpl->length = tmpl->offset_app + length2;
 }
