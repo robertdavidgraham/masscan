@@ -1,5 +1,6 @@
 #include "proto-udp.h"
 #include "proto-dns.h"
+#include "proto-netbios.h"
 #include "proto-snmp.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
@@ -22,11 +23,14 @@ void handle_udp(struct Output *out, const unsigned char *px, unsigned length, st
 
 
     switch (port_them) {
-    case 161:
-        status = handle_snmp(out, px, length, parsed);
-        break;
     case 53:
         status = handle_dns(out, px, length, parsed);
+        break;
+    case 137:
+        status = handle_nbtstat(out, px, length, parsed);
+        break;
+    case 161:
+        status = handle_snmp(out, px, length, parsed);
         break;
     }
 

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\proto">
+      <UniqueIdentifier>{fc470d2b-e741-496b-be6e-abf15f4e3573}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.c">
@@ -60,9 +63,6 @@
     <ClCompile Include="..\src\pixie-threads.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-preprocess.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\pixie-timer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -90,9 +90,6 @@
     <ClCompile Include="..\src\rawsock-pcapfile.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-tcp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rawsock-arp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -103,9 +100,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\smackqueue.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\proto-banner1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-blackrock.c">
@@ -123,35 +117,47 @@
     <ClCompile Include="..\src\out-null.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\templ-pkt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\templ-payloads.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\proto-icmp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\proto-http.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\proto-ssh.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\main-ptrace.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\main-listscan.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-udp.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\src\proto-banner1.c">
+      <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-dns.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-http.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-icmp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-preprocess.c">
+      <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-snmp.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ssh.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-udp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-netbios.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-payloads.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-pkt.c">
+      <Filter>Source Files\proto</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -185,9 +191,6 @@
     <ClInclude Include="..\src\pixie-threads.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\proto-preprocess.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\pixie-timer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -209,13 +212,7 @@
     <ClInclude Include="..\src\rte-ring.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\proto-arp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\rawsock-pcapfile.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-tcp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\event-timeout.h">
@@ -230,38 +227,53 @@
     <ClInclude Include="..\src\smackqueue.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\proto-banner1.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\rand-blackrock.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\templ-pkt.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\templ-payloads.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-icmp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-http.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-ssh.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-ptrace.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\proto-arp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\proto-udp.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-banner1.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-dns.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-http.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-icmp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-preprocess.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-snmp.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ssh.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-netbios.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-dns-parse.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-pkt.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-payloads.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

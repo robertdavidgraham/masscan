@@ -79,6 +79,16 @@ struct Payload2 hard_coded_payloads[] = {
         "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
         "\x00\x01\x00\x01" /* A IN */
     },
+    {137, 65536, 50, 0, dns_set_cookie,
+        "\xab\x12" /* transaction id */
+        "\x00\x00" /* query */
+        "\x00\x01\x00\x00\x00\x00\x00\x00" /* one question */
+        "\x20" /*name length*/
+        "CKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        "\x00"
+        "\x00\x21" /* type = nbt */
+        "\x00\x01" /* class = iternet*/
+    },
     {5060, 65536, 0xFFFFFFFF, 0, 0,
         "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
         "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"

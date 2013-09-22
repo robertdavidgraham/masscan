@@ -13,6 +13,7 @@ enum {
     PROTO_FTP2,
     PROTO_DNS_VERSIONBIND,
     PROTO_SNMP,
+    PROTO_NBTSTAT,
 };
 
 struct Banner1
