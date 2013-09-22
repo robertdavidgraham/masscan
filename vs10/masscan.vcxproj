@@ -78,6 +78,7 @@
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\packet-queue.h" />
     <ClInclude Include="..\src\pixie-threads.h" />

@@ -345,7 +345,7 @@ handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct 
 
         output_report_banner(
                 out,
-                ip_them, port_them, 
+                ip_them, 17, port_them, 
                 PROTO_DNS_VERSIONBIND,
                 px + offset, txtlen);
     }

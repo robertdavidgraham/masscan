@@ -518,7 +518,7 @@ handle_snmp(struct Output *out,
     if (banner_offset) {
         output_report_banner(
             out,
-            ip_them, parsed->port_src, 
+            ip_them, 17, parsed->port_src, 
             PROTO_SNMP,
             banner, banner_offset);
     }

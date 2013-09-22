@@ -1,5 +1,6 @@
 #include "output.h"
 #include "masscan.h"
+#include "out-record.h"
 
 /****************************************************************************
  ****************************************************************************/
@@ -43,10 +44,10 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
     /* [TYPE] field */
     switch (status) {
     case Port_Open:
-        foo[0] = 1;
+        foo[0] = Out_Open;
         break;
     case Port_Closed:
-        foo[0] = 2;
+        foo[0] = Out_Closed;
         break;
     default:
         return;
@@ -81,7 +82,7 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
 /****************************************************************************
  ****************************************************************************/
 static void
-binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
+binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
         unsigned proto, const unsigned char *px, unsigned length)
 {
     unsigned char foo[256];
@@ -90,7 +91,7 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
     UNUSEDPARM(out);
 
     /* [TYPE] field */
-    foo[0] = 3; /*banner*/
+    foo[0] = Out_Banner; /*banner*/
 
     /* [LENGTH] field*/
     if (length >= 128 * 128 - 12)
@@ -115,17 +116,19 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
     foo[i+6] = (unsigned char)(ip>> 8);
     foo[i+7] = (unsigned char)(ip>> 0);
 
-    foo[i+8] = (unsigned char)(port>>8);
-    foo[i+9] = (unsigned char)(port>>0);
+    foo[i+8] = (unsigned char)(ip_proto);
 
-    foo[i+10] = (unsigned char)(proto>>8);
-    foo[i+11] = (unsigned char)(proto>>0);
+    foo[i+ 9] = (unsigned char)(port>>8);
+    foo[i+10] = (unsigned char)(port>>0);
+
+    foo[i+11] = (unsigned char)(proto>>8);
+    foo[i+12] = (unsigned char)(proto>>0);
 
     /* Banner */
-    memcpy(foo+i+12, px, length);
+    memcpy(foo+i+13, px, length);
 
 
-    fwrite(&foo, 1, length+i+12, fp);
+    fwrite(&foo, 1, length+i+13, fp);
 }
 
 

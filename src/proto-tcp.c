@@ -210,6 +210,7 @@ tcpcon_destroy_tcb(
                 tcpcon->report_banner(
                     tcpcon->out,
                     tcb->ip_them,
+                    6,
                     tcb->port_them,
                     tcb->banner_proto,
                     tcb->banner,

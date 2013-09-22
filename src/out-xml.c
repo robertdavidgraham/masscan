@@ -65,7 +65,7 @@ xml_out_status(struct Output *out, FILE *fp, int status,
     fprintf(fp, "<host endtime=\"%u\">"
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                     "<ports>"
-                    "<port protocol=\"tcp\" portid=\"%u\">"
+                    "<port protocol=\"%s\" portid=\"%u\">"
                     "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
                     "</port>"
                     "</ports>"
@@ -76,6 +76,7 @@ xml_out_status(struct Output *out, FILE *fp, int status,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
+        proto_from_status(status),
         port,
         status_string(status),
         reason_string(reason, reason_buffer, sizeof(reason_buffer)),
@@ -86,17 +87,25 @@ xml_out_status(struct Output *out, FILE *fp, int status,
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
+xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
         unsigned proto, const unsigned char *px, unsigned length)
 {
     char banner_buffer[1024];
+    char ip_proto_sz[64];
 
     UNUSEDPARM(out);
+
+    switch (ip_proto) {
+    case 1: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "icmp"); break;
+    case 6: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "tcp"); break;
+    case 17: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "udp"); break;
+    default: sprintf_s(ip_proto_sz, sizeof(ip_proto_sz), "(%u)", ip_proto); break;
+    }
 
     fprintf(fp, "<host endtime=\"%u\">"
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                     "<ports>"
-                    "<port protocol=\"tcp\" portid=\"%u\">"
+                    "<port protocol=\"%s\" portid=\"%u\">"
                     "<service name=\"%s\">"
                     "<banner>%s</banner>"
                     "</service>"
@@ -109,6 +118,7 @@ xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
+        ip_proto_sz,
         port,
         proto_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))

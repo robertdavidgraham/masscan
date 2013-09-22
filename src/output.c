@@ -85,6 +85,10 @@ proto_string(unsigned proto)
     case PROTO_HTTP: return "http";
     case PROTO_FTP1: return "ftp";
     case PROTO_FTP2: return "ftp";
+    case PROTO_DNS_VERSIONBIND: return "dns-ver";
+    case PROTO_SNMP: return "snmp";
+    case PROTO_NBTSTAT: return "nbtstat";
+
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;
@@ -106,7 +110,7 @@ normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_l
                 buf[offset++] = '\\';
                 buf[offset++] = 'x';
                 buf[offset++] = "0123456789abdef"[px[i]>>4];
-                buf[offset++] = "0123456789abdef"[px[i]>>0];
+                buf[offset++] = "0123456789abdef"[px[i]&0xF];
             }
         }
     }
@@ -509,7 +513,7 @@ output_report_status(struct Output *out, int status,
 /***************************************************************************
  ***************************************************************************/
 void
-output_report_banner(struct Output *out, unsigned ip, unsigned port,
+output_report_banner(struct Output *out, unsigned ip, unsigned ip_proto, unsigned port,
                 unsigned proto, const unsigned char *px, unsigned length)
 {
     const struct Masscan *masscan = out->masscan;
@@ -546,7 +550,7 @@ output_report_banner(struct Output *out, unsigned ip, unsigned port,
             return;
     }
 
-    out->funcs->banner(out, fp, ip, port, proto, px, length);
+    out->funcs->banner(out, fp, ip, ip_proto, port, proto, px, length);
 
 }
 

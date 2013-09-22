@@ -38,12 +38,13 @@ null_out_status(struct Output *out, FILE *fp,
 /****************************************************************************
  ****************************************************************************/
 static void
-null_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port, 
+null_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
         unsigned proto, const unsigned char *px, unsigned length)
 {
     UNUSEDPARM(out);
     UNUSEDPARM(fp);
     UNUSEDPARM(ip);
+    UNUSEDPARM(ip_proto);
     UNUSEDPARM(port);
     UNUSEDPARM(proto);
     UNUSEDPARM(px);
