@@ -5,5 +5,6 @@ enum OutputRecordType {
     Out_Open = 1,
     Out_Closed = 2,
     Out_Banner = 5,
+    Out_Banner = 4,
 };
 #endif
