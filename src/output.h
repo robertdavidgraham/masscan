@@ -13,7 +13,7 @@ struct OutputType {
     void (*open)(struct Output *out, FILE *fp);
     void (*close)(struct Output *out, FILE *fp);
     void (*status)(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
-    void (*banner)(struct Output *out, FILE *fp, unsigned ip, unsigned port, unsigned proto, const unsigned char *px, unsigned length);
+    void (*banner)(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, unsigned proto, const unsigned char *px, unsigned length);
 };
 
 struct Output
@@ -66,13 +66,13 @@ void output_report_status(struct Output *output, int status, unsigned ip, unsign
 
 typedef void (*OUTPUT_REPORT_BANNER)(
                 struct Output *output, 
-                unsigned ip, unsigned port, 
+                unsigned ip, unsigned ip_proto, unsigned port, 
                 unsigned proto,
                 const unsigned char *px, unsigned length);
 
 void output_report_banner(
                 struct Output *output, 
-                unsigned ip, unsigned port, 
+                unsigned ip, unsigned ip_proto, unsigned port, 
                 unsigned proto,
                 const unsigned char *px, unsigned length);
 

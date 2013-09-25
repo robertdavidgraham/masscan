@@ -8,6 +8,7 @@
     appropriate changes.
 */
 #include "templ-pkt.h"
+#include "templ-port.h"
 #include "proto-preprocess.h"
 #include "string_s.h"
 #include "pixie-timer.h"
@@ -144,23 +145,19 @@ static unsigned char default_icmp_timestamp_template[] =
 
 
 static unsigned char default_arp_template[] =
-    "\0\1\2\3\4\5"  /* Ethernet: destination */
-    "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etenrent type: IPv4 */
-    "\x45"          /* IP type */
-    "\x00"
-    "\x00\x1c"      /* total length = 40 bytes */
-    "\x00\x00"      /* identification */
-    "\x00\x00"      /* fragmentation flags */
-    "\xFF\x11"      /* TTL=255, proto=UDP */
-    "\xFF\xFF"      /* checksum */
-    "\0\0\0\0"      /* source address */
-    "\0\0\0\0"      /* destination address */
+    "\xff\xff\xff\xff\xff\xff"  /* Ethernet: destination */
+    "\x00\x00\x00\x00\x00\x00"  /* Ethernet: source */
+    "\x08\x06"      /* Ethernet type: ARP */
+	"\x00\x01" /* hardware = Ethernet */
+    "\x08\x00" /* protocol = IPv4 */
+    "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
+    "\x00\x01" /* opcode = request */
+  
+	"\x00\x00\x00\x00\x00\x00"
+	"\x00\x00\x00\x00"
 
-    "\xfe\xdc"      /* source port */
-    "\0\0"          /* destination port */
-    "\0\0\0\0"      /* checksum */
-    "\0\0\0\0"      /* length */
+	"\x00\x00\x00\x00\x00\x00"
+	"\x00\x00\x00\x00"
 ;
 
 
@@ -467,22 +464,22 @@ template_set_target(
      * just overloaded the "port" field to signal which protocol we
      * are using
      */
-    if (port < 65536)
+    if (port < Templ_TCP + 65536)
         tmpl = &tmplset->pkts[Proto_TCP];
-    else if (port < 65536*2) {
+    else if (port < Templ_UDP + 65536) {
         tmpl = &tmplset->pkts[Proto_UDP];
         port &= 0xFFFF;
         udp_payload_fixup(tmpl, port, seqno);
-    } else if (port < 65536*3) {
+    } else if (port < Templ_SCTP + 65536) {
         tmpl = &tmplset->pkts[Proto_SCTP];
         port &= 0xFFFF;
-    } else if (port == 65536*3) {
+    } else if (port == Templ_ICMP_echo) {
         tmpl = &tmplset->pkts[Proto_ICMP_ping];
         port = 1;
-    } else if (port == 65536*3+1) {
+    } else if (port == Templ_ICMP_timestamp) {
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
         port = 1;
-    } else if (port == 65536*3+2) {
+    } else if (port == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
         port = 1;
     } else {

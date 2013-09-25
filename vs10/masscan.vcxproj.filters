@@ -16,6 +16,9 @@
     <Filter Include="Source Files\proto">
       <UniqueIdentifier>{fc470d2b-e741-496b-be6e-abf15f4e3573}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\output">
+      <UniqueIdentifier>{3fbe0a31-7af3-4f28-a707-85577ab7be71}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.c">
@@ -78,9 +81,6 @@
     <ClCompile Include="..\src\main-initadapter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\output.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\xring.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -103,18 +103,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-blackrock.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\out-binary.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\out-text.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\out-xml.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\out-null.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\main-ptrace.c">
@@ -159,6 +147,21 @@
     <ClCompile Include="..\src\templ-pkt.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\out-binary.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-null.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-text.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-xml.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">
@@ -201,9 +204,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\syn-cookie.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\output.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\xring.h">
@@ -274,6 +274,12 @@
     </ClInclude>
     <ClInclude Include="..\src\templ-payloads.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\out-record.h">
+      <Filter>Source Files\output</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

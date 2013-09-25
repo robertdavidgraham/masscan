@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "output.h"
 #include "masscan.h"
+#include "templ-port.h"
 
 
 int
@@ -60,7 +61,7 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
 
     switch (type) {
     case 0: /* ICMP echo reply */
-        if (syn_hash(ip_them, 65536*3+0) != seqno_me)
+        if (syn_hash(ip_them, Templ_ICMP_echo) != seqno_me)
             return; /* not my response */
 
         /*

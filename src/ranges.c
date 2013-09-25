@@ -2,6 +2,7 @@
     for tracking IP/port ranges
 */
 #include "ranges.h"
+#include "templ-port.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -571,13 +572,13 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
                     proto_offset = 0;
                     break;
                 case 'U': case 'u':
-                    proto_offset = 65536;
+                    proto_offset = Templ_UDP;
                     break;
                 case 'S': case 's':
-                    proto_offset = 65536*2;
+                    proto_offset = Templ_SCTP;
                     break;
                 case 'I': case 'i':
-                    proto_offset = 65536*3;
+                    proto_offset = Templ_ICMP_echo;
                     break;
                 default:
                     fprintf(stderr, "CONF: bad port charactern = %c\n", p[0]);

@@ -44,14 +44,23 @@ text_out_status(struct Output *out, FILE *fp,
 /*************************************** *************************************
  ****************************************************************************/
 static void
-text_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned port, 
+text_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, 
         unsigned proto, const unsigned char *px, unsigned length)
 {
+    char ip_proto_sz[64];
+
+    switch (ip_proto) {
+    case 1: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "icmp"); break;
+    case 6: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "tcp"); break;
+    case 17: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "udp"); break;
+    default: sprintf_s(ip_proto_sz, sizeof(ip_proto_sz), "(%u)", ip_proto); break;
+    }
 
     UNUSEDPARM(out);
 
-    fprintf(fp, "%s tcp %u %u.%u.%u.%u %u %s %.*s\n",
+    fprintf(fp, "%s %s %u %u.%u.%u.%u %u %s %.*s\n",
         "banner",
+        ip_proto_sz,
         port,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,

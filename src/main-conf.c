@@ -17,6 +17,7 @@
 #include "logger.h"
 #include "proto-banner1.h"
 #include "templ-payloads.h"
+#include "templ-port.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -621,11 +622,19 @@ masscan_set_parameter(struct Masscan *masscan,
     }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         rangelist_parse_ports(&masscan->exclude_port, value);
+    } else if (EQUALS("arp", name) || EQUALS("arpscan", name)) {
+        /* Add ICMP ping request */
+        struct Range range;
+        range.begin = Templ_ARP;
+        range.end = Templ_ARP;
+        rangelist_add_range(&masscan->ports, range.begin, range.end);
+		masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
+        LOG(5, "--arpscan\n");
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
         struct Range range;
-        range.begin = 65536*3;
-        range.end = 65536*3;
+        range.begin = Templ_ICMP_echo;
+        range.end = Templ_ICMP_echo;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
         LOG(5, "--ping\n");
     } else if (EQUALS("range", name) || EQUALS("ranges", name) 
@@ -964,6 +973,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
+		"arp",
         0};
     size_t i;
 

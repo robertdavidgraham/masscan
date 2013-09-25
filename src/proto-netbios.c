@@ -82,7 +82,7 @@ handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, 
 
     output_report_banner(
             out,
-            ip_them, port_them, 
+            ip_them, 17, port_them, 
             PROTO_NBTSTAT,
             banner, banner_length);
     return 0;

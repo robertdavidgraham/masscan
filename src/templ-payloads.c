@@ -10,6 +10,7 @@
 
  */
 #include "templ-payloads.h"
+#include "templ-port.h"
 #include "rawsock-pcapfile.h"   /* for reading payloads from pcap files */
 #include "proto-preprocess.h"   /* parse packets */
 #include "ranges.h"             /* for parsing IP addresses */
@@ -194,7 +195,7 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *ports)
     for (i=payloads->count; i>0; i--) {
         struct Payload *p = payloads->list[i-1];
 
-        if (!rangelist_is_contains(ports, p->port + 65536)) {
+        if (!rangelist_is_contains(ports, p->port + Templ_UDP)) {
             free(p);
             memmove(payloads->list + i - 1,
                     payloads->list + i, 
