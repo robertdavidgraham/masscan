@@ -105,6 +105,7 @@ struct Configuration {
 struct MasscanRecord {
     unsigned timestamp;
     unsigned ip;
+	unsigned char ip_proto;
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
@@ -372,6 +373,75 @@ parse_banner(const struct Configuration *conf, unsigned char *buf, size_t buf_le
 
 
 /***************************************************************************
+ * Parse the BANNER record, extracting the timestamp, IP addres, and port
+ * number. We also convert the banner string into a safer form.
+ ***************************************************************************/
+void
+parse_banner4(const struct Configuration *conf, unsigned char *buf, size_t buf_length)
+{
+    struct MasscanRecord record;
+    unsigned proto;
+    char timebuf[80];
+    char addrbuf[20];
+    
+    /*
+     * Parse the parts that are common to most records
+     */
+    record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
+    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+	record.ip_proto  = buf[8];
+    record.port      = buf[9]<<8 | buf[10];
+    proto            = buf[11]<<8 | buf[12];
+    
+    /*
+     * Pretty-print the timestamp format
+     */
+    {
+        time_t timestamp = (time_t)record.timestamp;
+        struct tm *tm;
+        tm = localtime(&timestamp);
+        
+        strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm);
+    }
+    
+    /* format IP into fixed-length field */
+    sprintf(addrbuf, "%u.%u.%u.%u", 
+            (record.ip>>24)&0xFF, (record.ip>>16)&0xFF,
+            (record.ip>>8)&0xFF, (record.ip>>0)&0xFF);
+    
+    
+    
+    /* output string */
+    if (buf_length > 13) {
+        const char *s;
+        s = normalize_string(buf, 13, buf_length-13, BUF_MAX);
+        if (!conf->is_quiet)
+        printf("%s %-15s :%5u %s \"%s\"\n",
+               timebuf,
+               addrbuf,
+               record.port,
+               banner_protocol_string(proto),
+               s
+               );
+        switch (proto) {
+            case PROTO_SSH1:
+            case PROTO_SSH2:
+                if (conf->do_ssh)
+                    db_lookup(mydb, s, strlen(s));
+                break;
+            case PROTO_HTTP:
+                if (conf->do_http)
+                    db_lookup(mydb, s, strlen(s));
+                break;
+            case PROTO_DNS_VERSIONBIND:
+                if (conf->do_dns_version)
+                    db_lookup(mydb, s, strlen(s));
+                break;
+        }
+    }
+}
+
+/***************************************************************************
  * Read in the file, one record at a time.
  *
  * @param conf
@@ -471,6 +541,14 @@ parse_file(const struct Configuration *conf, const char *filename)
                 break;
             case 3: /* BANNER */
                 parse_banner(conf, buf, bytes_read);
+                break;
+			case 4:
+				fread(buf+bytes_read,1,1,fp);
+				bytes_read++;
+                parse_banner4(conf, buf, bytes_read);
+                break;
+			case 5:
+                parse_banner4(conf, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;
