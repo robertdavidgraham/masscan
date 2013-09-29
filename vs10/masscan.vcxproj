@@ -26,6 +26,7 @@
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-xml.c" />
+    <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-dns.c" />
     <ClCompile Include="..\src\proto-http.c" />

@@ -439,7 +439,6 @@ parse_linktype:
 parse_arp:
     info->ip_version = 256;
     info->ip_offset = offset;
-
     {
         //unsigned hardware_type;
         //unsigned protocol_type;
@@ -460,6 +459,7 @@ parse_arp:
         info->ip_src = px + offset + hardware_length;
         info->ip_dst = px + offset + 2*hardware_length + protocol_length;
         info->ip_protocol = opcode;
+		info->found_offset = info->ip_offset;
         return 1;
     }
 

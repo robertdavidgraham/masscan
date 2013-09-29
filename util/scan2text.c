@@ -371,6 +371,54 @@ parse_banner(const struct Configuration *conf, unsigned char *buf, size_t buf_le
     }
 }
 
+int is_nominum(const unsigned char *px, size_t len)
+{
+	if (len >= 7 && memcmp(px, "Nominum", 7) == 0)
+		return 1;
+	else
+		return 0;
+}
+int is_dnsmasq(const unsigned char *px, size_t len)
+{
+	if (len >= 7 && memcmp(px, "dnsmasq", 7) == 0)
+		return 1;
+	else
+		return 0;
+}
+int is_powerdns(const unsigned char *px, size_t len)
+{
+	if (len >= 8 && memcmp(px, "PowerDNS", 8) == 0)
+		return 1;
+	else
+		return 0;
+}
+int is_nsd(const unsigned char *px, size_t len)
+{
+	if (len >= 4 && memcmp(px, "NSD ", 4) == 0)
+		return 1;
+	else
+		return 0;
+}
+int is_unbound(const unsigned char *px, size_t len)
+{
+	if (len >= 7 && memcmp(px, "unbound", 7) == 0)
+		return 1;
+	else
+		return 0;
+}
+int is_bind(const unsigned char *px, size_t len)
+{
+	if (memcmp(px, "yamutech-bind", 13) == 0 && len >= 13)
+		return 1;
+	if (len < 4)
+		return 0;
+	if (!(px[0] == '9' || px[0] == '8') || px[1] != '.')
+		return 0;
+	if (!isdigit(px[2]))
+		return 0;
+
+	return 1;
+}
 
 /***************************************************************************
  * Parse the BANNER record, extracting the timestamp, IP addres, and port
@@ -434,8 +482,22 @@ parse_banner4(const struct Configuration *conf, unsigned char *buf, size_t buf_l
                     db_lookup(mydb, s, strlen(s));
                 break;
             case PROTO_DNS_VERSIONBIND:
-                if (conf->do_dns_version)
-                    db_lookup(mydb, s, strlen(s));
+                if (conf->do_dns_version) {
+					if (is_bind(s, strlen(s)))
+						db_lookup(mydb, "BIND", 4);
+					else if (is_dnsmasq(s, strlen(s)))
+						db_lookup(mydb, "dnsmasq", 7);
+					else if (is_nominum(s, strlen(s)))
+						db_lookup(mydb, "nominum", 7);
+					else if (is_powerdns(s, strlen(s)))
+						db_lookup(mydb, "PowerDNS", 8);
+					else if (is_nsd(s, strlen(s)))
+						db_lookup(mydb, "NSD", 3);
+					else if (is_unbound(s, strlen(s)))
+						db_lookup(mydb, "unbound", 7);
+					else
+						db_lookup(mydb, s, strlen(s));
+				}
                 break;
         }
     }

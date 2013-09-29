@@ -41,6 +41,7 @@
 #include "pixie-threads.h"      /* portable threads */
 #include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
+#include "templ-port.h"
 
 #include <limits.h>
 #include <string.h>
@@ -557,15 +558,39 @@ receive_thread(void *v)
          */
         switch (parsed.found) {
             case FOUND_ARP:
-                /* OOPS: handle arp instead. Since we may completely bypass the TCP/IP
-                 * stack, we may have to handle ARPs ourself, or the router will 
-                 * lose track of us. */
                 LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
-                arp_response(   parms->adapter_ip,
-                                parms->adapter_mac,
-                                px, length,
-                                parms->packet_buffers,
-                                parms->transmit_queue);
+				switch (px[parsed.found_offset + 6]<<8 | px[parsed.found_offset+7]) {
+				case 1: /* request */
+					/* This function will transmit a "reply" to somebody's ARP request
+					 * for our IP address (as part of our user-mode TCP/IP).
+					 * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
+					 * ourself, or the router will lose track of us.*/
+					arp_response(   parms->adapter_ip,
+									parms->adapter_mac,
+									px, length,
+									parms->packet_buffers,
+									parms->transmit_queue);
+					break;
+				case 2: /* response */
+					/* This is for "arp scan" mode, where we are ARPing targets rather
+					 * than port scanning them */
+
+					/* If we aren't doing an ARP scan, then ignore ARP responses */
+					if (!masscan->is_arp)
+						break;
+
+					/* If this response isn't in our range, then ignore it */
+					if (!rangelist_is_contains(&masscan->targets, ip_them))
+						break;
+
+					/* Ignore duplicates */
+		            if (dedup_is_duplicate(dedup, ip_them, 0))
+						continue;
+
+					/* ...everything good, so now report this response */
+	                handle_arp(out, px, length, &parsed);
+					break;
+				}
                 continue;
             case FOUND_UDP:
             case FOUND_DNS:
@@ -789,6 +814,15 @@ main_scan(struct Masscan *masscan)
     }
     range = count_ips * count_ports + (uint64_t)(masscan->retries * masscan->max_rate);
 
+	/*
+	 * If doing an ARP scan, then don't allow port scanning
+	 */
+	if (rangelist_is_contains(&masscan->ports, Templ_ARP)) {
+		if (masscan->ports.count != 1) {
+			LOG(0, "FAIL: cannot arpscan and portscan at the same time\n");
+			return 1;
+		}
+	}
 
     /* 
      * If the IP address range is very big, then require that that the 

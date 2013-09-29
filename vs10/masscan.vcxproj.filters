@@ -162,6 +162,9 @@
     <ClCompile Include="..\src\output.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-arp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\masscan.h">

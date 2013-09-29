@@ -52,6 +52,7 @@ status_string(int x)
         case Port_UdpOpen: return "open";
         case Port_UdpClosed: return "closed";
         case Port_IcmpEchoResponse: return "exists";
+		case Port_ArpOpen: return "open";
         default: return "unknown";
     }
 }
@@ -427,7 +428,8 @@ proto_from_status(unsigned status)
         case Port_IcmpEchoResponse: return "icmp";
         case Port_UdpOpen: return "udp";
         case Port_UdpClosed: return "udp";
-        default: return "err";
+		case Port_ArpOpen: return "arp";
+		default: return "err";
     }
 }
 /***************************************************************************
@@ -499,6 +501,9 @@ output_report_status(struct Output *out, int status,
             out->counts.udp.closed++;
             if (masscan->nmap.open_only)
                 return;
+            break;
+        case Port_ArpOpen:
+            out->counts.arp.open++;
             break;
         default:
             LOG(0, "unknown status type: %u\n", status);

@@ -482,6 +482,14 @@ template_set_target(
     } else if (port == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
         port = 1;
+		px = tmpl->packet + tmpl->offset_ip;
+		px[24] = (unsigned char)((ip >> 24) & 0xFF);
+		px[25] = (unsigned char)((ip >> 16) & 0xFF);
+		px[26] = (unsigned char)((ip >>  8) & 0xFF);
+		px[27] = (unsigned char)((ip >>  0) & 0xFF);
+		tmplset->px = tmpl->packet;
+		tmplset->length = tmpl->length;
+		return;
     } else {
         return;
     }
@@ -635,7 +643,10 @@ _template_init(
     tmpl->offset_ip = parsed.ip_offset;
     tmpl->offset_tcp = parsed.transport_offset;
     tmpl->offset_app = parsed.app_offset;
-    tmpl->length = parsed.ip_offset + parsed.ip_length;
+	if (parsed.found == FOUND_ARP) {
+		tmpl->length = parsed.ip_offset + 28;
+	} else 
+	    tmpl->length = parsed.ip_offset + parsed.ip_length;
 
     /*
      * Overwrite the MAC and IP addresses

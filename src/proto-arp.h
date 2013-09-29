@@ -1,6 +1,8 @@
 #ifndef PROTO_ARP_H
 #define PROTO_ARP_H
 #include "packet-queue.h"
+struct Output;
+struct PreprocessedInfo;
 
 /**
  * Response to an ARP request for our IP address.
@@ -24,5 +26,8 @@ int arp_response(
         const unsigned char *px, unsigned length, 
         PACKET_QUEUE *packet_buffers,
         PACKET_QUEUE *transmit_queue);
+
+void
+handle_arp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
 
 #endif

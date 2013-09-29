@@ -629,6 +629,7 @@ masscan_set_parameter(struct Masscan *masscan,
         range.end = Templ_ARP;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
 		masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
+		masscan->is_arp = 1; /* needs additional flag */
         LOG(5, "--arpscan\n");
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
@@ -1098,8 +1099,10 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'd': /* just do same as verbosity level */
                 {
                     int v;
-                    for (v=1; argv[i][v] == 'v'; v++)
+                    for (v=1; argv[i][v] == 'v'; v++) {
                         verbosity++;
+						debuglevel++;
+					}
                 }
                 break;
             case 'e':

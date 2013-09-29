@@ -264,6 +264,18 @@ blackrock_selftest()
     int is_success = 0;
     uint64_t range;
 
+	/*
+	 * Basic test
+	 */
+	{
+        struct BlackRock br;
+		uint64_t result;
+        blackrock_init(&br, 1000, 0);
+
+		result = blackrock_shuffle(&br, 10);
+
+	}
+
 
     range = 3015 * 3;
 

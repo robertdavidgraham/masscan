@@ -35,14 +35,14 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
         return;
     offset = parsed.found_offset;
     
-    src_ip = px[parsed.ip_offset + 12] << 24
-        | px[parsed.ip_offset + 13] << 16
-        | px[parsed.ip_offset + 14] << 8
-        | px[parsed.ip_offset + 15];
-    dst_ip = px[parsed.ip_offset + 16] << 24
-        | px[parsed.ip_offset + 17] << 16
-        | px[parsed.ip_offset + 18] << 8
-        | px[parsed.ip_offset + 19];
+    src_ip = parsed.ip_src[0] << 24
+        | parsed.ip_src[1] << 16
+        | parsed.ip_src[2] << 8
+        | parsed.ip_src[3];
+    dst_ip = parsed.ip_dst[0] << 24
+        | parsed.ip_dst[1] << 16
+        | parsed.ip_dst[2] << 8
+        | parsed.ip_dst[3];
 
     /* format the IP addresses into fixed-width fields */
     sprintf_s(from, sizeof(from), "%u.%u.%u.%u:%u",
@@ -58,9 +58,11 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
     switch (parsed.found) {
         case FOUND_ARP:
             type = px[offset+6]<<8 | px[offset+7];
+			*strchr(to, ':') = '\0';
+			*strchr(from, ':') = '\0';
             switch (type) {
-                case 0:strcpy_s(sz_type, sizeof(sz_type), "request"); break;
-                case 1:strcpy_s(sz_type, sizeof(sz_type), "response"); break;
+                case 1:strcpy_s(sz_type, sizeof(sz_type), "request"); break;
+                case 2:strcpy_s(sz_type, sizeof(sz_type), "response"); break;
                 default: sprintf_s(sz_type, sizeof(sz_type), "unknown(%u)", type); break;
             }
             fprintf(fp, "%s (%5.4f) ARP  %-21s > %-21s %s\n", direction,

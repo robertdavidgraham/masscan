@@ -44,6 +44,7 @@ enum PortStatus {
     Port_IcmpEchoResponse,
     Port_UdpOpen,
     Port_UdpClosed,
+	Port_ArpOpen,
 };
 
 struct Masscan
@@ -97,6 +98,7 @@ struct Masscan
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
     unsigned is_interactive:1;  /* --interactive */
+	unsigned is_arp:1;			/* --arp */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds
@@ -107,6 +109,10 @@ struct Masscan
     struct {
         uint64_t index;
         uint64_t count;
+		struct {
+			unsigned ip;
+			unsigned port;
+		} target;
     } resume;
 
     struct {
