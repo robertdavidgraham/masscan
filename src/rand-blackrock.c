@@ -263,6 +263,7 @@ blackrock_unshuffle(const struct BlackRock *br, uint64_t m)
 
 
 /***************************************************************************
+ * This function called only during selftest/regression-test.
  ***************************************************************************/
 static unsigned
 blackrock_verify(struct BlackRock *br, uint64_t max)

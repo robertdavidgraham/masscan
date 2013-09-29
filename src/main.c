@@ -73,8 +73,8 @@ uint64_t foo_timestamp = 0;
 uint64_t foo_count = 0;
 
 /***************************************************************************
- * Parameters we send to each thread-PAIR. Threads come in pairs, a
- * transmit and receive thread, that share the same configuration.
+ * We create a pair of transnit/receive threads for each network adapter.
+ * This structure contains the parameters we send to each pair.
  ***************************************************************************/
 struct ThreadPair {
     /** This points to the central configuration. Note that it's 'const',
@@ -82,30 +82,43 @@ struct ThreadPair {
      * unsafe */
     const struct Masscan *masscan;
 
-    /** The adapter used by the threads. Normally, thread-pairs have
+    /** The adapter used by the thread-pair. Normally, thread-pairs have
      * their own network adapter, especially when doing PF_RING
      * clustering. */
     struct Adapter *adapter;
 
     /**
      * The thread-pair use a "packet_buffer" and "transmit_queue" to 
-     * send packets to each other */
+     * send packets to each other. That's because when doing things
+	 * like banner-checking, the receive-thread needs to respond to
+	 * things like syn-acks received from the target. However, the
+	 * receive-thread cannot transmit packets, so it uses this ring
+	 * in order to send the packets to the transmit thread for
+	 * transmission.
+	 */
     PACKET_QUEUE *packet_buffers;
     PACKET_QUEUE *transmit_queue;
 
     /**
      * The index of the network adapter that we are using for this
-     * thread-pair
+     * thread-pair. This is an index into the "masscan->nic[]"
+	 * array.
      */
     unsigned nic_index;
 
     /**
      * This is an optimized binary-search when looking up IP addresses
-     * based on the index.
+     * based on the index. When scanning the entire Internet, the target
+	 * list is broken into thousands of subranges as we exclude certain
+	 * ranges. Doing a lookup for each IP address is slow, so this 'picker'
+	 * system speeds it up.
      */
     unsigned *picker;
 
-    /* the master 'i' variable */
+    /**
+	 * A copy of the master 'index' variable. This is just advisory for
+	 * other threads, to tell them how far we've gotten.
+	 */
     uint64_t my_index;
 
 
@@ -113,6 +126,9 @@ struct ThreadPair {
      * formatting packets */
     struct TemplateSet tmplset[1];
 
+	/**
+	 * The current IP address we are using for transmit/receive.
+	 */
     unsigned adapter_ip;
     unsigned adapter_port;
     unsigned char adapter_mac[6];

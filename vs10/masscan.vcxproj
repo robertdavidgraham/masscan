@@ -166,7 +166,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)\..\bin</OutDir>
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
