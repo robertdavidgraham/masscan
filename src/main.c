@@ -138,22 +138,16 @@ void
 flush_packets(struct Adapter *adapter,
     PACKET_QUEUE *packet_buffers,
     PACKET_QUEUE *transmit_queue,
-    struct Throttler *throttler, uint64_t *packets_sent)
+    uint64_t *packets_sent,
+	uint64_t *batchsize)
 {
-    uint64_t batch_size;
     unsigned is_queue_empty = 0;
 
     while (!is_queue_empty) {
         /*
-         * Only send a few packets at a time, throttled according to the max
-         * --max-rate set by the user
-         */
-        batch_size = throttler_next_batch(throttler, *packets_sent);
-
-        /*
          * Send a batch of queued packets
          */
-        for ( ; batch_size; batch_size--) {
+        for ( ; ; (*batchsize)--) {
             int err;
             struct PacketBuffer *p;
 
@@ -279,8 +273,23 @@ transmit_thread(void *v) /*aka. scanning_thread() */
          * size will always be one. (--max-rate)
          */
         batch_size = throttler_next_batch(throttler, packets_sent);
-        packets_sent += batch_size;
-        while (batch_size && i < end) {
+
+        /*
+		 * Transmit packets from other thread, when doing --banners. This
+		 * takes priority over sending SYN packets. If there is so much
+		 * activity grabbing banners that we cannot transmit more SYN packets,
+		 * then "batch_size" will get decremented to zero, and we won't be
+		 * able to transmit SYN packets.
+		 */
+        flush_packets(adapter, parms->packet_buffers, parms->transmit_queue, 
+                        &packets_sent, &batch_size);
+
+
+		/*
+		 * Transmit a bunch of packets. At any rate slower than 100,000 
+		 * packets/second, the 'batch_size' is likely to be 1
+		 */
+		while (batch_size && i < end) {
             uint64_t xXx;
             unsigned ip;
             unsigned port;
@@ -319,7 +328,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     pkt_template
                     );
             batch_size--;
-            foo_count++;
+			packets_sent++;
+            foo_count++; /* TODO: debug thing, will be removed*/
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -337,9 +347,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
         } /* end of batch */
 
-        /* Transmit packets from other thread, when doing --banners */
-        flush_packets(adapter, parms->packet_buffers, parms->transmit_queue, 
-                        throttler, &packets_sent);
 
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to --resume the scan later, we save the current
@@ -362,14 +369,22 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      */
     while (!control_c_pressed_again) {
         unsigned k;
+		uint64_t batch_size;
 
         for (k=0; k<1000; k++) {
+			/*
+			 * Only send a few packets at a time, throttled according to the max
+			 * --max-rate set by the user
+			 */
+			batch_size = throttler_next_batch(throttler, packets_sent);
+
+
             /* Transmit packets from the receive thread */
             flush_packets(  adapter, 
                             parms->packet_buffers, 
                             parms->transmit_queue, 
-                            throttler, 
-                            &packets_sent);
+                            &packets_sent,
+							&batch_size);
 
             pixie_usleep(1000);
         }

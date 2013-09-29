@@ -305,8 +305,12 @@ blackrock_selftest()
     int is_success = 0;
     uint64_t range;
 
-	/*
-	 * Basic test
+	/* @marshray
+	 * Basic test of decryption. I take the index, encrypt it, then decrypt it,
+	 * which means I should get the original index back again. Only, it's not
+	 * working. The decryption fails. The reason it's failing is obvious -- I'm
+	 * just not seeing it though. The error is probably in the 'unfe()' 
+	 * function above.
 	 */
 	{
         struct BlackRock br;
@@ -316,6 +320,7 @@ blackrock_selftest()
 		for (i=0; i<10; i++) {
 			result = blackrock_shuffle(&br, i);
 			result2 = blackrock_unshuffle(&br, result);
+			//i == result2
 		}
 
 	}

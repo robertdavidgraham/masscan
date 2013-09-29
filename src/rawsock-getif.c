@@ -385,7 +385,8 @@ again:
             pAdapter = pAdapter->Next) {
         unsigned ipv4 = 0;
 
-        if (pAdapter->Type != MIB_IF_TYPE_ETHERNET)
+        if (pAdapter->Type != MIB_IF_TYPE_ETHERNET
+			&& pAdapter->Type != 71 /*wifi*/)
             continue;
 
 
