@@ -206,6 +206,32 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
         return a * R + L;
     }
 }
+static inline uint64_t
+unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
+{
+    uint64_t L, R;
+    unsigned j;
+    uint64_t tmp;
+
+    if (r & 1) {
+		R = m % a;
+		L = m / a;
+    } else {
+		L = m % a;
+		R = m / a;
+    }
+
+    for (j=r; j>=1; j--) {
+        if (j & 1) {
+            tmp = (R - F(j, L, seed)) % a;
+        } else {
+            tmp = (R - F(j, L, seed)) % b;
+        }
+        R = L;
+        L = tmp;
+    }
+	return a * R + L;
+}
 
 /***************************************************************************
  ***************************************************************************/
@@ -220,6 +246,21 @@ blackrock_shuffle(const struct BlackRock *br, uint64_t m)
 
     return c;
 }
+
+/***************************************************************************
+ ***************************************************************************/
+uint64_t
+blackrock_unshuffle(const struct BlackRock *br, uint64_t m)
+{
+    uint64_t c;
+
+    c = unfe(br->rounds, br->a, br->b, m, br->seed);
+    while (c >= br->range)
+        c = unfe(br->rounds, br->a, br->b,  c, br->seed);
+
+    return c;
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -260,7 +301,7 @@ blackrock_verify(struct BlackRock *br, uint64_t max)
 int
 blackrock_selftest()
 {
-    unsigned i;
+    uint64_t i;
     int is_success = 0;
     uint64_t range;
 
@@ -269,10 +310,13 @@ blackrock_selftest()
 	 */
 	{
         struct BlackRock br;
-		uint64_t result;
+		uint64_t result, result2;
         blackrock_init(&br, 1000, 0);
 
-		result = blackrock_shuffle(&br, 10);
+		for (i=0; i<10; i++) {
+			result = blackrock_shuffle(&br, i);
+			result2 = blackrock_unshuffle(&br, result);
+		}
 
 	}
 
