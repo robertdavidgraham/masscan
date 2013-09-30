@@ -41,10 +41,7 @@
     <ClCompile Include="..\src\main-initadapter.c" />
     <ClCompile Include="..\src\main-status.c" />
     <ClCompile Include="..\src\main-throttle.c" />
-    <ClCompile Include="..\src\main.c">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">include</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">include</AdditionalIncludeDirectories>
-    </ClCompile>
+    <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\output.c" />
     <ClCompile Include="..\src\pixie-threads.c" />
     <ClCompile Include="..\src\pixie-timer.c" />
