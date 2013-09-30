@@ -163,7 +163,7 @@ flush_packets(struct Adapter *adapter,
         /*
          * Send a batch of queued packets
          */
-        for ( ; ; (*batchsize)--) {
+        for ( ; (*batchsize); (*batchsize)--) {
             int err;
             struct PacketBuffer *p;
 
