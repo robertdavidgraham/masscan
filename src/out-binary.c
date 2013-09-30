@@ -85,7 +85,7 @@ static void
 binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
         unsigned proto, const unsigned char *px, unsigned length)
 {
-    unsigned char foo[256];
+    unsigned char foo[32768];
     unsigned i;
 
     UNUSEDPARM(out);
