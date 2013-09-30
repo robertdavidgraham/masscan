@@ -157,52 +157,48 @@ flush_packets(struct Adapter *adapter,
     uint64_t *packets_sent,
 	uint64_t *batchsize)
 {
-    unsigned is_queue_empty = 0;
+    /*
+     * Send a batch of queued packets
+     */
+    for ( ; (*batchsize); (*batchsize)--) {
+        int err;
+        struct PacketBuffer *p;
 
-    while (!is_queue_empty) {
         /*
-         * Send a batch of queued packets
-         */
-        for ( ; (*batchsize); (*batchsize)--) {
-            int err;
-            struct PacketBuffer *p;
+            * Get the next packet from the transmit queue. This packet was 
+            * put there by a receive thread, and will contain things like
+            * an ACK or an HTTP request
+            */
+        err = rte_ring_sc_dequeue(transmit_queue, (void**)&p);
+        if (err) {
+            break; /* queue is empty, nothing to send */
+        }
 
-            /*
-             * Get the next packet from the transmit queue. This packet was 
-             * put there by a receive thread, and will contain things like
-             * an ACK or an HTTP request
-             */
-            err = rte_ring_sc_dequeue(transmit_queue, (void**)&p);
+        /*
+            * Actually send the packet
+            */
+        rawsock_send_packet(adapter, p->px, (unsigned)p->length, 1);
+
+        /*
+            * Now that we are done with the packet, put it on the free list
+            * of buffers that the transmit thread can reuse
+            */
+        for (err=1; err; ) {
+            err = rte_ring_sp_enqueue(packet_buffers, p);
             if (err) {
-                is_queue_empty = 1;
-                break; /* queue is empty, nothing to send */
+                LOG(0, "transmit queue full (should be impossible)\n");
+                pixie_usleep(10000);
             }
-
-            /*
-             * Actually send the packet
-             */
-            rawsock_send_packet(adapter, p->px, (unsigned)p->length, 1);
-
-            /*
-             * Now that we are done with the packet, put it on the free list
-             * of buffers that the transmit thread can reuse
-             */
-            for (err=1; err; ) {
-                err = rte_ring_sp_enqueue(packet_buffers, p);
-                if (err) {
-                    LOG(0, "transmit queue full (should be impossible)\n");
-                    pixie_usleep(10000);
-                }
-            }
+        }
         
 
-            /*
-             * Remember that we sent a packet, which will be used in
-             * throttling.
-             */
-            (*packets_sent)++;
-        }
+        /*
+            * Remember that we sent a packet, which will be used in
+            * throttling.
+            */
+        (*packets_sent)++;
     }
+
 }
 
 
