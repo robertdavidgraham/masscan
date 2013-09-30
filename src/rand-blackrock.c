@@ -209,9 +209,9 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 static inline uint64_t
 unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 {
-    uint64_t L, R;
+    int64_t L, R;
     unsigned j;
-    uint64_t tmp;
+    int64_t tmp;
 
     if (r & 1) {
 		R = m % a;
@@ -223,9 +223,27 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 
     for (j=r; j>=1; j--) {
         if (j & 1) {
-            tmp = (R - F(j, L, seed)) % a;
+            tmp = F(j, L, seed);
+            if (tmp > R) {
+                tmp = (tmp - R);
+                tmp = a - (tmp%a);
+                if (tmp == a)
+                    tmp = 0;
+            } else {
+                tmp = (R - tmp);
+                tmp %= a;
+            }
         } else {
-            tmp = (R - F(j, L, seed)) % b;
+            tmp = F(j, L, seed);
+            if (tmp > R) {
+                tmp = (tmp - R);
+                tmp = b - (tmp%b);
+                if (tmp == b)
+                    tmp = 0;
+            } else {
+                tmp = (R - tmp);
+                tmp %= b;
+            }
         }
         R = L;
         L = tmp;
@@ -321,7 +339,8 @@ blackrock_selftest()
 		for (i=0; i<10; i++) {
 			result = blackrock_shuffle(&br, i);
 			result2 = blackrock_unshuffle(&br, result);
-			//i == result2
+			if (i != result2)
+                return 1; /*fail*/
 		}
 
 	}
