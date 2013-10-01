@@ -188,21 +188,33 @@ payloads_destroy(struct NmapPayloads *payloads)
  * faster, ideally looking up only zero or one rather than twenty.
  ***************************************************************************/
 void
-payloads_trim(struct NmapPayloads *payloads, const struct RangeList *ports)
+payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_ports)
 {
-    unsigned i;
+	unsigned i;
+	struct Payload **list2;
+	unsigned count2 = 0;
 
-    for (i=payloads->count; i>0; i--) {
-        struct Payload *p = payloads->list[i-1];
+	/* Create a new list */
+	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+	
+	/* Add to the new list any used ports */
+	for (i=0; i<payloads->count; i++) {
+		unsigned found;
 
-        if (!rangelist_is_contains(ports, p->port + Templ_UDP)) {
-            free(p);
-            memmove(payloads->list + i - 1,
-                    payloads->list + i, 
-                    (payloads->count - i) * sizeof(payloads->list[0]));
-            payloads->count--;
-        }
-    }
+		found = rangelist_is_contains(	target_ports, 
+										payloads->list[i]->port + Templ_UDP);
+		if (found) {
+			list2[count2++] = payloads->list[i];
+		} else {
+			free(payloads->list[i]);
+		}
+		payloads->list[i] = 0;
+	}
+
+	/* Replace the old list */
+	free(payloads->list);
+	payloads->list = list2;
+	payloads->count = count2;
 }
 
 /***************************************************************************
