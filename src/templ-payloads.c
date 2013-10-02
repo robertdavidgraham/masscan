@@ -49,21 +49,21 @@ extern unsigned snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno
 extern unsigned dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
 
 struct Payload2 hard_coded_payloads[] = {
-    {161, 65536, 57, 0, snmp_set_cookie,
-        "\x30" "\x37"
-        "\x02\x01\x00"                    /* version */
-        "\x04\x06" "public"               /* community = public */
-        "\xa0" "\x2a"                     /* type = GET */
+    {161, 65536, 59, 0, snmp_set_cookie,
+     "\x30" "\x39"
+       "\x02\x01\x00"                    /* version */
+       "\x04\x06" "public"               /* community = public */
+       "\xa0" "\x2c"                     /* type = GET */
         "\x02\x04\x00\x00\x00\x00"      /* transaction id = ???? */
         "\x02\x01\x00"                  /* error = 0 */
         "\x02\x01\x00"                  /* error index = 0 */
-        "\x30\x1c"
-        "\x30\x0c"
-        "\x06\x08\x2b\x06\x01\x02\x01\x01\x01\x00" /*sysName*/
-        "\x05\x00"
-        "\x30\x0c"
-        "\x06\x08\x2b\x06\x01\x02\x01\x01\x05\x00" /*sysDesc*/
-        "\x05\x00"},
+         "\x30\x1e"
+          "\x30\x0d"
+           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x01\x00" /*sysName*/
+           "\x05\x00"          /*^^^^_____IDS LULZ HAH HA HAH*/
+         "\x30\x0d"
+           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
+           "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
     {53, 65536, 38, 0, dns_set_cookie,
             "\x50\xb6"  /* transaction id */
             "\x01\x20"  /* quer y*/
