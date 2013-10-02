@@ -80,7 +80,7 @@ struct Payload2 hard_coded_payloads[] = {
         "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
         "\x00\x01\x00\x01" /* A IN */
     },
-    {137, 65536, 50, 0, dns_set_cookie,
+    {137, 65536, 34, 0, dns_set_cookie,
         "\xab\x12" /* transaction id */
         "\x00\x00" /* query */
         "\x00\x01\x00\x00\x00\x00\x00\x00" /* one question */
