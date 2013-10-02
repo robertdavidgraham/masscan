@@ -191,6 +191,8 @@ struct SmackPattern
      * the last characters of the input, and the caller also calls
      * "smack_search_end()" */
     unsigned                is_anchor_end:1;
+
+    unsigned                is_snmp_hack:1;
 };
 
 
@@ -650,6 +652,7 @@ smack_add_pattern(
 	pat->pattern_length = pattern_length;
 	pat->is_anchor_begin = ((flags & SMACK_ANCHOR_BEGIN) > 0);
 	pat->is_anchor_end = ((flags & SMACK_ANCHOR_END) > 0);
+	pat->is_snmp_hack = ((flags & SMACK_SNMP_HACK) > 0);
 	pat->id = id;
 	pat->pattern = make_copy_of_pattern(pattern, pattern_length, smack->is_nocase);
     if (pat->is_anchor_begin)
@@ -664,6 +667,8 @@ smack_add_pattern(
 	 * size of the rows in the final table 
      */
 	smack_add_symbols(smack, pattern, pattern_length);
+    if (pat->is_snmp_hack)
+        smack_add_symbols(smack, (const unsigned char *)"\x80", 1);
 
 
 	/* 
@@ -754,7 +759,9 @@ smack_add_prefixes(struct SMACK *smack, struct SmackPattern *pat)
      */ 
     for ( ; i<pattern_length; i++) {
 		unsigned new_state = smack->m_state_count++;
-		GOTO(state, pattern[i]) = new_state;
+        if (pat->is_snmp_hack)
+		    GOTO(state, 0x80) = state; /* snmp_hack, space_hack */
+        GOTO(state, pattern[i]) = new_state;
 		state = new_state;
 		DEBUG_set_name(smack, pattern, i+1, new_state);
     }
@@ -855,6 +862,8 @@ smack_stage1_generate_fails(struct SMACK * smack)
 			s = GOTO(r, a);
 			if (s == FAIL)
 				continue;
+            if (s == r)
+                continue; /* snmp_hack, space_hack */
 
 			enqueue(queue, s); /* Breadth first search on states */
 
@@ -901,6 +910,8 @@ smack_stage2_link_fails(struct SMACK * smack)
 		for (a=0; a<ALPHABET_SIZE; a++) {
 			if (GOTO(r,a) == FAIL)
 				GOTO(r,a) = GOTO(GOTO_FAIL(r),a);
+            else if (GOTO(r,a) == r)
+                ; /* snmp_hack, space_hack */
 			else
 				enqueue(queue, GOTO(r,a));
 		}
