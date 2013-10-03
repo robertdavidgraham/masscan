@@ -627,7 +627,7 @@ _template_init(
     memset(tmpl, 0, sizeof(*tmpl));
     tmpl->length = (unsigned)packet_size;
     
-    tmpl->packet = (unsigned char *)malloc(tmpl->length);
+    tmpl->packet = (unsigned char *)malloc(2048);
     memcpy(tmpl->packet, packet_bytes, tmpl->length);
     px = tmpl->packet;
 
