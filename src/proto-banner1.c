@@ -110,6 +110,7 @@ banner1_parse(
                         pstate,
                         px, length,
                         banner, banner_offset, banner_max);
+        break;
     case PROTO_SSL3:
         banner_ssl.parse(
                         banner1, 
