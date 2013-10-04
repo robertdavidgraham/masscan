@@ -14,6 +14,10 @@ enum {
     PROTO_DNS_VERSIONBIND,
     PROTO_SNMP,
     PROTO_NBTSTAT,
+    PROTO_SSL3,
+    PROTO_SMTP,
+    PROTO_POP3,
+    PROTO_IMAP4,
 };
 
 struct Banner1
@@ -22,6 +26,75 @@ struct Banner1
     struct SMACK *http_fields;
     struct SMACK *html_fields;
 };
+
+struct SSL_SERVER_HELLO {
+    unsigned state;
+    unsigned remaining;
+    unsigned timestamp;
+    unsigned short cipher_suite;
+    unsigned char compression_method;
+    unsigned char version_major;
+    unsigned char version_minor;
+};
+struct SSL_SERVER_CERT {
+    unsigned state;
+    unsigned remaining;
+    unsigned cert_remaining;
+    unsigned cert_state;
+    unsigned b64x;
+};
+
+struct SSLRECORD {
+    unsigned char content_type;
+    unsigned char version_major;
+    unsigned char version_minor;
+
+    struct {
+        unsigned state;
+        unsigned char type;
+        unsigned remaining;
+    } record;
+
+    union {
+        struct {
+            /* all these structs should start with state */
+            unsigned state;
+        } all;
+        struct SSL_SERVER_HELLO server_hello;
+        struct SSL_SERVER_CERT server_cert;
+    } x;
+
+};
+
+struct Banner1State {
+    unsigned state;
+    unsigned remaining;
+    unsigned short port;
+    unsigned is_sent_sslhello:1;
+    union {
+        struct SSLRECORD ssl;
+    } sub;
+};
+
+/**
+ * A registration structure for various TCP stream protocols
+ * like HTTP, SSL, and SSH
+ */
+struct Banner1Stream {
+    const char *name;
+    unsigned port;
+    const void *hello;
+    size_t hello_length;
+    int (*selftest)(void);
+    void *(*init)(struct Banner1 *b);
+    void (*parse)(
+        struct Banner1 *banner1,
+        void *banner1_private,
+        struct Banner1State *stream_state,
+        const unsigned char *px, size_t length,
+        char *banner, unsigned *banner_offset, size_t banner_max);
+};
+
 
 struct Patterns {
     const char *pattern;
@@ -36,10 +109,11 @@ banner1_create(void);
 void
 banner1_destroy(struct Banner1 *b);
 
-unsigned
+void
 banner1_parse(
         struct Banner1 *banner1,
-        unsigned state, unsigned *proto,
+        struct Banner1State *pstate,
+        unsigned *proto,
         const unsigned char *px, size_t length,
         char *banner, unsigned *banner_offset, size_t banner_max);
 

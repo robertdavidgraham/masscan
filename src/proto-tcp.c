@@ -16,12 +16,14 @@
 #include "pixie-timer.h"
 #include "packet-queue.h"
 #include "proto-banner1.h"
+#include "proto-ssl.h"
 #include "output.h"
 #include "string_s.h"
 
 uint64_t global_tcb_count;
 unsigned global_recv_overwhelmed;
 extern time_t global_now;
+
 
 struct TCP_Control_Block
 {
@@ -49,8 +51,9 @@ struct TCP_Control_Block
 
     unsigned char banner[128];
     unsigned banner_length;
-    unsigned banner_state;
     unsigned char banner_proto;
+
+    struct Banner1State banner1_state;
 };
 
 struct TCP_ConnectionTable {
@@ -323,8 +326,10 @@ tcpcon_create_tcb(
         tcb->ackno_me = seqno_them;
         tcb->ackno_them = seqno_me;
         tcb->when_created = global_now;
-        
+        tcb->banner1_state.port = tmp.port_them;
+
         timeout_init(tcb->timeout);
+        
 
         tcpcon->active_count++;
         global_tcb_count = tcpcon->active_count;
@@ -461,9 +466,9 @@ parse_banner(
 {
     unsigned proto = tcb->banner_proto;
 
-    tcb->banner_state = banner1_parse(
+    banner1_parse(
         tcpcon->banner1,
-        tcb->banner_state,
+        &tcb->banner1_state,
         &proto,
         payload,
         payload_length,
@@ -475,7 +480,7 @@ parse_banner(
     tcb->banner_proto = (unsigned char)proto;
 
 
-    return tcb->banner_state;
+    return tcb->banner1_state.state;
 }
 
 
@@ -642,6 +647,19 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
                     //"Content-Length: 0\r\n"
                     "\r\n"; 
                     break;
+            case 443:   /* HTTP/s */
+            case 465:   /* SMTP/s */
+            case 990:   /* FTP/s */
+            case 993:   /* IMAP4/s */
+            case 995:   /* POP3/s */
+            case 2083:  /* cPanel - SSL */
+            case 2087:  /* WHM - SSL */
+            case 2096:  /* cPanel webmail - SSL */
+            case 8443:  /* Plesk Control Panel - SSL */
+            case 9050:  /* Tor */
+                tcb->banner1_state.is_sent_sslhello = 1;
+                x = (const unsigned char *)banner_ssl.hello;
+                break;
             default:
                 x = 0;
             }
@@ -825,5 +843,6 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             state_to_string(tcb->tcpstate), 
             what_to_string(what));
     }
+
 }
 

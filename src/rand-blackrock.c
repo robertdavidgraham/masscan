@@ -209,9 +209,9 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 static inline uint64_t
 unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 {
-    int64_t L, R;
+    uint64_t L, R;
     unsigned j;
-    int64_t tmp;
+    uint64_t tmp;
 
     if (r & 1) {
 		R = m % a;

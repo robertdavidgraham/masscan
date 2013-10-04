@@ -59,12 +59,14 @@ handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, 
         return 0;
     name_count = px[offset++];
 
+    /* Report all the names */
     while (offset + 18 <= length && name_count) {
         append_name(banner, sizeof(banner), &banner_length, &px[offset]);
         offset += 18;
         name_count--;
     }
 
+    /* Report the MAC address at the end */
     {
         unsigned i;
 
@@ -74,7 +76,7 @@ handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, 
                 append_char(banner, sizeof(banner), &banner_length, "0123456789ABCDEF"[c>>4]);
                 append_char(banner, sizeof(banner), &banner_length, "0123456789ABCDEF"[c&0xF]);
                 if (i < 5)
-                append_char(banner, sizeof(banner), &banner_length, '-');
+                    append_char(banner, sizeof(banner), &banner_length, '-');
             }
         }
     }

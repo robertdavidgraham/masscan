@@ -34,6 +34,7 @@
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
+    <ClCompile Include="..\src\proto-ssl.c" />
     <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
@@ -91,6 +92,7 @@
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
+    <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-udp.h" />
     <ClInclude Include="..\src\rand-blackrock.h" />

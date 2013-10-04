@@ -43,6 +43,7 @@
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "templ-port.h"
 
+#include <assert.h>
 #include <limits.h>
 #include <string.h>
 #include <time.h>
@@ -165,24 +166,24 @@ flush_packets(struct Adapter *adapter,
         struct PacketBuffer *p;
 
         /*
-            * Get the next packet from the transmit queue. This packet was 
-            * put there by a receive thread, and will contain things like
-            * an ACK or an HTTP request
-            */
+         * Get the next packet from the transmit queue. This packet was 
+         * put there by a receive thread, and will contain things like
+         * an ACK or an HTTP request
+         */
         err = rte_ring_sc_dequeue(transmit_queue, (void**)&p);
         if (err) {
             break; /* queue is empty, nothing to send */
         }
 
         /*
-            * Actually send the packet
-            */
+         * Actually send the packet
+         */
         rawsock_send_packet(adapter, p->px, (unsigned)p->length, 1);
 
         /*
-            * Now that we are done with the packet, put it on the free list
-            * of buffers that the transmit thread can reuse
-            */
+         * Now that we are done with the packet, put it on the free list
+         * of buffers that the transmit thread can reuse
+         */
         for (err=1; err; ) {
             err = rte_ring_sp_enqueue(packet_buffers, p);
             if (err) {
@@ -193,9 +194,9 @@ flush_packets(struct Adapter *adapter,
         
 
         /*
-            * Remember that we sent a packet, which will be used in
-            * throttling.
-            */
+         * Remember that we sent a packet, which will be used in
+         * throttling.
+         */
         (*packets_sent)++;
     }
 
@@ -1163,9 +1164,21 @@ int main(int argc, char *argv[])
      * of their ranges, and when doing wide scans, add the exclude list to
      * prevent them from being scanned.
      */
-    rangelist_exclude(&masscan->targets, &masscan->exclude_ip);
-    rangelist_exclude(&masscan->ports, &masscan->exclude_port);
-    rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
+    {
+        uint64_t range = rangelist_count(&masscan->targets) * rangelist_count(&masscan->ports);
+        uint64_t range2;
+        rangelist_exclude(&masscan->targets, &masscan->exclude_ip);
+        rangelist_exclude(&masscan->ports, &masscan->exclude_port);
+        rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
+
+        range2 = rangelist_count(&masscan->targets) * rangelist_count(&masscan->ports);
+
+        if (range2 != range && masscan->resume.index) {
+            LOG(0, "FAIL: Attempted to add additional 'exclude' ranges after scan start.\n");
+            LOG(0, "   ...This messes things up the scan randomization, so you have to restart scan\n");
+            exit(1);
+        }
+    }
 
 
 

@@ -1,12 +1,7 @@
 #ifndef PROTO_SSH_H
 #define PROTO_SSH_H
-#include <stdio.h>
-struct Banner1;
+#include "proto-banner1.h"
 
-unsigned
-banner_ssh(  struct Banner1 *banner1,
-        unsigned state,
-        const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max);
+extern struct Banner1Stream banner_ssh;
 
 #endif

@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 
 
@@ -75,10 +76,13 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
              size_t offset, uint64_t timestamp)
 {
     unsigned index;
+    time_t now = time(0);
+    time_t time_future = (unsigned)(timestamp/16384ULL);
 
     /* Unlink from wherever the entry came from */
     timeout_unlink(entry);
 
+printf("++ADD %d.%03u\n", time_future-now, (unsigned)(((timestamp%16384ULL)/16384.0)*1000.0));
     /* Initialize the new entry */    
     entry->timestamp = timestamp;
     entry->offset = (unsigned)offset;
@@ -90,6 +94,7 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     entry->prev = &timeouts->slots[index];
     if (entry->next)
         entry->next->prev = &entry->next;
+printf("++PREV=0x%llx\n", entry->prev);
 }
 
 /***************************************************************************

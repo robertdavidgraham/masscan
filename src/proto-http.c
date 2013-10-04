@@ -1,6 +1,7 @@
 #include "proto-http.h"
 #include "proto-banner1.h"
 #include "smack.h"
+#include "unusedparm.h"
 #include <ctype.h>
 #include <stdint.h>
 
@@ -14,7 +15,7 @@ enum {
     HTTPFIELD_UNKNOWN,
     HTTPFIELD_NEWLINE,
 };
-struct Patterns http_fields[] = {
+static struct Patterns http_fields[] = {
     {"Server:",          7, HTTPFIELD_SERVER,           SMACK_ANCHOR_BEGIN},
     //{"Content-Length:", 15, HTTPFIELD_CONTENT_LENGTH,   SMACK_ANCHOR_BEGIN},
     //{"Content-Type:",   13, HTTPFIELD_CONTENT_TYPE,     SMACK_ANCHOR_BEGIN},
@@ -29,7 +30,7 @@ enum {
     HTML_TITLE,
     HTML_UNKNOWN,
 };
-struct Patterns html_fields[] = {
+static struct Patterns html_fields[] = {
     {"<Title",          6, HTML_TITLE, 0},
     {0,0,0,0}
 };
@@ -66,7 +67,7 @@ field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, 
 /*****************************************************************************
  * Initialize some stuff that's part of the HTTP state-machine-parser.
  *****************************************************************************/
-void
+static void *
 http_init(struct Banner1 *b)
 {
     unsigned i;
@@ -97,6 +98,7 @@ http_init(struct Banner1 *b)
                           html_fields[i].is_anchored);
     smack_compile(b->html_fields);
     
+    return b->http_fields;
 }
 
 /***************************************************************************
@@ -117,12 +119,15 @@ http_init(struct Banner1 *b)
  * This is especially useful with our custom TCP stack, which simply
  * rejects out-of-order packets.
  ***************************************************************************/
-unsigned
-banner_http(  struct Banner1 *banner1,
-        unsigned state,
+static void
+http_parse(
+        struct Banner1 *banner1,
+        void *banner1_private,
+        struct Banner1State *pstate,
         const unsigned char *px, size_t length,
         char *banner, unsigned *banner_offset, size_t banner_max)
 {
+    unsigned state = pstate->state;
     unsigned i;
     unsigned state2;
     size_t id;
@@ -135,6 +140,8 @@ banner_http(  struct Banner1 *banner1,
         CONTENT_TAG,
         CONTENT_FIELD
     };
+
+    UNUSEDPARM(banner1_private);
 
     state2 = (state>>16) & 0xFFFF;
     id = (state>>8) & 0xFF;
@@ -273,10 +280,39 @@ banner_http(  struct Banner1 *banner1,
     }
 
 
+    
     if (state == STATE_DONE)
-        return state;
+        pstate->state = state;
     else
-        return (state2 & 0xFFFF) << 16
+        pstate->state = (state2 & 0xFFFF) << 16
                 | (id & 0xFF) << 8
                 | (state & 0xFF);
 }
+
+
+/***************************************************************************
+ ***************************************************************************/
+static const char 
+http_hello[] =      "GET / HTTP/1.0\r\n"
+                    "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
+                    //"Connection: Keep-Alive\r\n"
+                    //"Content-Length: 0\r\n"
+                    "\r\n"; 
+
+/***************************************************************************
+ ***************************************************************************/
+static int
+http_selftest(void)
+{
+    return 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+struct Banner1Stream banner_http = {
+    "http", 80, http_hello, sizeof(http_hello),
+    http_selftest,
+    http_init,
+    http_parse,
+};
+

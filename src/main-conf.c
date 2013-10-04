@@ -1099,7 +1099,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'd': /* just do same as verbosity level */
                 {
                     int v;
-                    for (v=1; argv[i][v] == 'v'; v++) {
+                    for (v=1; argv[i][v] == 'd'; v++) {
                         verbosity++;
 						debuglevel++;
 					}

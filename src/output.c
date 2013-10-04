@@ -89,6 +89,10 @@ proto_string(unsigned proto)
     case PROTO_DNS_VERSIONBIND: return "dns-ver";
     case PROTO_SNMP: return "snmp";
     case PROTO_NBTSTAT: return "nbtstat";
+    case PROTO_SSL3:    return "ssl";
+    case PROTO_SMTP:    return "smtp";
+    case PROTO_POP3:    return "pop";
+    case PROTO_IMAP4:   return "imap";
 
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);

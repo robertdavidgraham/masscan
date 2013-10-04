@@ -8,12 +8,13 @@
 #include "templ-pkt.h"
 #include "logger.h"
 #include "main-ptrace.h"
-
 #include "string_s.h"
-
 #include "rawsock-pfring.h"
 
+
 #include <pcap.h>
+
+#include <assert.h>
 #include <ctype.h>
 
 #ifdef WIN32
@@ -361,7 +362,6 @@ int rawsock_recv_packet(
 
     } else if (adapter->pcap) {
         struct pcap_pkthdr hdr;
-
 
         *packet = pcap_next(adapter->pcap, &hdr);
 

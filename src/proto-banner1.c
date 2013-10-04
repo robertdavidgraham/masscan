@@ -6,6 +6,7 @@
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "proto-http.h"
+#include "proto-ssl.h"
 #include "proto-ssh.h"
 #include <ctype.h>
 #include <stdlib.h>
@@ -19,6 +20,12 @@ struct Patterns patterns[] = {
     {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN},
     {"220-",        4, PROTO_FTP1, SMACK_ANCHOR_BEGIN},
     {"220 ",        4, PROTO_FTP2, SMACK_ANCHOR_BEGIN},
+    {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN},
+    {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN},
+    {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
+    {"\x16\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
+    {"\x16\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
+    {"\x16\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {0,0}
 };
 
@@ -27,10 +34,11 @@ struct Patterns patterns[] = {
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+void
 banner1_parse(
         struct Banner1 *banner1,
-        unsigned state, unsigned *proto,
+        struct Banner1State *pstate, 
+        unsigned *proto,
         const unsigned char *px, size_t length,
         char *banner, unsigned *banner_offset, size_t banner_max)
 {
@@ -41,14 +49,25 @@ banner1_parse(
     case PROTO_UNKNOWN:
         x = smack_search_next(
                         banner1->smack,
-                        &state, 
+                        &pstate->state,
                         px, &offset, (unsigned)length);
-        if (x != SMACK_NOT_FOUND) {
+        if (x != SMACK_NOT_FOUND
+            && !(x == PROTO_SSL3 && !pstate->is_sent_sslhello)) {
             unsigned i;
+            
+            /* Kludge: patterns look confusing, so add port info to the
+             * pattern */
+            switch (*proto) {
+            case PROTO_FTP2:
+                if (pstate->port == 25 || pstate->port == 587)
+                    *proto = PROTO_SMTP;
+                break;
+            }
+
             *proto = (unsigned)x;
 
             /* reset the state back again */
-            state = 0;
+            pstate->state = 0;
 
             /* re-read the stuff that we missed */
             for (i=0; patterns[i].id != *proto; i++)
@@ -56,14 +75,14 @@ banner1_parse(
 
             *banner_offset = 0;
 
-            state = banner1_parse(
+            banner1_parse(
                             banner1, 
-                            state, proto, 
+                            pstate, proto, 
                             (const unsigned char*)patterns[i].pattern, patterns[i].pattern_length,
                             banner, banner_offset, banner_max);
-            state = banner1_parse(
+            banner1_parse(
                             banner1, 
-                            state, proto, 
+                            pstate, proto, 
                             px+offset, length-offset,
                             banner, banner_offset, banner_max);
         } else {
@@ -78,12 +97,24 @@ banner1_parse(
     case PROTO_SSH2:
     case PROTO_FTP1:
     case PROTO_FTP2:
-        state = banner_ssh(banner1, state,
-                        px, length,
-                        banner, banner_offset, banner_max);
+        banner_ssh.parse(   banner1, 
+                            banner1->http_fields,
+                            pstate,
+                            px, length,
+                            banner, banner_offset, banner_max);
         break;
     case PROTO_HTTP:
-        state = banner_http(banner1, state,
+        banner_http.parse(
+                        banner1, 
+                        banner1->http_fields,
+                        pstate,
+                        px, length,
+                        banner, banner_offset, banner_max);
+    case PROTO_SSL3:
+        banner_ssl.parse(
+                        banner1, 
+                        banner1->http_fields,
+                        pstate,
                         px, length,
                         banner, banner_offset, banner_max);
         break;
@@ -92,8 +123,6 @@ banner1_parse(
         break;
 
     }
-
-    return state;
 }
 
 /***************************************************************************
@@ -120,7 +149,8 @@ banner1_create(void)
                     patterns[i].is_anchored);
     smack_compile(b->smack);
 
-    http_init(b);
+
+    banner_http.init(b);
 
     return b;
 }
@@ -211,7 +241,7 @@ int banner1_selftest()
     struct Banner1 *b;
     char banner[128];
     unsigned banner_offset;
-    unsigned state;
+    struct Banner1State pstate[1];
     unsigned proto;
     const unsigned char *px;
     unsigned length;
@@ -236,13 +266,13 @@ int banner1_selftest()
      */
     b = banner1_create();
     memset(banner, 0xa3, sizeof(banner));
-    state = 0;
+    memset(pstate, 0, sizeof(pstate[0]));
     proto = 0;
     banner_offset = 0;
     for (i=0; i<length; i++)
-    state = banner1_parse(
+        banner1_parse(
                     b,
-                    state,
+                    pstate,
                     &proto,
                     px+i, 1,
                     banner, &banner_offset, sizeof(banner)
@@ -258,12 +288,12 @@ int banner1_selftest()
      */
     b = banner1_create();
     memset(banner, 0xa3, sizeof(banner));
-    state = 0;
+    memset(pstate, 0, sizeof(pstate[0]));
     proto = 0;
     banner_offset = 0;
-    state = banner1_parse(
+    banner1_parse(
                     b,
-                    state,
+                    pstate,
                     &proto,
                     px, length,
                     banner, &banner_offset, sizeof(banner)
