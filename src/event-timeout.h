@@ -44,7 +44,7 @@ timeout_unlink(struct TimeoutEntry *entry)
     entry->next = 0;
     entry->prev = 0;
     entry->timestamp = 0;
-printf("--PREV=0x%llx\n", entry->prev);
+//printf("--PREV=0x%llx\n", entry->prev);
 }
 
 /***************************************************************************

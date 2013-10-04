@@ -82,7 +82,7 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     /* Unlink from wherever the entry came from */
     timeout_unlink(entry);
 
-printf("++ADD %d.%03u\n", time_future-now, (unsigned)(((timestamp%16384ULL)/16384.0)*1000.0));
+//printf("++ADD %d.%03u\n", time_future-now, (unsigned)(((timestamp%16384ULL)/16384.0)*1000.0));
     /* Initialize the new entry */    
     entry->timestamp = timestamp;
     entry->offset = (unsigned)offset;
@@ -94,7 +94,7 @@ printf("++ADD %d.%03u\n", time_future-now, (unsigned)(((timestamp%16384ULL)/1638
     entry->prev = &timeouts->slots[index];
     if (entry->next)
         entry->next->prev = &entry->next;
-printf("++PREV=0x%llx\n", entry->prev);
+//printf("++PREV=0x%llx\n", entry->prev);
 }
 
 /***************************************************************************
