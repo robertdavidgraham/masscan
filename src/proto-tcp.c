@@ -640,13 +640,9 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             const unsigned char *x;
             switch (tcb->port_them) {
             case 80: 
-                x = (const unsigned char *)
-                    "GET / HTTP/1.0\r\n"
-                    "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
-                    //"Connection: Keep-Alive\r\n"
-                    //"Content-Length: 0\r\n"
-                    "\r\n"; 
-                    break;
+                x = (const unsigned char *)banner_ssl.hello;
+                x_len = banner_ssl.hello_length;
+                break;
             case 443:   /* HTTP/s */
             case 465:   /* SMTP/s */
             case 990:   /* FTP/s */
@@ -659,13 +655,16 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             case 9050:  /* Tor */
                 tcb->banner1_state.is_sent_sslhello = 1;
                 x = (const unsigned char *)banner_ssl.hello;
+                x_len = banner_ssl.hello_length;
                 break;
             default:
                 x = 0;
+                break;
             }
-            if (x) {
-                /* send request */
-                x_len = strlen((const char*)x);
+            if (x && x_len) {
+                /* Send request. This actually doens't send the packet right
+                 * now, but instead queues up a packet that the transmit
+                 * thread will send soon. */
                 tcpcon_send_packet(tcpcon, tcb,
                     0x18, 
                     x, x_len);

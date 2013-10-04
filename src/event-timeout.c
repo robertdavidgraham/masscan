@@ -76,8 +76,8 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
              size_t offset, uint64_t timestamp)
 {
     unsigned index;
-    time_t now = time(0);
-    time_t time_future = (unsigned)(timestamp/16384ULL);
+    //time_t now = time(0);
+    //time_t time_future = (unsigned)(timestamp/16384ULL);
 
     /* Unlink from wherever the entry came from */
     timeout_unlink(entry);

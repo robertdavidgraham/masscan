@@ -310,7 +310,7 @@ http_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 struct Banner1Stream banner_http = {
-    "http", 80, http_hello, sizeof(http_hello),
+    "http", 80, http_hello, sizeof(http_hello)-1,
     http_selftest,
     http_init,
     http_parse,
