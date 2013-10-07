@@ -69,8 +69,8 @@ struct Payload2 hard_coded_payloads[] = {
             "\x01\x20"  /* quer y*/
             "\x00\x01"  /* query = 1 */
             "\x00\x00\x00\x00\x00\x00"
-            "\x07" "version"  "\x04" "bind" "\xc0" "\x08"
-            "\x00\x10" /* TXT */
+            "\x07" "version"  "\x04" "bind" "\xc0\x08"
+            "\x00\x10" /* TXT */            /*^^^^^^^^_____IDS LULZ HAH HA HAH*/
             "\x00\x03" /* CHAOS */
                                 
     
