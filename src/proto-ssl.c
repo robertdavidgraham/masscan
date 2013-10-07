@@ -296,12 +296,15 @@ server_cert(
             continue;
         }
         cert_remaining = px[i];
+        remaining--;
         DROPDOWN(i,length,state);
     case CLEN1:
         cert_remaining = cert_remaining * 256 + px[i];
+        remaining--;
         DROPDOWN(i,length,state);
     case CLEN2:
         cert_remaining = cert_remaining * 256 + px[i];
+        remaining--;
         DROPDOWN(i,length,state);
         data->cert_state = 0;
         server_cert_copy(data,  0,1,  0,0,0);
