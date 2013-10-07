@@ -101,6 +101,12 @@ banner1_parse(
     case PROTO_SSH2:
     case PROTO_FTP1:
     case PROTO_FTP2:
+    case PROTO_SMTP:
+    case PROTO_POP3:
+    case PROTO_IMAP4:
+        /* generic text-based parser 
+         * TODO: in future, need to split these into separate protocols,
+         * especially when binary parsing is added to SSH */
         banner_ssh.parse(   banner1, 
                             banner1->http_fields,
                             pstate,
