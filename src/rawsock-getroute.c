@@ -107,13 +107,15 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
      */
     sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
     rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
+    if (rtm == NULL)
+        exit(1);
 
 
     /*
      * Create a socket for querying the kernel
      */
     fd = socket(PF_ROUTE, SOCK_RAW, 0);
-    if (fd <= 0) {
+    if (fd < 0) {
         perror("socket(PF_ROUTE)");
         free(rtm);
         return errno;

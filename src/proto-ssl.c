@@ -208,6 +208,7 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
     /*
      * Convert to base64
      */
+    if (px)
     for (i=0; i<length; i++)
     switch (state) {
     case 0:

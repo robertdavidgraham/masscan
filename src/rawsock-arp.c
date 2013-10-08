@@ -227,6 +227,8 @@ int arp_response(
             pixie_usleep(100);
         }
     }
+    if (response == NULL)
+        return -1; /* just to supress warnings */
 
     /* ARP packets are too short, so increase the packet size to 
      * the Ethernet minimum */

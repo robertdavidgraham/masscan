@@ -180,6 +180,8 @@ lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
 
     /* Allocate a list of 1-byte counters */
     list = (unsigned char *)malloc((size_t)((range<max)?range:max));
+    if (list == NULL)
+        exit(1);
     memset(list, 0, (size_t)((range<max)?range:max));
 
     /* For all numbers in the range, verify increment the counter for the

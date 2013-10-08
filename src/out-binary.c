@@ -8,13 +8,18 @@ static void
 binary_out_open(struct Output *out, FILE *fp)
 {
     char firstrecord[2+'a'];
+    size_t bytes_written;
 
     UNUSEDPARM(out);
 
 
     memset(firstrecord, 0, 2+'a');
     sprintf_s(firstrecord, 2+'a', "masscan/1.1.01");
-    fwrite( firstrecord, 1, 2+'a', fp);
+    bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
+    if (bytes_written != 2+'a') {
+        perror("output");
+        exit(1);
+    }
 }
 
 
@@ -24,12 +29,17 @@ static void
 binary_out_close(struct Output *out, FILE *fp)
 {
     char firstrecord[2+'a'];
-
+    size_t bytes_written;
+    
     UNUSEDPARM(out);
 
     memset(firstrecord, 0, 2+'a');
     sprintf_s(firstrecord, 2+'a', "masscan/1.1");
-    fwrite( firstrecord, 1, 2+'a', fp);
+    bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
+    if (bytes_written != 2+'a') {
+        perror("output");
+        exit(1);
+    }
 }
 
 /****************************************************************************
@@ -38,6 +48,7 @@ static void
 binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     unsigned char foo[256];
+    size_t bytes_written;
 
     UNUSEDPARM(out);
 
@@ -75,7 +86,11 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
 
 
 
-    fwrite(&foo, 1, 14, fp);
+    bytes_written = fwrite(&foo, 1, 14, fp);
+    if (bytes_written != 14) {
+        perror("output");
+        exit(1);
+    }
 }
 
 
@@ -87,6 +102,7 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, 
 {
     unsigned char foo[32768];
     unsigned i;
+    size_t bytes_written;
 
     UNUSEDPARM(out);
 
@@ -128,7 +144,11 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, 
     memcpy(foo+i+13, px, length);
 
 
-    fwrite(&foo, 1, length+i+13, fp);
+    bytes_written = fwrite(&foo, 1, length+i+13, fp);
+    if (bytes_written != length+i+13) {
+        perror("output");
+        exit(1);
+    }
 }
 
 

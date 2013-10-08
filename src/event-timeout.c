@@ -60,6 +60,8 @@ timeouts_create(uint64_t timestamp)
     struct Timeouts *timeouts;
 
     timeouts = (struct Timeouts *)malloc(sizeof(*timeouts));
+    if (timeouts == NULL)
+        exit(1);
     memset(timeouts, 0, sizeof(*timeouts));
 
     timeouts->mask = sizeof(timeouts->slots)/sizeof(timeouts->slots[0]) - 1;

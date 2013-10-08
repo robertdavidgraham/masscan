@@ -32,6 +32,8 @@ dedup_create()
     struct DedupTable *result;
 
     result = (struct DedupTable *)malloc(sizeof(*result));
+    if (result == NULL)
+        exit(1);
     memset(result, 0, sizeof(*result));
 
     return result;

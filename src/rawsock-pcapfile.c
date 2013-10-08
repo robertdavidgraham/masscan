@@ -22,6 +22,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _FILE_OFFSET_BITS 64
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -178,7 +179,7 @@ unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]<<24 | buf[1]<<16 | buf[2] << 8 | buf[3];
 	case CAPFILE_LITTLEENDIAN: return buf[3]<<24 | buf[2]<<16 | buf[1] << 8 | buf[0];
-	default: return 0xa3a3;
+	default: return 0xa3a3U;
 	}
 }
 
@@ -533,6 +534,16 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 	if (capfilename == NULL)
 		return 0;
 
+    /* 
+	 * Open the file 
+	 */
+	fp = fopen(capfilename, "rb");
+	if (fp == NULL) {
+		fprintf(stderr, "%s: could not open capture file\n", capfilename);
+		perror(capfilename);
+		return 0;
+	}
+    
 	/* Grab info about the file */
 	{
 		struct stat s;
@@ -540,17 +551,6 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 		if (stat(capfilename, &s) == 0) {
 			file_size = s.st_size;
 		}
-	}
-
-
-	/* 
-	 * Open the file 
-	 */
-	fp = fopen(capfilename, "rb");
-	if (fp == NULL) {
-		fprintf(stderr, "%s: could not open file\n", capfilename);
-		perror(capfilename);
-		return 0;
 	}
 
 	/*
@@ -646,15 +646,13 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 	{
 		struct PcapFile *capfile = 0;
 		capfile = (struct PcapFile*)malloc(sizeof(*capfile));
+        if (capfile == NULL)
+            exit(1);
 		memset(capfile,0,sizeof(*capfile));
 		capfile->byte_order = byte_order;
 
-		if (strlen(capfilename) > sizeof(capfile->filename)+1)
-			capfile->filename[0] = '\0';
-		else {
-			memcpy(capfile->filename, capfilename, strlen(capfilename));
-			capfile->filename[strlen(capfilename)] = '\0';
-		}
+        snprintf(capfile->filename, sizeof(capfile->filename),
+                 "%s", capfilename);
 		capfile->fp = fp;
 		capfile->byte_order = byte_order;
 		capfile->linktype = linktype;
@@ -700,10 +698,8 @@ struct PcapFile *pcapfile_openwrite(const char *capfilename, unsigned linktype)
 		capfile = (struct PcapFile*)malloc(sizeof(*capfile));
 		memset(capfile,0,sizeof(*capfile));
 		
-		if (strlen(capfilename)+1 < sizeof(capfile->filename)) {
-			memcpy(capfile->filename, capfilename, strlen(capfilename));
-			capfile->filename[strlen(capfilename)-1] = '\0';
-		}
+        snprintf(capfile->filename, sizeof(capfile->filename),
+                 "%s", capfilename);
 
 		capfile->fp = fp;
 		capfile->byte_order = CAPFILE_LITTLEENDIAN;
@@ -722,20 +718,18 @@ struct PcapFile *pcapfile_openwrite(const char *capfilename, unsigned linktype)
 struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 {
 	struct PcapFile *capfile;
-	struct stat s;
 	unsigned char buf[24];
 	unsigned byte_order;
 	unsigned file_linktype;
 	FILE *fp;
 
 
-	/* If the file doesn't exist, create it */
-	memset(&s, 0, sizeof(s));
-	if (stat(capfilename, &s) != 0 || s.st_size <= 24)
-		return pcapfile_openwrite(capfilename, linktype);
-
+    
 	/* open the file for appending and reading */
 	fp = fopen(capfilename, "ab+");
+    if (fp == NULL && errno == ENOENT) {
+        return pcapfile_openwrite(capfilename, linktype);
+    }
 	if (fp == NULL) {
 		fprintf(stderr, "Could not open capture file to append frame\n");
 		perror(capfilename);
@@ -826,10 +820,8 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 		capfile = (struct PcapFile*)malloc(sizeof(*capfile));
 		memset(capfile,0,sizeof(*capfile));
 		capfile->byte_order = byte_order;
-		if (strlen(capfilename)+1 < sizeof(capfile->filename)) {
-			memcpy(capfile->filename, capfilename, sizeof(capfile->filename));
-			capfile->filename[strlen(capfilename)] = '\0';
-		}
+        snprintf(capfile->filename, sizeof(capfile->filename),
+                 "%s", capfilename);
 		capfile->fp = fp;
 		capfile->byte_order = byte_order;
 		capfile->linktype = linktype;

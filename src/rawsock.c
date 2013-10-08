@@ -148,6 +148,10 @@ rawsock_init()
                 char *name = (char*)malloc(name_len);
                 size_t addr_len = pAdapter->AddressLength * 3 + 1;
                 char *addr = (char*)malloc(addr_len);
+                
+                if (name == NULL || addr == NULL)
+                    exit(1);
+                
                 sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
 
                 //printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
@@ -171,6 +175,8 @@ rawsock_init()
                 char *name = (char*)malloc(name_len);
                 size_t addr_len = strlen(pAdapter->IpAddressList.IpAddress.String) + 1;
                 char *addr = (char*)malloc(addr_len);
+                if (name == NULL || addr == NULL)
+                    exit(1);
                 sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
                 sprintf_s(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);
                 //printf("%s  ->  %s\n", addr, name);

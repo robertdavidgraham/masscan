@@ -392,7 +392,7 @@ snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
 		length = outer_length + offset;
 
 	/* Request ID */
-	tag = asn1_tag(px, length, &offset);
+	asn1_tag(px, length, &offset);
     len = asn1_length(px, length, &offset);
     switch (len) {
     case 0: 

@@ -145,6 +145,8 @@ banner1_create(void)
     unsigned i;
 
     b = (struct Banner1 *)malloc(sizeof(*b));
+    if (b == NULL)
+        exit(1);
     memset(b, 0, sizeof(*b));
 
     /*

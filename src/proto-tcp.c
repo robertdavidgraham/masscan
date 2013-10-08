@@ -133,6 +133,8 @@ tcpcon_create_table(    size_t entry_count,
     struct TCP_ConnectionTable *tcpcon;
 
     tcpcon = (struct TCP_ConnectionTable *)malloc(sizeof(*tcpcon));
+    if (tcpcon == NULL)
+        exit(1);
     memset(tcpcon, 0, sizeof(*tcpcon));
     tcpcon->timeout = timeout;
     if (tcpcon->timeout == 0)
@@ -160,8 +162,9 @@ tcpcon_create_table(    size_t entry_count,
     /* Create the table. If we can't allocate enough memory, then shrink
      * the desired size of the table */
     while (tcpcon->entries == 0) {
-        tcpcon->entries = (struct TCP_Control_Block**)malloc(entry_count * sizeof(*tcpcon->entries));
-        if (tcpcon->entries == 0) {
+        tcpcon->entries = (struct TCP_Control_Block**)
+                            malloc(entry_count * sizeof(*tcpcon->entries));
+        if (tcpcon->entries == NULL) {
             entry_count >>= 1;
         }
     }
@@ -315,8 +318,13 @@ tcpcon_create_tcb(
         if (tcpcon->freed_list) {
             tcb = tcpcon->freed_list;
             tcpcon->freed_list = tcb->next;
-        } else
+        } else {
             tcb = (struct TCP_Control_Block*)malloc(sizeof(*tcb));
+            if (tcb == NULL) {
+                fprintf(stderr, "tcb: out of memory\n");
+                exit(1);
+            }
+        }
         memset(tcb, 0, sizeof(*tcb));
         tcb->next = tcpcon->entries[index & tcpcon->mask];
         tcpcon->entries[index & tcpcon->mask] = tcb;
@@ -393,6 +401,8 @@ tcpcon_send_packet(
         if (wait != 100)
             printf("\n");
     }
+    if (response == NULL)
+        return;
 
     /* Format the packet as requested. Note that there are really only
      * four types of packets:

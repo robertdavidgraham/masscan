@@ -101,7 +101,11 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
     /* auto-expand the list if necessary */
     if (task->count + 1 >= task->max) {
         unsigned new_max = task->max * 2 + 1;
-        struct Range *new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
+        struct Range *new_list;
+        
+        new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
+        if (new_list == NULL)
+            exit(1);
         memcpy(new_list, task->list, task->count * sizeof(*new_list));
         if (task->list)
             free(task->list);
@@ -441,6 +445,15 @@ rangelist_pick(const struct RangeList *targets, uint64_t index)
     assert(!"end of list");
     return 0;
 }
+
+
+/***************************************************************************
+ * The normal "pick" function is a linear search, which is slow when there
+ * are a lot of ranges. Therefore, the "pick2" creates sort of binary
+ * search that'll be a lot faster. We choose "binary search" because
+ * it's the most cache-efficient, having the least overhead to fit within
+ * the cache.
+ ***************************************************************************/
 unsigned *
 rangelist_pick2_create(struct RangeList *targets)
 {
@@ -449,18 +462,26 @@ rangelist_pick2_create(struct RangeList *targets)
     unsigned total = 0;
 
     picker = (unsigned *)malloc(targets->count * sizeof(*picker));
+    if (picker == NULL)
+        exit(1);
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;
     }
     return picker;
 }
+
+/***************************************************************************
+ ***************************************************************************/
 void
 rangelist_pick2_destroy(unsigned *picker)
 {
     if (picker)
         free(picker);
 }
+
+/***************************************************************************
+ ***************************************************************************/
 unsigned
 rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker)
 {
@@ -486,10 +507,29 @@ rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned 
 
     return (unsigned)(targets->list[mid].begin + (index - picker[mid]));
 }
-int
+
+/***************************************************************************
+ * Provide my own rand() simply to avoid static-analysis warning me that
+ * 'rand()' is unrandom, when in fact we want the non-random properties of
+ * rand() for regression testing.
+ ***************************************************************************/
+static unsigned 
+r_rand(unsigned *seed)
+{
+    static const unsigned a = 214013;
+ 	static const unsigned c = 2531011;
+    
+    *seed = (*seed) * a + c;
+    return (*seed)>>16 & 0x7fff;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static int
 regress_pick2()
 {
     unsigned i;
+    unsigned seed = 0;
 
     /*
      * Run 100 randomized regression tests
@@ -504,17 +544,15 @@ regress_pick2()
         unsigned *picker;
         unsigned range;
 
-        /* seed this test so that it's reproducible (on this platform) */
-        srand(i);
 
         /* Create a new target list */
         memset(targets, 0, sizeof(targets[0]));
 
         /* fill the target list with random ranges */
-        num_targets = rand()%5 + 1;
+        num_targets = r_rand(&seed)%5 + 1;
         for (j=0; j<num_targets; j++) {
-            begin += rand()%10;
-            end = begin + rand()%10;
+            begin += r_rand(&seed)%10;
+            end = begin + r_rand(&seed)%10;
 
             rangelist_add_range(targets, begin, end);
         }

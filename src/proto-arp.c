@@ -8,7 +8,8 @@
 
 
 void
-handle_arp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+handle_arp(struct Output *out, const unsigned char *px, 
+           unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
 

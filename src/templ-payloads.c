@@ -196,6 +196,8 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
 
 	/* Create a new list */
 	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+    if (list2 == NULL)
+        exit(1);
 	
 	/* Add to the new list any used ports */
 	for (i=0; i<payloads->count; i++) {
@@ -408,6 +410,8 @@ payload_add(struct NmapPayloads *payloads,
             struct Payload **new_list;
 
             new_list = (struct Payload**)malloc(new_max * sizeof(new_list[0]));
+            if (new_list == NULL)
+                exit(1);
             memcpy(new_list, payloads->list, payloads->count * sizeof(new_list[0]));
             free(payloads->list);
             payloads->list = new_list;
@@ -416,6 +420,8 @@ payload_add(struct NmapPayloads *payloads,
 
         /* allocate space for this record */
         p = (struct Payload *)malloc(sizeof(p[0]) + length);
+        if (p == NULL)
+            exit(1);
         p->port = rangelist_pick(ports, i);
         p->source_port = source_port;
         p->length = (unsigned)length;
@@ -650,6 +656,8 @@ payloads_create()
     unsigned i;
     struct NmapPayloads *payloads;
     payloads = (struct NmapPayloads *)malloc(sizeof(*payloads));
+    if (payloads == NULL)
+        exit(1);
     memset(payloads, 0, sizeof(*payloads));
     
     for (i=0; hard_coded_payloads[i].length; i++) {

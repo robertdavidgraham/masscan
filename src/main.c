@@ -504,7 +504,7 @@ receive_thread(void *v)
         while (!control_c_pressed_again)
             pixie_usleep(10000);
         parms->done_receiving = 1;
-        return;
+        goto end;
     }
 
     /*
@@ -772,6 +772,7 @@ receive_thread(void *v)
     /*
      * cleanup
      */
+end:
     if (tcpcon)
         tcpcon_destroy_table(tcpcon);
     dedup_destroy(dedup);
@@ -959,6 +960,8 @@ main_scan(struct Masscan *masscan)
             unsigned i;
             for (i=0; i<BUFFER_COUNT-1; i++) {
                 struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
+                if (p == NULL)
+                    exit(1);
                 err = rte_ring_sp_enqueue(parms->packet_buffers, p);
                 if (err) {
                     /* I dunno why but I can't queue all 256 packets, just 255 */

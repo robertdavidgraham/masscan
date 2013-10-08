@@ -481,7 +481,7 @@ template_set_target(
         port = 1;
     } else if (port == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-        port = 1;
+        //port = 1;
 		px = tmpl->packet + tmpl->offset_ip;
 		px[24] = (unsigned char)((ip >> 24) & 0xFF);
 		px[25] = (unsigned char)((ip >> 16) & 0xFF);
