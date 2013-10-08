@@ -163,7 +163,8 @@ one port.
     Using a different seed will cause packets to be sent in a different
 	random order. Instead of an integer, the string `time` can be specified,
 	which seeds using the local timestamp, automatically generating a 
-	differnet random order of scans.
+	differnet random order of scans. If no seed specified, `time` is the
+	default.
 
   * `--regress`: run a regression test, returns '0' on success and '1' on
     failure.
