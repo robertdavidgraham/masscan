@@ -1,5 +1,4 @@
 
-
 SYS := $(shell gcc -dumpmachine)
 
 # LINUX
@@ -79,6 +78,7 @@ bin/scan2text: util/scan2text.c
 clean:
 	rm tmp/*.o
 	rm bin/masscan
+	rm bin/scan2test
 
 regress: bin/masscan
 	bin/masscan --selftest
