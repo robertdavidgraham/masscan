@@ -74,7 +74,7 @@ uint64_t foo_timestamp = 0;
 uint64_t foo_count = 0;
 
 /***************************************************************************
- * We create a pair of transnit/receive threads for each network adapter.
+ * We create a pair of transmit/receive threads for each network adapter.
  * This structure contains the parameters we send to each pair.
  ***************************************************************************/
 struct ThreadPair {

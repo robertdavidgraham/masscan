@@ -139,8 +139,11 @@ db_print(const struct BannerDB *db)
     }
 }
 
+/***************************************************************************
+ * used for some banners to keep track of the most popular ones
+ ***************************************************************************/
 void
-db_lookup(struct BannerDB *db, const unsigned char *str, unsigned length)
+db_lookup(struct BannerDB *db, const char *str, unsigned length)
 {
     struct BannerRecord *rec;
     uint64_t hash = 0;
@@ -371,42 +374,42 @@ parse_banner(const struct Configuration *conf, unsigned char *buf, size_t buf_le
     }
 }
 
-int is_nominum(const unsigned char *px, size_t len)
+int is_nominum(const char *px, size_t len)
 {
 	if (len >= 7 && memcmp(px, "Nominum", 7) == 0)
 		return 1;
 	else
 		return 0;
 }
-int is_dnsmasq(const unsigned char *px, size_t len)
+int is_dnsmasq(const char *px, size_t len)
 {
 	if (len >= 7 && memcmp(px, "dnsmasq", 7) == 0)
 		return 1;
 	else
 		return 0;
 }
-int is_powerdns(const unsigned char *px, size_t len)
+int is_powerdns(const char *px, size_t len)
 {
 	if (len >= 8 && memcmp(px, "PowerDNS", 8) == 0)
 		return 1;
 	else
 		return 0;
 }
-int is_nsd(const unsigned char *px, size_t len)
+int is_nsd(const char *px, size_t len)
 {
 	if (len >= 4 && memcmp(px, "NSD ", 4) == 0)
 		return 1;
 	else
 		return 0;
 }
-int is_unbound(const unsigned char *px, size_t len)
+int is_unbound(const char *px, size_t len)
 {
 	if (len >= 7 && memcmp(px, "unbound", 7) == 0)
 		return 1;
 	else
 		return 0;
 }
-int is_bind(const unsigned char *px, size_t len)
+int is_bind(const char *px, size_t len)
 {
 	if (memcmp(px, "yamutech-bind", 13) == 0 && len >= 13)
 		return 1;
