@@ -1351,12 +1351,15 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
  * remove leading/trailing whitespace
  ***************************************************************************/
 static void
-trim(char *line)
+trim(char *line, size_t sizeof_line)
 {
+    if (sizeof_line > strlen(line))
+        sizeof_line = strlen(line);
+    
     while (isspace(*line & 0xFF))
-        memmove(line, line+1, strlen(line));
-    while (isspace(line[strlen(line)-1] & 0xFF))
-        line[strlen(line)-1] = '\0';
+        memmove(line, line+1, sizeof_line--);
+    while (isspace(line[sizeof_line-1] & 0xFF))
+        line[--sizeof_line] = '\0';
 }
 
 /***************************************************************************
@@ -1378,7 +1381,7 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
         char *name;
         char *value;
 
-        trim(line);
+        trim(line, sizeof(line));
 
         if (ispunct(line[0] & 0xFF) || line[0] == '\0')
             continue;
@@ -1389,11 +1392,26 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
             continue;
         *value = '\0';
         value++;
-        trim(name);
-        trim(value);
+        trim(name, sizeof(line));
+        trim(value, sizeof(line));
 
         masscan_set_parameter(masscan, name, value);
     }
 
     fclose(fp);
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+int
+mainconf_selftest()
+{
+    char test[] = " test 1 ";
+    
+    trim(test, sizeof(test));
+    if (strcmp(test, "test 1") != 0)
+        return 1; /* failure */
+    
+    return 0;
 }

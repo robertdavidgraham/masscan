@@ -103,9 +103,12 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         unsigned new_max = task->max * 2 + 1;
         struct Range *new_list;
         
+        if (new_max > SIZE_MAX/sizeof(*new_list))
+            exit(1); /* integer overflow */
         new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
         if (new_list == NULL)
-            exit(1);
+            exit(1); /* out of memory */
+        
         memcpy(new_list, task->list, task->count * sizeof(*new_list));
         if (task->list)
             free(task->list);
@@ -461,9 +464,12 @@ rangelist_pick2_create(struct RangeList *targets)
     unsigned i;
     unsigned total = 0;
 
+    if (targets->count > SIZE_MAX/sizeof(*picker))
+        exit(1); /* integer overflow */
     picker = (unsigned *)malloc(targets->count * sizeof(*picker));
     if (picker == NULL)
-        exit(1);
+        exit(1); /* out of memory */
+    
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;

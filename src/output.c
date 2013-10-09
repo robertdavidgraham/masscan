@@ -374,7 +374,8 @@ output_do_rotate(struct Output *out)
 
     err = 0;
 again:
-    sprintf_s(new_filename, new_filename_size, "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
+    sprintf_s(new_filename, new_filename_size, 
+              "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
         dir,
         tm.tm_year % 100,
         tm.tm_mon+1,
@@ -403,7 +404,8 @@ again:
     out->next_rotate = next_rotate(time(0), out->period, out->offset);
 
     LOG(1, "rotated: %s\n", new_filename);
-
+    free(new_filename);
+    
     /*
      * Now create a new file
      */

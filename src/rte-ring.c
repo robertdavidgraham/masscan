@@ -142,6 +142,8 @@ rte_ring_create(unsigned count, unsigned flags)
 	ring_size = count * sizeof(void *) + sizeof(struct rte_ring);
 
 	r = (struct rte_ring*)malloc(ring_size);
+    if (r == NULL)
+        exit(1);
 	
 	/* init the ring structure */
 	memset(r, 0, sizeof(*r));

@@ -169,7 +169,7 @@ unsigned PCAP16(unsigned byte_order, const unsigned char *buf)
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]*256 + buf[1];
 	case CAPFILE_LITTLEENDIAN: return buf[1]*256 + buf[0];
-	default: return 0xa3a3;
+	default: return 0xa3a3U;
 	}
 }
 /** Read a 32-bit value from a capture file, depending upon the byte
@@ -186,10 +186,11 @@ unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
 /**
  * Return the "link" type, such as Ethernet, WiFi, Token Ring, etc.
  */
-unsigned pcapfile_datalink(struct PcapFile *handle)
+unsigned 
+pcapfile_datalink(struct PcapFile *handle)
 {
 	if (handle)
-		return handle->linktype;
+		return (unsigned)handle->linktype;
 	else
 		return 0;
 }
@@ -696,6 +697,8 @@ struct PcapFile *pcapfile_openwrite(const char *capfilename, unsigned linktype)
 	{
 		struct PcapFile *capfile = 0;
 		capfile = (struct PcapFile*)malloc(sizeof(*capfile));
+        if (capfile == NULL)
+            exit(1);
 		memset(capfile,0,sizeof(*capfile));
 		
         snprintf(capfile->filename, sizeof(capfile->filename),

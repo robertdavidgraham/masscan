@@ -215,7 +215,16 @@ pixie_nanotime()
 
 void pixie_usleep(uint64_t microseconds)
 {
-    usleep(microseconds);
+    struct timespec t;
+    t.tv_nsec = microseconds * 1000;
+    if (microseconds > 1000000)
+        t.tv_sec = microseconds/1000000;
+    else {
+        t.tv_sec = 0;
+    }
+    
+    nanosleep(&t, 0);
+    //usleep(microseconds);
 }
 void
 pixie_mssleep(unsigned milliseconds)

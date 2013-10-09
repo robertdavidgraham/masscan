@@ -195,9 +195,11 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
 	unsigned count2 = 0;
 
 	/* Create a new list */
+    if (payloads->max > SIZE_MAX/sizeof(list2[0]))
+        exit(1); /* integer overflow */
 	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
-        exit(1);
+        exit(1); /* out of memory */
 	
 	/* Add to the new list any used ports */
 	for (i=0; i<payloads->count; i++) {
@@ -265,7 +267,7 @@ isodigit(int c)
 /***************************************************************************
  ***************************************************************************/
 static unsigned
-hexval(int c)
+hexval(unsigned c)
 {
     if ('0' <= c && c <= '9')
         return c - '0';
@@ -409,9 +411,12 @@ payload_add(struct NmapPayloads *payloads,
             unsigned new_max = payloads->max*2 + 1;
             struct Payload **new_list;
 
+            if (new_max > SIZE_MAX/sizeof(new_list[0]))
+                exit(1); /* integer overflow */
             new_list = (struct Payload**)malloc(new_max * sizeof(new_list[0]));
             if (new_list == NULL)
-                exit(1);
+                exit(1); /* out of memory */
+                          
             memcpy(new_list, payloads->list, payloads->count * sizeof(new_list[0]));
             free(payloads->list);
             payloads->list = new_list;
@@ -419,9 +424,12 @@ payload_add(struct NmapPayloads *payloads,
         }
 
         /* allocate space for this record */
+        if (length > SIZE_MAX/sizeof(p[0]))
+            exit(1); /* integer overflow */
         p = (struct Payload *)malloc(sizeof(p[0]) + length);
         if (p == NULL)
-            exit(1);
+            exit(1); /* out of memory */
+
         p->port = rangelist_pick(ports, i);
         p->source_port = source_port;
         p->length = (unsigned)length;

@@ -283,6 +283,7 @@ tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon)
         free(tcb);
     }
     
+    banner1_destroy(tcpcon->banner1);
     free(tcpcon->entries);
     free(tcpcon);
 }

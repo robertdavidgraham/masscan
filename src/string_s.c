@@ -84,6 +84,10 @@ errno_t localtime_s(struct tm* _tm, const time_t *time)
     struct tm *x;
 
     x = localtime(time);
+    if (x == NULL) {
+        memset(_tm, 0, sizeof(*_tm));
+        return -1;
+    }
     memcpy(_tm, x, sizeof(*_tm));
 
     return 0;
@@ -93,6 +97,10 @@ errno_t gmtime_s(struct tm* _tm, const time_t *time)
     struct tm *x;
 
     x = gmtime(time);
+    if (x == NULL) {
+        memset(_tm, 0, sizeof(*_tm));
+        return -1;
+    }
     memcpy(_tm, x, sizeof(*_tm));
 
     return 0;

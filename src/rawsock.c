@@ -602,6 +602,8 @@ rawsock_init_adapter(const char *adapter_name,
     char errbuf[PCAP_ERRBUF_SIZE];
 
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
+    if (adapter == NULL)
+        exit(1);
     memset(adapter, 0, sizeof(*adapter));
     adapter->is_packet_trace = is_packet_trace;
     

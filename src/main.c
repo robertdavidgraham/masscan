@@ -500,6 +500,10 @@ receive_thread(void *v)
             );
     }
 
+    /*
+     * In "offline" mode, we don't have any receive threads, so simply
+     * wait until transmitter thread is done then go to the end
+     */
     if (masscan->is_offline) {
         while (!control_c_pressed_again)
             pixie_usleep(10000);
@@ -780,6 +784,16 @@ end:
     if (pcapfile)
         pcapfile_close(pcapfile);
 
+    for (;;) {
+        void *p;
+        int err;
+        err = rte_ring_sc_dequeue(parms->packet_buffers, (void**)&p);
+        if (err == 0)
+            free(p);
+        else
+            break;
+    }
+    
     /* Thread is about to exit */
     parms->done_receiving = 1;
 }
@@ -959,7 +973,9 @@ main_scan(struct Masscan *masscan)
         {
             unsigned i;
             for (i=0; i<BUFFER_COUNT-1; i++) {
-                struct PacketBuffer *p = (struct PacketBuffer *)malloc(sizeof(*p));
+                struct PacketBuffer *p;
+                
+                p = (struct PacketBuffer *)malloc(sizeof(*p));
                 if (p == NULL)
                     exit(1);
                 err = rte_ring_sp_enqueue(parms->packet_buffers, p);
@@ -1037,7 +1053,7 @@ main_scan(struct Masscan *masscan)
         /* Sleep for almost a second */
         pixie_mssleep(750);
     }
-
+    
     /*
      * If we haven't completed the scan, then save the resume
      * information.
@@ -1095,7 +1111,12 @@ main_scan(struct Masscan *masscan)
     }    
 
 
+    /*
+     * Now cleanup everything
+     */
     status_finish(&status);
+    rangelist_pick2_destroy(picker);
+    
     return 0;
 }
 
@@ -1234,6 +1255,7 @@ int main(int argc, char *argv[])
             x += rte_ring_selftest();
             x += smack_selftest();
             x += banner1_selftest();
+            x += mainconf_selftest();
 
 
             if (x != 0) {
