@@ -103,7 +103,7 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         unsigned new_max = task->max * 2 + 1;
         struct Range *new_list;
         
-        if (new_max > SIZE_MAX/sizeof(*new_list))
+        if ((size_t)new_max >= SIZE_MAX/sizeof(*new_list))
             exit(1); /* integer overflow */
         new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
         if (new_list == NULL)
@@ -464,8 +464,9 @@ rangelist_pick2_create(struct RangeList *targets)
     unsigned i;
     unsigned total = 0;
 
-    if (targets->count > SIZE_MAX/sizeof(*picker))
+    if ((size_t)targets->count >= SIZE_MAX/sizeof(*picker))
         exit(1); /* integer overflow */
+    else
     picker = (unsigned *)malloc(targets->count * sizeof(*picker));
     if (picker == NULL)
         exit(1); /* out of memory */
@@ -582,6 +583,7 @@ regress_pick2()
 
         rangelist_free(targets);
         rangelist_free(duplicate);
+        rangelist_pick2_destroy(picker);
     }
 
     return 0;

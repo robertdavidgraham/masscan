@@ -628,6 +628,8 @@ _template_init(
     tmpl->length = (unsigned)packet_size;
     
     tmpl->packet = (unsigned char *)malloc(2048);
+    if (tmpl->packet == NULL)
+        exit(1);
     memcpy(tmpl->packet, packet_bytes, tmpl->length);
     px = tmpl->packet;
 

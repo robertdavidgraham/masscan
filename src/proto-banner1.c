@@ -290,11 +290,11 @@ int banner1_selftest()
                     px+i, 1,
                     banner, &banner_offset, sizeof(banner)
                     );
+    banner1_destroy(b);
     if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");
         return 1;
     }
-    banner1_destroy(b);
 
     /*
      * Test whole buffer
@@ -311,11 +311,11 @@ int banner1_selftest()
                     px, length,
                     banner, &banner_offset, sizeof(banner)
                     );
+    banner1_destroy(b);
     if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");
         return 1;
     }
-    banner1_destroy(b);
 
 
     return 0;

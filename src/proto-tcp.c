@@ -17,6 +17,7 @@
 #include "packet-queue.h"
 #include "proto-banner1.h"
 #include "proto-ssl.h"
+#include "proto-http.h"
 #include "output.h"
 #include "string_s.h"
 
@@ -651,8 +652,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             const unsigned char *x;
             switch (tcb->port_them) {
             case 80: 
-                x = (const unsigned char *)banner_ssl.hello;
-                x_len = banner_ssl.hello_length;
+                x = (const unsigned char *)banner_http.hello;
+                x_len = banner_http.hello_length;
                 break;
             case 443:   /* HTTP/s */
             case 465:   /* SMTP/s */

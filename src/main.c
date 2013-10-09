@@ -233,19 +233,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
-    /* Lock this thread to a CPU. Transmit threads are on even CPUs,
-     * receive threads on odd CPUs */
-    if (pixie_cpu_get_count() > 1) {
-        unsigned cpu_count = pixie_cpu_get_count();
-        unsigned cpu = parms->nic_index * 2;
-        while (cpu >= cpu_count) {
-            cpu -= cpu_count;
-            cpu++;
-        }
-        pixie_cpu_set_affinity(cpu);
-        //pixie_cpu_raise_priority();
-    }
-
 
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of

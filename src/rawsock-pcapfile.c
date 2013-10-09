@@ -169,7 +169,7 @@ unsigned PCAP16(unsigned byte_order, const unsigned char *buf)
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]*256 + buf[1];
 	case CAPFILE_LITTLEENDIAN: return buf[1]*256 + buf[0];
-	default: return 0xa3a3U;
+	default: return (unsigned)0xa3a3;
 	}
 }
 /** Read a 32-bit value from a capture file, depending upon the byte
@@ -179,7 +179,7 @@ unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]<<24 | buf[1]<<16 | buf[2] << 8 | buf[3];
 	case CAPFILE_LITTLEENDIAN: return buf[3]<<24 | buf[2]<<16 | buf[1] << 8 | buf[0];
-	default: return 0xa3a3U;
+	default: return (unsigned)0xa3a3;
 	}
 }
 
@@ -821,6 +821,8 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 	{
 
 		capfile = (struct PcapFile*)malloc(sizeof(*capfile));
+        if (capfile == NULL)
+            exit(1);
 		memset(capfile,0,sizeof(*capfile));
 		capfile->byte_order = byte_order;
         snprintf(capfile->filename, sizeof(capfile->filename),

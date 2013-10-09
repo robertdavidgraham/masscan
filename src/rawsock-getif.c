@@ -126,6 +126,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
                 len = sizeof_ifname-1;
             memcpy(ifname, sdl->sdl_data, len);
             ifname[len] = 0;
+            free(rtm);
             return 0;
         }
 

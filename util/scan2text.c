@@ -126,6 +126,9 @@ struct BannerDB
     struct BannerRecord *records[BUCKET_COUNT];
 } *mydb;
 
+
+
+
 void
 db_print(const struct BannerDB *db)
 {
@@ -165,6 +168,8 @@ db_lookup(struct BannerDB *db, const char *str, unsigned length)
     }
     if (rec == NULL) {
         rec = (struct BannerRecord *)malloc(sizeof(*rec) + length);
+        if (rec == NULL)
+            exit(1);
         rec->count = 0;
         rec->length = length;
         memcpy(rec->str, str, length);
@@ -525,7 +530,7 @@ parse_file(const struct Configuration *conf, const char *filename)
     uint64_t total_records = 0;
     
     buf = (unsigned char *)malloc(BUF_MAX);
-    if (buf == 0) {
+    if (buf == NULL) {
         fprintf(stderr, "memory allocation failure\n");
         goto end;
     }
@@ -673,6 +678,8 @@ main(int argc, char *argv[])
      * Create a table for storing banners
      */
     mydb = (struct BannerDB*)malloc(sizeof(*mydb));
+    if (mydb == NULL)
+        exit(1);
     memset(mydb, 0, sizeof(*mydb));
 
     

@@ -195,8 +195,9 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
 	unsigned count2 = 0;
 
 	/* Create a new list */
-    if (payloads->max > SIZE_MAX/sizeof(list2[0]))
+    if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
         exit(1); /* integer overflow */
+    else
 	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
         exit(1); /* out of memory */
@@ -222,14 +223,18 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
 }
 
 /***************************************************************************
+ * remove leading/trailing whitespace
  ***************************************************************************/
 static void
-trim(char *line)
+trim(char *line, size_t sizeof_line)
 {
-    while (isspace(line[0]&0xFF))
-        memmove(&line[0], &line[1], strlen(line));
-    while (isspace(line[strlen(line)-1]&0xFF))
-        line[strlen(line)-1] = '\0';
+    if (sizeof_line > strlen(line))
+        sizeof_line = strlen(line);
+    
+    while (isspace(*line & 0xFF))
+        memmove(line, line+1, sizeof_line--);
+    while (isspace(line[sizeof_line-1] & 0xFF))
+        line[--sizeof_line] = '\0';
 }
 
 /***************************************************************************
@@ -381,7 +386,7 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
         }
         (*line_number)++;
 
-        trim(line);
+        trim(line, sizeof_line);
         if (is_comment(line))
             continue;
         if (line[0] == '\0')
@@ -411,7 +416,7 @@ payload_add(struct NmapPayloads *payloads,
             unsigned new_max = payloads->max*2 + 1;
             struct Payload **new_list;
 
-            if (new_max > SIZE_MAX/sizeof(new_list[0]))
+            if (new_max >= SIZE_MAX/sizeof(new_list[0]))
                 exit(1); /* integer overflow */
             new_list = (struct Payload**)malloc(new_max * sizeof(new_list[0]));
             if (new_list == NULL)
@@ -424,8 +429,6 @@ payload_add(struct NmapPayloads *payloads,
         }
 
         /* allocate space for this record */
-        if (length > SIZE_MAX/sizeof(p[0]))
-            exit(1); /* integer overflow */
         p = (struct Payload *)malloc(sizeof(p[0]) + length);
         if (p == NULL)
             exit(1); /* out of memory */
@@ -465,6 +468,9 @@ payload_add(struct NmapPayloads *payloads,
 
 /***************************************************************************
  * Called during processing of the "--pcap-payloads <filename>" directive.
+ * This is the well-known 'pcap' file format. This code strips off the
+ * headers of the packets then preserves just the payload portion
+ * and port number.
  ***************************************************************************/
 void
 payloads_read_pcap(const char *filename, 
@@ -475,13 +481,18 @@ payloads_read_pcap(const char *filename,
  
     LOG(2, "payloads:'%s': opening packet capture\n", filename);
 
+    /* open packet-capture */
     pcap = pcapfile_openread(filename);
     if (pcap == NULL) {
         fprintf(stderr, "payloads: can't read from file '%s'\n", filename);
         return;
     }
 
-
+    /* for all packets in the capture file
+     *  - read in packet
+     *  - parse packet
+     *  - save payload
+     */
     for (;;) {
         unsigned x;
         unsigned captured_length;
@@ -582,7 +593,7 @@ payloads_read_file(FILE *fp, const char *filename,
             goto end;
         } else
             memmove(line, line+3, strlen(line));
-        trim(line);
+        trim(line, sizeof(line));
 
 
         /* [ports] */
@@ -590,11 +601,11 @@ payloads_read_file(FILE *fp, const char *filename,
             break;
         p = rangelist_parse_ports(ports, line);
         memmove(line, p, strlen(p)+1);
-        trim(line);
+        trim(line, sizeof(line));
 
         /* [C string] */
         for (;;) {
-            trim(line);
+            trim(line, sizeof(line));
             if (!get_next_line(fp, &line_number, line, sizeof(line)))
                 break;
             if (line[0] != '\"')
@@ -602,13 +613,13 @@ payloads_read_file(FILE *fp, const char *filename,
 
             p = parse_c_string(buf, &buf_length, sizeof(buf), line);
             memmove(line, p, strlen(p)+1);
-            trim(line);
+            trim(line, sizeof(line));
         }
 
         /* [source] */
         if (memcmp(line, "source", 6) == 0) {
             memmove(line, line+6, strlen(line+5));
-            trim(line);
+            trim(line, sizeof(line));
             if (!isdigit(line[0])) {
                 fprintf(stderr, "%s:%u: expected source port\n", 
                         filename, line_number);
