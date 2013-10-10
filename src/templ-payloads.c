@@ -41,7 +41,7 @@ struct Payload2 {
 
 struct NmapPayloads {
     unsigned count;
-    unsigned max;
+    size_t max;
     struct Payload **list;
 };
 
@@ -64,21 +64,15 @@ struct Payload2 hard_coded_payloads[] = {
          "\x30\x0d"
            "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
            "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
-    {53, 65536, 39, 0, dns_set_cookie,
-            "\x50\xb6"  /* transaction id */
-            "\x01\x20"  /* quer y*/
-            "\x00\x01"  /* query = 1 */
-            "\x00\x00\x00\x00\x00\x00"
-            "\x07" "version"  "\x04" "bind" "\xc0\x08"
-            "\x00\x10" /* TXT */            /*^^^^^^^^_____IDS LULZ HAH HA HAH*/
-            "\x00\x03" /* CHAOS */
-                                
-    
-    "\x00\x00" /* transaction ID */
-        "\x01\x00" /* standard query */
-        "\x00\x01\x00\x00\x00\x00\x00\x00" /* 1 query */
-        "\x03" "www" "\x05" "yahoo" "\x03" "com" "\x00"
-        "\x00\x01\x00\x01" /* A IN */
+    {53, 65536, 0x1f+8, 0, dns_set_cookie,
+        /* 00 */"\x50\xb6"  /* transaction id */
+        /* 02 */"\x01\x20"  /* quer y*/
+        /* 04 */"\x00\x01"  /* query = 1 */
+        /* 06 */"\x00\x00\x00\x00\x00\x00"
+        /* 0c */"\x07" "version"  "\x04" "bind" "\xc0\x1b"
+        /* 1b */"\x00\x10" /* TXT */            /*^^^^^^^_____IDS LULZ HAH HA HAH*/
+        /* 1d */"\x00\x03" /* CHAOS */
+        /* 1f */
     },
     {137, 65536, 50, 0, dns_set_cookie,
         "\xab\x12" /* transaction id */
@@ -413,7 +407,7 @@ payload_add(struct NmapPayloads *payloads,
     for (i=0; i<port_count; i++) {
         /* grow the list if we need to */
         if (payloads->count + 1 > payloads->max) {
-            unsigned new_max = payloads->max*2 + 1;
+            size_t new_max = payloads->max*2 + 1;
             struct Payload **new_list;
 
             if (new_max >= SIZE_MAX/sizeof(new_list[0]))

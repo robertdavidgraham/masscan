@@ -100,10 +100,10 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 
     /* auto-expand the list if necessary */
     if (task->count + 1 >= task->max) {
-        unsigned new_max = task->max * 2 + 1;
+        size_t new_max = (size_t)task->max * 2 + 1;
         struct Range *new_list;
         
-        if ((size_t)new_max >= SIZE_MAX/sizeof(*new_list))
+        if (new_max >= SIZE_MAX/sizeof(*new_list))
             exit(1); /* integer overflow */
         new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
         if (new_list == NULL)
