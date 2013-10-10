@@ -78,7 +78,7 @@ bin/scan2text: util/scan2text.c
 clean:
 	rm tmp/*.o
 	rm bin/masscan
-	rm bin/scan2test
+	rm bin/scan2text
 
 regress: bin/masscan
 	bin/masscan --selftest
