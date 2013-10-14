@@ -105,8 +105,8 @@ packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent)
                               );
                     break;
             }
-            fprintf(fp, "%s (%5.4f) TCP  %-21s > %-21s %s\n", direction,
-                    timestamp - global_timestamp_start, from, to, sz_type);
+            fprintf(fp, "%s (%5.4f) TCP  %-21s > %-21s %s %u-bytes\n", direction,
+                    timestamp - global_timestamp_start, from, to, sz_type, parsed.app_length);
             break;
         case FOUND_IPV6:
             break;

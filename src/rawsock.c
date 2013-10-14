@@ -393,13 +393,15 @@ int rawsock_recv_packet(
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port, unsigned seqno, unsigned flush,
+    unsigned ip_them, unsigned port_them,
+    unsigned ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset)
 {
     /*
      * Construct the destination packet
      */
-    template_set_target(tmplset, ip, port, seqno);
+    template_set_target(tmplset, ip_them, port_them, ip_me, port_me, seqno);
     if (tmplset->length < 60)
         tmplset->length = 60;
 
@@ -408,13 +410,6 @@ rawsock_send_probe(
      */
     rawsock_send_packet(adapter, tmplset->px, tmplset->length, flush);
 
-    /*
-     * Verify I'm doing the checksum correctly in case I develope a bug
-     */
-    /*if (ip_checksum(pkt) != 0xFFFF)
-        LOG(2, "IP checksum bad 0x%04x\n", ip_checksum(pkt));
-    if (tcp_checksum(pkt) != 0xFFFF)
-        LOG(2, "TCP checksum bad 0x%04x\n", tcp_checksum(pkt));*/
 }
 
 

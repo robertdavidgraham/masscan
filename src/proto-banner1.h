@@ -25,6 +25,9 @@ struct Banner1
     struct SMACK *smack;
     struct SMACK *http_fields;
     struct SMACK *html_fields;
+
+    unsigned char *http_header;
+    unsigned http_header_length;
 };
 
 struct SSL_SERVER_HELLO {
@@ -42,6 +45,7 @@ struct SSL_SERVER_CERT {
     unsigned cert_remaining;
     unsigned cert_state;
     unsigned b64x;
+    unsigned banner_offset_start;
 };
 
 struct SSLRECORD {
@@ -88,7 +92,7 @@ struct Banner1Stream {
     int (*selftest)(void);
     void *(*init)(struct Banner1 *b);
     void (*parse)(
-        struct Banner1 *banner1,
+        const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *stream_state,
         const unsigned char *px, size_t length,

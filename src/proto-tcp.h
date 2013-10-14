@@ -4,6 +4,8 @@
 struct Adapter;
 struct TCP_Control_Block;
 struct TemplatePacket;
+struct TCP_ConnectionTable;
+
 #include "packet-queue.h"
 #include "output.h"
 
@@ -14,6 +16,12 @@ struct TemplatePacket;
 #define TCP_IS_ACK(px,i) ((TCP_FLAGS(px,i) & 0x10) == 0x10)
 #define TCP_IS_RST(px,i) ((TCP_FLAGS(px,i) & 0x4) == 0x4)
 #define TCP_IS_FIN(px,i) ((TCP_FLAGS(px,i) & 0x1) == 0x1)
+
+void
+tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
+                        const char *name,
+                        size_t value_length,
+                        const void *value);
 
 /**
  * Create a TCP connection table (to store TCP control blocks) with
@@ -99,5 +107,19 @@ tcpcon_send_FIN(
     unsigned ip_me, unsigned ip_them,
     unsigned port_me, unsigned port_them,
     uint32_t seqno_them, uint32_t ackno_them);
+
+/**
+ * Send a reset packet back, even if we don't have a TCP connection
+ * table
+ */
+void
+tcp_send_RST(
+    struct TemplatePacket *templ,
+    PACKET_QUEUE *packet_buffers,
+    PACKET_QUEUE *transmit_queue,
+    unsigned ip_them, unsigned ip_me,
+    unsigned port_them, unsigned port_me,
+    unsigned seqno_them, unsigned seqno_me
+);
 
 #endif

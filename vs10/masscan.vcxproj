@@ -22,6 +22,7 @@
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
+    <ClCompile Include="..\src\main-src.c" />
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-text.c" />
@@ -61,6 +62,7 @@
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\rte-ring.c" />
+    <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\string_s.c" />
@@ -74,6 +76,7 @@
     <ClInclude Include="..\src\logger.h" />
     <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-ptrace.h" />
+    <ClInclude Include="..\src\main-src.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan.h" />
@@ -103,6 +106,7 @@
     <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\rte-ring.h" />
+    <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\string_s.h" />

@@ -13,7 +13,7 @@ matches_me(struct Output *out, unsigned ip, unsigned port)
     unsigned i;
 
     for (i=0; i<8; i++) {
-        if (ip == out->nics[i].ip_me && port == out->nics[i].port_me)
+        if (is_myself(&out->src[i], ip, port))
             return 1;
     }
     return 0;
@@ -61,8 +61,8 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
 
     switch (type) {
     case 0: /* ICMP echo reply */
-        if (syn_hash(ip_them, Templ_ICMP_echo) != seqno_me)
-            return; /* not my response */
+        //if (syn_hash(ip_them, Templ_ICMP_echo) != seqno_me)
+        //    return; /* not my response */
 
         /*
          * Report "open" or "existence" of host

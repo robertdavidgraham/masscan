@@ -90,6 +90,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned char arp_packet[64];
     unsigned i;
     time_t start;
+    unsigned is_arp_notice_given = 0;
     struct ARP_IncomingRequest response;
 
     memset(&response, 0, sizeof(response));
@@ -143,6 +144,18 @@ int arp_resolve_sync(struct Adapter *adapter,
             rawsock_send_packet(adapter, arp_packet, 60, 1);
             if (i++ >= 10)
                 break; /* timeout */
+        }
+
+        /* If we aren't getting a response back to our ARP, then print a
+         * status message */
+        if (time(0) > start+1 && !is_arp_notice_given) {
+            fprintf(stderr, "ARPing local router %u.%u.%u.%u\n",
+                (unsigned char)(your_ipv4>>24),
+                (unsigned char)(your_ipv4>>16),
+                (unsigned char)(your_ipv4>> 8),
+                (unsigned char)(your_ipv4>> 0)
+                );
+            is_arp_notice_given = 1;
         }
 
         err =  rawsock_recv_packet(

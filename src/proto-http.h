@@ -4,5 +4,10 @@
 
 extern struct Banner1Stream banner_http;
 
+unsigned
+http_change_field(unsigned char **inout_header, unsigned header_length,
+                    const char *field_name,
+                    const unsigned char *field_value, unsigned field_value_len);
+
 #endif
 

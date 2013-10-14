@@ -2,6 +2,7 @@
     TCP connection table
 */
 #include "proto-tcp.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@ struct TCP_Control_Block
     time_t when_created;
     const unsigned char *payload;
 
-    unsigned char banner[128];
+    unsigned char banner[1024];
     unsigned banner_length;
     unsigned char banner_proto;
 
@@ -116,6 +117,43 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
         if (tcb->timeout->prev == 0 && tcb->ip_them != 0 && tcb->port_them != 0) {
             timeouts_add(tcpcon->timeouts, tcb->timeout, offsetof(struct TCP_Control_Block, timeout), TICKS_FROM_TV(secs+2, usecs));
         }
+    }
+}
+
+static int
+name_equals(const char *lhs, const char *rhs)
+{
+    for (;;) {
+        while (*lhs == '-' || *lhs == '.' || *lhs == '_')
+            lhs++;
+        while (*rhs == '-' || *rhs == '.' || *rhs == '_')
+            rhs++;
+        if (*lhs == '\0' && *rhs == '[')
+            return 1; /*arrays*/
+        if (tolower(*lhs & 0xFF) != tolower(*rhs & 0xFF))
+            return 0;
+        if (*lhs == '\0')
+            return 1;
+        lhs++;
+        rhs++;
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
+                        const char *name,
+                        size_t value_length,
+                        const void *value)
+{
+    if (name_equals(name, "http-user-agent")) {
+        tcpcon->banner1->http_header_length =
+            http_change_field(&tcpcon->banner1->http_header,
+                                tcpcon->banner1->http_header_length,
+                                "User-Agent:",
+                                (const unsigned char *)value,
+                                (unsigned)value_length);
     }
 }
 
@@ -196,6 +234,22 @@ tcpcon_create_table(    size_t entry_count,
 
 #define EQUALS(lhs,rhs) (memcmp((lhs),(rhs),12)==0)
 
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+tcb_hash(unsigned ip_me, unsigned port_me, unsigned ip_them, unsigned port_them)
+{
+    unsigned index;
+    /* TCB hash table uses symmetric hash, so incoming/outgoing packets
+     * get the same hash. FIXME: does this really nee to be symmetric? */
+    index = (unsigned)syn_cookie(   ip_me   ^ ip_them, 
+                                    port_me ^ port_them,
+                                    ip_me   ^ ip_them, 
+                                    port_me ^ port_them
+                                    );
+//printf("==== %x:%x %x:%x %08x ====                \n", ip_me, port_me, ip_them, port_them, index);
+    return index;
+}
 
 /***************************************************************************
  ***************************************************************************/
@@ -207,8 +261,7 @@ tcpcon_destroy_tcb(
     unsigned index;
     struct TCP_Control_Block **r_entry;
 
-    index = syn_hash(   tcb->ip_me ^ tcb->ip_them, 
-                        tcb->port_me ^ tcb->port_them);
+    index = tcb_hash(tcb->ip_me, tcb->port_me, tcb->ip_them, tcb->port_them);
 
     r_entry = &tcpcon->entries[index & tcpcon->mask];
     while (*r_entry) {
@@ -311,7 +364,7 @@ tcpcon_create_tcb(
     tmp.port_me = (unsigned short)port_me;
     tmp.port_them = (unsigned short)port_them;
 
-    index = syn_hash(ip_me^ip_them, port_me ^ port_them);
+    index = tcb_hash(ip_me, port_me, ip_them, port_them);
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {
         tcb = tcb->next;
@@ -348,6 +401,8 @@ tcpcon_create_tcb(
     return tcb;
 }
 
+
+
 /***************************************************************************
  ***************************************************************************/
 struct TCP_Control_Block *
@@ -365,7 +420,8 @@ tcpcon_lookup_tcb(
     tmp.port_me = (unsigned short)port_me;
     tmp.port_them = (unsigned short)port_them;
 
-    index = syn_hash(ip_me^ip_them, port_me ^ port_them);
+    index = tcb_hash(ip_me, port_me, ip_them, port_them);
+    
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {
         tcb = tcb->next;
@@ -416,6 +472,7 @@ tcpcon_send_packet(
     response->length = tcp_create_packet(
         tcpcon->pkt_template,
         tcb->ip_them, tcb->port_them,
+        tcb->ip_me, tcb->port_me,
         tcb->seqno_me, tcb->seqno_them,
         flags,
         payload, payload_length,
@@ -434,6 +491,64 @@ tcpcon_send_packet(
      * we hae to queue it up for later transmission. */
     for (err=1; err; ) {
         err = rte_ring_sp_enqueue(tcpcon->transmit_queue, response);
+        if (err != 0) {
+            LOG(0, "transmit queue full (should be impossible)\n");
+            pixie_usleep(100); /* no space available */
+        }
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+tcp_send_RST(
+    struct TemplatePacket *templ,
+    PACKET_QUEUE *packet_buffers,
+    PACKET_QUEUE *transmit_queue,
+    unsigned ip_them, unsigned ip_me,
+    unsigned port_them, unsigned port_me,
+    unsigned seqno_them, unsigned seqno_me
+)
+{
+    struct PacketBuffer *response = 0;
+    int err = 0;
+    uint64_t wait = 100;
+    
+    
+    /* Get a buffer for sending the response packet. This thread doesn't
+     * send the packet itself. Instead, it formats a packet, then hands
+     * that packet off to a transmit thread for later transmission. */
+    for (err=1; err; ) {
+        err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
+        if (err != 0) {
+            //LOG(0, "packet buffers empty (should be impossible)\n");
+            printf("+");
+            fflush(stdout);
+            pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
+        }
+        if (wait != 100)
+            printf("\n");
+    }
+    if (response == NULL)
+        return;
+
+    response->length = tcp_create_packet(
+        templ,
+        ip_them, port_them,
+        ip_me, port_me,
+        seqno_me, seqno_them,
+        0x04, /*RST*/
+        0, 0,
+        response->px, sizeof(response->px)
+        );
+
+
+    /* Put this buffer on the transmit queue. Remember: transmits happen
+     * from a transmit-thread only, and this function is being called
+     * from a receive-thread. Therefore, instead of transmiting ourselves,
+     * we hae to queue it up for later transmission. */
+    for (err=1; err; ) {
+        err = rte_ring_sp_enqueue(transmit_queue, response);
         if (err != 0) {
             LOG(0, "transmit queue full (should be impossible)\n");
             pixie_usleep(100); /* no space available */
@@ -463,6 +578,7 @@ tcpcon_send_FIN(
 
     tcpcon_send_packet(tcpcon, &tcb, 0x11, 0, 0);
 }
+
 
 /***************************************************************************
  * Parse the information we get from the server we are scanning. Typical
@@ -652,8 +768,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             const unsigned char *x;
             switch (tcb->port_them) {
             case 80: 
-                x = (const unsigned char *)banner_http.hello;
-                x_len = banner_http.hello_length;
+                x = tcpcon->banner1->http_header;
+                x_len = tcpcon->banner1->http_header_length;
                 break;
             case 443:   /* HTTP/s */
             case 465:   /* SMTP/s */

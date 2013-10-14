@@ -52,7 +52,9 @@ void rawsock_list_adapters();
 void
 rawsock_send_probe(
     struct Adapter *adapter,
-    unsigned ip, unsigned port, unsigned seqno, unsigned flush,
+    unsigned ip_them, unsigned port_them,
+    unsigned ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);

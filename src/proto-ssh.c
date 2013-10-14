@@ -7,7 +7,7 @@
 /***************************************************************************
  ***************************************************************************/
 static void
-ssh_parse(  struct Banner1 *banner1,
+ssh_parse(  const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *pstate,
         const unsigned char *px, size_t length,

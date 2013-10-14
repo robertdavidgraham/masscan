@@ -1,6 +1,12 @@
 #ifndef TEMPL_PORT_H
 #define TEMPL_PORT_H
 
+/*
+ * Due to the asynchronous scanning architecture, we have to combine TCP
+ * and UDP ports (plus other scans) in a combined range. Thus, we make
+ * the weird decision to put UDP ports in the range 64k to 128k, and
+ * so on. We should probably make this less bizaree in the future.
+ */
 enum {
 	Templ_TCP = 0,
 	Templ_UDP = 65536,

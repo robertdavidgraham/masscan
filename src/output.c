@@ -272,7 +272,7 @@ output_create(const struct Masscan *masscan)
     out->offset = masscan->rotate_offset;
 
     for (i=0; i<8; i++) {
-        out->nics[i].ip_me = masscan->nic[i].adapter_ip;
+        out->src[i] = masscan->nic[i].src;
     }
 
     switch (masscan->nmap.format) {

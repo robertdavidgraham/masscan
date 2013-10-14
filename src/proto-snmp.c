@@ -1,3 +1,43 @@
+/*
+    SNMP protocol handler
+
+    This module does two primary things:
+    
+    #1 track sequence number
+
+        Like TCP, we can use seqno-cookies to match requrests with 
+        replies. All SNMP packets have a "request-id" field to match
+        requests with replies, so we can fill this in with our cookies
+        This requires any SNMP template to reserve 4 bytes for this
+        field.
+
+    #2 parse the response
+
+        This code will report any OIDs in the response along with
+        their values. However, you should probably hard-code a 
+        "MIB" so that we can translate OIDs into shorter names
+        as well as format their values correctly. You can look
+        at sysName and sysDescr for an example of how this works.
+
+    NOTES for IDS LULZ:
+        
+        The default template packet is designed to evade IDS that looks
+        for OIDS, but inserting "nul" bytes into the OID. This is the
+        difference between "pattern-matching" IDS and "protocol-analysis"
+        IDS: those using protocol-analysis decodes the entire protocol,
+        whereas pattern-matchers don't. How protocol-analysis works is
+        demonstrated in this module, as it has to analyze the SNMP
+        protocol itself in order to decode responses. It can handle
+        responses that that have the deliberate "nul" insertion technique,
+        as shown in the self-test.
+
+        One of the useful tricks is to exploit DFA pattern matches. In
+        this case, the DFA pattern-matcher that ultimately matches on
+        the OIDs has been tweaked to handle the nuls as part of the 
+        pattern-matching process.
+
+*/
+
 #include <string.h>
 #include <stdint.h>
 #include <string.h>
@@ -8,10 +48,14 @@
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "syn-cookie.h"
+#include "templ-port.h"
 
 static struct SMACK *global_mib;
 
 
+/****************************************************************************
+ * We parse an SNMP packet into this structure
+ ****************************************************************************/
 struct SNMP
 {
 	uint64_t version;
@@ -50,19 +94,30 @@ struct SnmpOid {
 };
 
 /****************************************************************************
+ * An ASN.1 length field has two formats.
+ *  - if the high-order bit of the length byte is clear, then it
+ *    encodes a length between 0 and 127.
+ *  - if the high-order bit is set, then the length byte is a 
+ *    length-of-length, where the low order bits dicate the number of
+ *    remaining bytes to be used in the length.
  ****************************************************************************/
 static uint64_t
 asn1_length(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 {
 	uint64_t result;
 
+    /* check for errors */
 	if ( (*r_offset >= length) 
 		|| ((px[*r_offset] & 0x80) 
 		&& ((*r_offset) + (px[*r_offset]&0x7F) >= length))) {
 		*r_offset = length;
 		return 0xFFFFffff;
 	}
+    
+    /* grab the byte's value */
 	result = px[(*r_offset)++];
+
+
 	if (result & 0x80) {
 		unsigned length_of_length = result & 0x7F;
 		if (length_of_length == 0) {
@@ -84,6 +139,7 @@ asn1_length(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 
 
 /****************************************************************************
+ * Extract an integer. Note 
  ****************************************************************************/
 static uint64_t
 asn1_integer(const unsigned char *px, uint64_t length, uint64_t *r_offset)
@@ -102,6 +158,10 @@ asn1_integer(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 		return 0xFFFFffff;
 	}
 	if (*r_offset + int_length > length) {
+		*r_offset = length;
+		return 0xFFFFffff;
+	}
+    if (int_length > 20) {
 		*r_offset = length;
 		return 0xFFFFffff;
 	}
@@ -497,7 +557,9 @@ handle_snmp(struct Output *out,
     unsigned banner_offset = 0;
     unsigned banner_length = sizeof(banner);
     unsigned ip_them;
+    unsigned ip_me;
     unsigned port_them = parsed->port_src;
+    unsigned port_me = parsed->port_dst;
     unsigned seqno;
     unsigned request_id;
     
@@ -510,8 +572,10 @@ handle_snmp(struct Output *out,
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
+    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
-    seqno = syn_hash(ip_them, port_them | 0x10000);
+    seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
     if ((seqno&0x7FFFffff) != request_id)
         return 1;
 

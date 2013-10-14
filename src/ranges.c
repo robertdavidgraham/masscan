@@ -113,7 +113,7 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         if (task->list)
             free(task->list);
         task->list = new_list;
-        task->max = new_max;
+        task->max = (unsigned)new_max;
     }
 
     /* See if the range overlaps any exist range already in the
@@ -591,12 +591,15 @@ regress_pick2()
 
 
 /***************************************************************************
+ * This returns a character pointer where parsing ends so that it can
+ * handle multiple stuff on the same line
  ***************************************************************************/
 const char *
-rangelist_parse_ports(struct RangeList *ports, const char *string)
+rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error)
 {
     char *p = (char*)string;
 
+    *is_error = 0;
     while (*p) {
         unsigned port;
         unsigned end;
@@ -627,8 +630,9 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
                     proto_offset = Templ_ICMP_echo;
                     break;
                 default:
-                    fprintf(stderr, "CONF: bad port charactern = %c\n", p[0]);
-                    exit(1);
+                    fprintf(stderr, "bad port charactern = %c\n", p[0]);
+                    *is_error = 1;
+                    return p;
             }
             p += 2;
         }
@@ -644,8 +648,9 @@ rangelist_parse_ports(struct RangeList *ports, const char *string)
         }
 
         if (port > 0xFFFF || end > 0xFFFF || end < port) {
-            fprintf(stderr, "CONF: bad ports: %u-%u\n", port, end);
-            break;
+            fprintf(stderr, "bad ports: %u-%u\n", port, end);
+            *is_error = 2;
+            return p;
         } else {
             rangelist_add_range(ports, port+proto_offset, end+proto_offset);
         }
@@ -785,11 +790,11 @@ ranges_selftest()
     /* test ports */
     {
         struct RangeList task;
-
+        unsigned is_error = 0;
         memset(&task, 0, sizeof(task));
 
-        rangelist_parse_ports(&task, "80,1000-2000,1234,4444");
-        if (task.count != 3) {
+        rangelist_parse_ports(&task, "80,1000-2000,1234,4444", &is_error);
+        if (task.count != 3 || is_error) {
             ERROR();
             return 1;
         }

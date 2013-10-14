@@ -207,7 +207,7 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
 		} else {
 			free(payloads->list[i]);
 		}
-		payloads->list[i] = 0;
+		//payloads->list[i] = 0;
 	}
 
 	/* Replace the old list */
@@ -569,6 +569,7 @@ payloads_read_file(FILE *fp, const char *filename,
     line[0] = '\0';
 
     for (;;) {
+        unsigned is_error = 0;
         const char *p;
         struct RangeList ports[1];
         unsigned source_port = 0x10000;
@@ -593,7 +594,12 @@ payloads_read_file(FILE *fp, const char *filename,
         /* [ports] */
         if (!get_next_line(fp, &line_number, line, sizeof(line)))
             break;
-        p = rangelist_parse_ports(ports, line);
+        p = rangelist_parse_ports(ports, line, &is_error);
+        if (is_error) {
+            fprintf(stderr, "%s:%u: syntax error, expected ports\n",
+                filename, line_number);
+            goto end;
+        }
         memmove(line, p, strlen(p)+1);
         trim(line, sizeof(line));
 

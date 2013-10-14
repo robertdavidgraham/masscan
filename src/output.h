@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include "main-src.h"
 
 struct Masscan;
 struct Output;
@@ -19,10 +20,7 @@ struct OutputType {
 struct Output
 {
     const struct Masscan *masscan;
-    struct {
-        unsigned ip_me;
-        unsigned port_me;
-    } nics[8];
+    struct Source src[8];
 
     FILE *fp;
     const struct OutputType *funcs;

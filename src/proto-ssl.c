@@ -30,7 +30,7 @@
  ***************************************************************************/
 static void
 server_hello(
-        struct Banner1 *banner1,
+        const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *pstate,
         const unsigned char *px, size_t length,
@@ -202,6 +202,7 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
     if (px == 0 && length == CERT_COPY_START) {
         data->cert_state = 0;
         data->b64x = 0;
+        data->banner_offset_start = *banner_offset;
         return;
     }
 
@@ -258,7 +259,7 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
  ***************************************************************************/
 static void
 server_cert(
-        struct Banner1 *banner1,
+        const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *pstate,
         const unsigned char *px, size_t length,
@@ -350,7 +351,7 @@ server_cert(
  ***************************************************************************/
 static void
 content_parse(
-        struct Banner1 *banner1,
+        const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *pstate,
         const unsigned char *px, size_t length,
@@ -439,7 +440,7 @@ content_parse(
  ***************************************************************************/
 static void
 ssl_parse(
-        struct Banner1 *banner1,
+        const struct Banner1 *banner1,
         void *banner1_private,
         struct Banner1State *pstate,
         const unsigned char *px, size_t length,
@@ -557,7 +558,7 @@ ssl_hello[] =
 "\x00\xfa" /* extensions lkength */
 
 /* server name */
-"\x00\x00"
+"\xef\x00"
 "\x00\x1a"
 "\x00\x18\x00\x00\x15\x73\x79\x6e\x64\x69\x63\x61\x74\x69\x6f\x6e"
 "\x2e\x74\x77\x69\x6d\x67\x2e\x63\x6f\x6d"

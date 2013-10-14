@@ -6,6 +6,7 @@
 #include "logger.h"
 #include "output.h"
 #include "proto-banner1.h"
+#include "templ-port.h"
 #include "masscan.h"
 #include "unusedparm.h"
 
@@ -16,6 +17,11 @@
 
 
 /****************************************************************************
+ * This skips over a name field while parsing the packet. If the name
+ * is just a two-byte compression field likce 0xc0 0x1a, then it'll skip
+ * those two bytes. However, when it does the skip, it does validate
+ * the name. Thus, if it's a compressed name, it'll follow the compression
+ * links to validate things like long names and infinite recursion.
  ****************************************************************************/
 static unsigned
 dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length, unsigned name_length)
@@ -24,39 +30,61 @@ dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length
     unsigned result = offset + 2;
     unsigned recursion = 0;
 
+    /* 'for all labels' */
     for (;;) {
         unsigned len;
 
+        /* validate: the eventual uncompressed name will be less than 255 */
         if (name_length >= 255)
             return ERROR;
 
+        /* validate: haven't gone off end of packet */
         if (offset >= length)
             return ERROR;
 
+        /* grab length of next label */
         len = px[offset];
+
+        /* Do two types of processing, either a compression code or a 
+         * original label. Note that we can alternate back and forth
+         * between these two states. */
         if (len & 0xC0) {
+            /* validate: top 2 bits are 11*/
             if ((len & 0xC0) != 0xC0)
                 return ERROR;
-            else if (offset + 1 >= length)
+
+            /* validate: enough bytes left for 2 byte compression field */
+            if (offset + 1 >= length)
                 return ERROR;
-            else {
-                offset = (px[offset]&0x3F)<<8 | px[offset+1];
-                if (++recursion > 4)
-                    return ERROR;
-            }
+
+            /* follow the compression pointer to the next location */
+            offset = (px[offset]&0x3F)<<8 | px[offset+1];
+
+            /* validate: follow a max of 4 links */
+            if (++recursion > 4)
+                return ERROR;
         } else {
+            /* we have a normal label */
             recursion = 0;
+
+            /* If the label-length is zero, then that meaans we've reached
+             * the end of the name */
             if (len == 0) {
                 return result; /* end of domain name */
-            } else {
-                name_length += len + 1;
-                offset += len + 1;
-            }
+            } 
+
+            /* There are more labels to come, therefore skip this and go
+             * to the next one */
+            name_length += len + 1;
+            offset += len + 1;
         }
     }
 }
 
 /****************************************************************************
+ * Just skip the name, without validating whether it's valid or not. This
+ * is for re-parsing the packet usually, after we've validated that all
+ * the names are ok.
  ****************************************************************************/
 unsigned
 dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
@@ -298,15 +326,19 @@ unsigned
 handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
+    unsigned ip_me;
     unsigned port_them = parsed->port_src;
+    unsigned port_me = parsed->port_dst;
     struct DNS_Incoming dns[1];
     unsigned offset;
-    unsigned seqno;
+    uint64_t seqno;
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
+    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
-    seqno = syn_hash(ip_them, port_them | 0x10000);
+    seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
 
     proto_dns_parse(dns, px, parsed->app_offset, parsed->app_offset + parsed->app_length);
 

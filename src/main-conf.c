@@ -86,6 +86,25 @@ print_nmap_help(void)
 "\n");
 }
 
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+count_cidr_bits(struct Range range)
+{
+    unsigned i;
+
+    for (i=0; i<32; i++) {
+        unsigned mask = 0xFFFFFFFF >> i;
+
+        if ((range.begin & ~mask) == (range.end & ~mask)) {
+            if ((range.begin & mask) == 0 && (range.end & mask) == mask)
+                return i;
+        }
+    }
+
+    return 0;
+}
+
 
 /***************************************************************************
  * Echoes the configuration for one nic
@@ -104,12 +123,25 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
         sprintf_s(zzz, sizeof(zzz), "[%u]", i);
 
     fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
-    fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
-        (masscan->nic[i].adapter_ip>>24)&0xFF,
-        (masscan->nic[i].adapter_ip>>16)&0xFF,
-        (masscan->nic[i].adapter_ip>> 8)&0xFF,
-        (masscan->nic[i].adapter_ip>> 0)&0xFF
-        );
+    if (masscan->nic[i].src.ip.first == masscan->nic[i].src.ip.last)
+        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
+            (masscan->nic[i].src.ip.first>>24)&0xFF,
+            (masscan->nic[i].src.ip.first>>16)&0xFF,
+            (masscan->nic[i].src.ip.first>> 8)&0xFF,
+            (masscan->nic[i].src.ip.first>> 0)&0xFF
+            );
+    else
+        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
+            (masscan->nic[i].src.ip.first>>24)&0xFF,
+            (masscan->nic[i].src.ip.first>>16)&0xFF,
+            (masscan->nic[i].src.ip.first>> 8)&0xFF,
+            (masscan->nic[i].src.ip.first>> 0)&0xFF,
+            (masscan->nic[i].src.ip.last>>24)&0xFF,
+            (masscan->nic[i].src.ip.last>>16)&0xFF,
+            (masscan->nic[i].src.ip.last>> 8)&0xFF,
+            (masscan->nic[i].src.ip.last>> 0)&0xFF
+            );
+
     fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
             masscan->nic[i].adapter_mac[0],
             masscan->nic[i].adapter_mac[1],
@@ -202,17 +234,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
             (range.begin>> 0)&0xFF
             );
         if (range.begin != range.end) {
-            unsigned i;
+            unsigned cidr_bits = count_cidr_bits(range);
 
-            for (i=0; i<30; i++) {
-                if ((range.begin&(1<<i))==0 && (range.end&(1<<i)))
-                    ;
-                else
-                    break;
-            }
-            i = 32-i;
-            if ((range.begin & (0xFFFFFFFF>>i)) == ((range.end & (0xFFFFFFFF>>i)))) {
-                fprintf(fp, "/%u", i);
+            if (cidr_bits) {
+                fprintf(fp, "/%u", cidr_bits);
             } else
             fprintf(fp, "-%u.%u.%u.%u",
                 (range.end>>24)&0xFF,
@@ -224,6 +249,12 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         fprintf(fp, "\n");
     }
 
+    fprintf(fp, "\n");
+    if (masscan->http_user_agent)
+        fprintf(    fp, 
+                    "http-user-agent = %.*s\n",
+                    masscan->http_user_agent_length,
+                    masscan->http_user_agent);
 
 }
 
@@ -471,6 +502,15 @@ parseTime(const char *value)
     return num;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+static int
+is_power_of_two(uint64_t x)
+{
+    while ((x&1) == 0)
+        x >>= 1;
+    return x == 1;
+}
 
 
 /***************************************************************************
@@ -542,25 +582,61 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("source-address", name) || EQUALS("spoof-ip", name)
              || EQUALS("spoof-address", name)) {
         /* Send packets FROM this IP address */
-            struct Range range;
+        struct Range range;
 
-            range = range_parse_ipv4(value, 0, 0);
-            if (range.begin > range.end) {
-                fprintf(stderr, "CONF: bad source IPv4 address: %s=%s\n", 
-                        name, value);
-                return;
-            }
+        range = range_parse_ipv4(value, 0, 0);
 
-            masscan->nic[index].adapter_ip = range.begin;
+        /* Check for bad format */
+        if (range.begin > range.end) {
+            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n", 
+                    name, value);
+            LOG(0, "hint   addresses look like \"19.168.1.23\"\n");
+            exit(1);
+        }
+
+        /* If more than one IP address given, make the range is
+            * an even power of two (1, 2, 4, 8, 16, ...) */
+        if (!is_power_of_two(range.end - range.begin + 1)) {
+            LOG(0, "FAIL: range must be even power of two: %s=%s\n", 
+                    name, value);
+            exit(1);
+        }
+
+        masscan->nic[index].src.ip.first = range.begin;
+        masscan->nic[index].src.ip.last = range.end;
+        masscan->nic[index].src.ip.range = range.end - range.begin + 1;
     } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)) {
         /* Send packets FROM this port number */
-        unsigned x = strtoul(value, 0, 0);
-        if (x > 65535) {
-            fprintf(stderr, "error: %s=<n>: expected number less than 1000\n", 
+        unsigned is_error = 0;
+        struct RangeList ports;
+        memset(&ports, 0, sizeof(ports));
+
+        rangelist_parse_ports(&ports, value, &is_error);
+        
+        /* Check if there was an error in parsing */
+        if (is_error) {
+            LOG(0, "FAIL: bad source port specification: %s\n", 
                     name);
-        } else {
-            masscan->nic[index].adapter_port = x;
+            exit(1);
         }
+
+        /* Only allow one range of ports */
+        if (ports.count != 1) {
+            LOG(0, "FAIL: only one source port range may be specified: %s\n", 
+                    name);
+            exit(1);
+        }
+
+        /* verify range is even power of 2 (1, 2, 4, 8, 16, ...) */
+        if (!is_power_of_two(ports.list[0].end - ports.list[0].begin + 1)) {
+            LOG(0, "FAIL: source port range must be even power of two: %s=%s\n", 
+                    name, value);
+            exit(1);
+        }
+
+        masscan->nic[index].src.port.first = ports.list[0].begin;
+        masscan->nic[index].src.port.last = ports.list[0].end;
+        masscan->nic[index].src.port.range = ports.list[0].end - ports.list[0].begin + 1;
     } else if (EQUALS("adapter-mac", name) || EQUALS("spoof-mac", name)
                || EQUALS("source-mac", name)) {
         /* Send packets FROM this MAC address */
@@ -616,12 +692,18 @@ masscan_set_parameter(struct Masscan *masscan,
 
     }
     else if (EQUALS("ports", name) || EQUALS("port", name)) {
-        rangelist_parse_ports(&masscan->ports, value);
+        unsigned is_error = 0;
+        rangelist_parse_ports(&masscan->ports, value, &is_error);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
-        rangelist_parse_ports(&masscan->exclude_port, value);
+        unsigned is_error = 0;
+        rangelist_parse_ports(&masscan->exclude_port, value, &is_error);
+        if (is_error) {
+            LOG(0, "FAIL: bad exclude port: %s\n", value);
+            exit(1);
+        }
     } else if (EQUALS("arp", name) || EQUALS("arpscan", name)) {
         /* Add ICMP ping request */
         struct Range range;
@@ -736,6 +818,15 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
+    } else if (EQUALS("http-user-agent", name)) {
+        if (masscan->http_user_agent)
+            free(masscan->http_user_agent);
+        masscan->http_user_agent_length = (unsigned)strlen(value);
+        masscan->http_user_agent = (unsigned char *)malloc(masscan->http_user_agent_length+1);
+        memcpy( masscan->http_user_agent,
+                value,
+                masscan->http_user_agent_length+1
+                );
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
@@ -1412,6 +1503,22 @@ mainconf_selftest()
     trim(test, sizeof(test));
     if (strcmp(test, "test 1") != 0)
         return 1; /* failure */
-    
+ 
+    {
+        struct Range range;
+        
+        range.begin = 16;
+        range.end = 32-1;
+        if (count_cidr_bits(range) != 28)
+            return 1;
+
+        range.begin = 1;
+        range.end = 13;
+        if (count_cidr_bits(range) != 0)
+            return 1;
+
+
+    }
+
     return 0;
 }

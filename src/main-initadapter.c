@@ -18,12 +18,12 @@ int
 masscan_initialize_adapter(
     struct Masscan *masscan,
     unsigned index,
-    unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac)
 {
     char *ifname;
     char ifname2[256];
+    unsigned adapter_ip = 0;
 
     LOG(1, "initializing adapter\n");
 
@@ -59,17 +59,20 @@ masscan_initialize_adapter(
      * is done by queryin the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
-    *r_adapter_ip = masscan->nic[index].adapter_ip;
-    if (*r_adapter_ip == 0) {
-        *r_adapter_ip = rawsock_get_adapter_ip(ifname);
+    adapter_ip = masscan->nic[index].src.ip.first;
+    if (adapter_ip == 0) {
+        adapter_ip = rawsock_get_adapter_ip(ifname);
         LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
-            (*r_adapter_ip>>24)&0xFF,
-            (*r_adapter_ip>>16)&0xFF,
-            (*r_adapter_ip>> 8)&0xFF,
-            (*r_adapter_ip>> 0)&0xFF
+            (adapter_ip>>24)&0xFF,
+            (adapter_ip>>16)&0xFF,
+            (adapter_ip>> 8)&0xFF,
+            (adapter_ip>> 0)&0xFF
             );
+        masscan->nic[index].src.ip.first = adapter_ip;
+        masscan->nic[index].src.ip.last = adapter_ip;
+        masscan->nic[index].src.ip.range = 1;
     }
-    if (*r_adapter_ip == 0) {
+    if (adapter_ip == 0) {
         fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n", ifname);
         fprintf(stderr, " [hint] did you spell the name correctly?\n");
         fprintf(stderr, " [hint] if it has no IP address, manually set with \"--adapter-ip 192.168.100.5\"\n");
@@ -152,7 +155,7 @@ masscan_initialize_adapter(
 
             arp_resolve_sync(
                     masscan->nic[index].adapter,
-                    *r_adapter_ip,
+                    adapter_ip,
                     adapter_mac,
                     router_ipv4,
                     router_mac);

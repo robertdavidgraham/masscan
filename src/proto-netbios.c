@@ -5,6 +5,7 @@
 #include "logger.h"
 #include "output.h"
 #include "proto-banner1.h"
+#include "templ-port.h"
 #include "masscan.h"
 #include "unusedparm.h"
 
@@ -96,15 +97,19 @@ unsigned
 handle_nbtstat(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
+    unsigned ip_me;
     unsigned port_them = parsed->port_src;
+    unsigned port_me = parsed->port_dst;
     struct DNS_Incoming dns[1];
     unsigned offset;
-    unsigned seqno;
+    uint64_t seqno;
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
+    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
-    seqno = syn_hash(ip_them, port_them | 0x10000);
+    seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
 
     proto_dns_parse(dns, px, parsed->app_offset, parsed->app_offset + parsed->app_length);
 

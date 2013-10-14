@@ -70,7 +70,6 @@ struct TemplateSet
 void
 template_packet_init(
     struct TemplateSet *templset,
-    unsigned source_ip,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
     struct NmapPayloads *payloads);
@@ -107,7 +106,8 @@ template_packet_init(
 void
 template_set_target(
     struct TemplateSet *templset,
-    unsigned ip, unsigned port, 
+    unsigned ip_them, unsigned port_them,
+    unsigned ip_me, unsigned port_me,
     unsigned seqno);
 
 
@@ -118,7 +118,8 @@ template_set_target(
 size_t
 tcp_create_packet(
         struct TemplatePacket *pkt, 
-        unsigned ip, unsigned port,
+        unsigned ip_them, unsigned port_them,
+        unsigned ip_me, unsigned port_me,
         unsigned seqno, unsigned ackno,
         unsigned flags,
         const unsigned char *payload, size_t payload_length,

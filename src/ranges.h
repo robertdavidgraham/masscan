@@ -56,7 +56,8 @@ rangelist_exclude(  struct RangeList *targets,
  * @return
  *      The total number of address or ports.
  */
-uint64_t rangelist_count(const struct RangeList *targets);
+uint64_t
+rangelist_count(const struct RangeList *targets);
 
 /**
  * Given an index in a continous range of [0...count], pick a corresponding
@@ -95,12 +96,17 @@ unsigned rangelist_pick(const struct RangeList *targets, uint64_t i);
  * @param string
  *      A string from either the command-line or configuration file
  *      in the nmap "ports" format.
+ * @param is_error
+ *      Set to zero is no error occurred while parsing the string, or 
+ *      set to a non-zero value if an error was found.
  * @return
  *      the pointer in the string where the parsing ended, so that additional
  *      things can be contained in the string, such as comments
  */
 const char *
-rangelist_parse_ports(struct RangeList *ports, const char *string);
+rangelist_parse_ports(  struct RangeList *ports, 
+                        const char *string,
+                        unsigned *is_error);
 
 void rangelist_free(struct RangeList *list);
 

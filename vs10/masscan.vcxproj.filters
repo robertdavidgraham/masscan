@@ -25,6 +25,9 @@
     <Filter Include="Source Files\misc">
       <UniqueIdentifier>{d429351b-2aea-4e6c-a887-c7fb9d6c38b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\rand">
+      <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -138,31 +141,10 @@
     <ClCompile Include="..\src\pixie-timer.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rand-blackrock.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rand-lcg.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rand-primegen.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ranges.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rte-ring.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\smack1.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\smackqueue.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\string_s.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\syn-cookie.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\xring.c">
@@ -173,6 +155,33 @@
     </ClCompile>
     <ClCompile Include="..\src\proto-ssl.c">
       <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-src.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-blackrock.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-lcg.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-primegen.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\smack1.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\smackqueue.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\syn-cookie.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\siphash24.c">
+      <Filter>Source Files\rand</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -254,9 +263,6 @@
     <ClInclude Include="..\src\main-throttle.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\masscan.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\packet-queue.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
@@ -266,35 +272,44 @@
     <ClInclude Include="..\src\pixie-timer.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\rand-blackrock.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\rand-lcg.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\rand-primegen.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ranges.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\rte-ring.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\smack.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\smackqueue.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\string_s.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\syn-cookie.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-ssl.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-src.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-primegen.h">
+      <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-blackrock.h">
+      <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-lcg.h">
+      <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges.h">
+      <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\smack.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\smackqueue.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\syn-cookie.h">
+      <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\siphash24.h">
+      <Filter>Source Files\rand</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
 #ifndef MASSCAN_H
 #define MASSCAN_H
 #include "string_s.h"
+#include "main-src.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -57,8 +58,7 @@ struct Masscan
     struct {
         char ifname[256];
         struct Adapter *adapter;
-        unsigned adapter_ip;
-        unsigned adapter_port;
+        struct Source src;
         unsigned char adapter_mac[6];
         unsigned char router_mac[6];
     } nic[8];
@@ -171,6 +171,9 @@ struct Masscan
     } tcb;
 
     struct NmapPayloads *payloads;
+
+    unsigned char *http_user_agent;
+    unsigned http_user_agent_length;
 };
 
 
@@ -185,7 +188,6 @@ int
 masscan_initialize_adapter(
     struct Masscan *masscan,
     unsigned index,
-    unsigned *r_adapter_ip,
     unsigned char *adapter_mac,
     unsigned char *router_mac);
 

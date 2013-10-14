@@ -130,8 +130,7 @@ struct ThreadPair {
 	/**
 	 * The current IP address we are using for transmit/receive.
 	 */
-    unsigned adapter_ip;
-    unsigned adapter_port;
+    struct Source src;
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
 
@@ -204,6 +203,27 @@ flush_packets(struct Adapter *adapter,
 
 
 /***************************************************************************
+ * We support a range of source IP/port. This function converts that 
+ * range into useful variables we can use to pick things form that range.
+ ***************************************************************************/
+static void
+get_sources(const struct Masscan *masscan, 
+            unsigned nic_index,
+            unsigned *src_ip,
+            unsigned *src_ip_mask,
+            unsigned *src_port,
+            unsigned *src_port_mask) 
+{
+    const struct Source *src = &masscan->nic[nic_index].src;
+
+    *src_ip = src->ip.first;
+    *src_ip_mask = src->ip.last - src->ip.first;
+    
+    *src_port = src->port.first;
+    *src_port_mask = src->port.last - src->port.first;
+}
+
+/***************************************************************************
  * This thread spews packets as fast as it can
  *
  *      THIS IS WHERE ALL THE EXCITEMENT HAPPENS!!!!
@@ -230,6 +250,14 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
     unsigned increment = (masscan->shard.of-1) + masscan->nic_count;
+    unsigned src_ip;
+    unsigned src_ip_mask;
+    unsigned src_port;
+    unsigned src_port_mask;
+
+    get_sources(masscan, parms->nic_index, 
+                &src_ip, &src_ip_mask, 
+                &src_port, &src_port_mask);
 
     LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
@@ -291,8 +319,11 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 		 */
 		while (batch_size && i < end) {
             uint64_t xXx;
-            unsigned ip;
-            unsigned port;
+            unsigned ip_them;
+            unsigned port_them;
+            unsigned ip_me;
+            unsigned port_me;
+            uint64_t cookie;
 
 
             /*
@@ -309,8 +340,15 @@ transmit_thread(void *v) /*aka. scanning_thread() */
             while (xXx >= range)
                 xXx -= range;
             xXx = blackrock_shuffle(&blackrock,  xXx);
-            ip = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
-            port = rangelist_pick(&masscan->ports, xXx / count_ips);
+            ip_them = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
+            port_them = rangelist_pick(&masscan->ports, xXx / count_ips);
+
+            /*
+             * SYN-COOKIE LOGIC
+             */
+            ip_me = src_ip + (i & src_ip_mask);
+            port_me = src_port + (xXx & src_port_mask);
+            cookie = syn_cookie(ip_them, port_them, ip_me, port_me);
             
             /*
              * SEND THE PROBE
@@ -321,9 +359,9 @@ transmit_thread(void *v) /*aka. scanning_thread() */
              */
             rawsock_send_probe(
                     adapter,
-                    ip,
-                    port,
-                    syn_hash(ip, port),
+                    ip_them, port_them,
+                    ip_me, port_me,
+                    (unsigned)cookie,
                     !batch_size, /* flush queue on last packet in batch */
                     pkt_template
                     );
@@ -396,21 +434,22 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 }
 
 
-unsigned
-is_my_ip_address(const struct Masscan *masscan, unsigned ip)
+/*unsigned
+is_nic_ip(const struct Masscan *masscan, unsigned ip)
 {
     unsigned i;
     for (i=0; i<masscan->nic_count; i++)
-        if (ip == masscan->nic[i].adapter_ip)
+        if (is_my_ip(&masscan->nic[i].src, ip))
             return 1;
     return 0;
 }
+*/
 unsigned
-is_my_port(const struct Masscan *masscan, unsigned ip)
+is_nic_port(const struct Masscan *masscan, unsigned ip)
 {
     unsigned i;
     for (i=0; i<masscan->nic_count; i++)
-        if (ip == masscan->nic[i].adapter_port)
+        if (is_my_port(&masscan->nic[i].src, ip))
             return 1;
     return 0;
 }
@@ -429,7 +468,6 @@ receive_thread(void *v)
 {
     struct ThreadPair *parms = (struct ThreadPair *)v;
     const struct Masscan *masscan = parms->masscan;
-
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
@@ -485,6 +523,12 @@ receive_thread(void *v)
             out,
             masscan->tcb.timeout
             );
+        if (masscan->http_user_agent_length)
+        tcpcon_set_parameter(   tcpcon, 
+                                "http-user-agent",
+                                masscan->http_user_agent_length,
+                                masscan->http_user_agent);
+
     }
 
     /*
@@ -513,10 +557,12 @@ receive_thread(void *v)
         unsigned x;
         struct PreprocessedInfo parsed;
         unsigned ip_me;
+        unsigned port_me;
         unsigned ip_them;
-        unsigned seqno_them;
+        unsigned port_them;
         unsigned seqno_me;
-
+        unsigned seqno_them;
+        unsigned cookie;
 
         /*
          * RECIEVE
@@ -558,19 +604,17 @@ receive_thread(void *v)
             | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
         ip_them = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
             | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+        port_me = parsed.port_dst;
+        port_them = parsed.port_src;
         seqno_them = TCP_SEQNO(px, parsed.transport_offset);
         seqno_me = TCP_ACKNO(px, parsed.transport_offset);
+        cookie = syn_cookie(ip_them, port_them, ip_me, port_me) & 0xFFFFFFFF;
 
 
         /* verify: my IP address */
-        if (parms->adapter_ip != ip_me)
+        if (!is_my_ip(&parms->src, ip_me))
             continue;
 
-        /* if '--packet-trace' nmap option is sent, print decode to 
-         * command-line */
-        if (parms->masscan->nmap.packet_trace) {
-            packet_trace(stdout, px, length, 0);
-        }
 
         /*
          * Handle non-TCP protocols
@@ -584,7 +628,7 @@ receive_thread(void *v)
 					 * for our IP address (as part of our user-mode TCP/IP).
 					 * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
 					 * ourself, or the router will lose track of us.*/
-					arp_response(   parms->adapter_ip,
+					arp_response(   ip_me,
 									parms->adapter_mac,
 									px, length,
 									parms->packet_buffers,
@@ -613,8 +657,10 @@ receive_thread(void *v)
                 continue;
             case FOUND_UDP:
             case FOUND_DNS:
-                if (!is_my_port(masscan, parsed.port_dst))
+                if (!is_nic_port(masscan, port_me))
                     continue;
+                if (parms->masscan->nmap.packet_trace)
+                    packet_trace(stdout, px, length, 0);
                 handle_udp(out, px, length, &parsed);
                 continue;
             case FOUND_ICMP:
@@ -629,8 +675,10 @@ receive_thread(void *v)
 
 
         /* verify: my port number */
-        if (parms->adapter_port != parsed.port_dst)
+        if (!is_my_port(&parms->src, port_me))
             continue;
+        if (parms->masscan->nmap.packet_trace)
+            packet_trace(stdout, px, length, 0);
 
         /* Save raw packet in --pcap file */
         if (pcapfile) {
@@ -645,7 +693,7 @@ receive_thread(void *v)
 
         {
             char buf[64];
-            LOGip(5, ip_them, parsed.port_src, "-> TCP ackno=0x%08x flags=0x%02x(%s)\n", 
+            LOGip(5, ip_them, port_them, "-> TCP ackno=0x%08x flags=0x%02x(%s)\n", 
                 seqno_me, 
                 TCP_FLAGS(px, parsed.transport_offset),
                 reason_string(TCP_FLAGS(px, parsed.transport_offset), buf, sizeof(buf)));
@@ -658,21 +706,20 @@ receive_thread(void *v)
             /* does a TCB already exist for this connection? */
             tcb = tcpcon_lookup_tcb(tcpcon,
                             ip_me, ip_them,
-                            parsed.port_dst, parsed.port_src);
+                            port_me, port_them);
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
-                if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
+                if (cookie != seqno_me - 1) {
                     LOG(2, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
                         (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
-                        seqno_me-1, syn_hash(ip_them, parsed.port_src));
+                        seqno_me-1, cookie);
                     continue;
                 }
 
                 if (tcb == NULL) {
                     tcb = tcpcon_create_tcb(tcpcon,
                                     ip_me, ip_them, 
-                                    parsed.port_dst, 
-                                    parsed.port_src, 
+                                    port_me, port_them, 
                                     seqno_me, seqno_them+1);
                 }
 
@@ -716,7 +763,7 @@ receive_thread(void *v)
                 tcpcon_send_FIN(
                     tcpcon,
                     ip_me, ip_them,
-                    parsed.port_dst, parsed.port_src,
+                    port_me, port_them,
                     seqno_them, seqno_me);
             }
 
@@ -731,16 +778,16 @@ receive_thread(void *v)
                 status = Port_Closed;
 
             /* verify: syn-cookies */
-            if (syn_hash(ip_them, parsed.port_src) != seqno_me - 1) {
+            if (cookie != seqno_me - 1) {
                 LOG(5, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n", 
                     (ip_them>>24)&0xff, (ip_them>>16)&0xff, 
                     (ip_them>>8)&0xff, (ip_them>>0)&0xff, 
-                    seqno_me-1, syn_hash(ip_them, parsed.port_src));
+                    seqno_me-1, cookie);
                 continue;
             }
 
             /* verify: ignore duplicates */
-            if (dedup_is_duplicate(dedup, ip_them, parsed.port_src))
+            if (dedup_is_duplicate(dedup, ip_them, port_them))
                 continue;
 
             /*
@@ -750,10 +797,24 @@ receive_thread(void *v)
                         out,
                         status,
                         ip_them,
-                        parsed.port_src,
+                        port_them,
                         px[parsed.transport_offset + 13], /* tcp flags */
                         px[parsed.ip_offset + 8] /* ttl */
                         );
+
+            /*
+             * Send RST so other side isn't left hanging (only doing this in
+             * complete stateless mode where we aren't tracking banners)
+             */
+            if (tcpcon == NULL)
+                tcp_send_RST(
+                    &parms->tmplset->pkts[Proto_TCP],
+                    parms->packet_buffers,
+                    parms->transmit_queue, 
+                    ip_them, ip_me,
+                    port_them, port_me,
+                    0, seqno_me);
+            
         }
     }
 
@@ -905,12 +966,17 @@ main_scan(struct Masscan *masscan)
         err = masscan_initialize_adapter(
                             masscan,
                             index,
-                            &parms->adapter_ip,
                             parms->adapter_mac,
                             parms->router_mac);
         if (err != 0)
             exit(1);
         parms->adapter = masscan->nic[index].adapter;
+        if (masscan->nic[index].src.ip.range == 0) {
+            LOG(0, "FAIL: failed to detect IP of interface\n");
+            LOG(0, " [hint] did you spell the name correctly?\n");
+            LOG(0, " [hint] if it has no IP address, manually set with \"--adapter-ip 192.168.100.5\"\n");
+            exit(1);
+        }
 
         /*
          * Initialize the TCP packet template. The way this works is that we parse
@@ -920,7 +986,6 @@ main_scan(struct Masscan *masscan)
          */
         template_packet_init(
                     parms->tmplset,
-                    parms->adapter_ip,
                     parms->adapter_mac,
                     parms->router_mac,
                     masscan->payloads);
@@ -928,10 +993,25 @@ main_scan(struct Masscan *masscan)
         /*
          * Set the "source port" of everything we transmit.
          */
+        if (masscan->nic[index].src.port.range == 0) {
+            unsigned port = 40000 + now % 20000;
+            masscan->nic[index].src.port.first = port;
+            masscan->nic[index].src.port.last = port;
+            masscan->nic[index].src.port.range = 1;
+        }
+
+        parms->src = masscan->nic[index].src;
+
+#if 0
         if (masscan->nic[index].adapter_port == 0x10000)
             masscan->nic[index].adapter_port = 40000 + now % 20000;
         template_set_source_port(   parms->tmplset, 
                                     masscan->nic[index].adapter_port);
+        /*
+         * Read back what we've set
+         */
+        parms->adapter_port = template_get_source_port(parms->tmplset);
+#endif
 
         /*
          * Set the "TTL" (IP time-to-live) of everything we send.
@@ -940,10 +1020,6 @@ main_scan(struct Masscan *masscan)
             template_set_ttl(parms->tmplset, masscan->nmap.ttl);
 
     
-        /*
-         * Read back what we've set
-         */
-        parms->adapter_port = template_get_source_port(parms->tmplset);
 
         /*
          * trap <ctrl-c> to pause
@@ -1128,8 +1204,6 @@ int main(int argc, char *argv[])
     masscan->seed = time(0); /* a predictable, but 'random' seed */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
-    for (i=0; i<8; i++)
-        masscan->nic[i].adapter_port = 0x10000; /* value not set */
     masscan->nic_count = 1;
     masscan->shard.one = 1;
     masscan->shard.of = 1;
