@@ -62,13 +62,17 @@ one port.
 
   * `--adapter-ip <ip-address>`: send packets using this IP address. If not
     specified, then the first IP address bound to the network interface
-	will be used.
+	will be used. Instead of a single IP address, a range may be specified.
+	NOTE: The size of the range must be an even power of 2, such as 1, 2, 4,
+	8, 16, 1024 etc. addresses.
 
-  * `--adapter-port <ip-address>`: send packets using this port number as the
+  * `--adapter-port <port>`: send packets using this port number as the
     source. If not specified, a random port will be chosen in the range 40000
 	through 60000. This port should be filtered by the host firewall (like
 	iptables) to prevent the host network stack from interfering with arriving
-	packets.
+	packets. Instead of a single port, a range can be specified, like
+	`40000-40003`. NOTE: The size of the range must be an even power of 2,
+	such as the example above that has a total of 4 addresses.
 
   * `--adapter-mac <mac-address>`: send packets using this as the source MAC
     address. If not specified, then the first MAC address bound to the network
@@ -112,6 +116,9 @@ one port.
     the nmap file `nmap-payloads`. This contains UDP payload, so that we
 	can send useful UDP packets instead of empty ones. Similar to
 	`--pcap-payloads`.
+
+  * `--http-user-agent <user-agent>`: replaces the existing user-agent field
+    with the indicated value when doing HTTP requests.
 
   * `--open-only`: report only open ports, not closed ports.
 
