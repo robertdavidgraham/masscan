@@ -280,11 +280,11 @@ normalize_string(unsigned char *px, size_t offset, size_t length, size_t max)
             /* do nothing */
         } else {
             if (i + 6 < max) {
-                memmove(px+i+5, px+i, length-i+1);
+                memmove(px+i+4, px+i+1, length-i+1);
                 px[i++] = '\\';
                 px[i++] = 'x';
-                px[i++] = "0123456789abdef"[c >> 4];
-                px[i  ] = "0123456789abdef"[c >> 0];
+                px[i++] = "0123456789abcdef"[c >> 4];
+                px[i  ] = "0123456789abcdef"[c >> 0];
             }
         }
     }
