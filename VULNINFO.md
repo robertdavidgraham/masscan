@@ -42,7 +42,7 @@ responses in order to:
   SYN cookies)
 * flood packets trying to overload bandwidth/storage
 * bad data, such as corrupting banners or DNS names trying to exploit
-  downstream consumers with bad <html> or <script> tags.
+  downstream consumers with bad html or script tags.
 
 The secondary threat is from use of the program. For example, when a bad
 parameter is entered on the command-line, the program spits it back out
