@@ -591,7 +591,8 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_pfring, 
                      unsigned is_sendq,
                      unsigned is_packet_trace,
-                     unsigned is_offline)
+                     unsigned is_offline,
+                     const char *bpf_filter)
 {
     struct Adapter *adapter;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -713,6 +714,29 @@ rawsock_init_adapter(const char *adapter_name,
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
+
+        if (bpf_filter) {
+            int err;
+            struct bpf_program prog;
+
+            err = pcap_compile(
+                        adapter->pcap,
+                        &prog,          /* object code, output of compile */
+                        bpf_filter,         /* source code */
+                        1,              /* optimize to go fast */
+                        0);
+
+            if (err) {
+                pcap_perror(adapter->pcap, "pcap_compile()");
+                exit(1);
+            }
+
+            err = pcap_setfilter(adapter->pcap, &prog);
+            if (err < 0) {
+                pcap_perror(adapter->pcap, "pcap_setfilter");
+                exit(1);
+            }
+        }
     }
 
     /*----------------------------------------------------------------
@@ -811,7 +835,7 @@ rawsock_selftest_if(const char *ifname)
             (unsigned char)(router_ipv4>>0));
 
 
-        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0);
+        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0);
         if (adapter == 0) {
             printf("adapter[%s]: failed\n", ifname);
             return -1;

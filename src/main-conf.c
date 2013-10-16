@@ -713,6 +713,12 @@ masscan_set_parameter(struct Masscan *masscan,
 		masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
 		masscan->is_arp = 1; /* needs additional flag */
         LOG(5, "--arpscan\n");
+    } else if (EQUALS("bpf", name)) {
+        size_t len = strlen(value) + 1;
+        if (masscan->bpf_filter)
+            free(masscan->bpf_filter);
+        masscan->bpf_filter = (char*)malloc(len);
+        memcpy(masscan->bpf_filter, value, len);
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
         struct Range range;

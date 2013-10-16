@@ -115,7 +115,8 @@ masscan_initialize_adapter(
                                             masscan->is_pfring, 
                                             masscan->is_sendq,
                                             masscan->nmap.packet_trace,
-                                            masscan->is_offline);
+                                            masscan->is_offline,
+                                            masscan->bpf_filter);
     if (masscan->nic[index].adapter == 0) {
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;

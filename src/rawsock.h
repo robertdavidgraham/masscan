@@ -45,7 +45,8 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_pfring, 
                      unsigned is_sendq,
                      unsigned is_packet_trace,
-                     unsigned is_offline);
+                     unsigned is_offline,
+                     const char *bpf_filter);
 
 void rawsock_list_adapters();
 

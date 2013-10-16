@@ -174,6 +174,8 @@ struct Masscan
 
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
+
+    char *bpf_filter;
 };
 
 
