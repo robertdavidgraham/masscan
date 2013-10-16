@@ -57,7 +57,7 @@ DEFINES =
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
 .SUFFIXES: .c .cpp
 
-all: bin/scan2text bin/masscan 
+all: bin/masscan 
 
 # just compile everything in the 'src' directory. Using this technique
 # means that include file dependencies are broken, so sometimes when
@@ -72,13 +72,10 @@ OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC)))))
 bin/masscan: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)
 
-bin/scan2text: util/scan2text.c
-	$(CC) $(CFLAGS) -o $@ util/scan2text.c $(LIBS)
 
 clean:
 	rm tmp/*.o
 	rm bin/masscan
-	rm bin/scan2text
 
 regress: bin/masscan
 	bin/masscan --selftest
