@@ -875,7 +875,7 @@ template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
         unsigned offset = tmpl->offset_ip;
 
         px[offset+8] = (unsigned char)(ttl);
-        tmpl->checksum_ip = tcp_checksum(tmpl);
+        tmpl->checksum_ip = ip_checksum(tmpl);
     }
 }
 
