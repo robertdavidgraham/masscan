@@ -770,6 +770,7 @@ template_packet_init(
     struct NmapPayloads *payloads)
 {
     unsigned source_ip = 0;
+    templset->length = 0;
 
     /* [TCP] */
     _template_init( &templset->pkts[Proto_TCP],
@@ -777,6 +778,8 @@ template_packet_init(
                     default_tcp_template,
                     sizeof(default_tcp_template)-1
                     );
+    templset->length++;
+
     /* [UDP] */
     _template_init( &templset->pkts[Proto_UDP],
                     source_ip, source_mac, router_mac,
@@ -784,6 +787,7 @@ template_packet_init(
                     sizeof(default_udp_template)-1
                     );
     templset->pkts[Proto_UDP].payloads = payloads;
+    templset->length++;
 
     /* [SCTP] */
     _template_init( &templset->pkts[Proto_SCTP],
@@ -791,12 +795,15 @@ template_packet_init(
                     default_sctp_template,
                     sizeof(default_sctp_template)-1
                     );
+    templset->length++;
+
     /* [ICMP ping] */
     _template_init( &templset->pkts[Proto_ICMP_ping],
                    source_ip, source_mac, router_mac,
                    default_icmp_ping_template,
                    sizeof(default_icmp_ping_template)-1
                    );
+    templset->length++;
     
     /* [ICMP timestamp] */
     _template_init( &templset->pkts[Proto_ICMP_timestamp],
@@ -804,6 +811,7 @@ template_packet_init(
                    default_icmp_timestamp_template,
                    sizeof(default_icmp_timestamp_template)-1
                    );
+    templset->length++;
     
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
@@ -811,6 +819,7 @@ template_packet_init(
                     default_arp_template,
                     sizeof(default_arp_template)-1
                     );
+    templset->length++;
 }
 
 /***************************************************************************
@@ -869,7 +878,7 @@ template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
 {
     int i;
 
-    for (i=0; i<8; i++) {
+    for (i=0; i<tmplset->length; i++) {
         struct TemplatePacket *tmpl = &tmplset->pkts[i];
         unsigned char *px = tmpl->packet;
         unsigned offset = tmpl->offset_ip;
