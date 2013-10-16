@@ -73,6 +73,7 @@ static unsigned global_wait = 10;
 uint64_t foo_timestamp = 0;
 uint64_t foo_count = 0;
 
+
 /***************************************************************************
  * We create a pair of transmit/receive threads for each network adapter.
  * This structure contains the parameters we send to each pair.
@@ -174,6 +175,7 @@ flush_packets(struct Adapter *adapter,
             break; /* queue is empty, nothing to send */
         }
 
+
         /*
          * Actually send the packet
          */
@@ -245,7 +247,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     struct BlackRock blackrock;
     uint64_t count_ips = rangelist_count(&masscan->targets);
     struct Throttler *throttler = parms->throttler;
-    struct TemplateSet *pkt_template = parms->tmplset;
+    struct TemplateSet pkt_template = templ_copy(parms->tmplset);
     unsigned *picker = parms->picker;
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
@@ -363,7 +365,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     ip_me, port_me,
                     (unsigned)cookie,
                     !batch_size, /* flush queue on last packet in batch */
-                    pkt_template
+                    &pkt_template
                     );
             batch_size--;
 			packets_sent++;
@@ -575,7 +577,7 @@ receive_thread(void *v)
                     &secs,
                     &usecs,
                     &px);
-
+        
         if (err != 0)
             continue;
         
@@ -591,7 +593,7 @@ receive_thread(void *v)
 
         if (length > 1514)
             continue;
-
+        
         /*
          * "Preprocess" the response packet. This means to go through and
          * figure out where the TCP/IP headers are and the locations of
@@ -615,7 +617,7 @@ receive_thread(void *v)
         if (!is_my_ip(&parms->src, ip_me))
             continue;
 
-
+        
         /*
          * Handle non-TCP protocols
          */
@@ -672,7 +674,7 @@ receive_thread(void *v)
             default:
                 continue;
         }
-
+        
 
         /* verify: my port number */
         if (!is_my_port(&parms->src, port_me))

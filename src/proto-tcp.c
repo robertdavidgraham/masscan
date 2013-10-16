@@ -2,6 +2,7 @@
     TCP connection table
 */
 #include "proto-tcp.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -157,6 +158,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
     }
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 struct TCP_ConnectionTable *
@@ -228,7 +230,6 @@ tcpcon_create_table(    size_t entry_count,
 
     tcpcon->report_banner = report_banner;
     tcpcon->out = out;
-
     return tcpcon;
 }
 

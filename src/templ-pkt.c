@@ -316,6 +316,25 @@ icmp_checksum(struct TemplatePacket *tmpl)
 }
 
 
+struct TemplateSet templ_copy(const struct TemplateSet *templ)
+{
+    struct TemplateSet result;
+    unsigned i;
+
+    memcpy(&result, templ, sizeof(result));
+
+    assert(sizeof(templ->pkts)/sizeof(templ->pkts[0]) == 8);
+
+    for (i=0; i<6; i++) {
+        const struct TemplatePacket *p1 = &templ->pkts[i];
+        struct TemplatePacket *p2 = &result.pkts[i];
+        p2->packet = malloc(p2->length);
+        memcpy(p2->packet, p1->packet, p2->length);
+    }
+
+    return result;
+}
+
 /***************************************************************************
  ***************************************************************************/
 size_t

@@ -48,6 +48,8 @@ struct TemplateSet
     struct TemplatePacket pkts[8];
 };
 
+struct TemplateSet templ_copy(const struct TemplateSet *templ);
+
 /**
  * Initialize the "template" packets. As we spew out probes, we simply make
  * minor adjustments to the template, such as changing the target IP 

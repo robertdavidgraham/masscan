@@ -81,7 +81,11 @@
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
-
+#include "scanout.h"
+#include "scanout-redis.h"
+#include "scanout-text.h"
+#include "scan-conf.h"
+#include "scandb.h"
 
 enum {
     PROTO_UNKNOWN,
@@ -91,14 +95,6 @@ enum {
     PROTO_FTP1,
     PROTO_FTP2,
     PROTO_DNS_VERSIONBIND,
-};
-
-struct Configuration {
-    unsigned do_ssh;
-    unsigned do_http;
-    unsigned do_dns_version;
-    unsigned do_xml;
-    unsigned is_quiet;
 };
 
 
@@ -113,73 +109,11 @@ struct MasscanRecord {
 
 static const size_t BUF_MAX = 1024*1024;
 
-struct BannerRecord {
-    unsigned count;
-    unsigned length;
-    struct BannerRecord *next;
-    char str[1];
-};
-
-#define BUCKET_COUNT (1024*1024)
-struct BannerDB
-{
-    struct BannerRecord *records[BUCKET_COUNT];
-} *mydb;
 
 
 
 
-void
-db_print(const struct BannerDB *db)
-{
-    unsigned i;
-    for (i=0; i<BUCKET_COUNT; i++) {
-        struct BannerRecord *rec = db->records[i];
-        while (rec) {
-            printf("%8u %.*s\n", rec->count, rec->length, rec->str);
-            rec = rec->next;
-        }
-    }
-}
 
-/***************************************************************************
- * used for some banners to keep track of the most popular ones
- ***************************************************************************/
-void
-db_lookup(struct BannerDB *db, const char *str, unsigned length)
-{
-    struct BannerRecord *rec;
-    uint64_t hash = 0;
-    unsigned i;
-
-    for (i=0; i<length; i++) {
-        hash += str[i];
-        hash += str[i]<<8;
-        hash ^= str[i]<<4;
-    }
-
-    /* lookup */
-    rec = db->records[hash & (BUCKET_COUNT-1)];
-    while (rec) {
-        if (rec->length == length && memcmp(rec->str, str, length) == 0)
-            break;
-        else
-            rec = rec->next;
-    }
-    if (rec == NULL) {
-        rec = (struct BannerRecord *)malloc(sizeof(*rec) + length);
-        if (rec == NULL)
-            exit(1);
-        rec->count = 0;
-        rec->length = length;
-        memcpy(rec->str, str, length);
-
-        rec->next = db->records[hash & (BUCKET_COUNT-1)];
-        db->records[hash & (BUCKET_COUNT-1)] = rec;
-    }
-
-    rec->count++;
-}
 
 
 
@@ -469,9 +403,12 @@ parse_banner4(const struct Configuration *conf, unsigned char *buf, size_t buf_l
     
     /* output string */
     if (buf_length > 13) {
+
+
         const char *s;
         s = normalize_string(buf, 13, buf_length-13, BUF_MAX);
-        if (!conf->is_quiet)
+
+         if (!conf->is_quiet)
         printf("%s %-15s :%5u %s \"%s\"\n",
                timebuf,
                addrbuf,
@@ -599,7 +536,7 @@ parse_file(const struct Configuration *conf, const char *filename)
         
         /* get the remainder fo the record */
         bytes_read = fread(buf, 1, length, fp);
-        if (bytes_read < length)
+        if (bytes_read < (int)length)
             break; /* eof */
 
         /* Depending on record type, do something different */
@@ -640,6 +577,7 @@ end:
     return total_records;
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 int
@@ -649,7 +587,10 @@ main(int argc, char *argv[])
     uint64_t total_records = 0;
     struct Configuration conf[1];
     
+
     memset(conf, 0, sizeof(conf[0]));
+
+    conf->out = (void*)&text_output;
     
     if (argc <= 1) {
         printf("usage:\n masscan2text <scanfile>\ndecodes and prints text\n");
@@ -670,17 +611,13 @@ main(int argc, char *argv[])
             conf->do_dns_version = 1;
         else if (strcmp(argv[i], "--xml") == 0)
             conf->do_xml = 1;
+        else if (memcmp(argv[i], "--redis", 7) == 0)
+            parse_redis_option(conf, argv[i] + strlen("--redis"));
         else if (argv[i][0] == '\0')
             fprintf(stderr, "%s: unknown option\n", argv[i]);
     }
     
-    /*
-     * Create a table for storing banners
-     */
-    mydb = (struct BannerDB*)malloc(sizeof(*mydb));
-    if (mydb == NULL)
-        exit(1);
-    memset(mydb, 0, sizeof(*mydb));
+
 
     
     fprintf(stderr, "--- scan2text for masscan/1.1 format ---\n");

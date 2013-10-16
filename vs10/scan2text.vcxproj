@@ -12,6 +12,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\util\scan2text.c" />
+    <ClCompile Include="..\util\scandb.c" />
+    <ClCompile Include="..\util\scanout-redis.c" />
+    <ClCompile Include="..\util\scanout-text.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\util\scan-conf.h" />
+    <ClInclude Include="..\util\scandb.h" />
+    <ClInclude Include="..\util\scanout-redis.h" />
+    <ClInclude Include="..\util\scanout-text.h" />
+    <ClInclude Include="..\util\scanout.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{78D9E59B-DB86-49EE-921F-51734A73F229}</ProjectGuid>
@@ -43,7 +53,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
-    <IntDir>$(SolutionDir)\..\tmp\</IntDir>
+    <IntDir>$(SolutionDir)\..\tmp\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
