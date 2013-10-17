@@ -316,19 +316,17 @@ icmp_checksum(struct TemplatePacket *tmpl)
 }
 
 
-struct TemplateSet templ_copy(const struct TemplateSet *templ)
+struct TemplateSet templ_copy(const struct TemplateSet *templset)
 {
     struct TemplateSet result;
     unsigned i;
 
-    memcpy(&result, templ, sizeof(result));
+    memcpy(&result, templset, sizeof(result));
 
-    assert(sizeof(templ->pkts)/sizeof(templ->pkts[0]) == 8);
-
-    for (i=0; i<6; i++) {
-        const struct TemplatePacket *p1 = &templ->pkts[i];
+    for (i=0; i<templset->count; i++) {
+        const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->packet = malloc(p2->length);
+        p2->packet = (unsigned char*)malloc(p2->length);
         memcpy(p2->packet, p1->packet, p2->length);
     }
 
@@ -770,7 +768,7 @@ template_packet_init(
     struct NmapPayloads *payloads)
 {
     unsigned source_ip = 0;
-    templset->length = 0;
+    templset->count = 0;
 
     /* [TCP] */
     _template_init( &templset->pkts[Proto_TCP],
@@ -778,7 +776,7 @@ template_packet_init(
                     default_tcp_template,
                     sizeof(default_tcp_template)-1
                     );
-    templset->length++;
+    templset->count++;
 
     /* [UDP] */
     _template_init( &templset->pkts[Proto_UDP],
@@ -787,7 +785,7 @@ template_packet_init(
                     sizeof(default_udp_template)-1
                     );
     templset->pkts[Proto_UDP].payloads = payloads;
-    templset->length++;
+    templset->count++;
 
     /* [SCTP] */
     _template_init( &templset->pkts[Proto_SCTP],
@@ -795,7 +793,7 @@ template_packet_init(
                     default_sctp_template,
                     sizeof(default_sctp_template)-1
                     );
-    templset->length++;
+    templset->count++;
 
     /* [ICMP ping] */
     _template_init( &templset->pkts[Proto_ICMP_ping],
@@ -803,7 +801,7 @@ template_packet_init(
                    default_icmp_ping_template,
                    sizeof(default_icmp_ping_template)-1
                    );
-    templset->length++;
+    templset->count++;
     
     /* [ICMP timestamp] */
     _template_init( &templset->pkts[Proto_ICMP_timestamp],
@@ -811,7 +809,7 @@ template_packet_init(
                    default_icmp_timestamp_template,
                    sizeof(default_icmp_timestamp_template)-1
                    );
-    templset->length++;
+    templset->count++;
     
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
@@ -819,7 +817,7 @@ template_packet_init(
                     default_arp_template,
                     sizeof(default_arp_template)-1
                     );
-    templset->length++;
+    templset->count++;
 }
 
 /***************************************************************************
@@ -876,9 +874,9 @@ template_set_source_port(struct TemplateSet *tmplset, unsigned port)
 void
 template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
 {
-    int i;
+    unsigned i;
 
-    for (i=0; i<tmplset->length; i++) {
+    for (i=0; i<tmplset->count; i++) {
         struct TemplatePacket *tmpl = &tmplset->pkts[i];
         unsigned char *px = tmpl->packet;
         unsigned offset = tmpl->offset_ip;

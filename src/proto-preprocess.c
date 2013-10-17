@@ -218,7 +218,7 @@ parse_ipv6_next:
         case 0x2c: /* IPv6 fragmetn */
             return 0;
         default:
-            printf("***** test me ******\n");
+            //printf("***** test me ******\n");
             return 0; /* todo: should add more protocols, like ICMP */
         }
     }

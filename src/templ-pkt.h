@@ -45,6 +45,7 @@ struct TemplateSet
 {
     const unsigned char *px;
     unsigned length;
+    unsigned count;
     struct TemplatePacket pkts[8];
 };
 
