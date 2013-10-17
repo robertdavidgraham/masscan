@@ -441,7 +441,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
     unsigned source_port2 = 0x1000;
     uint64_t xsum2 = 0;
     unsigned char *px = tmpl->packet;
-    SET_COOKIE set_cookie;
+    SET_COOKIE set_cookie = 0;
 
     UNUSEDPARM(seqno);
 
