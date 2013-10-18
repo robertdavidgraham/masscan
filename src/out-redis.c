@@ -55,8 +55,8 @@ null_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, un
 
 /****************************************************************************
  ****************************************************************************/
-const struct OutputType null_output = {
-    "null",
+const struct OutputType redis_output = {
+    "redis",
     0,
     null_out_open,
     null_out_close,

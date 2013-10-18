@@ -42,6 +42,7 @@
 #include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "templ-port.h"
+#include "in-binary.h"          /* covert binary output to XML/JSON */
 
 #include <assert.h>
 #include <limits.h>
@@ -1300,6 +1301,28 @@ int main(int argc, char *argv[])
         for (i=0; i<masscan->nic_count; i++)
             rawsock_selftest_if(masscan->nic[i].ifname);
         return 0;
+
+    case Operation_ReadScan:
+        {
+            unsigned start;
+            unsigned stop;
+
+            /* find first file */
+            for (start=1; start<(unsigned)argc; start++) {
+                if (memcmp(argv[start], "--readscan", 10) == 0) {
+                    start++;
+                    break;
+                }
+            }
+
+            /* find last file */
+            for (stop=start+1; stop<(unsigned)argc && argv[stop][0] != '-'; stop++)
+                ;
+
+            convert_binary_files(masscan, start, stop, argv);
+
+        }
+        break;
 
     case Operation_Selftest:
         /*

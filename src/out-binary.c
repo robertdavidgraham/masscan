@@ -98,7 +98,7 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
  ****************************************************************************/
 static void
 binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
-        unsigned proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
     unsigned char foo[32768];
     unsigned i;

@@ -1,5 +1,9 @@
 #include "output.h"
 #include "masscan.h"
+#include "masscan-app.h"
+#include "unusedparm.h"
+
+#include <ctype.h>
 
 /****************************************************************************
  ****************************************************************************/
@@ -41,12 +45,14 @@ text_out_status(struct Output *out, FILE *fp,
         );
 }
 
+
 /*************************************** *************************************
  ****************************************************************************/
 static void
 text_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, 
-        unsigned proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
+    char banner_buffer[4096];
     char ip_proto_sz[64];
 
     switch (ip_proto) {
@@ -58,7 +64,7 @@ text_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, un
 
     UNUSEDPARM(out);
 
-    fprintf(fp, "%s %s %u %u.%u.%u.%u %u %s %.*s\n",
+    fprintf(fp, "%s %s %u %u.%u.%u.%u %u %s %s\n",
         "banner",
         ip_proto_sz,
         port,
@@ -67,8 +73,8 @@ text_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, un
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
         (unsigned)global_now,
-        proto_string(proto),
-        length, px
+        masscan_app_to_string(proto),
+        normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
         );
 }
 

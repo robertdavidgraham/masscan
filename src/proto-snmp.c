@@ -45,6 +45,7 @@
 #include "smack.h"
 #include "string_s.h"
 #include "output.h"
+#include "masscan-app.h"
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "syn-cookie.h"

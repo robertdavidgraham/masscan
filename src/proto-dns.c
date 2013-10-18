@@ -5,6 +5,7 @@
 #include "syn-cookie.h"
 #include "logger.h"
 #include "output.h"
+#include "masscan-app.h"
 #include "proto-banner1.h"
 #include "templ-port.h"
 #include "masscan.h"

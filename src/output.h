@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <time.h>
 #include "main-src.h"
+#include "unusedparm.h"
 
 struct Masscan;
 struct Output;
+enum ApplicationProtocol;
 
 struct OutputType {
     const char *file_extension;
@@ -14,7 +16,7 @@ struct OutputType {
     void (*open)(struct Output *out, FILE *fp);
     void (*close)(struct Output *out, FILE *fp);
     void (*status)(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
-    void (*banner)(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, unsigned proto, const unsigned char *px, unsigned length);
+    void (*banner)(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, enum ApplicationProtocol proto, const unsigned char *px, unsigned length);
 };
 
 struct Output
@@ -46,10 +48,14 @@ struct Output
 			uint64_t open;
 		} arp;
     } counts;
+
+    struct {
+        char *redis_url;
+        int fd;
+    } redis;
 };
 
 const char *proto_from_status(unsigned status);
-const char *proto_string(unsigned proto);
 const char *normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len);
 
 
@@ -78,14 +84,6 @@ void output_report_banner(
                 const unsigned char *px, unsigned length);
 
 
-
-#ifndef UNUSEDPARM
-#if defined(_MSC_VER)
-#define UNUSEDPARM(x) x
-#else
-#define UNUSEDPARM(x) (void) x
-#endif
-#endif
 
 const char *status_string(int x);
 const char *reason_string(int x, char *buffer, size_t sizeof_buffer);

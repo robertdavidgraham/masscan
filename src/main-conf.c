@@ -1071,7 +1071,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
-		"arp",
+		"arp", 
         0};
     size_t i;
 
@@ -1134,7 +1134,12 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
         if (argv[i][0] == '-' && argv[i][1] == '-') {
             if (strcmp(argv[i], "--help") == 0)
                 masscan_help();
-            else {
+            else if (EQUALS("readscan", argv[i]+2)) {
+                masscan->op = Operation_ReadScan;
+                while (i+1 < argc && argv[i+1][0] != '-')
+                    i++;
+                continue;
+            } else {
                 char name2[64];
                 char *name = argv[i] + 2;
                 unsigned name_length;

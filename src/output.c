@@ -25,6 +25,7 @@
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
+#include "masscan-app.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -56,6 +57,10 @@ status_string(int x)
         default: return "unknown";
     }
 }
+
+
+/***************************************************************************
+ ***************************************************************************/
 const char *
 reason_string(int x, char *buffer, size_t sizeof_buffer)
 {
@@ -77,45 +82,24 @@ reason_string(int x, char *buffer, size_t sizeof_buffer)
 }
 
 const char *
-proto_string(unsigned proto)
-{
-    static char tmp[64];
-    switch (proto) {
-    case PROTO_SSH1: return "ssh";
-    case PROTO_SSH2: return "ssh";
-    case PROTO_HTTP: return "http";
-    case PROTO_FTP1: return "ftp";
-    case PROTO_FTP2: return "ftp";
-    case PROTO_DNS_VERSIONBIND: return "dns-ver";
-    case PROTO_SNMP: return "snmp";
-    case PROTO_NBTSTAT: return "nbtstat";
-    case PROTO_SSL3:    return "ssl";
-    case PROTO_SMTP:    return "smtp";
-    case PROTO_POP3:    return "pop";
-    case PROTO_IMAP4:   return "imap";
-
-    default:
-        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
-        return tmp;
-    }
-}
-const char *
 normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
 {
     size_t i=0;
     size_t offset = 0;
 
-    for (i=0; i<length; i++) {
 
-        if (isprint(px[i]) && px[i] != '<' && px[i] != '>' && px[i] != '&' && px[i] != '\\') {
+    for (i=0; i<length; i++) {
+        unsigned char c = px[i];
+
+        if (isprint(c) && c != '<' && c != '>' && c != '&' && c != '\\') {
             if (offset + 2 < buf_len)
                 buf[offset++] = px[i];
         } else {
             if (offset + 5 < buf_len) {
                 buf[offset++] = '\\';
                 buf[offset++] = 'x';
-                buf[offset++] = "0123456789abdef"[px[i]>>4];
-                buf[offset++] = "0123456789abdef"[px[i]&0xF];
+                buf[offset++] = "0123456789abcdef"[px[i]>>4];
+                buf[offset++] = "0123456789abcdef"[px[i]&0xF];
             }
         }
     }
@@ -425,6 +409,8 @@ again:
     return out->fp;
 }
 
+/***************************************************************************
+ ***************************************************************************/
 const char *
 proto_from_status(unsigned status)
 {
@@ -438,6 +424,7 @@ proto_from_status(unsigned status)
 		default: return "err";
     }
 }
+
 /***************************************************************************
  ***************************************************************************/
 void
@@ -536,13 +523,15 @@ output_report_banner(struct Output *out, unsigned ip, unsigned ip_proto, unsigne
 
     if (masscan->is_interactive || fp == NULL) {
         unsigned count;
-        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s",
+        char banner_buffer[4096];
+
+        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %s",
             port,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,
             (ip>> 0)&0xFF,
-            length, px
+            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
         if (count < 80)
             fprintf(stdout, "%.*s\n", (int)(79-count),

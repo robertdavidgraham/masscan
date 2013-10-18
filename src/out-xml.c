@@ -1,5 +1,6 @@
 #include "output.h"
 #include "masscan.h"
+#include "masscan-app.h"
 
 
 /****************************************************************************
@@ -88,9 +89,9 @@ xml_out_status(struct Output *out, FILE *fp, int status,
  ****************************************************************************/
 static void
 xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
-        unsigned proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
-    char banner_buffer[1024];
+    char banner_buffer[4096];
     char ip_proto_sz[64];
 
     UNUSEDPARM(out);
@@ -120,7 +121,7 @@ xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, uns
         (ip>> 0)&0xFF,
         ip_proto_sz,
         port,
-        proto_string(proto),
+        masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
         );
 }

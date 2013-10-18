@@ -23,6 +23,7 @@ enum {
     Operation_Scan = 3,         /* this is what you expect */
     Operation_DebugIF = 4,
     Operation_ListScan = 5,
+    Operation_ReadScan = 6,     /* re-interpret output files in different format */
 };
 
 enum OutpuFormat {
@@ -34,6 +35,7 @@ enum OutpuFormat {
     Output_Nmap         = 0x0020,
     Output_ScriptKiddie = 0x0040,
     Output_Grepable     = 0x0080,
+    Output_Redis        = 0x0100,
     Output_All          = 0xFFBF,
 };
 
