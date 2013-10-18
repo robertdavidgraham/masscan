@@ -17,7 +17,7 @@ struct MasscanRecord {
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
-    enum ApplicationProto app_proto;
+    enum ApplicationProtocol app_proto;
 };
 
 

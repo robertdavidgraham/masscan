@@ -1,5 +1,6 @@
 #include "output.h"
 #include "masscan.h"
+#include "masscan-app.h"
 #include "out-record.h"
 
 /****************************************************************************

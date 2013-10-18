@@ -204,6 +204,11 @@ one port.
     read the binary file. Binary files are mush smaller than their XML
     equivelents, but require a separate step to convert back into XML or
     another readable format.
+
+ *  `--readscan <binary-files>`: reads the files created by the `-oB` option
+    from a scan, then outputs them in one of the other formats, depending
+    on command-line parameters. In other words, it can take the binary
+    version of the output and convert it to an XML or JSON format.
     
 
 ## CONFIGURATION FILE FORMAT

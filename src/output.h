@@ -5,6 +5,7 @@
 #include <time.h>
 #include "main-src.h"
 #include "unusedparm.h"
+#include "masscan-app.h"
 
 struct Masscan;
 struct Output;
