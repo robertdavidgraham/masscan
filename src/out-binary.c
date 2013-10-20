@@ -1,5 +1,6 @@
 #include "output.h"
 #include "masscan.h"
+#include "masscan-app.h"
 #include "out-record.h"
 
 /****************************************************************************
@@ -45,7 +46,8 @@ binary_out_close(struct Output *out, FILE *fp)
 /****************************************************************************
  ****************************************************************************/
 static void
-binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
+    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     unsigned char foo[256];
     size_t bytes_written;
@@ -68,10 +70,10 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
     foo[1] = 12;
 
     /* [TIMESTAMP] field */
-    foo[2] = (unsigned char)(global_now>>24);
-    foo[3] = (unsigned char)(global_now>>16);
-    foo[4] = (unsigned char)(global_now>> 8);
-    foo[5] = (unsigned char)(global_now>> 0);
+    foo[2] = (unsigned char)(timestamp>>24);
+    foo[3] = (unsigned char)(timestamp>>16);
+    foo[4] = (unsigned char)(timestamp>> 8);
+    foo[5] = (unsigned char)(timestamp>> 0);
 
     foo[6] = (unsigned char)(ip>>24);
     foo[7] = (unsigned char)(ip>>16);
@@ -97,8 +99,9 @@ binary_out_status(struct Output *out, FILE *fp, int status, unsigned ip, unsigne
 /****************************************************************************
  ****************************************************************************/
 static void
-binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
-        unsigned proto, const unsigned char *px, unsigned length)
+binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
+        unsigned ip, unsigned ip_proto, unsigned port,
+        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
     unsigned char foo[32768];
     unsigned i;
@@ -122,10 +125,10 @@ binary_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, 
     }
 
     /* [TIMESTAMP] field */
-    foo[i+0] = (unsigned char)(global_now>>24);
-    foo[i+1] = (unsigned char)(global_now>>16);
-    foo[i+2] = (unsigned char)(global_now>> 8);
-    foo[i+3] = (unsigned char)(global_now>> 0);
+    foo[i+0] = (unsigned char)(timestamp>>24);
+    foo[i+1] = (unsigned char)(timestamp>>16);
+    foo[i+2] = (unsigned char)(timestamp>> 8);
+    foo[i+3] = (unsigned char)(timestamp>> 0);
 
     foo[i+4] = (unsigned char)(ip>>24);
     foo[i+5] = (unsigned char)(ip>>16);

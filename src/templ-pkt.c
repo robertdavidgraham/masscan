@@ -15,6 +15,7 @@
 #include "proto-preprocess.h"
 #include "logger.h"
 #include "templ-payloads.h"
+#include "syn-cookie.h"
 #include "unusedparm.h"
 
 #include <assert.h>
@@ -316,19 +317,17 @@ icmp_checksum(struct TemplatePacket *tmpl)
 }
 
 
-struct TemplateSet templ_copy(const struct TemplateSet *templ)
+struct TemplateSet templ_copy(const struct TemplateSet *templset)
 {
     struct TemplateSet result;
     unsigned i;
 
-    memcpy(&result, templ, sizeof(result));
+    memcpy(&result, templset, sizeof(result));
 
-    assert(sizeof(templ->pkts)/sizeof(templ->pkts[0]) == 8);
-
-    for (i=0; i<6; i++) {
-        const struct TemplatePacket *p1 = &templ->pkts[i];
+    for (i=0; i<templset->count; i++) {
+        const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->packet = malloc(p2->length);
+        p2->packet = (unsigned char*)malloc(p2->length);
         memcpy(p2->packet, p1->packet, p2->length);
     }
 
@@ -443,7 +442,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
     unsigned source_port2 = 0x1000;
     uint64_t xsum2 = 0;
     unsigned char *px = tmpl->packet;
-    SET_COOKIE set_cookie;
+    SET_COOKIE set_cookie = 0;
 
     UNUSEDPARM(seqno);
 
@@ -503,13 +502,10 @@ template_set_target(
         port_them &= 0xFFFF;
     } else if (port_them == Templ_ICMP_echo) {
         tmpl = &tmplset->pkts[Proto_ICMP_ping];
-        port_them = 1;
     } else if (port_them == Templ_ICMP_timestamp) {
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
-        port_them = 1;
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-        //port_them = 1;
 		px = tmpl->packet + tmpl->offset_ip;
 		px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
 		px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
@@ -552,6 +548,7 @@ template_set_target(
     px[offset_ip+18] = (unsigned char)((ip_them >>  8) & 0xFF);
     px[offset_ip+19] = (unsigned char)((ip_them >>  0) & 0xFF);
 
+#if 0
     xsum = tmpl->checksum_ip;
     xsum += tmpl->length - tmpl->offset_app;
     xsum += (ip_id&0xFFFF);
@@ -560,9 +557,19 @@ template_set_target(
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = ~xsum;
+#endif
+    xsum = *(unsigned*)&px[offset_ip+0];
+    xsum += *(unsigned*)&px[offset_ip+4];
+    xsum += *(unsigned*)&px[offset_ip+8];
+    xsum += *(unsigned*)&px[offset_ip+12];
+    xsum += *(unsigned*)&px[offset_ip+16];
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = ~xsum;
 
-    px[offset_ip+10] = (unsigned char)(xsum >> 8);
-    px[offset_ip+11] = (unsigned char)(xsum & 0xFF);
+    px[offset_ip+11] = (unsigned char)(xsum >> 8);
+    px[offset_ip+10] = (unsigned char)(xsum & 0xFF);
 
 
     /*
@@ -623,6 +630,7 @@ template_set_target(
         break;
     case Proto_ICMP_ping:
     case Proto_ICMP_timestamp:
+            seqno = (unsigned)syn_cookie(ip_them, port_them, ip_me, 0);
             px[offset_tcp+ 4] = (unsigned char)(seqno >> 24);
             px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
             px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
@@ -770,6 +778,7 @@ template_packet_init(
     struct NmapPayloads *payloads)
 {
     unsigned source_ip = 0;
+    templset->count = 0;
 
     /* [TCP] */
     _template_init( &templset->pkts[Proto_TCP],
@@ -777,6 +786,8 @@ template_packet_init(
                     default_tcp_template,
                     sizeof(default_tcp_template)-1
                     );
+    templset->count++;
+
     /* [UDP] */
     _template_init( &templset->pkts[Proto_UDP],
                     source_ip, source_mac, router_mac,
@@ -784,6 +795,7 @@ template_packet_init(
                     sizeof(default_udp_template)-1
                     );
     templset->pkts[Proto_UDP].payloads = payloads;
+    templset->count++;
 
     /* [SCTP] */
     _template_init( &templset->pkts[Proto_SCTP],
@@ -791,12 +803,15 @@ template_packet_init(
                     default_sctp_template,
                     sizeof(default_sctp_template)-1
                     );
+    templset->count++;
+
     /* [ICMP ping] */
     _template_init( &templset->pkts[Proto_ICMP_ping],
                    source_ip, source_mac, router_mac,
                    default_icmp_ping_template,
                    sizeof(default_icmp_ping_template)-1
                    );
+    templset->count++;
     
     /* [ICMP timestamp] */
     _template_init( &templset->pkts[Proto_ICMP_timestamp],
@@ -804,6 +819,7 @@ template_packet_init(
                    default_icmp_timestamp_template,
                    sizeof(default_icmp_timestamp_template)-1
                    );
+    templset->count++;
     
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
@@ -811,6 +827,7 @@ template_packet_init(
                     default_arp_template,
                     sizeof(default_arp_template)-1
                     );
+    templset->count++;
 }
 
 /***************************************************************************
@@ -867,15 +884,15 @@ template_set_source_port(struct TemplateSet *tmplset, unsigned port)
 void
 template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
 {
-    int i;
+    unsigned i;
 
-    for (i=0; i<8; i++) {
+    for (i=0; i<tmplset->count; i++) {
         struct TemplatePacket *tmpl = &tmplset->pkts[i];
         unsigned char *px = tmpl->packet;
         unsigned offset = tmpl->offset_ip;
 
         px[offset+8] = (unsigned char)(ttl);
-        tmpl->checksum_ip = tcp_checksum(tmpl);
+        tmpl->checksum_ip = ip_checksum(tmpl);
     }
 }
 

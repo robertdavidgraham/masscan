@@ -22,10 +22,12 @@
 #include "proto-http.h"
 #include "output.h"
 #include "string_s.h"
+#include "main-globals.h"
 
+/* [GLOBALS] 
+ * I want to print the number of TCBs in status messages, so I'm hacking this count
+ * in here */
 uint64_t global_tcb_count;
-unsigned global_recv_overwhelmed;
-extern time_t global_now;
 
 
 struct TCP_Control_Block
@@ -270,6 +272,7 @@ tcpcon_destroy_tcb(
             if (tcb->banner_length || tcb->banner_proto) {
                 tcpcon->report_banner(
                     tcpcon->out,
+                    global_now,
                     tcb->ip_them,
                     6,
                     tcb->port_them,

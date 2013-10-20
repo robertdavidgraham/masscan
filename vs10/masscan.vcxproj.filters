@@ -183,6 +183,18 @@
     <ClCompile Include="..\src\siphash24.c">
       <Filter>Source Files\rand</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\in-binary.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\masscan-app.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-redis.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-file.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -310,6 +322,21 @@
     </ClInclude>
     <ClInclude Include="..\src\siphash24.h">
       <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan-app.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-binary.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-file.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-sockets.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-globals.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

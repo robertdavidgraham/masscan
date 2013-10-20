@@ -8,6 +8,7 @@
 #include "proto-http.h"
 #include "proto-ssl.h"
 #include "proto-ssh.h"
+#include "masscan-app.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>

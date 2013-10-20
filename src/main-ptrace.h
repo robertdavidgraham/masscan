@@ -3,9 +3,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-extern double global_timestamp_start;
 
-void packet_trace(FILE *fp, const unsigned char *px, size_t length, unsigned is_sent);
+void packet_trace(FILE *fp, double pt_trace, const unsigned char *px, size_t length, unsigned is_sent);
 
 
 #endif

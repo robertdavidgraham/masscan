@@ -45,6 +45,7 @@ struct TemplateSet
 {
     const unsigned char *px;
     unsigned length;
+    unsigned count;
     struct TemplatePacket pkts[8];
 };
 
@@ -127,9 +128,6 @@ tcp_create_packet(
         const unsigned char *payload, size_t payload_length,
         unsigned char *px, size_t px_length);
 
-void
-template_packet_trace(struct TemplateSet *tmplset, 
-    unsigned ip, unsigned port, double timestamp_start);
 
 unsigned template_get_source_port(struct TemplateSet *tmplset);
 unsigned template_get_source_ip(struct TemplateSet *tmplset);

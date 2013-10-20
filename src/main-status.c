@@ -11,12 +11,11 @@
 #include "main-status.h"
 #include "pixie-timer.h"
 #include "unusedparm.h"
+#include "main-globals.h"
 #include <stdio.h>
 #include <string.h>
 
 
-extern time_t global_now;
-extern uint64_t global_tcb_count;
 
 /***************************************************************************
  * Print a status message about once-per-second to the command-line. This

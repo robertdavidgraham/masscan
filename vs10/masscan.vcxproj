@@ -23,10 +23,14 @@
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-src.c" />
+    <ClCompile Include="..\src\in-binary.c" />
+    <ClCompile Include="..\src\masscan-app.c" />
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-null.c" />
+    <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-xml.c" />
+    <ClCompile Include="..\src\pixie-file.c" />
     <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-dns.c" />
@@ -72,17 +76,22 @@
     <ClCompile Include="..\src\xring.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
+    <ClInclude Include="..\src\in-binary.h" />
     <ClInclude Include="..\src\logger.h" />
     <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-ptrace.h" />
     <ClInclude Include="..\src\main-src.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
+    <ClInclude Include="..\src\masscan-app.h" />
     <ClInclude Include="..\src\masscan.h" />
     <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\packet-queue.h" />
+    <ClInclude Include="..\src\pixie-file.h" />
+    <ClInclude Include="..\src\pixie-sockets.h" />
     <ClInclude Include="..\src\pixie-threads.h" />
     <ClInclude Include="..\src\pixie-timer.h" />
     <ClInclude Include="..\src\proto-arp.h" />

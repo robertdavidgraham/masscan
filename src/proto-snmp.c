@@ -45,6 +45,7 @@
 #include "smack.h"
 #include "string_s.h"
 #include "output.h"
+#include "masscan-app.h"
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "syn-cookie.h"
@@ -548,7 +549,7 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 /****************************************************************************
  ****************************************************************************/
 unsigned
-handle_snmp(struct Output *out, 
+handle_snmp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length, 
             struct PreprocessedInfo *parsed
             )
@@ -581,7 +582,7 @@ handle_snmp(struct Output *out,
 
     if (banner_offset) {
         output_report_banner(
-            out,
+            out, timestamp,
             ip_them, 17, parsed->port_src, 
             PROTO_SNMP,
             banner, banner_offset);

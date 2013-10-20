@@ -1,7 +1,7 @@
 /*
     log messages to console, depending on verbose level
 
-    Use -v (or -d) to get more verbose output. The more -v you add, the
+    Use -d to get more verbose output. The more -v you add, the
     more verbose the output becomes.
 
     Details about the running of the program go to <stderr>.
@@ -13,15 +13,18 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-int verbosity = 0; /* yea! a global variable!! */
-int debuglevel = 0;
+static int global_debug_level = 0; /* yea! a global variable!! */
+void LOG_add_level(int x)
+{
+    global_debug_level += x;
+}
 
 /***************************************************************************
  ***************************************************************************/
 void
 vLOG(int level, const char *fmt, va_list marker)
 {
-    if (level <= verbosity) {
+    if (level <= global_debug_level) {
         vfprintf(stderr, fmt, marker);
         fflush(stderr);
     }
@@ -46,7 +49,7 @@ LOG(int level, const char *fmt, ...)
 void
 vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
 {
-    if (level <= verbosity) {
+    if (level <= global_debug_level) {
         char sz_ip[16];
         
         sprintf_s(sz_ip, sizeof(sz_ip), "%u.%u.%u.%u", 

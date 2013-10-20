@@ -25,20 +25,15 @@
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
+#include "masscan-app.h"
+#include "main-globals.h"
+#include "pixie-file.h"
+#include "pixie-sockets.h"
 
 #include <limits.h>
 #include <ctype.h>
 
-#if defined(WIN32)
-#include <Windows.h>
-#include <io.h>
-#include <fcntl.h>
-#define access _access
-#else
-#include <unistd.h>
-#endif
 
-extern unsigned control_c_pressed;
 
 
 /***************************************************************************
@@ -56,6 +51,11 @@ status_string(int x)
         default: return "unknown";
     }
 }
+
+
+/***************************************************************************
+ * Convert TCP flags into an nmap-style "reason" string
+ ***************************************************************************/
 const char *
 reason_string(int x, char *buffer, size_t sizeof_buffer)
 {
@@ -76,46 +76,30 @@ reason_string(int x, char *buffer, size_t sizeof_buffer)
     return buffer;
 }
 
-const char *
-proto_string(unsigned proto)
-{
-    static char tmp[64];
-    switch (proto) {
-    case PROTO_SSH1: return "ssh";
-    case PROTO_SSH2: return "ssh";
-    case PROTO_HTTP: return "http";
-    case PROTO_FTP1: return "ftp";
-    case PROTO_FTP2: return "ftp";
-    case PROTO_DNS_VERSIONBIND: return "dns-ver";
-    case PROTO_SNMP: return "snmp";
-    case PROTO_NBTSTAT: return "nbtstat";
-    case PROTO_SSL3:    return "ssl";
-    case PROTO_SMTP:    return "smtp";
-    case PROTO_POP3:    return "pop";
-    case PROTO_IMAP4:   return "imap";
 
-    default:
-        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
-        return tmp;
-    }
-}
+/***************************************************************************
+ * Remove bad characters from the banner, especially new lines and HTML
+ * control codes.
+ ***************************************************************************/
 const char *
 normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_len)
 {
     size_t i=0;
     size_t offset = 0;
 
-    for (i=0; i<length; i++) {
 
-        if (isprint(px[i]) && px[i] != '<' && px[i] != '>' && px[i] != '&' && px[i] != '\\') {
+    for (i=0; i<length; i++) {
+        unsigned char c = px[i];
+
+        if (isprint(c) && c != '<' && c != '>' && c != '&' && c != '\\') {
             if (offset + 2 < buf_len)
                 buf[offset++] = px[i];
         } else {
             if (offset + 5 < buf_len) {
                 buf[offset++] = '\\';
                 buf[offset++] = 'x';
-                buf[offset++] = "0123456789abdef"[px[i]>>4];
-                buf[offset++] = "0123456789abdef"[px[i]&0xF];
+                buf[offset++] = "0123456789abcdef"[px[i]>>4];
+                buf[offset++] = "0123456789abcdef"[px[i]&0xF];
             }
         }
     }
@@ -124,7 +108,6 @@ normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_l
 
     return buf;
 }
-
 
 
 /***************************************************************************
@@ -139,53 +122,40 @@ open_rotate(struct Output *output, const char *filename)
 {
     FILE *fp;
     const struct Masscan *masscan = output->masscan;
-    unsigned is_append =masscan->nmap.append;
+    unsigned is_append = masscan->nmap.append;
+    int x;
 
-#if defined(WIN32)
-    /* PORTABILITY: WINDOWS
-     *  This bit of code deals with the fact that on Windows, fopen() opens
-     *  a file so that it can't be moved. This code opens it a different
-     *  way so that we can move it.
-     *
-     * NOTE: this is probably overkill, it appears that there is a better
-     * API _fsopen() that does what I want without all this nonsense.
+    /*
+     * KLUDGE: do something special for redis
      */
-    HANDLE hFile;
-    int fd;
+    if (masscan->nmap.format == Output_Redis) {
+        ptrdiff_t fd = output->redis.fd;
+        if (fd < 1) {
+            int x;
+            struct sockaddr_in sin = {0};
+            fd = (ptrdiff_t)socket(AF_INET, SOCK_STREAM, 0);
+            if (fd == -1) {
+                LOG(0, "redis: socket() failed to create socket\n");
+                exit(1);
+            }
+            sin.sin_addr.s_addr = htonl(output->redis.ip);
+            sin.sin_port = htons((unsigned short)output->redis.port);
+            sin.sin_family = AF_INET;
+            x = connect(fd, (struct sockaddr*)&sin, sizeof(sin));
+            if (x != 0) {
+                LOG(0, "redis: connect() failed\n");
+                perror("connect");
+            }
+            output->redis.fd = fd;
+        }
+        output->funcs->open(output, (FILE*)fd);
 
-    /* The normal POSIX C functions lock the file */
-    /* int fd = open(filename, O_RDWR | O_CREAT, _S_IREAD | _S_IWRITE); */ /* Fails */
-    /* int fd = _sopen(filename, O_RDWR | O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE); */ /* Also fails */
-
-    /* We need to use WINAPI + _open_osfhandle to be able to use
-       file descriptors (instead of WINAPI handles) */
-    hFile = CreateFileA(    filename,
-                            GENERIC_WRITE | (is_append?FILE_APPEND_DATA:0),
-                            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                            NULL,
-                            CREATE_ALWAYS,
-                            FILE_ATTRIBUTE_TEMPORARY,
-                            NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        control_c_pressed = 1;
-        return NULL;
+        return (FILE*)fd;
     }
 
-    fd = _open_osfhandle((intptr_t)hFile, _O_CREAT | _O_RDONLY | _O_TEMPORARY);
-    if (fd == -1) {
-        perror("_open_osfhandle");
-        control_c_pressed = 1;
-        return NULL;
-    }
 
-    fp = _fdopen(fd, "w");
-
-
-#else
-    fp = fopen(filename, is_append?"a":"w");
-#endif
-
-    if (fp == NULL) {
+    x = pixie_fopen_shareable(&fp, filename, is_append);
+    if (x != 0 || fp == NULL) {
         fprintf(stderr, "out: could not open file for %s\n", is_append?"appending":"writing");
         perror(filename);
         control_c_pressed = 1;
@@ -218,6 +188,10 @@ close_rotate(struct Output *out, FILE *fp)
 
     memset(&out->counts, 0, sizeof(out->counts));
  
+    /* Redis Kludge*/
+    if (out->masscan->nmap.format == Output_Redis)
+        return;
+
     fflush(fp);
     fclose(fp);
 }
@@ -270,6 +244,8 @@ output_create(const struct Masscan *masscan)
     out->masscan = masscan;
     out->period = masscan->rotate_output;
     out->offset = masscan->rotate_offset;
+    out->redis.port = masscan->redis.port;
+    out->redis.ip = masscan->redis.ip;
 
     for (i=0; i<8; i++) {
         out->src[i] = masscan->nic[i].src;
@@ -284,6 +260,9 @@ output_create(const struct Masscan *masscan)
         break;
     case Output_Binary:
         out->funcs = &binary_output;
+        break;
+    case Output_Redis:
+        out->funcs = &redis_output;
         break;
     default:
         out->funcs = &null_output;
@@ -425,6 +404,8 @@ again:
     return out->fp;
 }
 
+/***************************************************************************
+ ***************************************************************************/
 const char *
 proto_from_status(unsigned status)
 {
@@ -438,10 +419,11 @@ proto_from_status(unsigned status)
 		default: return "err";
     }
 }
+
 /***************************************************************************
  ***************************************************************************/
 void
-output_report_status(struct Output *out, int status, 
+output_report_status(struct Output *out, time_t timestamp, int status, 
         unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     const struct Masscan *masscan = out->masscan;
@@ -517,32 +499,33 @@ output_report_status(struct Output *out, int status,
                 return;
     }
 
-    out->funcs->status(out, fp, status, ip, port, reason, ttl);
+    out->funcs->status(out, fp, timestamp, status, ip, port, reason, ttl);
 
 }
 
 /***************************************************************************
  ***************************************************************************/
 void
-output_report_banner(struct Output *out, unsigned ip, unsigned ip_proto, unsigned port,
+output_report_banner(struct Output *out, time_t now,
+                unsigned ip, unsigned ip_proto, unsigned port,
                 unsigned proto, const unsigned char *px, unsigned length)
 {
     const struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
-    time_t now = time(0);
-
-    global_now = now;
+    
 
 
     if (masscan->is_interactive || fp == NULL) {
         unsigned count;
-        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %.*s",
+        char banner_buffer[4096];
+
+        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %s",
             port,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,
             (ip>> 0)&0xFF,
-            length, px
+            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
         if (count < 80)
             fprintf(stdout, "%.*s\n", (int)(79-count),
@@ -561,7 +544,7 @@ output_report_banner(struct Output *out, unsigned ip, unsigned ip_proto, unsigne
             return;
     }
 
-    out->funcs->banner(out, fp, ip, ip_proto, port, proto, px, length);
+    out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, px, length);
 
 }
 

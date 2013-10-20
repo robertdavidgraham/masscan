@@ -42,6 +42,8 @@
 #include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "templ-port.h"
+#include "in-binary.h"          /* covert binary output to XML/JSON */
+#include "main-globals.h"       /* all the global variables in the program */
 
 #include <assert.h>
 #include <limits.h>
@@ -70,8 +72,6 @@ static unsigned control_c_pressed_again = 0;
 time_t global_now;
 static unsigned global_wait = 10;
 
-uint64_t foo_timestamp = 0;
-uint64_t foo_count = 0;
 
 
 /***************************************************************************
@@ -137,6 +137,8 @@ struct ThreadPair {
 
     unsigned done_transmitting;
     unsigned done_receiving;
+
+    double pt_start;
 
     struct Throttler throttler[1];
 };
@@ -369,7 +371,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
                     );
             batch_size--;
 			packets_sent++;
-            foo_count++; /* TODO: debug thing, will be removed*/
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -470,6 +471,7 @@ receive_thread(void *v)
 {
     struct ThreadPair *parms = (struct ThreadPair *)v;
     const struct Masscan *masscan = parms->masscan;
+    struct Adapter *adapter = parms->adapter;
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
@@ -572,7 +574,7 @@ receive_thread(void *v)
          * This is the boring part of actually receiving a packet
          */
         err = rawsock_recv_packet(
-                    parms->adapter,
+                    adapter,
                     &length,
                     &secs,
                     &usecs,
@@ -653,7 +655,7 @@ receive_thread(void *v)
 						continue;
 
 					/* ...everything good, so now report this response */
-	                handle_arp(out, px, length, &parsed);
+	                handle_arp(out, secs, px, length, &parsed);
 					break;
 				}
                 continue;
@@ -662,11 +664,11 @@ receive_thread(void *v)
                 if (!is_nic_port(masscan, port_me))
                     continue;
                 if (parms->masscan->nmap.packet_trace)
-                    packet_trace(stdout, px, length, 0);
-                handle_udp(out, px, length, &parsed);
+                    packet_trace(stdout, parms->pt_start, px, length, 0);
+                handle_udp(out, secs, px, length, &parsed);
                 continue;
             case FOUND_ICMP:
-                handle_icmp(out, px, length, &parsed);
+                handle_icmp(out, secs, px, length, &parsed);
                 continue;
             case FOUND_TCP:
                 /* fall down to below */
@@ -680,7 +682,7 @@ receive_thread(void *v)
         if (!is_my_port(&parms->src, port_me))
             continue;
         if (parms->masscan->nmap.packet_trace)
-            packet_trace(stdout, px, length, 0);
+            packet_trace(stdout, parms->pt_start, px, length, 0);
 
         /* Save raw packet in --pcap file */
         if (pcapfile) {
@@ -797,6 +799,7 @@ receive_thread(void *v)
              */
             output_report_status(
                         out,
+                        global_now,
                         status,
                         ip_them,
                         port_them,
@@ -940,12 +943,7 @@ main_scan(struct Masscan *masscan)
      * hundreds of subranges. This scans through them faster. */
     picker = rangelist_pick2_create(&masscan->targets);
 
-    /* needed for --packet-trace option so that we know when we started
-     * the scan */
-    global_timestamp_start = 1.0 * pixie_gettime() / 1000000.0;
-
-    foo_timestamp = pixie_gettime();
-
+    
     /*
      * Start scanning threats for each adapter
      */
@@ -959,7 +957,10 @@ main_scan(struct Masscan *masscan)
         parms->my_index = masscan->resume.index;
         parms->done_transmitting = 0;
         parms->done_receiving = 0;
-        
+
+        /* needed for --packet-trace option so that we know when we started
+         * the scan */
+        parms->pt_start = 1.0 * pixie_gettime() / 1000000.0;
 
     
         /*
@@ -969,7 +970,8 @@ main_scan(struct Masscan *masscan)
                             masscan,
                             index,
                             parms->adapter_mac,
-                            parms->router_mac);
+                            parms->router_mac
+                            );
         if (err != 0)
             exit(1);
         parms->adapter = masscan->nic[index].adapter;
@@ -1128,18 +1130,6 @@ main_scan(struct Masscan *masscan)
         masscan_save_state(masscan);
     }
 
-#if 0
-    /* I'm figuring a bug in the status_print() function, it's reporting
-     * values that are twice the correct value. This double checks that */
-    {
-        double elapsed = pixie_gettime() - foo_timestamp;
-        double rate;
-
-        rate = ((1000000.0 * foo_count) / elapsed);
-
-        printf("\nrate = %5.3f\n", rate);
-    }
-#endif
             
 
     /*
@@ -1300,6 +1290,28 @@ int main(int argc, char *argv[])
         for (i=0; i<masscan->nic_count; i++)
             rawsock_selftest_if(masscan->nic[i].ifname);
         return 0;
+
+    case Operation_ReadScan:
+        {
+            unsigned start;
+            unsigned stop;
+
+            /* find first file */
+            for (start=1; start<(unsigned)argc; start++) {
+                if (memcmp(argv[start], "--readscan", 10) == 0) {
+                    start++;
+                    break;
+                }
+            }
+
+            /* find last file */
+            for (stop=start+1; stop<(unsigned)argc && argv[stop][0] != '-'; stop++)
+                ;
+
+            convert_binary_files(masscan, start, stop, argv);
+
+        }
+        break;
 
     case Operation_Selftest:
         /*
