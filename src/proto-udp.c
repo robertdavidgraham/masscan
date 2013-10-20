@@ -11,7 +11,7 @@
 
 
 
-void handle_udp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
     unsigned port_them = parsed->port_src;
@@ -24,19 +24,20 @@ void handle_udp(struct Output *out, const unsigned char *px, unsigned length, st
 
     switch (port_them) {
     case 53:
-        status = handle_dns(out, px, length, parsed);
+        status = handle_dns(out, timestamp, px, length, parsed);
         break;
     case 137:
-        status = handle_nbtstat(out, px, length, parsed);
+        status = handle_nbtstat(out, timestamp, px, length, parsed);
         break;
     case 161:
-        status = handle_snmp(out, px, length, parsed);
+        status = handle_snmp(out, timestamp, px, length, parsed);
         break;
     }
 
     if (status == 0)
         output_report_status(
                         out,
+                        timestamp,
                         Port_UdpOpen,
                         ip_them,
                         port_them,

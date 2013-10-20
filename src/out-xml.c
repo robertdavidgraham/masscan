@@ -3,6 +3,7 @@
 #include "masscan-app.h"
 
 
+
 /****************************************************************************
  ****************************************************************************/
 static void
@@ -58,7 +59,7 @@ xml_out_close(struct Output *out, FILE *fp)
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_status(struct Output *out, FILE *fp, int status, 
+xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status, 
                unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
@@ -72,7 +73,7 @@ xml_out_status(struct Output *out, FILE *fp, int status,
                     "</ports>"
                 "</host>"
                 "\r\n",
-        (unsigned)global_now,
+        timestamp,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
@@ -88,7 +89,8 @@ xml_out_status(struct Output *out, FILE *fp, int status,
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port,
+xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
+        unsigned ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
@@ -114,7 +116,7 @@ xml_out_banner(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, uns
                     "</ports>"
                 "</host>"
                 "\r\n",
-        (unsigned)global_now,
+        timestamp,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,

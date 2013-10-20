@@ -1,5 +1,6 @@
 #ifndef PROTO_ARP_H
 #define PROTO_ARP_H
+#include <time.h>
 #include "packet-queue.h"
 struct Output;
 struct PreprocessedInfo;
@@ -28,6 +29,6 @@ int arp_response(
         PACKET_QUEUE *transmit_queue);
 
 void
-handle_arp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
+handle_arp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
 
 #endif

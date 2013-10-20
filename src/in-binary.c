@@ -5,6 +5,7 @@
 */
 #include "masscan.h"
 #include "masscan-app.h"
+#include "main-globals.h"
 #include "output.h"
 #include "string_s.h"
 
@@ -44,6 +45,7 @@ parse_status(struct Output *out,
      * Now report ther result
      */
     output_report_status(out, 
+                    record.timestamp,
                     status,
                     record.ip,
                     record.port,
@@ -77,6 +79,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
      */
     output_report_banner(
                 out,
+                record.timestamp,
                 record.ip,
                 6, /* this is always TCP */
                 record.port,
@@ -108,6 +111,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
      */
     output_report_banner(
                 out,
+                record.timestamp,
                 record.ip,
                 record.ip_proto,    /* TCP=6, UDP=17 */
                 record.port,

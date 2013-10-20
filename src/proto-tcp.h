@@ -1,13 +1,14 @@
 #ifndef PROTO_TCP_H
 #define PROTO_TCP_H
 
+#include "packet-queue.h"
+#include "output.h"
+
 struct Adapter;
 struct TCP_Control_Block;
 struct TemplatePacket;
 struct TCP_ConnectionTable;
 
-#include "packet-queue.h"
-#include "output.h"
 
 #define TCP_SEQNO(px,i) (px[i+4]<<24|px[i+5]<<16|px[i+6]<<8|px[i+7])
 #define TCP_ACKNO(px,i) (px[i+8]<<24|px[i+9]<<16|px[i+10]<<8|px[i+11])

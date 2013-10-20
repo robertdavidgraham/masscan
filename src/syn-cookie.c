@@ -9,7 +9,9 @@
 #include <intrin.h>
 #endif
 
-
+/* [GLOBAL]
+ * Set once at startup, and read from then on
+ */
 static uint64_t entropy[2];
 
 /***************************************************************************

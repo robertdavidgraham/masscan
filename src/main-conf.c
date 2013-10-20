@@ -195,6 +195,16 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
+    case Output_Redis:      
+        fprintf(fp, "output-format = redis\n"); 
+        fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
+            (unsigned char)(masscan->redis.ip>>24),
+            (unsigned char)(masscan->redis.ip>>16),
+            (unsigned char)(masscan->redis.ip>> 8),
+            (unsigned char)(masscan->redis.ip>> 0),
+            masscan->redis.port);
+        break;
+
     default:
         fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
         break;
@@ -902,7 +912,8 @@ masscan_set_parameter(struct Masscan *masscan,
         else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
         else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
         else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
-        else if (EQUALS("json", value))       masscan->nmap.format = Output_JSON;
+        else if (EQUALS("json", value))         masscan->nmap.format = Output_JSON;
+        else if (EQUALS("redis", value))        masscan->nmap.format = Output_Redis;
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
         }
@@ -927,6 +938,33 @@ masscan_set_parameter(struct Masscan *masscan,
         ;
     } else if (EQUALS("reason", name)) {
         masscan->nmap.reason = 1;
+    } else if (EQUALS("redis", name)) {
+        struct Range range;
+        unsigned offset = 0;
+        unsigned max_offset = (unsigned)strlen(value);
+        unsigned port = 6379;
+
+        range = range_parse_ipv4(value, &offset, max_offset);
+        if ((range.begin == 0 && range.end == 0) || range.begin != range.end) {
+            LOG(0, "FAIL:  bad redis IP address: %s\n", value);
+            exit(1);
+        }
+        if (offset < max_offset) {
+            while (offset < max_offset && isspace(value[offset]))
+                offset++;
+            if (offset+1 < max_offset && value[offset] == ';' && isdigit(value[offset+1]&0xFF)) {
+                port = strtoul(value+offset+1, 0, 0);
+                if (port > 65535 || port == 0) {
+                    LOG(0, "FAIL: bad redis port: %s\n", value+offset+1);
+                    exit(1);
+                }
+            }
+        }
+
+        masscan->redis.ip = range.begin;
+        masscan->redis.port = port;
+        masscan->nmap.format = Output_Redis;
+        strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), "<redis>");
     } else if (EQUALS("release-memory", name)) {
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
@@ -1202,8 +1240,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 {
                     int v;
                     for (v=1; argv[i][v] == 'd'; v++) {
-                        verbosity++;
-						debuglevel++;
+                        LOG_add_level(1);
 					}
                 }
                 break;
@@ -1281,6 +1318,11 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'X':
                     masscan->nmap.format = Output_XML;
+                    break;
+                case 'R':
+                    masscan->nmap.format = Output_Redis;
+                    if (i+1 < argc && argv[i+1][0] != '-')
+                        masscan_set_parameter(masscan, "redis", argv[i+1]);
                     break;
                 case 'S':
                     masscan->nmap.format = Output_ScriptKiddie;
@@ -1414,7 +1456,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 {
                     int v;
                     for (v=1; argv[i][v] == 'v'; v++)
-                        verbosity++;
+                        LOG_add_level(1);
                 }
                 break;
             case 'V': /* print version and exit */

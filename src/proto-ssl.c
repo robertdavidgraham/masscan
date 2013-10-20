@@ -602,7 +602,7 @@ ssl_selftest(void)
 
 /***************************************************************************
  ***************************************************************************/
-struct Banner1Stream banner_ssl = {
+const struct Banner1Stream banner_ssl = {
     "ssl", 443, ssl_hello, sizeof(ssl_hello)-1,
     ssl_selftest,
     ssl_init,

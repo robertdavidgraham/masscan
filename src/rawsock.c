@@ -10,7 +10,8 @@
 #include "main-ptrace.h"
 #include "string_s.h"
 #include "rawsock-pfring.h"
-
+#include "pixie-timer.h"
+#include "main-globals.h"
 
 #include <pcap.h>
 
@@ -54,6 +55,7 @@ struct Adapter
     pcap_send_queue *sendq;
     pfring *ring;
     unsigned is_packet_trace:1; /* is --packet-trace option set? */
+    double pt_start;
 };
 
 #define SENDQ_SIZE 65536 * 8
@@ -279,7 +281,7 @@ rawsock_send_packet(
     
     /* Print --packet-trace if debugging */
     if (adapter->is_packet_trace) {
-        packet_trace(stdout, packet, length, 1);
+        packet_trace(stdout, adapter->pt_start, packet, length, 1);
     }
 
     /* PF_RING */
@@ -331,7 +333,7 @@ rawsock_send_packet(
 
     return 0;
 }
-extern unsigned control_c_pressed;
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -409,7 +411,6 @@ rawsock_send_probe(
      * Send it
      */
     rawsock_send_packet(adapter, tmplset->px, tmplset->length, flush);
-
 }
 
 
@@ -602,7 +603,8 @@ rawsock_init_adapter(const char *adapter_name,
         exit(1);
     memset(adapter, 0, sizeof(*adapter));
     adapter->is_packet_trace = is_packet_trace;
-    
+    adapter->pt_start = 1.0 * pixie_gettime() / 1000000.0;
+
     if (is_offline)
         return adapter;
 

@@ -8,7 +8,7 @@
 
 
 void
-handle_arp(struct Output *out, const unsigned char *px, 
+handle_arp(struct Output *out, time_t timestamp, const unsigned char *px, 
            unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
@@ -21,6 +21,7 @@ handle_arp(struct Output *out, const unsigned char *px,
 
     output_report_status(
                     out,
+                    timestamp,
                     Port_ArpOpen,
                     ip_them,
                     0,

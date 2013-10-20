@@ -15,6 +15,7 @@
 #include "proto-preprocess.h"
 #include "logger.h"
 #include "templ-payloads.h"
+#include "syn-cookie.h"
 #include "unusedparm.h"
 
 #include <assert.h>
@@ -501,13 +502,10 @@ template_set_target(
         port_them &= 0xFFFF;
     } else if (port_them == Templ_ICMP_echo) {
         tmpl = &tmplset->pkts[Proto_ICMP_ping];
-        port_them = 1;
     } else if (port_them == Templ_ICMP_timestamp) {
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
-        port_them = 1;
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-        //port_them = 1;
 		px = tmpl->packet + tmpl->offset_ip;
 		px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
 		px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
@@ -550,6 +548,7 @@ template_set_target(
     px[offset_ip+18] = (unsigned char)((ip_them >>  8) & 0xFF);
     px[offset_ip+19] = (unsigned char)((ip_them >>  0) & 0xFF);
 
+#if 0
     xsum = tmpl->checksum_ip;
     xsum += tmpl->length - tmpl->offset_app;
     xsum += (ip_id&0xFFFF);
@@ -558,9 +557,19 @@ template_set_target(
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = ~xsum;
+#endif
+    xsum = *(unsigned*)&px[offset_ip+0];
+    xsum += *(unsigned*)&px[offset_ip+4];
+    xsum += *(unsigned*)&px[offset_ip+8];
+    xsum += *(unsigned*)&px[offset_ip+12];
+    xsum += *(unsigned*)&px[offset_ip+16];
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = (xsum >> 16) + (xsum & 0xFFFF);
+    xsum = ~xsum;
 
-    px[offset_ip+10] = (unsigned char)(xsum >> 8);
-    px[offset_ip+11] = (unsigned char)(xsum & 0xFF);
+    px[offset_ip+11] = (unsigned char)(xsum >> 8);
+    px[offset_ip+10] = (unsigned char)(xsum & 0xFF);
 
 
     /*
@@ -621,6 +630,7 @@ template_set_target(
         break;
     case Proto_ICMP_ping:
     case Proto_ICMP_timestamp:
+            seqno = (unsigned)syn_cookie(ip_them, port_them, ip_me, 0);
             px[offset_tcp+ 4] = (unsigned char)(seqno >> 24);
             px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
             px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);

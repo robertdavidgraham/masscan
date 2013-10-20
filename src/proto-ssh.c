@@ -58,7 +58,7 @@ ssh_selftest(void)
 
 /***************************************************************************
  ***************************************************************************/
-struct Banner1Stream banner_ssh = {
+const struct Banner1Stream banner_ssh = {
     "ssh", 22, 0, 0,
     ssh_selftest,
     ssh_init,

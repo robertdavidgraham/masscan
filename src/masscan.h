@@ -14,8 +14,6 @@ struct Adapter;
 struct TemplateSet;
 struct Banner1;
 
-extern time_t global_now;
-
 enum {
     Operation_Default = 0,      /* nothing specified, so print usage */
     Operation_List_Adapters = 1,
@@ -178,6 +176,11 @@ struct Masscan
     unsigned http_user_agent_length;
 
     char *bpf_filter;
+
+    struct {
+        unsigned ip;
+        unsigned port;
+    } redis;
 };
 
 

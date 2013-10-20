@@ -1,5 +1,6 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
@@ -16,15 +17,14 @@ struct OutputType {
     void *(*create)(struct Output *out);
     void (*open)(struct Output *out, FILE *fp);
     void (*close)(struct Output *out, FILE *fp);
-    void (*status)(struct Output *out, FILE *fp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
-    void (*banner)(struct Output *out, FILE *fp, unsigned ip, unsigned ip_proto, unsigned port, enum ApplicationProtocol proto, const unsigned char *px, unsigned length);
+    void (*status)(struct Output *out, FILE *fp, time_t timestamp, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
+    void (*banner)(struct Output *out, FILE *fp, time_t timestamp, unsigned ip, unsigned ip_proto, unsigned port, enum ApplicationProtocol proto, const unsigned char *px, unsigned length);
 };
 
 struct Output
 {
     const struct Masscan *masscan;
     struct Source src[8];
-
     FILE *fp;
     const struct OutputType *funcs;
     time_t next_rotate;
@@ -51,8 +51,11 @@ struct Output
     } counts;
 
     struct {
-        char *redis_url;
-        int fd;
+        unsigned ip;
+        unsigned port;
+        ptrdiff_t fd;
+        uint64_t outstanding;
+        unsigned state;
     } redis;
 };
 
@@ -64,22 +67,25 @@ extern const struct OutputType text_output;
 extern const struct OutputType xml_output;
 extern const struct OutputType binary_output;
 extern const struct OutputType null_output;
+extern const struct OutputType redis_output;
 
 
 struct Output *output_create(const struct Masscan *masscan);
 void output_destroy(struct Output *output);
 
-void output_report_status(struct Output *output, int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
+void output_report_status(struct Output *output, time_t timestamp, 
+    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
 
 
 typedef void (*OUTPUT_REPORT_BANNER)(
-                struct Output *output, 
+                struct Output *output, time_t timestamp,
                 unsigned ip, unsigned ip_proto, unsigned port, 
                 unsigned proto,
                 const unsigned char *px, unsigned length);
 
 void output_report_banner(
                 struct Output *output, 
+                time_t timestamp,
                 unsigned ip, unsigned ip_proto, unsigned port, 
                 unsigned proto,
                 const unsigned char *px, unsigned length);

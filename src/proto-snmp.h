@@ -16,6 +16,7 @@ void snmp_init();
 int snmp_selftest();
 
 unsigned
-handle_snmp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
+handle_snmp(struct Output *out, time_t timestamp, 
+    const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
 
 #endif

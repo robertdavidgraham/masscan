@@ -324,7 +324,7 @@ dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
 }
 
 unsigned
-handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+handle_dns(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
     unsigned ip_me;
@@ -377,7 +377,7 @@ handle_dns(struct Output *out, const unsigned char *px, unsigned length, struct 
         offset += 11;
 
         output_report_banner(
-                out,
+                out, timestamp,
                 ip_them, 17, port_them, 
                 PROTO_DNS_VERSIONBIND,
                 px + offset, txtlen);

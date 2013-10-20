@@ -41,16 +41,17 @@ parse_port_unreachable(const unsigned char *px, unsigned length,
     return 0;
 }
 
-void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+void handle_icmp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned type = parsed->port_src;
     unsigned code = parsed->port_dst;
     unsigned seqno_me;
-    //unsigned ip_me;
+    unsigned ip_me;
     unsigned ip_them;
+    unsigned cookie;
 
-    /*ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;*/
+    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
@@ -61,6 +62,10 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
 
     switch (type) {
     case 0: /* ICMP echo reply */
+        cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0);
+        if ((cookie & 0xFFFFFFFF) != seqno_me)
+            return; /* not my response */
+
         //if (syn_hash(ip_them, Templ_ICMP_echo) != seqno_me)
         //    return; /* not my response */
 
@@ -69,6 +74,7 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
          */
         output_report_status(
                             out,
+                            timestamp,
                             Port_IcmpEchoResponse,
                             ip_them,
                             0,
@@ -99,6 +105,7 @@ void handle_icmp(struct Output *out, const unsigned char *px, unsigned length, s
 
                 output_report_status(
                                     out,
+                                    timestamp,
                                     Port_UdpClosed,
                                     ip_them2,
                                     port_them2,

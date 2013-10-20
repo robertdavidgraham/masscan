@@ -50,7 +50,7 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
 }
 
 unsigned
-handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, unsigned ip_them, unsigned port_them)
+handle_nbtstat_rr(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, unsigned ip_them, unsigned port_them)
 {
     unsigned char banner[65536];
     unsigned banner_length = 0;
@@ -85,7 +85,7 @@ handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, 
 
 
     output_report_banner(
-            out,
+            out, timestamp,
             ip_them, 17, port_them, 
             PROTO_NBTSTAT,
             banner, banner_length);
@@ -95,7 +95,7 @@ handle_nbtstat_rr(struct Output *out, const unsigned char *px, unsigned length, 
 
 
 unsigned
-handle_nbtstat(struct Output *out, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+handle_nbtstat(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {
     unsigned ip_them;
     unsigned ip_me;
@@ -147,7 +147,7 @@ handle_nbtstat(struct Output *out, const unsigned char *px, unsigned length, str
 
         offset += 10;
 
-        return handle_nbtstat_rr(out, 
+        return handle_nbtstat_rr(out, timestamp,
                                     px + offset,
                                     length - offset,
                                     ip_them, 

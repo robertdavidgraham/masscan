@@ -19,7 +19,8 @@ masscan_initialize_adapter(
     struct Masscan *masscan,
     unsigned index,
     unsigned char *adapter_mac,
-    unsigned char *router_mac)
+    unsigned char *router_mac
+    )
 {
     char *ifname;
     char ifname2[256];
@@ -178,7 +179,6 @@ masscan_initialize_adapter(
         fprintf(stderr, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
-
 
 
     LOG(1, "adapter initialization done.\n");
