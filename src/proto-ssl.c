@@ -309,7 +309,7 @@ server_cert(
         remaining--;
         DROPDOWN(i,length,state);
         data->cert_state = 0;
-        server_cert_copy(data,  0,1,  0,0,0);
+        server_cert_copy(data,  0,CERT_COPY_START,  banner,banner_offset,banner_max);
 
     case CERT:
         {
@@ -330,7 +330,7 @@ server_cert(
             if (cert_remaining == 0) {
                 /* We've reached the end of the certificate, so make
                  * a record of it */
-                server_cert_copy(data,  0,1,  0,0,0);
+                server_cert_copy(data,  0, CERT_COPY_FINISH,  banner,banner_offset,banner_max);
                 state = CLEN0;
             }
         }
