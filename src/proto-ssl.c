@@ -202,7 +202,7 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
     if (px == 0 && length == CERT_COPY_START) {
         data->cert_state = 0;
         data->b64x = 0;
-        data->banner_offset_start = *banner_offset;
+        data->banner_offset_start = banner_offset;
         return;
     }
 
