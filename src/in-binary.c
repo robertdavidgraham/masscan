@@ -219,7 +219,10 @@ parse_file(struct Output *out, const char *filename)
                 parse_banner3(out, buf, bytes_read);
                 break;
 			case 4:
-				fread(buf+bytes_read,1,1,fp);
+                if (fread(buf+bytes_read,1,1,fp) != 1) {
+                    fprintf(stderr, "read() error\n");
+                    exit(1);
+                }
 				bytes_read++;
                 parse_banner4(out, buf, bytes_read);
                 break;
