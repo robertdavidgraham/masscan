@@ -185,6 +185,15 @@ banner_append(const void *vsrc, size_t src_len,
     }
 }
 
+void
+banner_append_char(int c,
+        void *vbanner, unsigned *banner_offset, size_t banner_max)
+{
+    unsigned char *banner = (unsigned char *)vbanner;
+    
+    if (*banner_offset < banner_max)
+        banner[(*banner_offset)++] = (unsigned char)c;
+}
 
 /***************************************************************************
  ***************************************************************************/

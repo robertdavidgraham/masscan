@@ -113,6 +113,9 @@ clean_response_queue(struct Output *out, SOCKET fd)
     size_t bytes_read;
     
     FD_ZERO(&readfds);
+#ifdef _MSC_VER
+#pragma warning(disable:4127)
+#endif
     FD_SET(fd, &readfds);
     nfds = (int)fd;
 

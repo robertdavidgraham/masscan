@@ -109,6 +109,9 @@ banner1_parse(
 void
 banner_append(const void *src, size_t src_len, void *banner, unsigned *banner_offset, size_t banner_max);
 
+void
+banner_append_char(int c, void *banner, unsigned *banner_offset, size_t banner_max);
+
 /**
  * Test the banner protocol-parsing system by reading
  * in a capture file

@@ -174,14 +174,10 @@ out_b64(unsigned x, char *banner, unsigned *banner_offset, size_t banner_max)
         "abcdefghijklmnopqrstuvwxyz"
         "0123456789"
         "+/";
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = b64[(x>>18)&0x3F];
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = b64[(x>>12)&0x3F];
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = b64[(x>> 6)&0x3F];
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = b64[(x>> 0)&0x3F];
+    banner_append_char(b64[(x>>18)&0x3F], banner, banner_offset, banner_max);
+    banner_append_char(b64[(x>>12)&0x3F], banner, banner_offset, banner_max);
+    banner_append_char(b64[(x>> 6)&0x3F], banner, banner_offset, banner_max);
+    banner_append_char(b64[(x>> 0)&0x3F], banner, banner_offset, banner_max);
 }
 
 /***************************************************************************
@@ -203,6 +199,7 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
         data->cert_state = 0;
         data->b64x = 0;
         data->banner_offset_start = *banner_offset;
+        banner_append("cert:", 5, banner, banner_offset, banner_max);
         return;
     }
 
@@ -331,6 +328,7 @@ server_cert(
                 /* We've reached the end of the certificate, so make
                  * a record of it */
                 server_cert_copy(data,  0, CERT_COPY_FINISH,  banner,banner_offset,banner_max);
+                banner_append_char('\n', banner, banner_offset, banner_max);
                 state = CLEN0;
             }
         }
