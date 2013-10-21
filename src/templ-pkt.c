@@ -548,7 +548,7 @@ template_set_target(
     px[offset_ip+18] = (unsigned char)((ip_them >>  8) & 0xFF);
     px[offset_ip+19] = (unsigned char)((ip_them >>  0) & 0xFF);
 
-#if 0
+
     xsum = tmpl->checksum_ip;
     xsum += tmpl->length - tmpl->offset_app;
     xsum += (ip_id&0xFFFF);
@@ -557,7 +557,7 @@ template_set_target(
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = ~xsum;
-#endif
+#if 0
     xsum = *(unsigned*)&px[offset_ip+0];
     xsum += *(unsigned*)&px[offset_ip+4];
     xsum += *(unsigned*)&px[offset_ip+8];
@@ -567,9 +567,10 @@ template_set_target(
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = ~xsum;
+#endif
 
-    px[offset_ip+11] = (unsigned char)(xsum >> 8);
-    px[offset_ip+10] = (unsigned char)(xsum & 0xFF);
+    px[offset_ip+10] = (unsigned char)(xsum >> 8);
+    px[offset_ip+11] = (unsigned char)(xsum & 0xFF);
 
 
     /*

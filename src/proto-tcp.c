@@ -771,7 +771,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             size_t x_len = 0;
             const unsigned char *x;
             switch (tcb->port_them) {
-            case 80: 
+            case 80:
+            case 8080:
                 x = tcpcon->banner1->http_header;
                 x_len = tcpcon->banner1->http_header_length;
                 break;
