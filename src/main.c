@@ -815,8 +815,9 @@ receive_thread(void *v)
             status = Port_Unknown;
             if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
                 status = Port_Open;
-            if ((px[parsed.transport_offset+13] & 0x4) == 0x4)
+            if ((px[parsed.transport_offset+13] & 0x4) == 0x4) {
                 status = Port_Closed;
+            }
 
             /* verify: syn-cookies */
             if (cookie != seqno_me - 1) {

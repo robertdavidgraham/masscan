@@ -464,7 +464,7 @@ rangelist_pick2_create(struct RangeList *targets)
     unsigned i;
     unsigned total = 0;
 
-    if ((size_t)targets->count >= SIZE_MAX/sizeof(*picker))
+    if (((size_t)targets->count) >= (size_t)(SIZE_MAX/sizeof(*picker)))
         exit(1); /* integer overflow */
     else
     picker = (unsigned *)malloc(targets->count * sizeof(*picker));

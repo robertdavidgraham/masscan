@@ -73,7 +73,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                     "</ports>"
                 "</host>"
                 "\r\n",
-        timestamp,
+        (unsigned)timestamp,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
@@ -116,7 +116,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                     "</ports>"
                 "</host>"
                 "\r\n",
-        timestamp,
+        (unsigned)timestamp,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,

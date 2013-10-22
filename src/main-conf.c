@@ -131,7 +131,7 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
             (masscan->nic[i].src.ip.first>> 0)&0xFF
             );
     else
-        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
+        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u-%u.%u.%u.%u\n", zzz,
             (masscan->nic[i].src.ip.first>>24)&0xFF,
             (masscan->nic[i].src.ip.first>>16)&0xFF,
             (masscan->nic[i].src.ip.first>> 8)&0xFF,

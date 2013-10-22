@@ -41,7 +41,7 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
-        timestamp
+        (unsigned)timestamp
         );
 }
 
@@ -73,7 +73,7 @@ text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
-        timestamp,
+        (unsigned)timestamp,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
         );

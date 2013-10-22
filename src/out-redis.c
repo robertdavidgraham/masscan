@@ -231,8 +231,8 @@ myvalue
             "$%u\r\n%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            strlen("host"), "host",
-            strlen(ip_string), ip_string
+            (unsigned)strlen("host"), "host",
+            (unsigned)strlen(ip_string), ip_string
             );
     
     count = send(fd, line, (int)strlen(line), 0);
@@ -252,8 +252,8 @@ myvalue
             "$%u\r\n%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            strlen(ip_string), ip_string,
-            strlen(port_string), port_string);
+            (unsigned)strlen(ip_string), ip_string,
+            (unsigned)strlen(port_string), port_string);
     
     count = send(fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
@@ -268,16 +268,16 @@ myvalue
      * VALUE: timestamp:status:reason:ttl
      */
     sprintf_s(values, sizeof(values), "%u:%u:%u:%u",
-        timestamp, status, reason, ttl);
+        (unsigned)timestamp, status, reason, ttl);
     sprintf_s(line, sizeof(line), 
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%u\r\n%s:%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            strlen(ip_string) + 1 + strlen(port_string), 
+            (unsigned)(strlen(ip_string) + 1 + strlen(port_string)), 
             ip_string,port_string,
-            strlen(values), values
+            (unsigned)strlen(values), values
             );
     
     count = send(fd, line, (int)strlen(line), 0);

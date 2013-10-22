@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
+		11A868151816F3A7008E00B8 /* in-binary.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868081816F3A7008E00B8 /* in-binary.c */; };
+		11A868161816F3A7008E00B8 /* main-src.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680B1816F3A7008E00B8 /* main-src.c */; };
+		11A868171816F3A7008E00B8 /* masscan-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680D1816F3A7008E00B8 /* masscan-app.c */; };
+		11A868181816F3A7008E00B8 /* out-redis.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680F1816F3A7008E00B8 /* out-redis.c */; };
+		11A868191816F3A7008E00B8 /* pixie-file.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868101816F3A7008E00B8 /* pixie-file.c */; };
+		11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* siphash24.c */; };
 		11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219317DBCC7E00DDFD32 /* event-timeout.c */; };
 		11A921D617DBCC7E00DDFD32 /* logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* logger.c */; };
 		11A921D717DBCC7E00DDFD32 /* main-conf.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219717DBCC7E00DDFD32 /* main-conf.c */; };
@@ -79,6 +85,19 @@
 		115C0CA818035BC5004E6CD7 /* proto-ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssl.h"; sourceTree = "<group>"; };
 		115C0CA918035BC5004E6CD7 /* templ-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-port.h"; sourceTree = "<group>"; };
 		115C0CAA18035BC5004E6CD7 /* unusedparm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unusedparm.h; sourceTree = "<group>"; };
+		11A868081816F3A7008E00B8 /* in-binary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-binary.c"; sourceTree = "<group>"; };
+		11A868091816F3A7008E00B8 /* in-binary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-binary.h"; sourceTree = "<group>"; };
+		11A8680A1816F3A7008E00B8 /* main-globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "main-globals.h"; sourceTree = "<group>"; };
+		11A8680B1816F3A7008E00B8 /* main-src.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-src.c"; sourceTree = "<group>"; };
+		11A8680C1816F3A7008E00B8 /* main-src.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "main-src.h"; sourceTree = "<group>"; };
+		11A8680D1816F3A7008E00B8 /* masscan-app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "masscan-app.c"; sourceTree = "<group>"; };
+		11A8680E1816F3A7008E00B8 /* masscan-app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "masscan-app.h"; sourceTree = "<group>"; };
+		11A8680F1816F3A7008E00B8 /* out-redis.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-redis.c"; sourceTree = "<group>"; };
+		11A868101816F3A7008E00B8 /* pixie-file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-file.c"; sourceTree = "<group>"; };
+		11A868111816F3A7008E00B8 /* pixie-file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-file.h"; sourceTree = "<group>"; };
+		11A868121816F3A7008E00B8 /* pixie-sockets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-sockets.h"; sourceTree = "<group>"; };
+		11A868131816F3A7008E00B8 /* siphash24.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = siphash24.c; sourceTree = "<group>"; };
+		11A868141816F3A7008E00B8 /* siphash24.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = siphash24.h; sourceTree = "<group>"; };
 		11A9218517DBCB3200DDFD32 /* masscan */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = masscan; sourceTree = BUILT_PRODUCTS_DIR; };
 		11A9219317DBCC7E00DDFD32 /* event-timeout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "event-timeout.c"; sourceTree = "<group>"; };
 		11A9219417DBCC7E00DDFD32 /* event-timeout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "event-timeout.h"; sourceTree = "<group>"; };
@@ -197,6 +216,19 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11A868081816F3A7008E00B8 /* in-binary.c */,
+				11A868091816F3A7008E00B8 /* in-binary.h */,
+				11A8680A1816F3A7008E00B8 /* main-globals.h */,
+				11A8680B1816F3A7008E00B8 /* main-src.c */,
+				11A8680C1816F3A7008E00B8 /* main-src.h */,
+				11A8680D1816F3A7008E00B8 /* masscan-app.c */,
+				11A8680E1816F3A7008E00B8 /* masscan-app.h */,
+				11A8680F1816F3A7008E00B8 /* out-redis.c */,
+				11A868101816F3A7008E00B8 /* pixie-file.c */,
+				11A868111816F3A7008E00B8 /* pixie-file.h */,
+				11A868121816F3A7008E00B8 /* pixie-sockets.h */,
+				11A868131816F3A7008E00B8 /* siphash24.c */,
+				11A868141816F3A7008E00B8 /* siphash24.h */,
 				115C0CA318035BC5004E6CD7 /* out-record.h */,
 				115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */,
 				115C0CA518035BC5004E6CD7 /* proto-netbios.c */,
@@ -392,6 +424,12 @@
 				11B039CB17EA092B00925E7E /* proto-snmp.c in Sources */,
 				115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */,
 				115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */,
+				11A868151816F3A7008E00B8 /* in-binary.c in Sources */,
+				11A868161816F3A7008E00B8 /* main-src.c in Sources */,
+				11A868171816F3A7008E00B8 /* masscan-app.c in Sources */,
+				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
+				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
+				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
