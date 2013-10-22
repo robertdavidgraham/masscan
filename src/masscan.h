@@ -34,6 +34,7 @@ enum OutpuFormat {
     Output_ScriptKiddie = 0x0040,
     Output_Grepable     = 0x0080,
     Output_Redis        = 0x0100,
+    Output_None         = 0x0200,
     Output_All          = 0xFFBF,
 };
 
@@ -61,6 +62,7 @@ struct Masscan
         struct Source src;
         unsigned char adapter_mac[6];
         unsigned char router_mac[6];
+        unsigned router_ip;
     } nic[8];
     unsigned nic_count;
 

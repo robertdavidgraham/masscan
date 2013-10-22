@@ -141,6 +141,10 @@ struct ThreadPair {
     double pt_start;
 
     struct Throttler throttler[1];
+
+    uint64_t *total_synacks;
+    uint64_t *total_tcbs;
+    uint64_t *total_syns;
 };
 
 
@@ -260,6 +264,9 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned src_port_mask;
     uint64_t seed = masscan->seed;
     uint64_t repeats = 0; /* --infinite repeats */
+    uint64_t total_syns = 0;
+
+    parms->total_syns = &total_syns;
 
     get_sources(masscan, parms->nic_index, 
                 &src_ip, &src_ip_mask, 
@@ -343,8 +350,11 @@ infinite:
              *  the IP address and port that the index refers to.
              */
             xXx = (i + (r--) * rate);
-            while (xXx >= range)
-                xXx -= range;
+            if (rate > range)
+                xXx %= range;
+            else
+                while (xXx >= range)
+                    xXx -= range;
             xXx = blackrock_shuffle(&blackrock,  xXx);
             ip_them = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
             port_them = rangelist_pick(&masscan->ports, xXx / count_ips);
@@ -382,6 +392,7 @@ infinite:
                     );
             batch_size--;
 			packets_sent++;
+            total_syns++;
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -497,7 +508,11 @@ receive_thread(void *v)
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
     struct TCP_ConnectionTable *tcpcon = 0;
+    uint64_t total_synacks = 0;
+    uint64_t total_tcbs = 0;
 
+    parms->total_synacks = &total_synacks;
+    parms->total_tcbs = &total_tcbs;
 
     LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
 
@@ -746,6 +761,7 @@ receive_thread(void *v)
                                     ip_me, ip_them, 
                                     port_me, port_them, 
                                     seqno_me, seqno_them+1);
+                    total_tcbs++;
                 }
 
                 tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK, 
@@ -814,6 +830,7 @@ receive_thread(void *v)
             /* verify: ignore duplicates */
             if (dedup_is_duplicate(dedup, ip_them, port_them))
                 continue;
+            total_synacks++;
 
             /*
              * This is where we do the output
@@ -1112,9 +1129,13 @@ main_scan(struct Masscan *masscan)
      * Now wait for <ctrl-c> to be pressed OR for threads to exit
      */
     status_start(&status);
+    status.is_infinite = masscan->is_infinite;
     while (!control_c_pressed) {
         unsigned i;
         double rate = 0;
+        uint64_t total_tcbs = 0;
+        uint64_t total_synacks = 0;
+        uint64_t total_syns = 0;
         
         
         /* Find the minimum index of all the threads */
@@ -1126,6 +1147,13 @@ main_scan(struct Masscan *masscan)
                 min_index = parms->my_index;
 
             rate += parms->throttler->current_rate;
+
+            if (parms->total_tcbs)
+                total_tcbs += *parms->total_tcbs;
+            if (parms->total_synacks)
+                total_synacks += *parms->total_synacks;
+            if (parms->total_syns)
+                total_syns += *parms->total_syns;
         }
 
         if (min_index >= range && !masscan->is_infinite) {
@@ -1136,7 +1164,8 @@ main_scan(struct Masscan *masscan)
          * update screen about once per second with statistics,
          * namely packets/second.
          */
-        status_print(&status, min_index, range, rate);
+        status_print(&status, min_index, range, rate,
+            total_tcbs, total_synacks, total_syns);
         
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1164,7 +1193,7 @@ main_scan(struct Masscan *masscan)
         
         pixie_mssleep(750);
         
-        status_print(&status, masscan->resume.index, range, 0);
+        status_print(&status, masscan->resume.index, range, 0, 0, 0, 0);
 
         if (time(0) - now >= masscan->wait)
             control_c_pressed_again = 1;
@@ -1214,6 +1243,7 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
+    masscan->is_interactive = 1;
     masscan->seed = time(0); /* a predictable, but 'random' seed */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */

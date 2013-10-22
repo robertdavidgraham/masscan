@@ -149,6 +149,14 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
             masscan->nic[i].adapter_mac[3],
             masscan->nic[i].adapter_mac[4],
             masscan->nic[i].adapter_mac[5]);
+    if (masscan->nic[i].router_ip) {
+        fprintf(fp, "router-ip%s = %u.%u.%u.%u\n", zzz,
+            (masscan->nic[i].router_ip>>24)&0xFF,
+            (masscan->nic[i].router_ip>>16)&0xFF,
+            (masscan->nic[i].router_ip>> 8)&0xFF,
+            (masscan->nic[i].router_ip>> 0)&0xFF
+            );
+    } else
     fprintf(fp, "router-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
             masscan->nic[i].router_mac[0],
             masscan->nic[i].router_mac[1],
@@ -195,6 +203,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
+    case Output_None:       fprintf(fp, "output-format = none\n"); break;
     case Output_Redis:      
         fprintf(fp, "output-format = redis\n"); 
         fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
@@ -669,6 +678,22 @@ masscan_set_parameter(struct Masscan *masscan,
 
         memcpy(masscan->nic[index].router_mac, mac, 6);
     }
+    else if (EQUALS("router-ip", name)) {
+        /* Send packets FROM this IP address */
+        struct Range range;
+
+        range = range_parse_ipv4(value, 0, 0);
+
+        /* Check for bad format */
+        if (range.begin != range.end) {
+            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n", 
+                    name, value);
+            LOG(0, "hint   addresses look like \"19.168.1.23\"\n");
+            exit(1);
+        }
+
+        masscan->nic[index].router_ip = range.begin;
+    }
     else if (EQUALS("rate", name) || EQUALS("max-rate", name) ) {
         double rate = 0.0;
         double point = 10.0;
@@ -849,6 +874,8 @@ masscan_set_parameter(struct Masscan *masscan,
         ranges_from_file(&masscan->targets, value);
     } else if (EQUALS("infinite", name)) {
         masscan->is_infinite = 1;
+    } else if (EQUALS("interactive", name)) {
+        masscan->is_interactive = 1;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -910,11 +937,13 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
     } else if (EQUALS("output-format", name)) {
+        masscan->is_interactive = 0;
         if (EQUALS("list", value))              masscan->nmap.format = Output_List;
         else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
         else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
         else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
         else if (EQUALS("json", value))         masscan->nmap.format = Output_JSON;
+        else if (EQUALS("none", value))         masscan->nmap.format = Output_None;
         else if (EQUALS("redis", value))        masscan->nmap.format = Output_Redis;
         else {
             fprintf(stderr, "error: %s=%s\n", name, value);
@@ -922,6 +951,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("output-filename", name) || EQUALS("output-file", name)) {
         if (masscan->nmap.format == 0)
             masscan->nmap.format = Output_XML;
+        masscan->is_interactive = 0;
         strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
     } else if (EQUALS("pcap", name)) {
         strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
@@ -1111,7 +1141,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
-		"arp",  "infinite",
+		"arp",  "infinite", "interactive",
         0};
     size_t i;
 
@@ -1301,6 +1331,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 /* Do nothing: this code never does DNS lookups anyway */
                 break;
             case 'o': /* nmap output format */
+                masscan->is_interactive = 0;
                 switch (argv[i][2]) {
                 case 'A':
                     masscan->nmap.format = Output_All;

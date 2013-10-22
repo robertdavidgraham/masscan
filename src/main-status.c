@@ -27,13 +27,23 @@ status_print(
     struct Status *status, 
     uint64_t count, 
     uint64_t max_count, 
-    double x)
+    double x,
+    uint64_t total_tcbs,
+    uint64_t total_synacks,
+    uint64_t total_syns)
 {
     double elapsed_time;
     double rate;
     double now;
     double percent_done;
     double time_remaining;
+    uint64_t current_tcbs = 0;
+    uint64_t current_synacks = 0;
+    uint64_t current_syns = 0;
+    double tcb_rate = 0.0;
+    double synack_rate = 0.0;
+    double syn_rate = 0.0;
+
 
     /*
      * ####  FUGGLY TIME HACK  ####
@@ -79,8 +89,8 @@ status_print(
                 + status->last_rates[7]
                 ;
     rate /= 8;
-    if (rate == 0)
-        return;
+    /*if (rate == 0)
+        return;*/
 
     /*
      * Calculate "percent-done", which is just the total number of
@@ -94,20 +104,50 @@ status_print(
      */
     time_remaining  = (1.0 - percent_done/100.0) * (max_count / rate);
 
+    /*
+     * some other stats
+     */
+    if (total_tcbs) {
+        current_tcbs = total_tcbs - status->total_tcbs;
+        status->total_tcbs = total_tcbs;
+        tcb_rate = (1.0*current_tcbs)/elapsed_time;
+    }
+    if (total_synacks) {
+        current_synacks = total_synacks - status->total_synacks;
+        status->total_synacks = total_synacks;
+        synack_rate = (1.0*current_synacks)/elapsed_time;
+    }
+    if (total_syns) {
+        current_syns = total_syns - status->total_syns;
+        status->total_syns = total_syns;
+        syn_rate = (1.0*current_syns)/elapsed_time;
+    }
 
     /*
      * Print the message to <stderr> so that <stdout> can be redirected
      * to a file (<stdout> reports what systems were found).
      */
-    fprintf(stderr, "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs,     \r",
-                    x/1000.0,
-                    percent_done,
-                    (unsigned)(time_remaining/60/60),
-                    (unsigned)(time_remaining/60)%60,
-                    (unsigned)(time_remaining)%60,
-                    global_tcb_count
-                    //(unsigned)rate
-                    );
+    if (status->is_infinite) {
+        fprintf(stderr, 
+                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %llu-tcbs,         \r",
+                        x/1000.0,
+                        syn_rate,
+                        synack_rate,
+                        tcb_rate,
+                        global_tcb_count
+                        );
+    } else {
+        fprintf(stderr, 
+                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs, rr=%.0f       \r",
+                        x/1000.0,
+                        percent_done,
+                        (unsigned)(time_remaining/60/60),
+                        (unsigned)(time_remaining/60)%60,
+                        (unsigned)(time_remaining)%60,
+                        global_tcb_count,
+                        synack_rate
+                       );
+    }
     fflush(stderr);
 
     /*

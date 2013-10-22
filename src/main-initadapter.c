@@ -141,12 +141,13 @@ masscan_initialize_adapter(
     if (masscan->is_offline) {
         memcpy(router_mac, "\x66\x55\x44\x33\x22\x11", 6);
     } else if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
-        unsigned router_ipv4;
-        int err;
+        unsigned router_ipv4 = masscan->nic[index].router_ip;
+        int err = 0;
 
 
         LOG(1, "rawsock: looking for default gateway\n");
-        err = rawsock_get_default_gateway(ifname, &router_ipv4);
+        if (router_ipv4 == 0)
+            err = rawsock_get_default_gateway(ifname, &router_ipv4);
         if (err == 0) {
             LOG(2, "auto-detected: router-ip=%u.%u.%u.%u\n",
                 (router_ipv4>>24)&0xFF,

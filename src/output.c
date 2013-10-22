@@ -264,6 +264,9 @@ output_create(const struct Masscan *masscan)
     case Output_Redis:
         out->funcs = &redis_output;
         break;
+    case Output_None:
+        out->funcs = &null_output;
+        break;
     default:
         out->funcs = &null_output;
         //masscan->is_interactive = 1;
@@ -433,7 +436,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     global_now = now;
 
 
-    if (masscan->is_interactive || fp == NULL) {
+    if (masscan->is_interactive) {
         if (status == Port_IcmpEchoResponse) {
             fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
                     "                               \n",
@@ -515,7 +518,7 @@ output_report_banner(struct Output *out, time_t now,
     
 
 
-    if (masscan->is_interactive || fp == NULL) {
+    if (masscan->is_interactive) {
         unsigned count;
         char banner_buffer[4096];
 

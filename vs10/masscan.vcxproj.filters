@@ -114,9 +114,6 @@
     <ClCompile Include="..\src\logger.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\main-conf.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\main-dedup.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
@@ -186,14 +183,17 @@
     <ClCompile Include="..\src\in-binary.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\masscan-app.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\out-redis.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pixie-file.c">
       <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\masscan-app.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-conf.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -323,9 +323,6 @@
     <ClInclude Include="..\src\siphash24.h">
       <Filter>Source Files\rand</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\masscan-app.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\in-binary.h">
       <Filter>Source Files\output</Filter>
     </ClInclude>
@@ -337,6 +334,9 @@
     </ClInclude>
     <ClInclude Include="..\src\main-globals.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan-app.h">
+      <Filter>Source Files\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
