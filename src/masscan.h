@@ -181,6 +181,13 @@ struct Masscan
         unsigned ip;
         unsigned port;
     } redis;
+
+    /**
+     * --infinite
+     * Restarts the scan from the beginning, for load testing, but
+     * by incrementing the seed
+     */
+    unsigned is_infinite:1;
 };
 
 

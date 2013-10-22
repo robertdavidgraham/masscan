@@ -847,6 +847,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
         ranges_from_file(&masscan->targets, value);
+    } else if (EQUALS("infinite", name)) {
+        masscan->is_infinite = 1;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1109,7 +1111,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
-		"arp", 
+		"arp",  "infinite",
         0};
     size_t i;
 

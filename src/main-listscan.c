@@ -14,6 +14,7 @@ main_listscan(struct Masscan *masscan)
     struct BlackRock blackrock;
     unsigned r = masscan->retries + 1;
     unsigned increment = masscan->shard.of;
+    uint64_t seed = masscan->seed;
 
     count_ports = rangelist_count(&masscan->ports);
     if (count_ports == 0)
@@ -30,8 +31,8 @@ main_listscan(struct Masscan *masscan)
 
     range = count_ips * count_ports;
 
-    
-    blackrock_init(&blackrock, range, masscan->seed);
+infinite:
+    blackrock_init(&blackrock, range, seed);
     
     start = masscan->resume.index + (masscan->shard.one-1);
     end = range;
@@ -67,5 +68,10 @@ main_listscan(struct Masscan *masscan)
             i += increment; /* <------ increment by 1 normally, more with shards/nics */
             r = masscan->retries + 1;
         }
+    }
+
+    if (masscan->is_infinite) {
+        seed++;
+        goto infinite;
     }
 }

@@ -258,6 +258,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned src_ip_mask;
     unsigned src_port;
     unsigned src_port_mask;
+    uint64_t seed = masscan->seed;
+    uint64_t repeats = 0; /* --infinite repeats */
 
     get_sources(masscan, parms->nic_index, 
                 &src_ip, &src_ip_mask, 
@@ -265,13 +267,18 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
+    /* "THROTTLER" rate-limits how fast we transmit, set with the
+     * --max-rate parameter */
+    throttler_start(throttler, masscan->max_rate/masscan->nic_count);
+
+infinite:
 
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
      * ports */
     range = rangelist_count(&masscan->targets) 
             * rangelist_count(&masscan->ports);
-    blackrock_init(&blackrock, range, masscan->seed);
+    blackrock_init(&blackrock, range, seed);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
      * to support --shard, so that multiple machines can co-operate on
@@ -285,11 +292,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         end = start + masscan->resume.count;
     end += retries * rate;
 
-    
-
-    /* "THROTTLER" rate-limits how fast we transmit, set with the
-     * --max-rate parameter */
-    throttler_start(throttler, masscan->max_rate/masscan->nic_count);
 
     /* -----------------
      * the main loop
@@ -349,9 +351,18 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
             /*
              * SYN-COOKIE LOGIC
+             *  Figure out the source IP/port, and the SYN cookie
              */
-            ip_me = src_ip + (i & src_ip_mask);
-            port_me = src_port + (xXx & src_port_mask);
+            if (src_ip_mask > 1 || src_port_mask > 1) {
+                uint64_t r = syn_cookie((unsigned)(i+repeats), 
+                                        (unsigned)((i+repeats)>>32),
+                                        (unsigned)xXx, (unsigned)(xXx>>32));
+                port_me = src_port + (r & src_port_mask);
+                ip_me = src_ip + ((r>>16) & src_ip_mask);
+            } else {
+                ip_me = src_ip;
+                port_me = src_port;
+            }
             cookie = syn_cookie(ip_them, port_them, ip_me, port_me);
             
             /*
@@ -399,6 +410,16 @@ transmit_thread(void *v) /*aka. scanning_thread() */
         /* save our current location for resuming, if the user pressed
          * <ctrl-c> to exit early */
         parms->my_index = i;
+    }
+
+    /*
+     * --infinite
+     *  For load testing, go around and do this again
+     */
+    if (masscan->is_infinite && !control_c_pressed) {
+        seed++;
+        repeats++;
+        goto infinite;
     }
 
 
@@ -1107,7 +1128,7 @@ main_scan(struct Masscan *masscan)
             rate += parms->throttler->current_rate;
         }
 
-        if (min_index >= range) {
+        if (min_index >= range && !masscan->is_infinite) {
             control_c_pressed = 1;
         }
 
