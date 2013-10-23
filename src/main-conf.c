@@ -271,10 +271,19 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "\n");
     if (masscan->http_user_agent)
         fprintf(    fp, 
-                    "http-user-agent = %.*s\n",
-                    masscan->http_user_agent_length,
-                    masscan->http_user_agent);
-
+                "http-user-agent = %.*s\n",
+                masscan->http_user_agent_length,
+                masscan->http_user_agent);
+    
+    for (i=0; i<sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); i++) {
+        if (masscan->http_headers[i].header_name == 0)
+            continue;
+        fprintf(    fp,
+                    "http-header[%s] = %.*s\n",
+                    masscan->http_headers[i].header_name,
+                    masscan->http_headers[i].header_value_length,
+                masscan->http_headers[i].header_value);
+    }
 }
 
 /***************************************************************************
@@ -599,7 +608,7 @@ masscan_set_parameter(struct Masscan *masscan,
     }
     else if (EQUALS("adapter-ip", name) || EQUALS("source-ip", name) 
              || EQUALS("source-address", name) || EQUALS("spoof-ip", name)
-             || EQUALS("spoof-address", name)) {
+             || EQUALS("spoof-address", name) || EQUALS("src-ip", name)) {
         /* Send packets FROM this IP address */
         struct Range range;
 
@@ -624,7 +633,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->nic[index].src.ip.first = range.begin;
         masscan->nic[index].src.ip.last = range.end;
         masscan->nic[index].src.ip.range = range.end - range.begin + 1;
-    } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)) {
+    } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)
+               || EQUALS("src-port", name)) {
         /* Send packets FROM this port number */
         unsigned is_error = 0;
         struct RangeList ports;
@@ -657,7 +667,7 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->nic[index].src.port.last = ports.list[0].end;
         masscan->nic[index].src.port.range = ports.list[0].end - ports.list[0].begin + 1;
     } else if (EQUALS("adapter-mac", name) || EQUALS("spoof-mac", name)
-               || EQUALS("source-mac", name)) {
+               || EQUALS("source-mac", name) || EQUALS("src-mac", name)) {
         /* Send packets FROM this MAC address */
         unsigned char mac[6];
 
@@ -668,7 +678,9 @@ masscan_set_parameter(struct Masscan *masscan,
 
         memcpy(masscan->nic[index].adapter_mac, mac, 6);
     }
-    else if (EQUALS("router-mac", name) || EQUALS("router", name)) {
+    else if (EQUALS("router-mac", name) || EQUALS("router", name)
+             || EQUALS("dest-mac", name) || EQUALS("destination-mac", name)
+             || EQUALS("dst-mac", name) || EQUALS("target-mac", name)) {
         unsigned char mac[6];
 
         if (parse_mac_address(value, mac) != 0) {
@@ -726,7 +738,10 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->max_rate = rate;
 
     }
-    else if (EQUALS("ports", name) || EQUALS("port", name)) {
+    else if (EQUALS("ports", name) || EQUALS("port", name) 
+             || EQUALS("dst-port", name) || EQUALS("dest-port", name)
+             || EQUALS("destination-port", name) 
+             || EQUALS("target-port", name)) {
         unsigned is_error = 0;
         rangelist_parse_ports(&masscan->ports, value, &is_error);
         if (masscan->op == 0)
@@ -762,7 +777,10 @@ masscan_set_parameter(struct Masscan *masscan,
         rangelist_add_range(&masscan->ports, range.begin, range.end);
         LOG(5, "--ping\n");
     } else if (EQUALS("range", name) || EQUALS("ranges", name) 
-               || EQUALS("ip", name) || EQUALS("ipv4", name)) {
+               || EQUALS("ip", name) || EQUALS("ipv4", name)
+               || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
+               || EQUALS("destination-ip", name)
+               || EQUALS("target-ip", name)) {
         const char *ranges = value;
         unsigned offset = 0;
         unsigned max_offset = (unsigned)strlen(ranges);
@@ -868,6 +886,39 @@ masscan_set_parameter(struct Masscan *masscan,
                 value,
                 masscan->http_user_agent_length+1
                 );
+    } else if (memcmp("http-header", name, 11) == 0) {
+        unsigned index;
+        unsigned name_length;
+        char *newname;
+        unsigned value_length = strlen(value);
+        unsigned char *newvalue;
+        
+        /* allcoate new value */
+        newvalue = (unsigned char*)malloc(value_length+1);
+        memcpy(newvalue, value, value_length+1);
+        newvalue[value_length] = '\0';
+        
+        /* allocate a new name */
+        name += 11;
+        while (ispunct(*name))
+            name++;
+        name_length = strlen(name);
+        while (name_length && ispunct(name[name_length-1]))
+            name_length--;
+        newname = (char*)malloc(name_length+1);
+        memcpy(newname, name, name_length+1);
+        newname[name_length] = '\0';
+
+        
+        for (index=0; index < sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); index++) {
+            if (masscan->http_headers[index].header_name == 0) {
+                masscan->http_headers[index].header_name = newname;
+                masscan->http_headers[index].header_value = newvalue;
+                masscan->http_headers[index].header_value_length = value_length;
+                return;
+            }
+        }
+        
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {

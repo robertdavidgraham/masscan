@@ -177,6 +177,12 @@ struct Masscan
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
 
+    struct {
+        const char *header_name;
+        unsigned char *header_value;
+        unsigned header_value_length;
+    } http_headers[16];
+    
     char *bpf_filter;
 
     struct {

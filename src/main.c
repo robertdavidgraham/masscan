@@ -564,10 +564,10 @@ receive_thread(void *v)
             masscan->tcb.timeout
             );
         if (masscan->http_user_agent_length)
-        tcpcon_set_parameter(   tcpcon, 
-                                "http-user-agent",
-                                masscan->http_user_agent_length,
-                                masscan->http_user_agent);
+            tcpcon_set_parameter(   tcpcon, 
+                                    "http-user-agent",
+                                    masscan->http_user_agent_length,
+                                    masscan->http_user_agent);
 
     }
 
