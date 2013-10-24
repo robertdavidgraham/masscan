@@ -1,12 +1,24 @@
+/*
+    ZeroAccess botnet
+
+    This scans for the P2P ports on the "ZeroAccess" botnet.
+
+    http://www.symantec.com/connect/blogs/grappling-zeroaccess-botnet
+    http://www.sophos.com/en-us/medialibrary/PDFs/technical%20papers/Sophos_ZeroAccess_Botnet.pdf
+
+*/
 #include "proto-zeroaccess.h"
 #include "proto-preprocess.h"
 #include "output.h"
+#include "proto-banner1.h"
 
 #include <stdio.h>
 #include <string.h>
 
 
 /***************************************************************************
+ * I hand-crafted this "getL" request packet. It has the ID set to "mass",
+ * then has been CRCed and encrypted.
  ***************************************************************************/
 const unsigned char zeroaccess_getL[] = {
     0x46, 0x5d, 0x49, 0x9e, 0x28, 0x94, 0x8d, 0xab, 
@@ -14,6 +26,7 @@ const unsigned char zeroaccess_getL[] = {
 };
 
 /***************************************************************************
+ * Table for the standard CRC32 algorithm used everywhere.
  ***************************************************************************/
 static const unsigned crc32_table[256] = {
     0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -72,8 +85,9 @@ static const unsigned crc32_table[256] = {
 
 
 /***************************************************************************
+ * Standard CRC32 calculation.
  ***************************************************************************/
-unsigned
+static unsigned
 crc_calc(const unsigned char *px, unsigned length)
 {
 	unsigned i;
@@ -88,11 +102,11 @@ crc_calc(const unsigned char *px, unsigned length)
     return crc;
 }
 
-
-
-
-
 /***************************************************************************
+ * Zero-Access encrypts packets with a simple encryption of starting
+ * with the key "ftp2" XORed with each 4-byte word, then rotated left
+ * by one bit after every XOR. Because it's XOR, encryption is also
+ * decryption.
  ***************************************************************************/
 static unsigned
 zadecrypt(const unsigned char *src, size_t src_len, unsigned char *dst, size_t dst_len)
@@ -115,6 +129,9 @@ zadecrypt(const unsigned char *src, size_t src_len, unsigned char *dst, size_t d
 }
 
 /***************************************************************************
+ * Generate a "getL" request. I put this in the code, but I don't really
+ * use it, because I ran it once to generate the hard-coded packet at
+ * the top of this file.
  ***************************************************************************/
 unsigned
 generate_getL(unsigned char *out_buf, size_t out_buf_len, unsigned xrand)
@@ -145,16 +162,24 @@ generate_getL(unsigned char *out_buf, size_t out_buf_len, unsigned xrand)
 }
 
 /***************************************************************************
+ * Handles the response packet from our "getL" request, which is known
+ * as a "retL". This contains a list of IP addresses of infected machines.
+ * therefore, we want to parse the response and grab those IP addresses
+ * so that we know about even more infected machines.
  ***************************************************************************/
 unsigned
 handle_zeroaccess(  struct Output *out, time_t timestamp, 
                     const unsigned char *px, unsigned length, 
                     struct PreprocessedInfo *parsed)
 {
+    unsigned char buf[2048];
+    unsigned len;
     unsigned ip_them;
     unsigned ip_me;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
+    unsigned char banner[2048];
+    unsigned banner_offset = 0;
 
     UNUSEDPARM(px);
     UNUSEDPARM(length);
@@ -165,14 +190,69 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
     ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
             | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
+    /* Decrypt the response packet */
+    len = zadecrypt(px + parsed->app_offset, 
+                    parsed->app_length,
+                    buf, sizeof(buf));
+    if (len != parsed->app_length) {
+        return 0; /* is not zeroaccess botnet */
+    }
+
+    /* Validate the CRC */
+    {
+        unsigned old_crc;
+        unsigned new_crc;
+    
+        old_crc = buf[0] | buf[1]<<8 | buf[2]<<16 | buf[3]<<24;
+        memset(buf, 0, 4);
+        new_crc = crc_calc(buf, len);
+        if (old_crc != new_crc)
+            return 0; /* not zeroaccess, or corrupted */
+    }
+
+    /* Make sure this is a "retl" packet */
+    if (len < 16 || memcmp(buf+4, "Lter", 4) != 0)
+        return 0; /* not "retL" */
+
+    /* List IP addresses */
+    banner_append("ZeroAccess:", 11, banner, &banner_offset, sizeof(banner));
+    {
+        unsigned i;
+        unsigned ip_count = buf[12] | buf[13]<<8 | buf[14]<<16 | buf[15]<<24;
+        if (ip_count > 256)
+            return 0; /* too many addresses */
+        if (16 + ip_count*8 > len)
+            return 0; /* packet overflow */
+        for (i=0; i<ip_count; i++) {
+            unsigned ip_found;
+            char szaddr[20];
+
+            ip_found =  buf[16 + i*8 + 0] <<24
+                      | buf[16 + i*8 + 1] <<16
+                      | buf[16 + i*8 + 2] << 8
+                      | buf[16 + i*8 + 3] << 0;
+
+            sprintf_s(szaddr, sizeof(szaddr), "%u.%u.%u.%u ",
+                    (unsigned char)(ip_found>>24),
+                    (unsigned char)(ip_found>>16),
+                    (unsigned char)(ip_found>> 8),
+                    (unsigned char)(ip_found>> 0)
+                    );
+            banner_append(szaddr, strlen(szaddr), banner, &banner_offset, sizeof(banner));
+        }
+    }
+
+
+
+
 
     output_report_banner(
             out, timestamp,
             ip_them, 17, port_them, 
             PROTO_UDP_ZEROACCESS,
-            (const unsigned char*)"zeroaccess", 10);
+            (const unsigned char*)banner, banner_offset);
 
-    return 0;
+    return 0; /* is zeroaccess botnet*/
 }
 
 /***************************************************************************

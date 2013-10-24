@@ -435,6 +435,19 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
     global_now = now;
 
+    if (masscan->nmap.open_only)
+    switch (status) {
+    case Port_Open:
+    case Port_IcmpEchoResponse:
+    case Port_UdpOpen:
+	case Port_ArpOpen:
+    default:
+        break;
+
+    case Port_Closed:
+    case Port_UdpClosed:
+        return;
+    }
 
     if (masscan->is_interactive) {
         if (status == Port_IcmpEchoResponse) {
