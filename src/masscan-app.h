@@ -15,6 +15,7 @@ enum ApplicationProtocol {
     PROTO_SMTP,
     PROTO_POP3,
     PROTO_IMAP4,
+    PROTO_UDP_ZEROACCESS,
 };
 
 const char *

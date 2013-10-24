@@ -20,6 +20,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_SMTP:    return "smtp";
     case PROTO_POP3:    return "pop";
     case PROTO_IMAP4:   return "imap";
+    case PROTO_UDP_ZEROACCESS: return "zeroaccess";
 
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);

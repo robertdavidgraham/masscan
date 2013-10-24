@@ -890,7 +890,7 @@ masscan_set_parameter(struct Masscan *masscan,
         unsigned index;
         unsigned name_length;
         char *newname;
-        unsigned value_length = strlen(value);
+        unsigned value_length = (unsigned)strlen(value);
         unsigned char *newvalue;
         
         /* allcoate new value */
@@ -902,7 +902,7 @@ masscan_set_parameter(struct Masscan *masscan,
         name += 11;
         while (ispunct(*name))
             name++;
-        name_length = strlen(name);
+        name_length = (unsigned)strlen(name);
         while (name_length && ispunct(name[name_length-1]))
             name_length--;
         newname = (char*)malloc(name_length+1);

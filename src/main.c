@@ -44,6 +44,7 @@
 #include "templ-port.h"
 #include "in-binary.h"          /* covert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
+#include "proto-zeroaccess.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1383,6 +1384,7 @@ int main(int argc, char *argv[])
             x += smack_selftest();
             x += banner1_selftest();
             x += mainconf_selftest();
+            x += zeroaccess_selftest();
 
 
             if (x != 0) {

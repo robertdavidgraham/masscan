@@ -195,6 +195,9 @@
     <ClCompile Include="..\src\main-conf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-zeroaccess.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -337,6 +340,9 @@
     </ClInclude>
     <ClInclude Include="..\src\masscan-app.h">
       <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-zeroaccess.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

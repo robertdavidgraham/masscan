@@ -15,6 +15,7 @@
 #include "proto-preprocess.h"   /* parse packets */
 #include "ranges.h"             /* for parsing IP addresses */
 #include "logger.h"
+#include "proto-zeroaccess.h"   /* botnet p2p protocol */
 
 #include <stdio.h>
 #include <string.h>
@@ -96,6 +97,16 @@ struct Payload2 hard_coded_payloads[] = {
         "Accept: application/sdp\r\n"
         "Content-Length: 0\r\n"
     },
+
+    //16464,16465,16470, 16471 
+    {16464, 65536, zeroaccess_getL_length, 0, 0, 
+        (char *)zeroaccess_getL},
+    {16465, 65536, zeroaccess_getL_length, 0, 0, 
+        (char *)zeroaccess_getL},
+    {16470, 65536, zeroaccess_getL_length, 0, 0, 
+        (char *)zeroaccess_getL},
+    {16471, 65536, zeroaccess_getL_length, 0, 0, 
+        (char *)zeroaccess_getL},
 
     {0,0,0,0,0}
 };

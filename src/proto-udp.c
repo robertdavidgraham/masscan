@@ -2,6 +2,7 @@
 #include "proto-dns.h"
 #include "proto-netbios.h"
 #include "proto-snmp.h"
+#include "proto-zeroaccess.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
 #include "logger.h"
@@ -32,6 +33,13 @@ void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, u
     case 161:
         status = handle_snmp(out, timestamp, px, length, parsed);
         break;
+    case 16464:
+    case 16465:
+    case 16470:
+    case 16471:
+        status = handle_zeroaccess(out, timestamp, px, length, parsed);
+        break;
+
     }
 
     if (status == 0)
