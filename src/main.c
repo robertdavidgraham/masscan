@@ -1300,9 +1300,15 @@ int main(int argc, char *argv[])
         uint64_t range2;
         rangelist_exclude(&masscan->targets, &masscan->exclude_ip);
         rangelist_exclude(&masscan->ports, &masscan->exclude_port);
-        rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
+        //rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
 
         range2 = rangelist_count(&masscan->targets) * rangelist_count(&masscan->ports);
+
+        if (range != 0 && range2 == 0) {
+            LOG(0, "FAIL: no ranges left to scan\n");
+            LOG(0, "   ...all ranges overlapped something in an excludefile range\n");
+            exit(1);
+        }
 
         if (range2 != range && masscan->resume.index) {
             LOG(0, "FAIL: Attempted to add additional 'exclude' ranges after scan start.\n");
