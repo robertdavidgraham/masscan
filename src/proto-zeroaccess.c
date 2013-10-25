@@ -11,7 +11,7 @@
 #include "proto-preprocess.h"
 #include "output.h"
 #include "proto-banner1.h"
-
+#include "string_s.h"
 #include <stdio.h>
 #include <string.h>
 
