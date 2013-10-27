@@ -7,7 +7,9 @@
 #include "templ-port.h"
 
 
-int
+/***************************************************************************
+ ***************************************************************************/
+static int
 matches_me(struct Output *out, unsigned ip, unsigned port)
 {
     unsigned i;
@@ -19,6 +21,8 @@ matches_me(struct Output *out, unsigned ip, unsigned port)
     return 0;
 }
 
+/***************************************************************************
+ ***************************************************************************/
 int
 parse_port_unreachable(const unsigned char *px, unsigned length,
         unsigned *r_ip_me, unsigned *r_ip_them,
@@ -41,7 +45,15 @@ parse_port_unreachable(const unsigned char *px, unsigned length,
     return 0;
 }
 
-void handle_icmp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+/***************************************************************************
+ * This is where we handle all incoming ICMP packets. Some of these packets
+ * will be due to scans we are doing, like pings (echoes). Some will
+ * be inadvertent, such as "destination unreachable" messages.
+ ***************************************************************************/
+void
+handle_icmp(struct Output *out, time_t timestamp, 
+            const unsigned char *px, unsigned length, 
+            struct PreprocessedInfo *parsed)
 {
     unsigned type = parsed->port_src;
     unsigned code = parsed->port_dst;

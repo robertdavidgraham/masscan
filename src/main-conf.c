@@ -1256,7 +1256,12 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             if (strcmp(argv[i], "--help") == 0)
                 masscan_help();
             else if (EQUALS("readscan", argv[i]+2)) {
+                /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
+
+                /* This option may be followed by many filenames, therefore,
+                 * skip forward in the argument list until the next
+                 * argument */
                 while (i+1 < argc && argv[i+1][0] != '-')
                     i++;
                 continue;

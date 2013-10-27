@@ -257,9 +257,6 @@ char *adapter_from_index(unsigned index)
     }
 }
 
-extern unsigned ip_checksum(struct TemplatePacket *pkt);
-extern unsigned tcp_checksum(struct TemplatePacket *pkt);
-
 
 /***************************************************************************
  * wrapper for libpcap's sendpacket

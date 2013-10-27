@@ -529,7 +529,8 @@ output_report_banner(struct Output *out, time_t now,
     const struct Masscan *masscan = out->masscan;
     FILE *fp = out->fp;
     
-
+    if (!out->is_banner)
+        return;
 
     if (masscan->is_interactive) {
         unsigned count;

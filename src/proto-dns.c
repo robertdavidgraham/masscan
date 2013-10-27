@@ -161,6 +161,7 @@ dns_extract_name(const unsigned char px[], unsigned offset, unsigned max, struct
     }
 }
 
+
 /****************************************************************************
  ****************************************************************************/
 void
@@ -312,17 +313,35 @@ proto_dns_parse(struct DNS_Incoming *dns, const unsigned char px[], unsigned off
     return;
 }
 
+
+/***************************************************************************
+ * Set the "syn-cookie" style information so that we can validate replies
+ * match a valid request. We don't hold "state" on the requests, so this
+ * becomes a hash of the port/IP information.
+ * DNS has a two-byte "transaction id" field, so we can't use the full
+ * cookie, just the lower two bytes of it.
+ * Below in "handle_dns", we validate that the cookie is correct.
+ ***************************************************************************/
 unsigned
-dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
+dns_set_cookie(unsigned char *px, size_t length, uint64_t cookie)
 {
     if (length > 2) {
-        px[0] = (unsigned char)(seqno >> 8);
-        px[1] = (unsigned char)(seqno >> 0);
-        return seqno & 0xFFFF;
+        px[0] = (unsigned char)(cookie >> 8);
+        px[1] = (unsigned char)(cookie >> 0);
+        return cookie & 0xFFFF;
     } else
         return 0;
 }
 
+/***************************************************************************
+ * Process a DNS packet received in response to UDP probes to port 53.
+ * This function has three main tasks:
+ *  - parse the DNS protocol, and make sure it's valid DNS.
+ *  - make sure that the DNS response matches a valid request using
+ *    the "syn-cookie" approach.
+ *  - parse the "version.bind" response and report it as the version
+ *    string for the banner.
+ ***************************************************************************/
 unsigned
 handle_dns(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {

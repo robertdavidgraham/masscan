@@ -12,6 +12,8 @@
 
 #include <ctype.h>
 
+/***************************************************************************
+ ***************************************************************************/
 static void
 append_char(unsigned char *banner, size_t banner_max, unsigned *banner_length, char c)
 {
@@ -20,6 +22,8 @@ append_char(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
 }
 
 
+/***************************************************************************
+ ***************************************************************************/
 static void
 append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, const unsigned char *name)
 {
@@ -49,6 +53,8 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
     append_char(banner, banner_max, banner_length, '\n');
 }
 
+/***************************************************************************
+ ***************************************************************************/
 unsigned
 handle_nbtstat_rr(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, unsigned ip_them, unsigned port_them)
 {
@@ -94,6 +100,8 @@ handle_nbtstat_rr(struct Output *out, time_t timestamp, const unsigned char *px,
 
 
 
+/***************************************************************************
+ ***************************************************************************/
 unsigned
 handle_nbtstat(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
 {

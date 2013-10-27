@@ -97,7 +97,7 @@ static unsigned char default_icmp_ping_template[] =
     "\x00\x4c"      /* total length = 76 bytes */
     "\x00\x00"      /* identification */
     "\x00\x00"      /* fragmentation flags */
-    "\xFF\x01"      /* TTL=255, proto=UDP */
+    "\xFF\x01"      /* TTL=255, proto=ICMP */
     "\xFF\xFF"      /* checksum */
     "\0\0\0\0"      /* source address */
     "\0\0\0\0"      /* destination address */
@@ -163,17 +163,28 @@ static unsigned char default_arp_template[] =
 
 
 /***************************************************************************
+ * Checksum the IP header. This is a "partial" checksum, so we
+ * don't reverse the bits ~.
  ***************************************************************************/
 static unsigned
-ip_checksum(struct TemplatePacket *tmpl)
+ip_header_checksum(const unsigned char *px, unsigned offset, unsigned max_offset)
 {
+    unsigned header_length = (px[offset]>>2)&0xFC;
     unsigned xsum = 0;
     unsigned i;
 
+    /* restrict check only over packet */
+    if (max_offset > offset + header_length)
+        max_offset = offset + header_length;
+    
+    /* add all the two-byte words together */
     xsum = 0;
-    for (i=tmpl->offset_ip; i<tmpl->offset_tcp; i += 2) {
-        xsum += tmpl->packet[i]<<8 | tmpl->packet[i+1];
+    for (i = offset; i < max_offset; i += 2) {
+        xsum += px[i]<<8 | px[i+1];
     }
+
+    /* if more than 16 bits in result, reduce to 16 bits */
+    xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
 
@@ -317,6 +328,8 @@ icmp_checksum(struct TemplatePacket *tmpl)
 }
 
 
+/***************************************************************************
+ ***************************************************************************/
 struct TemplateSet templ_copy(const struct TemplateSet *templset)
 {
     struct TemplateSet result;
@@ -557,6 +570,7 @@ template_set_target(
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = ~xsum;
+
 #if 0
     xsum = *(unsigned*)&px[offset_ip+0];
     xsum += *(unsigned*)&px[offset_ip+4];
@@ -662,7 +676,6 @@ template_set_target(
 static void
 _template_init(
     struct TemplatePacket *tmpl,
-    unsigned ip,
     const unsigned char *mac_source,
     const unsigned char *mac_dest,
     const void *packet_bytes,
@@ -709,10 +722,14 @@ _template_init(
      */
     memcpy(px+0, mac_dest, 6);
     memcpy(px+6, mac_source, 6);
-    ((unsigned char*)parsed.ip_src)[0] = (unsigned char)(ip>>24);
-    ((unsigned char*)parsed.ip_src)[1] = (unsigned char)(ip>>16);
-    ((unsigned char*)parsed.ip_src)[2] = (unsigned char)(ip>> 8);
-    ((unsigned char*)parsed.ip_src)[3] = (unsigned char)(ip>> 0);
+    ((unsigned char*)parsed.ip_src)[0] = (unsigned char)(0>>24);
+    ((unsigned char*)parsed.ip_src)[1] = (unsigned char)(0>>16);
+    ((unsigned char*)parsed.ip_src)[2] = (unsigned char)(0>> 8);
+    ((unsigned char*)parsed.ip_src)[3] = (unsigned char)(0>> 0);
+    ((unsigned char*)parsed.ip_dst)[0] = (unsigned char)(0>>24);
+    ((unsigned char*)parsed.ip_dst)[1] = (unsigned char)(0>>16);
+    ((unsigned char*)parsed.ip_dst)[2] = (unsigned char)(0>> 8);
+    ((unsigned char*)parsed.ip_dst)[3] = (unsigned char)(0>> 0);
 
     /*
      * ARP
@@ -729,13 +746,16 @@ _template_init(
     /*
      * IPv4
      *
-     * We need to zero out the fields that'll be overwritten
-     * later.
+     * Calculate the partial checksum. We zero out the fields that will be
+     * added later the packet, then calculate the checksum as if they were
+     * zero. This makes recalculation of the checksum easier when we transmit
      */
     memset(px + tmpl->offset_ip + 4, 0, 2);  /* IP ID field */
     memset(px + tmpl->offset_ip + 10, 0, 2); /* checksum */
-    memset(px + tmpl->offset_ip + 16, 0, 4); /* destination IP address */
-    tmpl->checksum_ip = ip_checksum(tmpl);
+    memset(px + tmpl->offset_ip + 12, 0, 8); /* addresses */
+    tmpl->checksum_ip = ip_header_checksum( tmpl->packet, 
+                                            tmpl->offset_ip, 
+                                            tmpl->length);
 
     /*
      * Higher layer protocols: zero out dest/checksum fields, then calculate
@@ -743,6 +763,7 @@ _template_init(
      */
     switch (parsed.ip_protocol) {
     case 1: /* ICMP */
+            tmpl->offset_app = tmpl->length;
             tmpl->checksum_tcp = icmp_checksum(tmpl);
             switch (px[tmpl->offset_tcp]) {
                 case 8: 
@@ -778,12 +799,11 @@ template_packet_init(
     const unsigned char *router_mac,
     struct NmapPayloads *payloads)
 {
-    unsigned source_ip = 0;
     templset->count = 0;
 
     /* [TCP] */
     _template_init( &templset->pkts[Proto_TCP],
-                    source_ip, source_mac, router_mac,
+                    source_mac, router_mac,
                     default_tcp_template,
                     sizeof(default_tcp_template)-1
                     );
@@ -791,7 +811,7 @@ template_packet_init(
 
     /* [UDP] */
     _template_init( &templset->pkts[Proto_UDP],
-                    source_ip, source_mac, router_mac,
+                    source_mac, router_mac,
                     default_udp_template,
                     sizeof(default_udp_template)-1
                     );
@@ -800,7 +820,7 @@ template_packet_init(
 
     /* [SCTP] */
     _template_init( &templset->pkts[Proto_SCTP],
-                    source_ip, source_mac, router_mac,
+                    source_mac, router_mac,
                     default_sctp_template,
                     sizeof(default_sctp_template)-1
                     );
@@ -808,7 +828,7 @@ template_packet_init(
 
     /* [ICMP ping] */
     _template_init( &templset->pkts[Proto_ICMP_ping],
-                   source_ip, source_mac, router_mac,
+                   source_mac, router_mac,
                    default_icmp_ping_template,
                    sizeof(default_icmp_ping_template)-1
                    );
@@ -816,7 +836,7 @@ template_packet_init(
     
     /* [ICMP timestamp] */
     _template_init( &templset->pkts[Proto_ICMP_timestamp],
-                   source_ip, source_mac, router_mac,
+                   source_mac, router_mac,
                    default_icmp_timestamp_template,
                    sizeof(default_icmp_timestamp_template)-1
                    );
@@ -824,7 +844,7 @@ template_packet_init(
     
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
-                    source_ip, source_mac, router_mac,
+                    source_mac, router_mac,
                     default_arp_template,
                     sizeof(default_arp_template)-1
                     );
@@ -893,7 +913,9 @@ template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
         unsigned offset = tmpl->offset_ip;
 
         px[offset+8] = (unsigned char)(ttl);
-        tmpl->checksum_ip = ip_checksum(tmpl);
+        tmpl->checksum_ip = ip_header_checksum(    tmpl->packet,
+                                                    tmpl->offset_ip,
+                                                    tmpl->length);
     }
 }
 

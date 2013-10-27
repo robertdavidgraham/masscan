@@ -29,6 +29,7 @@ struct Output
     const struct OutputType *funcs;
     time_t next_rotate;
     time_t last_rotate;
+    unsigned is_banner:1;
     unsigned period;
     unsigned offset;
     struct {
