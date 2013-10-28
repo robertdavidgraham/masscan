@@ -710,6 +710,11 @@ rawsock_init_adapter(const char *adapter_name,
                 LOG(0, " [hint] I've got some local priv escalation "
                         "0days that might work\n");
             }
+#if defined(__APPLE__)
+            if (strcmp(adapter_name, "vmnet1") == 0) {
+                LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
+            }
+#endif
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
