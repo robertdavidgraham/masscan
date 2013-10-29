@@ -57,9 +57,13 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
     /* [TYPE] field */
     switch (status) {
     case Port_Open:
+    case Port_UdpOpen:
+    case Port_IcmpEchoResponse:
+    case Port_ArpOpen:
         foo[0] = Out_Open;
         break;
     case Port_Closed:
+    case Port_UdpClosed:
         foo[0] = Out_Closed;
         break;
     default:
