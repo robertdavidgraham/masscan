@@ -193,7 +193,7 @@ ip_header_checksum(const unsigned char *px, unsigned offset, unsigned max_offset
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+static unsigned
 tcp_checksum2(const unsigned char *px, unsigned offset_ip,
               unsigned offset_tcp, size_t tcp_length)
 {
@@ -255,7 +255,7 @@ tcp_checksum(struct TemplatePacket *tmpl)
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+static unsigned
 udp_checksum2(const unsigned char *px, unsigned offset_ip,
               unsigned offset_tcp, size_t tcp_length)
 {
@@ -297,7 +297,7 @@ udp_checksum(struct TemplatePacket *tmpl)
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+static unsigned
 icmp_checksum2(const unsigned char *px,
               unsigned offset_icmp, size_t icmp_length)
 {
@@ -924,7 +924,7 @@ template_set_ttl(struct TemplateSet *tmplset, unsigned ttl)
 /***************************************************************************
  ***************************************************************************/
 int
-template_selftest()
+template_selftest(void)
 {
     struct TemplateSet tmplset[1];
     int failures = 0;

@@ -37,7 +37,7 @@
         pattern-matching process.
 
 */
-
+#include "proto-snmp.h"
 #include <string.h>
 #include <stdint.h>
 #include <string.h>
@@ -203,7 +203,7 @@ next_id(const unsigned char *oid, unsigned *offset, uint64_t oid_length)
 
 /****************************************************************************
  ****************************************************************************/
-void
+static void
 snmp_banner_oid(const unsigned char *oid, size_t oid_length,
             unsigned char *banner, unsigned *banner_offset, unsigned banner_max)
 {
@@ -258,7 +258,7 @@ snmp_banner_oid(const unsigned char *oid, size_t oid_length,
 
 /****************************************************************************
  ****************************************************************************/
-void
+static void
 snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t var_tag,
             const unsigned char *var, size_t var_length,
@@ -314,7 +314,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
  * TODO: only SNMPv0 is supported, the parser will have to be extended for
  * newer SNMP.
  ****************************************************************************/
-void
+static void
 snmp_parse(const unsigned char *px, uint64_t length,
     unsigned char *banner, unsigned *banner_offset, unsigned banner_max,
     unsigned *request_id)
@@ -495,7 +495,7 @@ snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
 
 /****************************************************************************
  ****************************************************************************/
-unsigned
+static unsigned
 id_prefix_count(unsigned id)
 {
     if (id & FIVE_BYTE)
@@ -512,7 +512,7 @@ id_prefix_count(unsigned id)
 /****************************************************************************
  * Convert text OID to binary
  ****************************************************************************/
-unsigned
+static unsigned
 convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 {
     size_t offset = 0;
@@ -599,7 +599,7 @@ handle_snmp(struct Output *out, time_t timestamp,
  * the entire OID.
  ****************************************************************************/
 void
-snmp_init()
+snmp_init(void)
 {
     unsigned i;
 
@@ -667,7 +667,7 @@ snmp_selftest_banner()
 /****************************************************************************
  ****************************************************************************/
 int
-snmp_selftest()
+snmp_selftest(void)
 {
     static const unsigned char xx[] = {
         43, 0x80|7, 110, 51, 0x80|20, 0x80|106, 84,

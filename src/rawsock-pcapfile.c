@@ -41,7 +41,7 @@
 #else
 #include <inttypes.h>
 #endif
-int64_t ftell_x(FILE *fp)
+static int64_t ftell_x(FILE *fp)
 {
 #if defined(WIN32) && defined(__GNUC__)
 	return ftello64(fp);
@@ -51,7 +51,7 @@ int64_t ftell_x(FILE *fp)
 	return ftello(fp);
 #endif
 }
-int fseek_x(FILE *fp, int64_t offset, int origin)
+static int fseek_x(FILE *fp, int64_t offset, int origin)
 {
 #if defined(WIN32) && defined(__GNUC__)
 	return fseeko64(fp, offset, origin);
@@ -164,7 +164,7 @@ struct PcapFile
 
 /** Read a 16-bit value from a capture file, depending upon the byte
  * order within that file */
-unsigned PCAP16(unsigned byte_order, const unsigned char *buf)
+static unsigned PCAP16(unsigned byte_order, const unsigned char *buf)
 {
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]*256 + buf[1];
@@ -174,7 +174,7 @@ unsigned PCAP16(unsigned byte_order, const unsigned char *buf)
 }
 /** Read a 32-bit value from a capture file, depending upon the byte
  * order within that file */
-unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
+static unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
 {
 	switch (byte_order) {
 	case CAPFILE_BIGENDIAN: return buf[0]<<24 | buf[1]<<16 | buf[2] << 8 | buf[3];
@@ -614,7 +614,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 	/* Read the first frame's timestamp */
 	{
 		int loc;
-		char buf[8];
+		char tsbuf[8];
         size_t x;
 
 		loc = ftell(fp);
@@ -624,7 +624,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 			fclose(fp);
 			return 0;
 		}
-		x = fread(buf, 1, 8, fp);
+		x = fread(tsbuf, 1, 8, fp);
         if (x != 8) {
 			perror(capfilename);
 			fclose(fp);

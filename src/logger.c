@@ -21,7 +21,7 @@ void LOG_add_level(int x)
 
 /***************************************************************************
  ***************************************************************************/
-void
+static void
 vLOG(int level, const char *fmt, va_list marker)
 {
     if (level <= global_debug_level) {
@@ -46,7 +46,7 @@ LOG(int level, const char *fmt, ...)
 
 /***************************************************************************
  ***************************************************************************/
-void
+static void
 vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
 {
     if (level <= global_debug_level) {

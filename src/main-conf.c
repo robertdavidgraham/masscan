@@ -25,7 +25,8 @@
 
 /***************************************************************************
  ***************************************************************************/
-void masscan_usage(void)
+void
+masscan_usage(void)
 {
     printf("usage:\n");
     printf("masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
@@ -172,7 +173,7 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
  * Use#1: create a template file of all setable parameters.
  * Use#2: make sure your configuration was interpreted correctly.
  ***************************************************************************/
-void
+static void
 masscan_echo(struct Masscan *masscan, FILE *fp)
 {
     unsigned i;
@@ -316,9 +317,19 @@ masscan_save_state(struct Masscan *masscan)
 }
 
 
-/***************************************************************************
- ***************************************************************************/
-void ranges_from_file(struct RangeList *ranges, const char *filename)
+/*****************************************************************************
+ * Read in ranges from a file
+ *
+ * There can be multiple ranges on a line, delimited by spaces. In fact,
+ * millions of ranges can be on a line: there is limit to the line length.
+ * That makes reading the file a little bit squirrelly. From one perspective
+ * this parser doesn't treat the the new-line '\n' any different than other
+ * space. But, from another perspective, it has to, because things like
+ * comments are terminated by a newline. Also, it has to count the number
+ * of lines correctly to print error messages.
+ *****************************************************************************/
+static void
+ranges_from_file(struct RangeList *ranges, const char *filename)
 {
     FILE *fp;
     errno_t err;
@@ -327,21 +338,19 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
-        //char dirname[256];
         perror(filename);
-        //fprintf(stderr, "dir = %s\n", getcwd(dirname));
         exit(1); /* HARD EXIT: because if it's an exclusion file, we don't
                   * want to continue. We don't want ANY chance of
                   * accidentally scanning somebody */
     }
 
-    /* for all lines */
     while (!feof(fp)) {
         int c = '\n';
 
         /* remove leading whitespace */
         while (!feof(fp)) {
             c = getc(fp);
+            line_number += (c == '\n');
             if (!isspace(c&0xFF))
                 break;
         }
@@ -350,37 +359,43 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
         if (ispunct(c&0xFF)) {
             while (!feof(fp)) {
                 c = getc(fp);
+                line_number += (c == '\n');
                 if (c == '\n') {
-                    line_number++;
                     break;
                 }
             }
+            /* Loop back to the begining state at the start of a line */
             continue;
         }
 
         if (c == '\n') {
-            line_number++;
             continue;
         }
 
         /*
-         * Read all space delimited entries
+         * Read in a single entry
          */
-        while (!feof(fp) && c != '\n') {
+        if (!feof(fp)) {
             char address[64];
             size_t i;
             struct Range range;
             unsigned offset = 0;
 
 
-            /* fetch next address range */
+            /* Grab all bytes until the next space or comma */
             address[0] = (char)c;
             i = 1;
             while (!feof(fp)) {
                 c = getc(fp);
-                if (isspace(c&0xFF))
+                line_number += (c == '\n');
+                if (isspace(c&0xFF) || c == ',') {
                     break;
-                if (i+1 < sizeof(address))
+                }
+                if (i+1 >= sizeof(address)) {
+                    LOG(0, "%s:%u:%u: bad address spec: \"%.*s\"\n",
+                            filename, line_number, offset, i, address);
+                    exit(1);
+                } else
                     address[i] = (char)c;
                 i++;
             }
@@ -389,14 +404,14 @@ void ranges_from_file(struct RangeList *ranges, const char *filename)
             /* parse the address range */
             range = range_parse_ipv4(address, &offset, (unsigned)i);
             if (range.begin == 0xFFFFFFFF && range.end == 0) {
-                fprintf(stderr, "%s:%u:%u: bad range spec: %s\n", 
-                        filename, line_number, offset, address);
+                LOG(0, "%s:%u:%u: bad range spec: \"%.*s\"\n", 
+                        filename, line_number, offset, i, address);
+                exit(1);
             } else {
                 rangelist_add_range(ranges, range.begin, range.end);
             }
         }
 
-        line_number++;
     }
 
     fclose(fp);
@@ -582,7 +597,7 @@ ARRAY(const char *rhs)
  * Called either from the "command-line" parser when it sees a --parm,
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
-void
+static void
 masscan_set_parameter(struct Masscan *masscan, 
                       const char *name, const char *value)
 {
@@ -821,7 +836,7 @@ masscan_set_parameter(struct Masscan *masscan,
             range = range_parse_ipv4(ranges, &offset, max_offset);
             if (range.begin == 0 && range.end == 0) {
                 fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
-                break;
+                exit(1);
             }
 
             rangelist_add_range(&masscan->exclude_ip, range.begin, range.end);
@@ -887,7 +902,7 @@ masscan_set_parameter(struct Masscan *masscan,
                 masscan->http_user_agent_length+1
                 );
     } else if (memcmp("http-header", name, 11) == 0) {
-        unsigned index;
+        unsigned j;
         unsigned name_length;
         char *newname;
         unsigned value_length = (unsigned)strlen(value);
@@ -910,11 +925,11 @@ masscan_set_parameter(struct Masscan *masscan,
         newname[name_length] = '\0';
 
         
-        for (index=0; index < sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); index++) {
-            if (masscan->http_headers[index].header_name == 0) {
-                masscan->http_headers[index].header_name = newname;
-                masscan->http_headers[index].header_value = newvalue;
-                masscan->http_headers[index].header_value_length = value_length;
+        for (j=0; j < sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); j++) {
+            if (masscan->http_headers[j].header_name == 0) {
+                masscan->http_headers[j].header_name = newname;
+                masscan->http_headers[j].header_value = newvalue;
+                masscan->http_headers[j].header_value_length = value_length;
                 return;
             }
         }
@@ -1203,7 +1218,9 @@ is_singleton(const char *name)
     return 0;
 }
 
-void
+/*****************************************************************************
+ *****************************************************************************/
+static void
 masscan_help()
 {
     printf(

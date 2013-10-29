@@ -2,6 +2,6 @@
 #define XRING_H
 
 
-int xring_selftest();
+int xring_selftest(void);
 
 #endif

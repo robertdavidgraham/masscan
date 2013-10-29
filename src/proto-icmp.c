@@ -23,7 +23,7 @@ matches_me(struct Output *out, unsigned ip, unsigned port)
 
 /***************************************************************************
  ***************************************************************************/
-int
+static int
 parse_port_unreachable(const unsigned char *px, unsigned length,
         unsigned *r_ip_me, unsigned *r_ip_them,
         unsigned *r_port_me, unsigned *r_port_them)

@@ -26,7 +26,7 @@
 #include <Windows.h>
 
 LARGE_INTEGER
-getFILETIMEoffset()
+getFILETIMEoffset(void)
 {
     SYSTEMTIME s;
     FILETIME f;
@@ -89,7 +89,7 @@ clock_gettime(int X, struct timeval *tv)
 
 
 uint64_t
-pixie_gettime()
+pixie_gettime(void)
 {
     //struct timeval tv;
     //clock_gettime(0, &tv);
@@ -107,7 +107,7 @@ pixie_gettime()
     //return (uint64_t)tv.tv_sec * 1000000UL + tv.tv_usec;
 }
 uint64_t
-pixie_nanotime()
+pixie_nanotime(void)
 {
     uint64_t time1 = 0, freq = 0;
     double seconds;
@@ -176,7 +176,7 @@ again:
     //usleep(microseconds);
 }
 uint64_t
-pixie_gettime()
+pixie_gettime(void)
 {
     int x;
     struct timespec tv;
@@ -193,7 +193,7 @@ pixie_gettime()
     return tv.tv_sec * 1000000 + tv.tv_nsec/1000;
 }
 uint64_t
-pixie_nanotime()
+pixie_nanotime(void)
 {
     int x;
     struct timespec tv;
@@ -232,18 +232,18 @@ pixie_mssleep(unsigned milliseconds)
     pixie_usleep(milliseconds * 1000ULL);
 }
 uint64_t
-pixie_gettime()
+pixie_gettime(void)
 {
     return mach_absolute_time()/1000;
 }
 uint64_t
-pixie_nanotime()
+pixie_nanotime(void)
 {
     return mach_absolute_time();
 }
 #endif
 
-int pixie_time_selftest()
+int pixie_time_selftest(void)
 {
     static const uint64_t duration = 123456;
     uint64_t start, stop, elapsed;

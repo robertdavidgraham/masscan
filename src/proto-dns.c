@@ -129,8 +129,9 @@ dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
 
 /****************************************************************************
  ****************************************************************************/
-void
-dns_extract_name(const unsigned char px[], unsigned offset, unsigned max, struct DomainPointer *name)
+static void
+dns_extract_name(const unsigned char px[], unsigned offset, unsigned max, 
+                 struct DomainPointer *name)
 {
     name->length = 0;
 

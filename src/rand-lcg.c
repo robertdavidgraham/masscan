@@ -1,9 +1,6 @@
 /*
     This is a "linear-congruent-generator", a type of random number
-    generator. We use it scan IPv4 addresses (and ports) in random
-    order, without having to keep 'state' about which ones we've
-    already scanned.
-
+    generator.
 */
 
 #include "rand-lcg.h"
@@ -43,8 +40,9 @@ typedef uint64_t PRIMEFACTORS[20];
  *      this because we are going to use prime non-factors for finding
  *      interesting numbers.
  ****************************************************************************/
-unsigned
-sieve_prime_factors(uint64_t number, PRIMEFACTORS factors, PRIMEFACTORS non_factors, double *elapsed)
+static unsigned
+sieve_prime_factors(uint64_t number, PRIMEFACTORS factors, 
+                    PRIMEFACTORS non_factors, double *elapsed)
 {
     primegen pg;
     clock_t start;
@@ -171,7 +169,7 @@ lcg_rand(uint64_t index, uint64_t a, uint64_t c, uint64_t range)
  * This works by counting the results of rand(), which should be produced
  * exactly once.
  ****************************************************************************/
-unsigned
+static unsigned
 lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
 {
     unsigned char *list;
@@ -209,7 +207,7 @@ lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
  * Count the number of digits in a number so that we can pretty-print a
  * bunch of numbers in nice columns.
  ****************************************************************************/
-unsigned
+static unsigned
 count_digits(uint64_t num)
 {
     unsigned result = 0;
@@ -232,7 +230,7 @@ count_digits(uint64_t num)
  * @return
  *      !is_coprime(c, factors)
  ****************************************************************************/
-uint64_t
+static uint64_t
 has_factors_in_common(uint64_t c, PRIMEFACTORS factors)
 {
     unsigned i;
@@ -365,7 +363,7 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
 /***************************************************************************
  ***************************************************************************/
 int
-randlcg_selftest()
+lcg_selftest(void)
 {
     unsigned i;
     int is_success = 0;

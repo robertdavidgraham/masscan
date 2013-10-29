@@ -1117,7 +1117,7 @@ rte_ring_dequeue_burst(struct rte_ring *r, void **obj_table, unsigned n)
 		return rte_ring_mc_dequeue_burst(r, obj_table, n);
 }
 
-int rte_ring_selftest();
+int rte_ring_selftest(void);
 
 #ifdef __cplusplus
 }

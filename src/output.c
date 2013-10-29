@@ -117,7 +117,7 @@ normalize_string(const unsigned char *px, size_t length, char *buf, size_t buf_l
  * meaning they can't be renamed while open. Therefore, we need to
  * construct our own open flag.
  ***************************************************************************/
-FILE *
+static FILE *
 open_rotate(struct Output *output, const char *filename)
 {
     FILE *fp;
@@ -131,7 +131,6 @@ open_rotate(struct Output *output, const char *filename)
     if (masscan->nmap.format == Output_Redis) {
         ptrdiff_t fd = output->redis.fd;
         if (fd < 1) {
-            int x;
             struct sockaddr_in sin = {0};
             fd = (ptrdiff_t)socket(AF_INET, SOCK_STREAM, 0);
             if (fd == -1) {
@@ -211,7 +210,7 @@ next_rotate(time_t last_rotate, unsigned period, unsigned offset)
 
 /***************************************************************************
  ***************************************************************************/
-int
+static int
 ends_with(const char *filename, const char *extension)
 {
     if (filename == NULL || extension == NULL)
@@ -246,6 +245,7 @@ output_create(const struct Masscan *masscan)
     out->offset = masscan->rotate_offset;
     out->redis.port = masscan->redis.port;
     out->redis.ip = masscan->redis.ip;
+    out->is_banner = masscan->is_banners;
 
     for (i=0; i<8; i++) {
         out->src[i] = masscan->nic[i].src;
@@ -310,7 +310,7 @@ output_create(const struct Masscan *masscan)
 
 /***************************************************************************
  ***************************************************************************/
-FILE *
+static FILE *
 output_do_rotate(struct Output *out)
 {
     const char *dir = out->masscan->rotate_directory;

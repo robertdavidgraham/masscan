@@ -1,3 +1,4 @@
+#include "proto-netbios.h"
 #include "proto-udp.h"
 #include "proto-dns-parse.h"
 #include "proto-preprocess.h"
@@ -53,10 +54,13 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
     append_char(banner, banner_max, banner_length, '\n');
 }
 
-/***************************************************************************
- ***************************************************************************/
-unsigned
-handle_nbtstat_rr(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, unsigned ip_them, unsigned port_them)
+/*****************************************************************************
+ * Process one of them many "resource-records" within the NBTSTAT response
+ *****************************************************************************/
+static unsigned
+handle_nbtstat_rr(struct Output *out, time_t timestamp, 
+                  const unsigned char *px, unsigned length, 
+                  unsigned ip_them, unsigned port_them)
 {
     unsigned char banner[65536];
     unsigned banner_length = 0;

@@ -90,6 +90,6 @@ extern struct PFRING {
 /*
  * call this to load the library
  */
-int PFRING_init();
+int PFRING_init(void);
 
 #endif

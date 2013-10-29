@@ -4,11 +4,12 @@
 struct NmapPayloads;
 
 /**
+ * Does a regression test of this module.
  * @return
  *      1 on failure
  *      0 on success
  */
-int template_selftest();
+int template_selftest(void);
 
 enum TemplateProtocol {
     Proto_TCP,

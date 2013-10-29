@@ -3,6 +3,7 @@
     translate the binary format into something more easily parsed, such
     as the XML or JSON formats.
 */
+#include "in-binary.h"
 #include "masscan.h"
 #include "masscan-app.h"
 #include "main-globals.h"
@@ -92,7 +93,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
  * Parse the BANNER record, extracting the timestamp, IP addres, and port
  * number. We also convert the banner string into a safer form.
  ***************************************************************************/
-void
+static void
 parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
@@ -123,7 +124,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
 /***************************************************************************
  * Read in the file, one record at a time.
  ***************************************************************************/
-uint64_t
+static uint64_t
 parse_file(struct Output *out, const char *filename)
 {
     FILE *fp = 0;

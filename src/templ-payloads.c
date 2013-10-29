@@ -16,6 +16,8 @@
 #include "ranges.h"             /* for parsing IP addresses */
 #include "logger.h"
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
+#include "proto-snmp.h"
+#include "proto-dns.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -46,8 +48,6 @@ struct NmapPayloads {
     struct Payload **list;
 };
 
-extern unsigned snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
-extern unsigned dns_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
 
 struct Payload2 hard_coded_payloads[] = {
     {161, 65536, 59, 0, snmp_set_cookie,
@@ -681,7 +681,7 @@ end:
 /***************************************************************************
  ***************************************************************************/
 struct NmapPayloads *
-payloads_create()
+payloads_create(void)
 {
     unsigned i;
     struct NmapPayloads *payloads;
@@ -721,7 +721,7 @@ payloads_create()
 /****************************************************************************
  ****************************************************************************/
 int
-payloads_selftest()
+payloads_selftest(void)
 {
     unsigned char buf[1024];
     size_t buf_length;

@@ -37,13 +37,18 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 
+/*
+ * PORTABILITY: Windows supports the "sendq" feature, and is really slow
+ * without this feature. It's not needed on Linux, so we just create 
+ * equivelent functions that do nothing
+ */
 struct pcap_send_queue;
 typedef struct pcap_send_queue pcap_send_queue;
-pcap_send_queue *pcap_sendqueue_alloc(size_t size) {return 0;}
-unsigned pcap_sendqueue_transmit(
+static pcap_send_queue *pcap_sendqueue_alloc(size_t size) {return 0;}
+static unsigned pcap_sendqueue_transmit(
     pcap_t *p, pcap_send_queue *queue, int sync) {return 0;}
-void pcap_sendqueue_destroy(pcap_send_queue *queue) {;}
-int pcap_sendqueue_queue(pcap_send_queue *queue,
+static void pcap_sendqueue_destroy(pcap_send_queue *queue) {;}
+static int pcap_sendqueue_queue(pcap_send_queue *queue,
     const struct pcap_pkthdr *pkt_header,
     const unsigned char *pkt_data) {return 0;}
 #else
@@ -98,7 +103,7 @@ int pcap_setdirection(pcap_t *pcap, pcap_direction_t direction)
 /***************************************************************************
  ***************************************************************************/
 void
-rawsock_init()
+rawsock_init(void)
 {
 #ifdef WIN32
     /* Declare and initialize variables */
@@ -203,7 +208,7 @@ rawsock_init()
 /***************************************************************************
  ***************************************************************************/
 void
-rawsock_list_adapters()
+rawsock_list_adapters(void)
 {
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -232,7 +237,8 @@ rawsock_list_adapters()
 
 /***************************************************************************
  ***************************************************************************/
-char *adapter_from_index(unsigned index)
+static char *
+adapter_from_index(unsigned index)
 {
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -524,7 +530,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
 
 /***************************************************************************
  ***************************************************************************/
-void
+static void
 rawsock_close_adapter(struct Adapter *adapter)
 {
     if (adapter->ring) {

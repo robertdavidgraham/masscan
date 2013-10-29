@@ -709,7 +709,9 @@ smack_add_pattern(
 /****************************************************************************
  ****************************************************************************/
 #ifdef DEBUG
-void DEBUG_set_name(struct SMACK *smack, const void *pattern, unsigned length, unsigned state)
+static void
+DEBUG_set_name(struct SMACK *smack, const void *pattern, 
+               unsigned length, unsigned state)
 {
 	char *name = (char*)malloc(length+1);
 	if (name == NULL) {
@@ -789,7 +791,7 @@ smack_add_prefixes(struct SMACK *smack, struct SmackPattern *pat)
 
 /****************************************************************************
  ****************************************************************************/
-void
+static void
 smack_stage0_compile_prefixes(struct SMACK *smack)
 {
 	unsigned s;

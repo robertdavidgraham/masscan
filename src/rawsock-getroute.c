@@ -21,7 +21,7 @@
 #define ROUNDUP(a)							\
 ((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
 
-struct sockaddr *
+static struct sockaddr *
 get_rt_address(struct rt_msghdr *rtm, int desired)
 {
     int i;
@@ -75,7 +75,7 @@ hexdump(const void *v, size_t len)
 #define RTA_BRD         0x80    /* for NEWADDR, broadcast or p-p dest addr */
 #endif
 
-void
+static void
 dump_rt_addresses(struct rt_msghdr *rtm)
 {
     int i;
@@ -92,7 +92,8 @@ dump_rt_addresses(struct rt_msghdr *rtm)
     }
 }
 
-int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
+int
+rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 {
     int fd;
     int seq = time(0);

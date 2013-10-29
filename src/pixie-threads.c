@@ -28,7 +28,7 @@
 /****************************************************************************
  ****************************************************************************/
 void
-pixie_cpu_raise_priority()
+pixie_cpu_raise_priority(void)
 {
 #if defined WIN32
 DWORD_PTR result;
@@ -93,7 +93,7 @@ pixie_cpu_set_affinity(unsigned processor)
 /****************************************************************************
  ****************************************************************************/
 unsigned
-pixie_cpu_get_count()
+pixie_cpu_get_count(void)
 {
 #if defined WIN32
 	/* WINDOWS - use GetProcessAffinityMask() function */

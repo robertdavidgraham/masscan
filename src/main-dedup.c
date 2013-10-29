@@ -9,6 +9,7 @@
     We can mimimize this with a table remembering recent responses. Occassional
     duplicates still leak through, but it'll be less of a problem.
 */
+#include "main-dedup.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,7 +30,7 @@ struct DedupTable
 /***************************************************************************
  ***************************************************************************/
 struct DedupTable *
-dedup_create()
+dedup_create(void)
 {
     struct DedupTable *result;
 
@@ -53,7 +54,9 @@ dedup_destroy(struct DedupTable *table)
 /***************************************************************************
  ***************************************************************************/
 unsigned
-dedup_is_duplicate(struct DedupTable *dedup, unsigned ip_them, unsigned port_them, unsigned ip_me, unsigned port_me)
+dedup_is_duplicate(struct DedupTable *dedup, 
+                   unsigned ip_them, unsigned port_them, 
+                   unsigned ip_me, unsigned port_me)
 {
     unsigned hash;
     struct DedupEntry *bucket;

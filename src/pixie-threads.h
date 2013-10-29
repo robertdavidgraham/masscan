@@ -6,12 +6,23 @@
 #include <intrin.h>
 #endif
 
-unsigned pixie_cpu_get_count();
+/**
+ * Returns the number of CPUs in the system, including virtual CPUs.
+ * On a single processor system, the number returned will be '1'.
+ * On a dual socket, dual-core per socket, hyperthreaded system, the
+ * count will be '8'.
+ */
+unsigned pixie_cpu_get_count(void);
 
-size_t pixie_begin_thread(void (*worker_thread)(void*), unsigned flags, void *worker_data);
+/**
+ * Launch a thread
+ */
+size_t pixie_begin_thread(void (*worker_thread)(void*), 
+                          unsigned flags,
+                          void *worker_data);
 
 void pixie_cpu_set_affinity(unsigned processor);
-void pixie_cpu_raise_priority();
+void pixie_cpu_raise_priority(void);
 
 void pixie_locked_subtract_u32(unsigned *lhs, unsigned rhs); 
 

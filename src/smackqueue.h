@@ -2,7 +2,7 @@
 #define SMACKQUEUE_H
 
 struct Queue *
-queue_create();
+queue_create(void);
 
 
 void 

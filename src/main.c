@@ -45,6 +45,7 @@
 #include "in-binary.h"          /* covert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
 #include "proto-zeroaccess.h"
+#include "siphash24.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -158,7 +159,7 @@ struct ThreadPair {
  * than individually. It increases latency, but increases performance. We
  * don't really care about latency.
  ***************************************************************************/
-void
+static void
 flush_packets(struct Adapter *adapter,
     PACKET_QUEUE *packet_buffers,
     PACKET_QUEUE *transmit_queue,
@@ -365,11 +366,11 @@ infinite:
              *  Figure out the source IP/port, and the SYN cookie
              */
             if (src_ip_mask > 1 || src_port_mask > 1) {
-                uint64_t r = syn_cookie((unsigned)(i+repeats), 
+                uint64_t ck = syn_cookie((unsigned)(i+repeats), 
                                         (unsigned)((i+repeats)>>32),
                                         (unsigned)xXx, (unsigned)(xXx>>32));
-                port_me = src_port + (r & src_port_mask);
-                ip_me = src_ip + ((r>>16) & src_ip_mask);
+                port_me = src_port + (ck & src_port_mask);
+                ip_me = src_ip + ((ck>>16) & src_ip_mask);
             } else {
                 ip_me = src_ip;
                 port_me = src_port;
@@ -470,17 +471,9 @@ infinite:
 }
 
 
-/*unsigned
-is_nic_ip(const struct Masscan *masscan, unsigned ip)
-{
-    unsigned i;
-    for (i=0; i<masscan->nic_count; i++)
-        if (is_my_ip(&masscan->nic[i].src, ip))
-            return 1;
-    return 0;
-}
-*/
-unsigned
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
 is_nic_port(const struct Masscan *masscan, unsigned ip)
 {
     unsigned i;
@@ -688,7 +681,7 @@ receive_thread(void *v)
 						break;
 
 					/* Ignore duplicates */
-		            if (dedup_is_duplicate(dedup, ip_them, 0))
+		            if (dedup_is_duplicate(dedup, ip_them, 0, ip_me, 0))
 						continue;
 
 					/* ...everything good, so now report this response */
@@ -830,7 +823,7 @@ receive_thread(void *v)
             }
 
             /* verify: ignore duplicates */
-            if (dedup_is_duplicate(dedup, ip_them, port_them))
+            if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me))
                 continue;
             total_synacks++;
 
@@ -1115,9 +1108,9 @@ main_scan(struct Masscan *masscan)
      */
     {
         char buffer[80];
-        time_t now  = time(0);
         struct tm x;
 
+        now = time(0);
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         LOG(0, "\nStarting masscan 1.0 (http://bit.ly/14GZzcT) at %s\n", buffer);
@@ -1378,11 +1371,12 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += siphash24_selftest();
             x += snmp_selftest();
             x += payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
-            x += randlcg_selftest();
+            x += lcg_selftest();
             x += template_selftest();
             x += ranges_selftest();
             x += pixie_time_selftest();

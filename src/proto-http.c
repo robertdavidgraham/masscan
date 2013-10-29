@@ -125,7 +125,8 @@ http_hello[] =      "GET / HTTP/1.0\r\n"
 /*****************************************************************************
  *****************************************************************************/
 static void
-field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, struct Patterns *http_fields)
+field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, 
+           struct Patterns *xhttp_fields)
 {
     unsigned i;
     if (id == HTTPFIELD_INCOMPLETE)
@@ -134,14 +135,14 @@ field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, 
         return;
     if (id == HTTPFIELD_NEWLINE)
         return;
-    for (i=0; http_fields[i].pattern; i++) {
-        if (http_fields[i].id == id) {
+    for (i=0; xhttp_fields[i].pattern; i++) {
+        if (xhttp_fields[i].id == id) {
             if (*banner_offset != 0)
                 banner_append("\n", 1, banner, banner_offset, banner_max);
-            banner_append(http_fields[i].pattern 
-                            + ((http_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
-                          http_fields[i].pattern_length
-                            - ((http_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
+            banner_append(xhttp_fields[i].pattern 
+                            + ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
+                          xhttp_fields[i].pattern_length
+                            - ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
                           banner,
                           banner_offset,
                           banner_max);

@@ -19,7 +19,7 @@ struct Queue
 };
 
 struct Queue *
-queue_create()
+queue_create(void)
 {
 	struct Queue *queue;
 	queue = (struct Queue *)malloc(sizeof(*queue));

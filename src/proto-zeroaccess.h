@@ -13,7 +13,12 @@ extern const unsigned char zeroaccess_getL[];
 #define zeroaccess_getL_length 16
 
 
+/**
+ * Regression test this module.
+ * @return
+ *      0 on success, a positive integer otherwise.
+ */
 int
-zeroaccess_selftest();
+zeroaccess_selftest(void);
 
 #endif

@@ -207,7 +207,7 @@ rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
     }
 }
 
-void
+static void
 rangelist_add_range2(struct RangeList *task, struct Range range)
 {
     rangelist_add_range(task, range.begin, range.end);
@@ -668,7 +668,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
  * Called during "make regress" to run a regression test over this module.
  ***************************************************************************/
 int
-ranges_selftest()
+ranges_selftest(void)
 {
     struct Range r;
     struct RangeList task[1];
@@ -736,72 +736,67 @@ ranges_selftest()
     /*
      * Test removal
      */
-    {
-        struct RangeList task[1];
-
-        memset(task, 0, sizeof(task[0]));
-
-        rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
-
-        /* These removals shouldn't change anything */
-        rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
-        rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
-        rangelist_remove_range2(task, range_parse_ipv4("192.168.0.0/16", 0, 0));
-        if (task->count != 1
-            || task->list->begin != 0x0a000000
-            || task->list->end != 0x0aFFFFFF) {
-            ERROR();
-            return 1;
-        }
-
-        /* These removals should remove a bit from the edges */
-        rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
-        rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
-        if (task->count != 1
-            || task->list->begin != 0x0a000001
-            || task->list->end != 0x0aFFFFFE) {
-            ERROR();
-            return 1;
-        }
-
-
-        /* remove things from the middle */
-        rangelist_remove_range2(task, range_parse_ipv4("10.10.0.0/16", 0, 0));
-        rangelist_remove_range2(task, range_parse_ipv4("10.20.0.0/16", 0, 0));
-        if (task->count != 3) {
-            ERROR();
-            return 1;
-        }
-
-        rangelist_remove_range2(task, range_parse_ipv4("10.12.0.0/16", 0, 0));
-        if (task->count != 4) {
-            ERROR();
-            return 1;
-        }
-
-        rangelist_remove_range2(task, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
-        if (task->count != 3) {
-            ERROR();
-            return 1;
-        }
-
+    memset(task, 0, sizeof(task[0]));
+    
+    rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
+    
+    /* These removals shouldn't change anything */
+    rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
+    rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
+    rangelist_remove_range2(task, range_parse_ipv4("192.168.0.0/16", 0, 0));
+    if (task->count != 1
+        || task->list->begin != 0x0a000000
+        || task->list->end != 0x0aFFFFFF) {
+        ERROR();
+        return 1;
     }
+    
+    /* These removals should remove a bit from the edges */
+    rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
+    rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
+    if (task->count != 1
+        || task->list->begin != 0x0a000001
+        || task->list->end != 0x0aFFFFFE) {
+        ERROR();
+        return 1;
+    }
+    
+    
+    /* remove things from the middle */
+    rangelist_remove_range2(task, range_parse_ipv4("10.10.0.0/16", 0, 0));
+    rangelist_remove_range2(task, range_parse_ipv4("10.20.0.0/16", 0, 0));
+    if (task->count != 3) {
+        ERROR();
+        return 1;
+    }
+    
+    rangelist_remove_range2(task, range_parse_ipv4("10.12.0.0/16", 0, 0));
+    if (task->count != 4) {
+        ERROR();
+        return 1;
+    }
+    
+    rangelist_remove_range2(task, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
+    if (task->count != 3) {
+        ERROR();
+        return 1;
+    }
+    
 
     /* test ports */
     {
-        struct RangeList task;
         unsigned is_error = 0;
-        memset(&task, 0, sizeof(task));
+        memset(task, 0, sizeof(task[0]));
 
-        rangelist_parse_ports(&task, "80,1000-2000,1234,4444", &is_error);
-        if (task.count != 3 || is_error) {
+        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error);
+        if (task->count != 3 || is_error) {
             ERROR();
             return 1;
         }
 
-        if (task.list[0].begin != 80 || task.list[0].end != 80 ||
-            task.list[1].begin != 1000 || task.list[1].end != 2000 ||
-            task.list[2].begin != 4444 || task.list[2].end != 4444) {
+        if (task->list[0].begin != 80 || task->list[0].end != 80 ||
+            task->list[1].begin != 1000 || task->list[1].end != 2000 ||
+            task->list[2].begin != 4444 || task->list[2].end != 4444) {
             ERROR();
             return 1;
         }

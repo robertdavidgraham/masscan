@@ -3,16 +3,12 @@
 #include <stdint.h>
 
 /**
- * @return
- *      1 on failure
- *      0 on success
+ * A range of either IP addresses or ports
  */
-int ranges_selftest();
-
 struct Range
 {
     unsigned begin;
-    unsigned end;
+    unsigned end; /* inclusive */
 };
 
 struct RangeList
@@ -115,5 +111,14 @@ unsigned *rangelist_pick2_create(struct RangeList *targets);
 void rangelist_pick2_destroy(unsigned *picker);
 
 unsigned rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker);
+
+/**
+ * Does a regression test of this module
+ * @return
+ *      0 if the regression test succeeds, or a positive value on failure
+ */
+int
+ranges_selftest(void);
+
 
 #endif

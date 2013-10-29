@@ -133,7 +133,7 @@ zadecrypt(const unsigned char *src, size_t src_len, unsigned char *dst, size_t d
  * use it, because I ran it once to generate the hard-coded packet at
  * the top of this file.
  ***************************************************************************/
-unsigned
+static unsigned
 generate_getL(unsigned char *out_buf, size_t out_buf_len, unsigned xrand)
 {
     unsigned char buf[16];
@@ -268,7 +268,7 @@ static const unsigned char sample[] = {
 /***************************************************************************
  ***************************************************************************/
 int
-zeroaccess_selftest()
+zeroaccess_selftest(void)
 {
     unsigned char buf[128];
     unsigned old_crc;

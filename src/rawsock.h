@@ -14,10 +14,10 @@ struct TemplateSet;
  *      1 on failure
  *      0 on success
  */
-int rawsock_selftest();
+int rawsock_selftest(void);
 int rawsock_selftest_if(const char *ifname);
 
-void rawsock_init();
+void rawsock_init(void);
 
 /**
  * Does an "open" on the network adapter. What actually happens depends upon
@@ -48,7 +48,11 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_offline,
                      const char *bpf_filter);
 
-void rawsock_list_adapters();
+/**
+ * Print to the command-line the list of available adapters. It's called
+ * when the "--iflist" option is specified on the command-line.
+ */
+void rawsock_list_adapters(void);
 
 void
 rawsock_send_probe(

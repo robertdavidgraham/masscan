@@ -72,12 +72,11 @@ syn_set_entropy(uint64_t seed)
 #endif
 }
 
-
+#if 0
 /***************************************************************************
- * I'm using a Murmur hash to start with, will probably look at others
- * soon.
+ * This implements the "murmur" hash function.
  ***************************************************************************/
-unsigned
+static unsigned
 murmur(uint64_t entropy, ...)
 {
     /* reference:
@@ -117,6 +116,7 @@ murmur(uint64_t entropy, ...)
 
     return hash;
 }
+#endif
 
 /***************************************************************************
  ***************************************************************************/

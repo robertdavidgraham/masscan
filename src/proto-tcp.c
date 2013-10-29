@@ -437,7 +437,7 @@ tcpcon_lookup_tcb(
 
 /***************************************************************************
  ***************************************************************************/
-void
+static void
 tcpcon_send_packet(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,

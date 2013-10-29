@@ -1,3 +1,4 @@
+#include "xring.h"
 #include "pixie-threads.h"
 #include "pixie-timer.h"
 #include <string.h>
@@ -19,7 +20,7 @@ struct XRing
 
 /***************************************************************************
  ***************************************************************************/
-Element
+static Element
 xring_remove(struct XRing *xring)
 {
     volatile Element *ring = xring->ring;
@@ -50,7 +51,7 @@ xring_remove(struct XRing *xring)
 enum {XringSuccess, XringFailure};
 /***************************************************************************
  ***************************************************************************/
-int
+static int
 xring_add(struct XRing *xring, Element value)
 {
     volatile Element *ring = xring->ring;
@@ -185,7 +186,7 @@ run_test(struct Test *test)
 /***************************************************************************
  ***************************************************************************/
 int
-xring_selftest()
+xring_selftest(void)
 {
     unsigned i;
 

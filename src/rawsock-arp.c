@@ -13,6 +13,7 @@
         entry and re-request our address.
 */
 #include "rawsock.h"
+#include "proto-arp.h"
 #include "string_s.h"
 #include "logger.h"
 #include "pixie-timer.h"
@@ -36,8 +37,9 @@ struct ARP_IncomingRequest
 
 /****************************************************************************
  ****************************************************************************/
-void
-proto_arp_parse(struct ARP_IncomingRequest *arp, const unsigned char px[], unsigned offset, unsigned max)
+static void
+proto_arp_parse(struct ARP_IncomingRequest *arp, 
+                const unsigned char px[], unsigned offset, unsigned max)
 {
 
     /*
@@ -217,7 +219,8 @@ int arp_resolve_sync(struct Adapter *adapter,
 
 /****************************************************************************
  ****************************************************************************/
-int arp_response(
+int 
+arp_response(
     unsigned my_ip, const unsigned char *my_mac,
     const unsigned char *px, unsigned length,
     PACKET_QUEUE *packet_buffers,

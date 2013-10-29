@@ -320,7 +320,7 @@ blackrock_verify(struct BlackRock *br, uint64_t max)
 /***************************************************************************
  ***************************************************************************/
 int
-blackrock_selftest()
+blackrock_selftest(void)
 {
     uint64_t i;
     int is_success = 0;

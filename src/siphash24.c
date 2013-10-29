@@ -50,7 +50,7 @@ typedef uint8_t u8;
   }
 
 /* SipHash-2-4 */
-int crypto_auth( unsigned char *out, const unsigned char *in, unsigned long long inlen, const unsigned char *k )
+static int crypto_auth( unsigned char *out, const unsigned char *in, unsigned long long inlen, const unsigned char *k )
 {
   /* "somepseudorandomlygeneratedbytes" */
   u64 v0 = 0x736f6d6570736575ULL;
@@ -250,7 +250,7 @@ test_vectors()
 }
 
 int
-siphash_selftest()
+siphash24_selftest(void)
 {
   if (test_vectors())
       return 0;

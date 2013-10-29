@@ -15,6 +15,7 @@
 		11A868181816F3A7008E00B8 /* out-redis.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680F1816F3A7008E00B8 /* out-redis.c */; };
 		11A868191816F3A7008E00B8 /* pixie-file.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868101816F3A7008E00B8 /* pixie-file.c */; };
 		11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* siphash24.c */; };
+		11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */; };
 		11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219317DBCC7E00DDFD32 /* event-timeout.c */; };
 		11A921D617DBCC7E00DDFD32 /* logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* logger.c */; };
 		11A921D717DBCC7E00DDFD32 /* main-conf.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219717DBCC7E00DDFD32 /* main-conf.c */; };
@@ -98,6 +99,8 @@
 		11A868121816F3A7008E00B8 /* pixie-sockets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-sockets.h"; sourceTree = "<group>"; };
 		11A868131816F3A7008E00B8 /* siphash24.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = siphash24.c; sourceTree = "<group>"; };
 		11A868141816F3A7008E00B8 /* siphash24.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = siphash24.h; sourceTree = "<group>"; };
+		11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-zeroaccess.c"; sourceTree = "<group>"; };
+		11A8681D1819A6F7008E00B8 /* proto-zeroaccess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-zeroaccess.h"; sourceTree = "<group>"; };
 		11A9218517DBCB3200DDFD32 /* masscan */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = masscan; sourceTree = BUILT_PRODUCTS_DIR; };
 		11A9219317DBCC7E00DDFD32 /* event-timeout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "event-timeout.c"; sourceTree = "<group>"; };
 		11A9219417DBCC7E00DDFD32 /* event-timeout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "event-timeout.h"; sourceTree = "<group>"; };
@@ -216,6 +219,8 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */,
+				11A8681D1819A6F7008E00B8 /* proto-zeroaccess.h */,
 				11A868081816F3A7008E00B8 /* in-binary.c */,
 				11A868091816F3A7008E00B8 /* in-binary.h */,
 				11A8680A1816F3A7008E00B8 /* main-globals.h */,
@@ -430,6 +435,7 @@
 				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
 				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
 				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
+				11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -484,25 +490,35 @@
 		11A9219017DBCB3200DDFD32 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CONFIGURATION_BUILD_DIR = ../bin;
 				CONFIGURATION_TEMP_DIR = ../tmp;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_SHADOW = YES;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
 				PRODUCT_NAME = masscan;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SYMROOT = ../bin;
+				TEST_AFTER_BUILD = NO;
 			};
 			name = Debug;
 		};
 		11A9219117DBCB3200DDFD32 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CONFIGURATION_BUILD_DIR = ../bin;
 				CONFIGURATION_TEMP_DIR = ../tmp;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_SHADOW = YES;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
 				PRODUCT_NAME = masscan;
 				SYMROOT = ../bin;
+				TEST_AFTER_BUILD = NO;
 			};
 			name = Release;
 		};
