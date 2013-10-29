@@ -311,7 +311,7 @@ output_create(const struct Masscan *masscan)
 /***************************************************************************
  ***************************************************************************/
 static FILE *
-output_do_rotate(struct Output *out)
+output_do_rotate(struct Output *out, int is_closing)
 {
     const char *dir = out->masscan->rotate_directory;
     const char *filename = out->masscan->nmap.filename;
@@ -391,7 +391,9 @@ again:
     /*
      * Now create a new file
      */
-    {
+    if (is_closing)
+        out->fp = NULL;
+    else {
         FILE *fp;
 
         fp = open_rotate(out, filename);
@@ -480,7 +482,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
         return;
 
     if (now >= out->next_rotate) {
-        fp = output_do_rotate(out);
+        fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
     }
@@ -556,7 +558,7 @@ output_report_banner(struct Output *out, time_t now,
         return;
 
     if (now >= out->next_rotate) {
-        fp = output_do_rotate(out);
+        fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
     }
@@ -574,7 +576,7 @@ output_destroy(struct Output *out)
         return;
 
     if (out->period)
-        output_do_rotate(out); /*TODO: this leaves an empty file behind */
+        output_do_rotate(out, 1);
 
     if (out->fp)
         close_rotate(out, out->fp);
