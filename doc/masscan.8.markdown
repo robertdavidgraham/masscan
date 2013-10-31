@@ -200,7 +200,7 @@ one port.
     
   * `-oB <filename>`: sets the output format to binary and saves the output in
     the given filename. This is equivelent to using the `--output-format` and
-    `--output-filename` parameters. The tool `scan2text` can then be used to
+    `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
     equivelents, but require a separate step to convert back into XML or
     another readable format.
@@ -266,6 +266,16 @@ their versions, then saves the results in an XML file.
 	# masscan 0.0.0.0/0 --excludefile no-dod.txt -pU:53 --banners --output-filename dns.xml
 
 You should be able to import the XML into databases and such.
+
+The following example reads a binary scan results file called bin-test.scan and prints
+results to console.
+
+	# masscan --readscan bin-test.scan
+	
+The following example reads a binary scan results file called bin-test.scan and creates
+an XML output file called bin-test.xml.
+
+	# masscan --readscan bin-test.scan -oX bin-test.xml
 
 ## ADVANCED EXAMPLES
 
