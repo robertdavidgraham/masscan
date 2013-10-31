@@ -170,8 +170,9 @@ parameter `-oX <filename>`. Or, use the parameters `--output-format xml` and
 
 The second is the binary format. This produces much smaller files, so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
-though. In the `util` subdirectory there is a program `scan2text.c` that will
-scan in the binary format and produce text.
+though. The command line option `--readscan` will read binary scan files.
+Using `--readscan` with the `-oX` option will produce a XML version of the 
+results file.
 
 
 ## Comparison with Nmap
