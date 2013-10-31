@@ -78,6 +78,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		113AD3B818208A1900D5E067 /* masscan-status.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "masscan-status.h"; sourceTree = "<group>"; };
 		115C0CA318035BC5004E6CD7 /* out-record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-record.h"; sourceTree = "<group>"; };
 		115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns-parse.h"; sourceTree = "<group>"; };
 		115C0CA518035BC5004E6CD7 /* proto-netbios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-netbios.c"; sourceTree = "<group>"; };
@@ -325,6 +326,7 @@
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
 				11AC80F517E0ED47001BCE3A /* main-ptrace.c */,
 				11AC80F817E0EDA7001BCE3A /* main-ptrace.h */,
+				113AD3B818208A1900D5E067 /* masscan-status.h */,
 			);
 			name = src;
 			path = ../src;

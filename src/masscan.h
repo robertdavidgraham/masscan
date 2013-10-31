@@ -39,15 +39,6 @@ enum OutpuFormat {
 };
 
 
-enum PortStatus {
-    Port_Unknown,
-    Port_Open,
-    Port_Closed,
-    Port_IcmpEchoResponse,
-    Port_UdpOpen,
-    Port_UdpClosed,
-	Port_ArpOpen,
-};
 
 struct Masscan
 {
@@ -101,6 +92,7 @@ struct Masscan
     unsigned is_offline:1;      /* --offline */
     unsigned is_interactive:1;  /* --interactive */
 	unsigned is_arp:1;			/* --arp */
+    unsigned is_gmt:1;          /* --gmt, all times in GMT */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds
