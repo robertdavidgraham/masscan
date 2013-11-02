@@ -203,7 +203,7 @@ payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_port
     if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
         exit(1); /* integer overflow */
     else
-    list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+        list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
         exit(1); /* out of memory */
     

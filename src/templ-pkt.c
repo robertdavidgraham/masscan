@@ -122,26 +122,26 @@ static unsigned char default_icmp_ping_template[] =
 ;
 
 static unsigned char default_icmp_timestamp_template[] =
-"\0\1\2\3\4\5"  /* Ethernet: destination */
-"\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-"\x08\x00"      /* Etenrent type: IPv4 */
-"\x45"          /* IP type */
-"\x00"
-"\x00\x28"      /* total length = 84 bytes */
-"\x00\x00"      /* identification */
-"\x00\x00"      /* fragmentation flags */
-"\xFF\x01"      /* TTL=255, proto=UDP */
-"\xFF\xFF"      /* checksum */
-"\0\0\0\0"      /* source address */
-"\0\0\0\0"      /* destination address */
+    "\0\1\2\3\4\5"  /* Ethernet: destination */
+    "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
+    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x45"          /* IP type */
+    "\x00"
+    "\x00\x28"      /* total length = 84 bytes */
+    "\x00\x00"      /* identification */
+    "\x00\x00"      /* fragmentation flags */
+    "\xFF\x01"      /* TTL=255, proto=UDP */
+    "\xFF\xFF"      /* checksum */
+    "\0\0\0\0"      /* source address */
+    "\0\0\0\0"      /* destination address */
 
-"\x0d\x00"  /* timestamp request */
-"\x00\x00"  /* checksum */
-"\x00\x00"  /* identifier */
-"\x00\x00"  /* sequence number */
-"\x00\x00\x00\x00"
-"\x00\x00\x00\x00"
-"\x00\x00\x00\x00"
+    "\x0d\x00"  /* timestamp request */
+    "\x00\x00"  /* checksum */
+    "\x00\x00"  /* identifier */
+    "\x00\x00"  /* sequence number */
+    "\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
 ;
 
 
