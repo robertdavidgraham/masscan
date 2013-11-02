@@ -39,7 +39,7 @@ server_hello(
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
     unsigned remaining = hello->remaining;
-	unsigned i;
+    unsigned i;
     enum {
         VERSION_MAJOR, VERSION_MINOR,
         TIME0, TIME1, TIME2, TIME3,
@@ -266,7 +266,7 @@ server_cert(
     unsigned state = data->state;
     unsigned remaining = data->remaining;
     unsigned cert_remaining = data->cert_remaining;
-	unsigned i;
+    unsigned i;
     enum {
         LEN0, LEN1, LEN2,
         CLEN0, CLEN1, CLEN2,
@@ -358,7 +358,7 @@ content_parse(
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->record.state;
     unsigned remaining = ssl->record.remaining;
-	unsigned i;
+    unsigned i;
     enum {
         START,
         LENGTH0, LENGTH1, LENGTH2,
@@ -447,7 +447,7 @@ ssl_parse(
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
     struct SSLRECORD *ssl = &pstate->sub.ssl;
-	unsigned i;
+    unsigned i;
     enum {
         START,
         VERSION_MAJOR,
@@ -456,7 +456,7 @@ ssl_parse(
         CONTENTS,
         UNKNOWN,
     };
-	
+    
     for (i=0; i<length; i++) 
     switch (state) {
     case START:

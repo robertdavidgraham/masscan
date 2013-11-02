@@ -129,7 +129,7 @@ handle_icmp(struct Output *out, time_t timestamp,
         }
         break;
     default:
-	;
+    ;
     }
 
 }

@@ -15,7 +15,7 @@ static const size_t BUF_MAX = 1024*1024;
 struct MasscanRecord {
     unsigned timestamp;
     unsigned ip;
-	unsigned char ip_proto;
+    unsigned char ip_proto;
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
@@ -103,7 +103,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
      */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
     record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
-	record.ip_proto  = buf[8];
+    record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.app_proto = buf[11]<<8 | buf[12];
 
@@ -219,15 +219,15 @@ parse_file(struct Output *out, const char *filename)
             case 3: /* BANNER */
                 parse_banner3(out, buf, bytes_read);
                 break;
-			case 4:
+            case 4:
                 if (fread(buf+bytes_read,1,1,fp) != 1) {
                     fprintf(stderr, "read() error\n");
                     exit(1);
                 }
-				bytes_read++;
+                bytes_read++;
                 parse_banner4(out, buf, bytes_read);
                 break;
-			case 5:
+            case 5:
                 parse_banner4(out, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */

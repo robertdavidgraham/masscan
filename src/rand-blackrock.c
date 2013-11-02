@@ -214,11 +214,11 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
     uint64_t tmp;
 
     if (r & 1) {
-		R = m % a;
-		L = m / a;
+        R = m % a;
+        L = m / a;
     } else {
-		L = m % a;
-		R = m / a;
+        L = m % a;
+        R = m / a;
     }
 
     for (j=r; j>=1; j--) {
@@ -248,7 +248,7 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
         R = L;
         L = tmp;
     }
-	return a * R + L;
+    return a * R + L;
 }
 
 /***************************************************************************
@@ -326,26 +326,26 @@ blackrock_selftest(void)
     int is_success = 0;
     uint64_t range;
 
-	/* @marshray
-	 * Basic test of decryption. I take the index, encrypt it, then decrypt it,
-	 * which means I should get the original index back again. Only, it's not
-	 * working. The decryption fails. The reason it's failing is obvious -- I'm
-	 * just not seeing it though. The error is probably in the 'unfe()' 
-	 * function above.
-	 */
-	{
+    /* @marshray
+     * Basic test of decryption. I take the index, encrypt it, then decrypt it,
+     * which means I should get the original index back again. Only, it's not
+     * working. The decryption fails. The reason it's failing is obvious -- I'm
+     * just not seeing it though. The error is probably in the 'unfe()' 
+     * function above.
+     */
+    {
         struct BlackRock br;
-		uint64_t result, result2;
+        uint64_t result, result2;
         blackrock_init(&br, 1000, 0);
 
-		for (i=0; i<10; i++) {
-			result = blackrock_shuffle(&br, i);
-			result2 = blackrock_unshuffle(&br, result);
-			if (i != result2)
+        for (i=0; i<10; i++) {
+            result = blackrock_shuffle(&br, i);
+            result2 = blackrock_unshuffle(&br, result);
+            if (i != result2)
                 return 1; /*fail*/
-		}
+        }
 
-	}
+    }
 
 
     range = 3015 * 3;

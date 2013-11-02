@@ -17,7 +17,7 @@
 #include <net/if_dl.h>
 #include <ctype.h>
 
-#define ROUNDUP(a)							\
+#define ROUNDUP(a)                          \
 ((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
 
 static struct sockaddr *
@@ -389,7 +389,7 @@ again:
         unsigned ipv4 = 0;
 
         if (pAdapter->Type != MIB_IF_TYPE_ETHERNET
-			&& pAdapter->Type != 71 /*wifi*/)
+            && pAdapter->Type != 71 /*wifi*/)
             continue;
 
 

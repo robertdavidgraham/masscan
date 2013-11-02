@@ -15,13 +15,13 @@ struct PcapFile;
 unsigned pcapfile_datalink(struct PcapFile *handle);
 
 void pcapfile_writeframe(
-	struct PcapFile *capfile,
-	const void *buffer, 
-	unsigned buffer_size, 
-	unsigned original_length, 
-	unsigned time_sec, 
-	unsigned time_usec
-	);
+    struct PcapFile *capfile,
+    const void *buffer, 
+    unsigned buffer_size, 
+    unsigned original_length, 
+    unsigned time_sec, 
+    unsigned time_usec
+    );
 
 struct PcapFile *pcapfile_openread(const char *capfilename);
 struct PcapFile *pcapfile_openwrite(const char *capfilename, unsigned linktype);
@@ -44,14 +44,14 @@ void pcapfile_set_max(struct PcapFile *capfile, unsigned max_megabytes, unsigned
  *  returns 1 if successful.
  */
 int pcapfile_readframe(
-	struct PcapFile *capfile,
-	unsigned *r_time_secs,
-	unsigned *r_time_usecs,
-	unsigned *r_original_length,
-	unsigned *r_captured_length,
-	unsigned char *buf,
-	unsigned sizeof_buf
-	);
+    struct PcapFile *capfile,
+    unsigned *r_time_secs,
+    unsigned *r_time_usecs,
+    unsigned *r_original_length,
+    unsigned *r_captured_length,
+    unsigned char *buf,
+    unsigned sizeof_buf
+    );
 
 
 void pcapfile_close(struct PcapFile *handle);

@@ -195,36 +195,36 @@ payloads_destroy(struct NmapPayloads *payloads)
 void
 payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_ports)
 {
-	unsigned i;
-	struct Payload **list2;
-	unsigned count2 = 0;
+    unsigned i;
+    struct Payload **list2;
+    unsigned count2 = 0;
 
-	/* Create a new list */
+    /* Create a new list */
     if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
         exit(1); /* integer overflow */
     else
-	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+        list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
         exit(1); /* out of memory */
-	
-	/* Add to the new list any used ports */
-	for (i=0; i<payloads->count; i++) {
-		unsigned found;
+    
+    /* Add to the new list any used ports */
+    for (i=0; i<payloads->count; i++) {
+        unsigned found;
 
-		found = rangelist_is_contains(	target_ports, 
-										payloads->list[i]->port + Templ_UDP);
-		if (found) {
-			list2[count2++] = payloads->list[i];
-		} else {
-			free(payloads->list[i]);
-		}
-		//payloads->list[i] = 0;
-	}
+        found = rangelist_is_contains(  target_ports, 
+                                        payloads->list[i]->port + Templ_UDP);
+        if (found) {
+            list2[count2++] = payloads->list[i];
+        } else {
+            free(payloads->list[i]);
+        }
+        //payloads->list[i] = 0;
+    }
 
-	/* Replace the old list */
-	free(payloads->list);
-	payloads->list = list2;
-	payloads->count = count2;
+    /* Replace the old list */
+    free(payloads->list);
+    payloads->list = list2;
+    payloads->count = count2;
 }
 
 /***************************************************************************

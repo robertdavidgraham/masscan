@@ -72,9 +72,9 @@ struct Output
             uint64_t echo;
             uint64_t timestamp;
         } icmp;
-		struct {
-			uint64_t open;
-		} arp;
+        struct {
+            uint64_t open;
+        } arp;
     } counts;
 
     struct {

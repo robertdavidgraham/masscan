@@ -122,26 +122,26 @@ static unsigned char default_icmp_ping_template[] =
 ;
 
 static unsigned char default_icmp_timestamp_template[] =
-"\0\1\2\3\4\5"  /* Ethernet: destination */
-"\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-"\x08\x00"      /* Etenrent type: IPv4 */
-"\x45"          /* IP type */
-"\x00"
-"\x00\x28"      /* total length = 84 bytes */
-"\x00\x00"      /* identification */
-"\x00\x00"      /* fragmentation flags */
-"\xFF\x01"      /* TTL=255, proto=UDP */
-"\xFF\xFF"      /* checksum */
-"\0\0\0\0"      /* source address */
-"\0\0\0\0"      /* destination address */
+    "\0\1\2\3\4\5"  /* Ethernet: destination */
+    "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
+    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x45"          /* IP type */
+    "\x00"
+    "\x00\x28"      /* total length = 84 bytes */
+    "\x00\x00"      /* identification */
+    "\x00\x00"      /* fragmentation flags */
+    "\xFF\x01"      /* TTL=255, proto=UDP */
+    "\xFF\xFF"      /* checksum */
+    "\0\0\0\0"      /* source address */
+    "\0\0\0\0"      /* destination address */
 
-"\x0d\x00"  /* timestamp request */
-"\x00\x00"  /* checksum */
-"\x00\x00"  /* identifier */
-"\x00\x00"  /* sequence number */
-"\x00\x00\x00\x00"
-"\x00\x00\x00\x00"
-"\x00\x00\x00\x00"
+    "\x0d\x00"  /* timestamp request */
+    "\x00\x00"  /* checksum */
+    "\x00\x00"  /* identifier */
+    "\x00\x00"  /* sequence number */
+    "\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
 ;
 
 
@@ -149,16 +149,16 @@ static unsigned char default_arp_template[] =
     "\xff\xff\xff\xff\xff\xff"  /* Ethernet: destination */
     "\x00\x00\x00\x00\x00\x00"  /* Ethernet: source */
     "\x08\x06"      /* Ethernet type: ARP */
-	"\x00\x01" /* hardware = Ethernet */
+    "\x00\x01" /* hardware = Ethernet */
     "\x08\x00" /* protocol = IPv4 */
     "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
     "\x00\x01" /* opcode = request */
-  
-	"\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00"
 
-	"\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00"
+    "\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
+
+    "\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
 ;
 
 
@@ -519,18 +519,18 @@ template_set_target(
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-		px = tmpl->packet + tmpl->offset_ip;
-		px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
-		px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
-		px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
-		px[17] = (unsigned char)((ip_me >>  0) & 0xFF);
-		px[24] = (unsigned char)((ip_them >> 24) & 0xFF);
-		px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
-		px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
-		px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
-		tmplset->px = tmpl->packet;
-		tmplset->length = tmpl->length;
-		return;
+        px = tmpl->packet + tmpl->offset_ip;
+        px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
+        px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
+        px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
+        px[17] = (unsigned char)((ip_me >>  0) & 0xFF);
+        px[24] = (unsigned char)((ip_them >> 24) & 0xFF);
+        px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
+        px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
+        px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
+        tmplset->px = tmpl->packet;
+        tmplset->length = tmpl->length;
+        return;
     } else {
         return;
     }
@@ -712,10 +712,10 @@ _template_init(
     tmpl->offset_ip = parsed.ip_offset;
     tmpl->offset_tcp = parsed.transport_offset;
     tmpl->offset_app = parsed.app_offset;
-	if (parsed.found == FOUND_ARP) {
-		tmpl->length = parsed.ip_offset + 28;
-	} else 
-	    tmpl->length = parsed.ip_offset + parsed.ip_length;
+    if (parsed.found == FOUND_ARP) {
+        tmpl->length = parsed.ip_offset + 28;
+    } else 
+        tmpl->length = parsed.ip_offset + parsed.ip_length;
 
     /*
      * Overwrite the MAC and IP addresses

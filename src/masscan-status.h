@@ -8,7 +8,7 @@ enum PortStatus {
     Port_IcmpEchoResponse,
     Port_UdpOpen,
     Port_UdpClosed,
-	Port_ArpOpen,
+    Port_ArpOpen,
 };
 
 

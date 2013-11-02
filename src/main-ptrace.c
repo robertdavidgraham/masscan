@@ -56,8 +56,8 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
     switch (parsed.found) {
         case FOUND_ARP:
             type = px[offset+6]<<8 | px[offset+7];
-			*strchr(to, ':') = '\0';
-			*strchr(from, ':') = '\0';
+            *strchr(to, ':') = '\0';
+            *strchr(from, ':') = '\0';
             switch (type) {
                 case 1:strcpy_s(sz_type, sizeof(sz_type), "request"); break;
                 case 2:strcpy_s(sz_type, sizeof(sz_type), "response"); break;
