@@ -41,7 +41,7 @@
   Bytes/characters in the patterns are converted to "symbols". This is done
   for two reasons.
 
-  The first is for case-insenstive pattern-matches. Both upper and lower
+  The first is for case-insensitive pattern-matches. Both upper and lower
   case letters in incoming bytes will map to the same symbol (both for
   patterns as well as the searched text).
 
@@ -233,7 +233,7 @@ struct SMACK {
     char *              name;
 
     /**
-     * Whether or not this table is case-sensitive or case-insenstive 
+     * Whether or not this table is case-sensitive or case-insensitive 
      */
     unsigned            is_nocase:1;
 
@@ -282,11 +282,11 @@ struct SMACK {
     /**
      * The "symbol compression dictionary". As we parse incoming bytes,
      * they are first translated to a symbol. This is useful for two reasons.
-     * The first reason is that this allows us to create "case-insenstive"
+     * The first reason is that this allows us to create "case-insensitive"
      * pattern-matches, where upper-case is converted to lower-case. The
      * second reason is that it allows us to compress the table. If only
      * 32 different characters are used in the patterns, then rows only
-     * have tob e 32 symbols wide, instead of 256 characters wide.
+     * have to be 32 symbols wide, instead of 256 characters wide.
      */
 	unsigned char		char_to_symbol[ALPHABET_SIZE];
 
@@ -494,7 +494,7 @@ id_already_exists(const size_t *ids, unsigned count, size_t new_id)
 }
 
 /****************************************************************************
- * When combinin two match lists (when two patterns overlap, like the
+ * When combining two match lists (when two patterns overlap, like the
  * pattern "BERT" and "ROBERT"), we need to merge the two lists of matches.
  ****************************************************************************/
 static void
@@ -539,7 +539,7 @@ smack_copy_matches(
 
 
 /****************************************************************************
- * In order to compress the size of the table, and to do case-insenstive
+ * In order to compress the size of the table, and to do case-insensitive
  * pattern-matches, we convert characters into symbols. We need to create
  * a new symbol for different type of character in a pattern. Note that this
  * function will be called with the pseudo-characters representing anchors,
@@ -817,7 +817,7 @@ smack_stage0_compile_prefixes(struct SMACK *smack)
     }
 
     /* 
-	 * Split a pattern into its subpatterns and add each of them
+	 * Split a pattern into its sub patterns and add each of them
 	 * to the table.
 	 */ 
 	for (a=0; a<(int)smack->m_pattern_count; a++)
@@ -1015,14 +1015,14 @@ smack_compile(struct SMACK *smack)
 
 
     /*
-     * Go throug the various compilation stages
+     * Go through the various compilation stages
      */
 	smack_stage0_compile_prefixes(smack);
     smack_stage1_generate_fails(smack);
     smack_stage2_link_fails(smack);
 
 
-    /* If we have an anchor pattern, then swap the
+    /* If we have an anchor pattern, then swap
      * the first two states. */
     if (smack->is_anchor_begin) {
         struct SmackRow swap;
@@ -1164,7 +1164,7 @@ smack_search(	struct SMACK * smack,
          * Logically, this is the following  calculation:
          *    row = table[row][column]
          * However, since row can have a variable width (depending on the
-         * number of charactes in a pattern), we have to do the calculation
+         * number of characters in a pattern), we have to do the calculation
          * manually.
          */
 		row = *(table + (row<<row_shift) + column); 
@@ -1244,7 +1244,7 @@ smack_search_next(      struct SMACK *  smack,
          * Logically, this is the following  calculation:
          *    row = table[row][column]
          * However, since row can have a variable width (depending on the
-         * number of charactes in a pattern), we have to do the calculation
+         * number of characters in a pattern), we have to do the calculation
          * manually.
          */
 		row = *(table + (row<<row_shift) + column); 

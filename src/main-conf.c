@@ -323,7 +323,7 @@ masscan_save_state(struct Masscan *masscan)
  * There can be multiple ranges on a line, delimited by spaces. In fact,
  * millions of ranges can be on a line: there is limit to the line length.
  * That makes reading the file a little bit squirrelly. From one perspective
- * this parser doesn't treat the the new-line '\n' any different than other
+ * this parser doesn't treat the new-line '\n' any different than other
  * space. But, from another perspective, it has to, because things like
  * comments are terminated by a newline. Also, it has to count the number
  * of lines correctly to print error messages.
@@ -908,7 +908,7 @@ masscan_set_parameter(struct Masscan *masscan,
         unsigned value_length = (unsigned)strlen(value);
         unsigned char *newvalue;
         
-        /* allcoate new value */
+        /* allocate new value */
         newvalue = (unsigned char*)malloc(value_length+1);
         memcpy(newvalue, value, value_length+1);
         newvalue[value_length] = '\0';
@@ -1240,7 +1240,7 @@ masscan_help()
 " adapter-ip = 192.168.10.123\n"
 " adapter-mac = 00-11-22-33-44-55\n"
 " router-mac = 66-55-44-33-22-11\n"
-"All single-dash parameters have a spelled out double-dash equivelent,\n"
+"All single-dash parameters have a spelled out double-dash equivalent,\n"
 "so '-p80' is the same as '--ports 80' (or 'ports = 80' in config file).\n"
 "To use the config file, type:\n"
 " masscan -c <filename>\n"
@@ -1382,7 +1382,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         break;
                     case 'R':
                         /* -iR in nmap makes it randomize addresses completely. Thus,
-                         * it's nearest equivelent is scanning the entire Internet range */
+                         * it's nearest equivalent is scanning the entire Internet range */
                         masscan_set_parameter(masscan, "include", "0.0.0.0/0");
                         break;
                     default:

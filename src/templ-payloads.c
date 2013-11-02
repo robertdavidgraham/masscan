@@ -113,8 +113,8 @@ struct Payload2 hard_coded_payloads[] = {
 
 
 /***************************************************************************
- * Calculate the partial checkum of the payload. This allows us to simply
- * add this to the checksum when transmitting instead of recacluating
+ * Calculate the partial checksum of the payload. This allows us to simply
+ * add this to the checksum when transmitting instead of recalculating
  * everything.
  ***************************************************************************/
 static unsigned

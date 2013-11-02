@@ -11,7 +11,7 @@
  *
  * Note that we don't update the "static" configuration with the discovered
  * values, but instead return them as the "running" configuration. That's
- * so if we pause and resume a scan, autodiscovered values don't get saved
+ * so if we pause and resume a scan, auto discovered values don't get saved
  * in the configuration file.
  ***************************************************************************/
 int
@@ -57,7 +57,7 @@ masscan_initialize_adapter(
      * IP ADDRESS
      *
      * We need to figure out that IP address to send packets from. This
-     * is done by queryin the adapter (or configured by user). If the
+     * is done by querying the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
     adapter_ip = masscan->nic[index].src.ip.first;

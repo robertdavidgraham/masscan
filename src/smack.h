@@ -7,7 +7,7 @@
 /**
  * "Anchor" flags are specified only for patterns that must
  * match at the start of input, at the end, or both.
- * These are equivelent to the regex specifiers "^" and "$"
+ * These are equivalent to the regex specifiers "^" and "$"
  * respectively.
  */
 enum {
@@ -79,7 +79,7 @@ smack_compile(struct SMACK *smack);
  * detected.
  *
  * The caller must initialize "*state" to zero "0" before running this
- * function on the first fragment, but msut thereafter leave it
+ * function on the first fragment, but must thereafter leave it
  * unchanged between fragments. (If the caller resets the *state variable
  * to zero between each fragment, then patterns that cross fragment
  * boundaries cannot be detected).
@@ -109,7 +109,7 @@ smack_next_match(      struct SMACK *  smack,
 		                unsigned *      state);
 
 /**
- * Call this after search is done. This is not generally necesary.
+ * Call this after search is done. This is not generally necessary.
  * It's only purpose is to detect patterns that have the
  * SMACK_ANCHOR_END flag set. If no pattern has that flag, then
  * this function will do nothing.
