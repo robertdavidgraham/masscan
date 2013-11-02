@@ -154,7 +154,7 @@ struct ThreadPair {
 
 
 /***************************************************************************
- * The recieve thread doesn't transmit packets. Instead, it queues them
+ * The receive thread doesn't transmit packets. Instead, it queues them
  * up on the transmit thread. Every so often, the transmit thread needs
  * to flush this transmit queue and send everything.
  *
@@ -352,7 +352,7 @@ infinite:
              *  that index into some other, but unique/1-to-1, number in the
              *  same range. That way we visit all targets, but in a random 
              *  order. Then, once we've shuffled the index, we "pick" the
-             *  the IP address and port that the index refers to.
+             *  IP address and port that the index refers to.
              */
             xXx = (i + (r--) * rate);
             if (rate > range)
@@ -603,7 +603,7 @@ receive_thread(void *v)
         unsigned cookie;
 
         /*
-         * RECIEVE
+         * RECEIVE
          *
          * This is the boring part of actually receiving a packet
          */
@@ -1258,7 +1258,7 @@ int main(int argc, char *argv[])
      * On non-Windows systems, read the defaults from the file in
      * the /etc directory. These defaults will contain things
      * like the output directory, max packet rates, and so on. Most
-     * importanlty, the master "--excludefile" might be placed here,
+     * importantly, the master "--excludefile" might be placed here,
      * so that blacklisted ranges won't be scanned, even if the user
      * makes a mistake
      */

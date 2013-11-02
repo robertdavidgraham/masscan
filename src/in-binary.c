@@ -43,7 +43,7 @@ parse_status(struct Output *out,
     record.ttl       = buf[11];
     
     /*
-     * Now report ther result
+     * Now report the result
      */
     output_report_status(out, 
                     record.timestamp,
@@ -90,7 +90,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
 }
 
 /***************************************************************************
- * Parse the BANNER record, extracting the timestamp, IP addres, and port
+ * Parse the BANNER record, extracting the timestamp, IP address, and port
  * number. We also convert the banner string into a safer form.
  ***************************************************************************/
 static void
