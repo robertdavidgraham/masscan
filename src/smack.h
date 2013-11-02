@@ -53,10 +53,10 @@ smack_destroy(struct SMACK *smack);
  * systems).
  */
 void 
-smack_add_pattern(	    struct SMACK *  smack, 
-						const void *    pattern, 
-						unsigned        pattern_length,
-						size_t          id,
+smack_add_pattern(      struct SMACK *  smack, 
+                        const void *    pattern, 
+                        unsigned        pattern_length,
+                        size_t          id,
                         unsigned        flags);
 
 /**
@@ -86,19 +86,19 @@ smack_compile(struct SMACK *smack);
  */
 unsigned 
 smack_search(           struct SMACK *  smack,
-			            const void *    px, 
-			            unsigned        length, 
-		                FOUND_CALLBACK  cb_found,
+                        const void *    px, 
+                        unsigned        length, 
+                        FOUND_CALLBACK  cb_found,
                         void *          cb_data,
                         unsigned *      state);
 
 size_t
 smack_search_next(      struct SMACK *  smack,
-		                unsigned *      state,
-			            const void *    px, 
-						unsigned *		offset,
-			            unsigned        length
-						);
+                        unsigned *      state,
+                        const void *    px, 
+                        unsigned *      offset,
+                        unsigned        length
+                        );
 
 /**
  * If there are multiple matches at the current state, returns the next
@@ -106,7 +106,7 @@ smack_search_next(      struct SMACK *  smack,
  */
 size_t
 smack_next_match(      struct SMACK *  smack,
-		                unsigned *      state);
+                        unsigned *      state);
 
 /**
  * Call this after search is done. This is not generally necesary.
@@ -116,7 +116,7 @@ smack_next_match(      struct SMACK *  smack,
  */
 unsigned
 smack_search_end(       struct SMACK *  smack,
-		                FOUND_CALLBACK  cb_found,
+                        FOUND_CALLBACK  cb_found,
                         void *          cb_data,
                         unsigned *      state);
 

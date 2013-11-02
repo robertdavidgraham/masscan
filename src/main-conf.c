@@ -775,8 +775,8 @@ masscan_set_parameter(struct Masscan *masscan,
         range.begin = Templ_ARP;
         range.end = Templ_ARP;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
-		masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
-		masscan->is_arp = 1; /* needs additional flag */
+        masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
+        masscan->is_arp = 1; /* needs additional flag */
         LOG(5, "--arpscan\n");
     } else if (EQUALS("bpf", name)) {
         size_t len = strlen(value) + 1;
@@ -1207,7 +1207,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
-		"arp",  "infinite", "interactive",
+        "arp",  "infinite", "interactive",
         0};
     size_t i;
 
@@ -1346,7 +1346,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     int v;
                     for (v=1; argv[i][v] == 'd'; v++) {
                         LOG_add_level(1);
-					}
+                    }
                 }
                 break;
             case 'e':

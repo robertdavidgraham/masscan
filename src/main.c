@@ -94,19 +94,19 @@ struct ThreadPair {
     /**
      * The thread-pair use a "packet_buffer" and "transmit_queue" to 
      * send packets to each other. That's because when doing things
-	 * like banner-checking, the receive-thread needs to respond to
-	 * things like syn-acks received from the target. However, the
-	 * receive-thread cannot transmit packets, so it uses this ring
-	 * in order to send the packets to the transmit thread for
-	 * transmission.
-	 */
+     * like banner-checking, the receive-thread needs to respond to
+     * things like syn-acks received from the target. However, the
+     * receive-thread cannot transmit packets, so it uses this ring
+     * in order to send the packets to the transmit thread for
+     * transmission.
+     */
     PACKET_QUEUE *packet_buffers;
     PACKET_QUEUE *transmit_queue;
 
     /**
      * The index of the network adapter that we are using for this
      * thread-pair. This is an index into the "masscan->nic[]"
-	 * array.
+     * array.
      *
      * NOTE: this is also the "thread-id", because we create one
      * transmit/receive thread pair per NIC.
@@ -116,16 +116,16 @@ struct ThreadPair {
     /**
      * This is an optimized binary-search when looking up IP addresses
      * based on the index. When scanning the entire Internet, the target
-	 * list is broken into thousands of subranges as we exclude certain
-	 * ranges. Doing a lookup for each IP address is slow, so this 'picker'
-	 * system speeds it up.
+     * list is broken into thousands of subranges as we exclude certain
+     * ranges. Doing a lookup for each IP address is slow, so this 'picker'
+     * system speeds it up.
      */
     unsigned *picker;
 
     /**
-	 * A copy of the master 'index' variable. This is just advisory for
-	 * other threads, to tell them how far we've gotten.
-	 */
+     * A copy of the master 'index' variable. This is just advisory for
+     * other threads, to tell them how far we've gotten.
+     */
     uint64_t my_index;
 
 
@@ -133,9 +133,9 @@ struct ThreadPair {
      * formatting packets */
     struct TemplateSet tmplset[1];
 
-	/**
-	 * The current IP address we are using for transmit/receive.
-	 */
+    /**
+     * The current IP address we are using for transmit/receive.
+     */
     struct Source src;
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
@@ -167,7 +167,7 @@ flush_packets(struct Adapter *adapter,
     PACKET_QUEUE *packet_buffers,
     PACKET_QUEUE *transmit_queue,
     uint64_t *packets_sent,
-	uint64_t *batchsize)
+    uint64_t *batchsize)
 {
     /*
      * Send a batch of queued packets
@@ -321,21 +321,21 @@ infinite:
         batch_size = throttler_next_batch(throttler, packets_sent);
 
         /*
-		 * Transmit packets from other thread, when doing --banners. This
-		 * takes priority over sending SYN packets. If there is so much
-		 * activity grabbing banners that we cannot transmit more SYN packets,
-		 * then "batch_size" will get decremented to zero, and we won't be
-		 * able to transmit SYN packets.
-		 */
+         * Transmit packets from other thread, when doing --banners. This
+         * takes priority over sending SYN packets. If there is so much
+         * activity grabbing banners that we cannot transmit more SYN packets,
+         * then "batch_size" will get decremented to zero, and we won't be
+         * able to transmit SYN packets.
+         */
         flush_packets(adapter, parms->packet_buffers, parms->transmit_queue, 
                         &packets_sent, &batch_size);
 
 
-		/*
-		 * Transmit a bunch of packets. At any rate slower than 100,000 
-		 * packets/second, the 'batch_size' is likely to be 1
-		 */
-		while (batch_size && i < end) {
+        /*
+         * Transmit a bunch of packets. At any rate slower than 100,000 
+         * packets/second, the 'batch_size' is likely to be 1
+         */
+        while (batch_size && i < end) {
             uint64_t xXx;
             unsigned ip_them;
             unsigned port_them;
@@ -396,7 +396,7 @@ infinite:
                     &pkt_template
                     );
             batch_size--;
-			packets_sent++;
+            packets_sent++;
             total_syns++;
 
             /*
@@ -447,14 +447,14 @@ infinite:
      */
     while (!control_c_pressed_again) {
         unsigned k;
-		uint64_t batch_size;
+        uint64_t batch_size;
 
         for (k=0; k<1000; k++) {
-			/*
-			 * Only send a few packets at a time, throttled according to the max
-			 * --max-rate set by the user
-			 */
-			batch_size = throttler_next_batch(throttler, packets_sent);
+            /*
+             * Only send a few packets at a time, throttled according to the max
+             * --max-rate set by the user
+             */
+            batch_size = throttler_next_batch(throttler, packets_sent);
 
 
             /* Transmit packets from the receive thread */
@@ -462,7 +462,7 @@ infinite:
                             parms->packet_buffers, 
                             parms->transmit_queue, 
                             &packets_sent,
-							&batch_size);
+                            &batch_size);
 
             pixie_usleep(1000);
         }
@@ -660,38 +660,38 @@ receive_thread(void *v)
         switch (parsed.found) {
             case FOUND_ARP:
                 LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
-				switch (px[parsed.found_offset + 6]<<8 | px[parsed.found_offset+7]) {
-				case 1: /* request */
-					/* This function will transmit a "reply" to somebody's ARP request
-					 * for our IP address (as part of our user-mode TCP/IP).
-					 * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
-					 * ourself, or the router will lose track of us.*/
-					arp_response(   ip_me,
-									parms->adapter_mac,
-									px, length,
-									parms->packet_buffers,
-									parms->transmit_queue);
-					break;
-				case 2: /* response */
-					/* This is for "arp scan" mode, where we are ARPing targets rather
-					 * than port scanning them */
+                switch (px[parsed.found_offset + 6]<<8 | px[parsed.found_offset+7]) {
+                case 1: /* request */
+                    /* This function will transmit a "reply" to somebody's ARP request
+                     * for our IP address (as part of our user-mode TCP/IP).
+                     * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
+                     * ourself, or the router will lose track of us.*/
+                    arp_response(   ip_me,
+                                    parms->adapter_mac,
+                                    px, length,
+                                    parms->packet_buffers,
+                                    parms->transmit_queue);
+                    break;
+                case 2: /* response */
+                    /* This is for "arp scan" mode, where we are ARPing targets rather
+                     * than port scanning them */
 
-					/* If we aren't doing an ARP scan, then ignore ARP responses */
-					if (!masscan->is_arp)
-						break;
+                    /* If we aren't doing an ARP scan, then ignore ARP responses */
+                    if (!masscan->is_arp)
+                        break;
 
-					/* If this response isn't in our range, then ignore it */
-					if (!rangelist_is_contains(&masscan->targets, ip_them))
-						break;
+                    /* If this response isn't in our range, then ignore it */
+                    if (!rangelist_is_contains(&masscan->targets, ip_them))
+                        break;
 
-					/* Ignore duplicates */
-		            if (dedup_is_duplicate(dedup, ip_them, 0, ip_me, 0))
-						continue;
+                    /* Ignore duplicates */
+                    if (dedup_is_duplicate(dedup, ip_them, 0, ip_me, 0))
+                        continue;
 
-					/* ...everything good, so now report this response */
-	                handle_arp(out, secs, px, length, &parsed);
-					break;
-				}
+                    /* ...everything good, so now report this response */
+                    handle_arp(out, secs, px, length, &parsed);
+                    break;
+                }
                 continue;
             case FOUND_UDP:
             case FOUND_DNS:
@@ -947,15 +947,15 @@ main_scan(struct Masscan *masscan)
     }
     range = count_ips * count_ports + (uint64_t)(masscan->retries * masscan->max_rate);
 
-	/*
-	 * If doing an ARP scan, then don't allow port scanning
-	 */
-	if (rangelist_is_contains(&masscan->ports, Templ_ARP)) {
-		if (masscan->ports.count != 1) {
-			LOG(0, "FAIL: cannot arpscan and portscan at the same time\n");
-			return 1;
-		}
-	}
+    /*
+     * If doing an ARP scan, then don't allow port scanning
+     */
+    if (rangelist_is_contains(&masscan->ports, Templ_ARP)) {
+        if (masscan->ports.count != 1) {
+            LOG(0, "FAIL: cannot arpscan and portscan at the same time\n");
+            return 1;
+        }
+    }
 
     /* 
      * If the IP address range is very big, then require that that the 

@@ -16,8 +16,8 @@ handle_arp(struct Output *out, time_t timestamp, const unsigned char *px,
 {
     unsigned ip_them;
 
-	UNUSEDPARM(length);
-	UNUSEDPARM(px);
+    UNUSEDPARM(length);
+    UNUSEDPARM(px);
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;

@@ -57,8 +57,8 @@ proto_from_status(unsigned status)
         case Port_IcmpEchoResponse: return "icmp";
         case Port_UdpOpen: return "udp";
         case Port_UdpClosed: return "udp";
-		case Port_ArpOpen: return "arp";
-		default: return "err";
+        case Port_ArpOpen: return "arp";
+        default: return "err";
     }
 }
 
@@ -77,7 +77,7 @@ status_string(int x)
         case Port_UdpOpen: return "open";
         case Port_UdpClosed: return "closed";
         case Port_IcmpEchoResponse: return "open";
-		case Port_ArpOpen: return "open";
+        case Port_ArpOpen: return "open";
         default: return "unknown";
     }
 }
@@ -604,7 +604,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     case Port_Open:
     case Port_IcmpEchoResponse:
     case Port_UdpOpen:
-	case Port_ArpOpen:
+    case Port_ArpOpen:
     default:
         break;
 

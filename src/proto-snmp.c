@@ -59,13 +59,13 @@ static struct SMACK *global_mib;
  ****************************************************************************/
 struct SNMP
 {
-	uint64_t version;
-	uint64_t pdu_tag;
-	const unsigned char *community;
-	uint64_t community_length;
-	uint64_t request_id;
-	uint64_t error_index;
-	uint64_t error_status;
+    uint64_t version;
+    uint64_t pdu_tag;
+    const unsigned char *community;
+    uint64_t community_length;
+    uint64_t request_id;
+    uint64_t error_index;
+    uint64_t error_status;
 };
 
 /****************************************************************************
@@ -105,37 +105,37 @@ struct SnmpOid {
 static uint64_t
 asn1_length(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 {
-	uint64_t result;
+    uint64_t result;
 
     /* check for errors */
-	if ( (*r_offset >= length) 
-		|| ((px[*r_offset] & 0x80) 
-		&& ((*r_offset) + (px[*r_offset]&0x7F) >= length))) {
-		*r_offset = length;
-		return 0xFFFFffff;
-	}
+    if ( (*r_offset >= length) 
+        || ((px[*r_offset] & 0x80) 
+        && ((*r_offset) + (px[*r_offset]&0x7F) >= length))) {
+        *r_offset = length;
+        return 0xFFFFffff;
+    }
     
     /* grab the byte's value */
-	result = px[(*r_offset)++];
+    result = px[(*r_offset)++];
 
 
-	if (result & 0x80) {
-		unsigned length_of_length = result & 0x7F;
-		if (length_of_length == 0) {
-			*r_offset = length;
-			return 0xFFFFffff;
-		}
-		result = 0;
-		while (length_of_length) {
-			result = result * 256 + px[(*r_offset)++];
-			if (result > 0x10000) {
-				*r_offset = length;
-				return 0xFFFFffff;
-			}
+    if (result & 0x80) {
+        unsigned length_of_length = result & 0x7F;
+        if (length_of_length == 0) {
+            *r_offset = length;
+            return 0xFFFFffff;
+        }
+        result = 0;
+        while (length_of_length) {
+            result = result * 256 + px[(*r_offset)++];
+            if (result > 0x10000) {
+                *r_offset = length;
+                return 0xFFFFffff;
+            }
             length_of_length--;
-		}
-	}
-	return result;
+        }
+    }
+    return result;
 }
 
 
@@ -145,33 +145,33 @@ asn1_length(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 static uint64_t
 asn1_integer(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 {
-	uint64_t int_length;
-	uint64_t result;
+    uint64_t int_length;
+    uint64_t result;
 
-	if (px[(*r_offset)++] != 0x02) {
-		*r_offset = length;
-		return 0xFFFFffff;
-	}
+    if (px[(*r_offset)++] != 0x02) {
+        *r_offset = length;
+        return 0xFFFFffff;
+    }
 
-	int_length = asn1_length(px, length, r_offset);
-	if (int_length == 0xFFFFffff) {
-		*r_offset = length;
-		return 0xFFFFffff;
-	}
-	if (*r_offset + int_length > length) {
-		*r_offset = length;
-		return 0xFFFFffff;
-	}
+    int_length = asn1_length(px, length, r_offset);
+    if (int_length == 0xFFFFffff) {
+        *r_offset = length;
+        return 0xFFFFffff;
+    }
+    if (*r_offset + int_length > length) {
+        *r_offset = length;
+        return 0xFFFFffff;
+    }
     if (int_length > 20) {
-		*r_offset = length;
-		return 0xFFFFffff;
-	}
+        *r_offset = length;
+        return 0xFFFFffff;
+    }
 
-	result = 0;
-	while (int_length--)
-		result = result * 256 + px[(*r_offset)++];
+    result = 0;
+    while (int_length--)
+        result = result * 256 + px[(*r_offset)++];
 
-	return result;
+    return result;
 }
 
 /****************************************************************************
@@ -179,9 +179,9 @@ asn1_integer(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 static unsigned 
 asn1_tag(const unsigned char *px, uint64_t length, uint64_t *r_offset)
 {
-	if (*r_offset >= length)
-		return 0;
-	return px[(*r_offset)++];
+    if (*r_offset >= length)
+        return 0;
+    return px[(*r_offset)++];
 }
 
 /****************************************************************************
@@ -319,83 +319,83 @@ snmp_parse(const unsigned char *px, uint64_t length,
     unsigned char *banner, unsigned *banner_offset, unsigned banner_max,
     unsigned *request_id)
 {
-	uint64_t offset=0;
-	uint64_t outer_length;
-	struct SNMP snmp[1];
+    uint64_t offset=0;
+    uint64_t outer_length;
+    struct SNMP snmp[1];
 
-	memset(&snmp, 0, sizeof(*snmp));
+    memset(&snmp, 0, sizeof(*snmp));
 
-	/* tag */
-	if (asn1_tag(px, length, &offset) != 0x30)
-		return;
+    /* tag */
+    if (asn1_tag(px, length, &offset) != 0x30)
+        return;
 
-	/* length */
-	outer_length = asn1_length(px, length, &offset);
-	if (length > outer_length + offset)
-		length = outer_length + offset;
+    /* length */
+    outer_length = asn1_length(px, length, &offset);
+    if (length > outer_length + offset)
+        length = outer_length + offset;
 
-	/* Version */
-	snmp->version = asn1_integer(px, length, &offset);
-	if (snmp->version != 0)
-		return;
+    /* Version */
+    snmp->version = asn1_integer(px, length, &offset);
+    if (snmp->version != 0)
+        return;
 
-	/* Community */
-	if (asn1_tag(px, length, &offset) != 0x04)
-		return;
-	snmp->community_length = asn1_length(px, length, &offset);
-	snmp->community = px+offset;
-	offset += snmp->community_length;
+    /* Community */
+    if (asn1_tag(px, length, &offset) != 0x04)
+        return;
+    snmp->community_length = asn1_length(px, length, &offset);
+    snmp->community = px+offset;
+    offset += snmp->community_length;
 
-	/* PDU */
-	snmp->pdu_tag = asn1_tag(px, length, &offset);
-	if (snmp->pdu_tag < 0xA0 || 0xA5 < snmp->pdu_tag)
-		return;
-	outer_length = asn1_length(px, length, &offset);
-	if (length > outer_length + offset)
-		length = outer_length + offset;
+    /* PDU */
+    snmp->pdu_tag = asn1_tag(px, length, &offset);
+    if (snmp->pdu_tag < 0xA0 || 0xA5 < snmp->pdu_tag)
+        return;
+    outer_length = asn1_length(px, length, &offset);
+    if (length > outer_length + offset)
+        length = outer_length + offset;
 
-	/* Request ID */
-	snmp->request_id = asn1_integer(px, length, &offset);
+    /* Request ID */
+    snmp->request_id = asn1_integer(px, length, &offset);
     *request_id = (unsigned)snmp->request_id;
-	snmp->error_status = asn1_integer(px, length, &offset);
-	snmp->error_index = asn1_integer(px, length, &offset);
+    snmp->error_status = asn1_integer(px, length, &offset);
+    snmp->error_index = asn1_integer(px, length, &offset);
 
-	/* Varbind List */
-	if (asn1_tag(px, length, &offset) != 0x30)
-		return;
-	outer_length = asn1_length(px, length, &offset);
-	if (length > outer_length + offset)
-		length = outer_length + offset;
+    /* Varbind List */
+    if (asn1_tag(px, length, &offset) != 0x30)
+        return;
+    outer_length = asn1_length(px, length, &offset);
+    if (length > outer_length + offset)
+        length = outer_length + offset;
 
 
-	/* Var-bind list */
-	while (offset < length) {
-		uint64_t varbind_length;
-		uint64_t varbind_end;
-		if (px[offset++] != 0x30) {
-			break;
-		}
-		varbind_length = asn1_length(px, length, &offset);
-		if (varbind_length == 0xFFFFffff)
-			break;
-		varbind_end = offset + varbind_length;
-		if (varbind_end > length) {
-			return;
-		}
-		
-		/* OID */
-		if (asn1_tag(px,length,&offset) != 6)
-			return;
-		else {
-			uint64_t oid_length = asn1_length(px, length, &offset);
-			const unsigned char *oid = px+offset;
+    /* Var-bind list */
+    while (offset < length) {
+        uint64_t varbind_length;
+        uint64_t varbind_end;
+        if (px[offset++] != 0x30) {
+            break;
+        }
+        varbind_length = asn1_length(px, length, &offset);
+        if (varbind_length == 0xFFFFffff)
+            break;
+        varbind_end = offset + varbind_length;
+        if (varbind_end > length) {
+            return;
+        }
+        
+        /* OID */
+        if (asn1_tag(px,length,&offset) != 6)
+            return;
+        else {
+            uint64_t oid_length = asn1_length(px, length, &offset);
+            const unsigned char *oid = px+offset;
             uint64_t var_tag;
             uint64_t var_length;
             const unsigned char *var;
 
-			offset += oid_length;
-			if (offset > length)
-				return;
+            offset += oid_length;
+            if (offset > length)
+                return;
 
             var_tag = asn1_tag(px,length,&offset);
             var_length = asn1_length(px, length, &offset);
@@ -409,8 +409,8 @@ snmp_parse(const unsigned char *px, uint64_t length,
                 continue; /* null */
 
             snmp_banner(oid, oid_length, var_tag, var, var_length, banner, banner_offset, banner_max);
-		}
-	}
+        }
+    }
 }
 
 /****************************************************************************
@@ -418,42 +418,42 @@ snmp_parse(const unsigned char *px, uint64_t length,
 unsigned
 snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
 {
-	uint64_t offset=0;
-	uint64_t outer_length;
+    uint64_t offset=0;
+    uint64_t outer_length;
     uint64_t version;
     uint64_t tag;
     uint64_t len;
 
 
-	/* tag */
-	if (asn1_tag(px, length, &offset) != 0x30)
-		return 0;
+    /* tag */
+    if (asn1_tag(px, length, &offset) != 0x30)
+        return 0;
 
-	/* length */
-	outer_length = asn1_length(px, length, &offset);
-	if (length > outer_length + offset)
-		length = outer_length + offset;
+    /* length */
+    outer_length = asn1_length(px, length, &offset);
+    if (length > outer_length + offset)
+        length = outer_length + offset;
 
-	/* Version */
-	version = asn1_integer(px, length, &offset);
-	if (version != 0)
-		return 0;
+    /* Version */
+    version = asn1_integer(px, length, &offset);
+    if (version != 0)
+        return 0;
 
-	/* Community */
-	if (asn1_tag(px, length, &offset) != 0x04)
-		return 0;
-	offset += asn1_length(px, length, &offset);
+    /* Community */
+    if (asn1_tag(px, length, &offset) != 0x04)
+        return 0;
+    offset += asn1_length(px, length, &offset);
 
-	/* PDU */
-	tag = asn1_tag(px, length, &offset);
-	if (tag < 0xA0 || 0xA5 < tag)
-		return 0;
-	outer_length = asn1_length(px, length, &offset);
-	if (length > outer_length + offset)
-		length = outer_length + offset;
+    /* PDU */
+    tag = asn1_tag(px, length, &offset);
+    if (tag < 0xA0 || 0xA5 < tag)
+        return 0;
+    outer_length = asn1_length(px, length, &offset);
+    if (length > outer_length + offset)
+        length = outer_length + offset;
 
-	/* Request ID */
-	asn1_tag(px, length, &offset);
+    /* Request ID */
+    asn1_tag(px, length, &offset);
     len = asn1_length(px, length, &offset);
     switch (len) {
     case 0: 
