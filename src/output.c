@@ -618,8 +618,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     if (out->is_interactive) {
         unsigned count;
         
-        count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u"
-                    "                               \n",
+        count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
                     status_string(status),
                     port,
                     proto_from_status(status),

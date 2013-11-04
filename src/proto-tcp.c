@@ -100,13 +100,22 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
     for (;;) {
         struct TCP_Control_Block *tcb;
         
-        /* Remove any/all timeouts older than the current time */
+        /*
+         * Get the next event that is older than the current time
+         */
         tcb = (struct TCP_Control_Block *)timeouts_remove(tcpcon->timeouts, 
                                                           timestamp);
+
+        /*
+         * If everything up to the current time has already been processed,
+         * then exit this loop
+         */
         if (tcb == NULL)
             break;
 
-        /* Process this timeout */
+        /* 
+         * Process this timeout 
+         */
         tcpcon_handle(
             tcpcon, 
             tcb,
@@ -116,13 +125,24 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
             0);
 
         /* If the TCB hasn't been destroyed, then we need to make sure
-         * there is a timeout associated with it */
+         * there is a timeout associated with it. KLUDGE: here is the problem:
+         * there must ALWAYS be a 'timeout' associated with a TCB, otherwise,
+         * we'll lose track of it and leak memory. In theory, this should be
+         * automatically handled elsewhere, but I have bugs, and it's not,
+         * so I put some code here as a catch-all: if the TCB hasn't been
+         * deleted, but hasn't been inserted back into the timeout system,
+         * then insert it here. */
         if (tcb->timeout->prev == 0 && tcb->ip_them != 0 && tcb->port_them != 0) {
-            timeouts_add(tcpcon->timeouts, tcb->timeout, offsetof(struct TCP_Control_Block, timeout), TICKS_FROM_TV(secs+2, usecs));
+            timeouts_add(   tcpcon->timeouts, 
+                            tcb->timeout, 
+                            offsetof(struct TCP_Control_Block, timeout), 
+                            TICKS_FROM_TV(secs+2, usecs));
         }
     }
 }
 
+/***************************************************************************
+ ***************************************************************************/
 static int
 name_equals(const char *lhs, const char *rhs)
 {
@@ -143,6 +163,8 @@ name_equals(const char *lhs, const char *rhs)
 }
 
 /***************************************************************************
+ * Called at startup, when processing command-line options, to set 
+ * parameters specific to TCP processing.
  ***************************************************************************/
 void
 tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
@@ -162,6 +184,8 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
 
 /***************************************************************************
+ * Called at startup, by a receive thread, to create a TCP connection
+ * table.
  ***************************************************************************/
 struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
@@ -243,6 +267,7 @@ static unsigned
 tcb_hash(unsigned ip_me, unsigned port_me, unsigned ip_them, unsigned port_them)
 {
     unsigned index;
+
     /* TCB hash table uses symmetric hash, so incoming/outgoing packets
      * get the same hash. FIXME: does this really nee to be symmetric? */
     index = (unsigned)syn_cookie(   ip_me   ^ ip_them, 
@@ -250,11 +275,12 @@ tcb_hash(unsigned ip_me, unsigned port_me, unsigned ip_them, unsigned port_them)
                                     ip_me   ^ ip_them, 
                                     port_me ^ port_them
                                     );
-//printf("==== %x:%x %x:%x %08x ====                \n", ip_me, port_me, ip_them, port_them, index);
     return index;
 }
 
 /***************************************************************************
+ * Destroy a TCP connection entry. We have to unlink both from the 
+ * TCB-table as well as the timeout-table.
  ***************************************************************************/
 static void
 tcpcon_destroy_tcb(
@@ -264,8 +290,16 @@ tcpcon_destroy_tcb(
     unsigned index;
     struct TCP_Control_Block **r_entry;
 
+    /*
+     * The TCB doesn't point to it's location in the table. Therefore, we
+     * have to do a lookup to find the head pointer in the table.
+     */
     index = tcb_hash(tcb->ip_me, tcb->port_me, tcb->ip_them, tcb->port_them);
 
+    /*
+     * At this point, we have the head of a linked list of TCBs. Now, 
+     * traverse that linked list until we find our TCB
+     */
     r_entry = &tcpcon->entries[index & tcpcon->mask];
     while (*r_entry) {
         if (*r_entry == tcb) {
@@ -308,12 +342,12 @@ tcpcon_destroy_tcb(
             tcb->port_them,
             tcb->seqno_them
             );
-    //exit(1);
-
 }
 
 
 /***************************************************************************
+ * Called at shutdown to free up all the memory used by the TCP
+ * connection table.
  ***************************************************************************/
 void
 tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon)
@@ -560,6 +594,8 @@ tcp_send_RST(
     }
 }
 
+/***************************************************************************
+ ***************************************************************************/
 void
 tcpcon_send_FIN(
     struct TCP_ConnectionTable *tcpcon,
@@ -617,6 +653,8 @@ parse_banner(
 
 
 /***************************************************************************
+ * DEBUG: when printing debug messages (-d option), this prints a string
+ * for the given state.
  ***************************************************************************/
 static const char *
 state_to_string(int state)
@@ -633,6 +671,11 @@ state_to_string(int state)
         return buf;
     }
 }
+
+/***************************************************************************
+ * DEBUG: when printing debug messages (-d option), this prints a string
+ * for the given state.
+ ***************************************************************************/
 static const char *
 what_to_string(int state)
 {

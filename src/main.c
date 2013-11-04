@@ -603,7 +603,7 @@ receive_thread(void *v)
         unsigned cookie;
 
         /*
-         * RECIEVE
+         * RECEIVE
          *
          * This is the boring part of actually receiving a packet
          */
@@ -614,8 +614,11 @@ receive_thread(void *v)
                     &usecs,
                     &px);
         
-        if (err != 0)
+        if (err != 0) {
+            if (tcpcon)
+                tcpcon_timeouts(tcpcon, (unsigned)time(0), 0);
             continue;
+        }
         
 
         /*
@@ -927,6 +930,8 @@ main_scan(struct Masscan *masscan)
     time_t now = time(0);
     struct Status status;
     uint64_t min_index = UINT64_MAX;
+
+    memset(parms_array, 0, sizeof(parms_array));
 
     /*
      * Initialize the task size

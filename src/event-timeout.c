@@ -24,6 +24,7 @@
     code and causing the bug to come back again.
 */
 #include "event-timeout.h"
+#include "logger.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,13 +79,14 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
              size_t offset, uint64_t timestamp)
 {
     unsigned index;
-    //time_t now = time(0);
-    //time_t time_future = (unsigned)(timestamp/16384ULL);
 
     /* Unlink from wherever the entry came from */
     timeout_unlink(entry);
 
-//printf("++ADD %d.%03u\n", time_future-now, (unsigned)(((timestamp%16384ULL)/16384.0)*1000.0));
+    if (entry->prev) {
+        LOG(1, "***CHANGE %d-seconds\n", (int)((timestamp-entry->timestamp)/16384ULL));
+    }
+
     /* Initialize the new entry */    
     entry->timestamp = timestamp;
     entry->offset = (unsigned)offset;
@@ -96,10 +98,10 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     entry->prev = &timeouts->slots[index];
     if (entry->next)
         entry->next->prev = &entry->next;
-//printf("++PREV=0x%llx\n", entry->prev);
 }
 
 /***************************************************************************
+ * Remove the next event that it older than the specified timestamp
  ***************************************************************************/
 void *
 timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
@@ -112,7 +114,7 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
         /* Start at the current slot */
         entry = timeouts->slots[timeouts->current_index & timeouts->mask];
 
-        /* enumerate throug the linked list until we find one */
+        /* enumerate through the linked list until we find a used slot */
         while (entry && entry->timestamp > timestamp)
             entry = entry->next;
         if (entry)
