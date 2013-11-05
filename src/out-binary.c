@@ -53,7 +53,7 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
     size_t bytes_written;
 
     UNUSEDPARM(out);
-
+    
     /* [TYPE] field */
     switch (status) {
     case Port_Open:
