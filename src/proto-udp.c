@@ -7,7 +7,7 @@
 #include "syn-cookie.h"
 #include "logger.h"
 #include "output.h"
-#include "masscan.h"
+#include "masscan-status.h"
 #include "unusedparm.h"
 
 

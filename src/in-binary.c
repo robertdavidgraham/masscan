@@ -1,11 +1,11 @@
 /*
     Read in the binary file produced by "out-binary.c". This allows you to
-    translate the binary format into something more easily parsed, such
-    as the XML or JSON formats.
+    translate the "binary" format into any of the other output formats.
 */
 #include "in-binary.h"
 #include "masscan.h"
 #include "masscan-app.h"
+#include "masscan-status.h"
 #include "main-globals.h"
 #include "output.h"
 #include "string_s.h"
@@ -251,15 +251,20 @@ end:
 }
 
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * When masscan is called with the "--readscan" parameter, it doesn't
+ * do a scan of the live network, but instead reads scan results from
+ * a file. Those scan results can then be written out in any of the
+ * other formats. This preserves the original timestamps.
+ *****************************************************************************/
 void
-convert_binary_files(struct Masscan *masscan, int arg_first, int arg_max, char *argv[])
+convert_binary_files(struct Masscan *masscan, 
+                     int arg_first, int arg_max, char *argv[])
 {
     struct Output *out;
     int i;
 
-    out = output_create(masscan);
+    out = output_create(masscan, 0);
 
     for (i=arg_first; i<arg_max; i++) {
         parse_file(out, argv[i]);
@@ -267,4 +272,5 @@ convert_binary_files(struct Masscan *masscan, int arg_first, int arg_max, char *
 
     output_destroy(out);
 }
+
 

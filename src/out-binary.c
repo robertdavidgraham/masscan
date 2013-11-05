@@ -1,7 +1,8 @@
 #include "output.h"
-#include "masscan.h"
 #include "masscan-app.h"
+#include "masscan-status.h"
 #include "out-record.h"
+#include "string_s.h"
 
 /****************************************************************************
  ****************************************************************************/

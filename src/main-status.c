@@ -123,6 +123,7 @@ status_print(
         syn_rate = (1.0*current_syns)/elapsed_time;
     }
 
+
     /*
      * Print the message to <stderr> so that <stdout> can be redirected
      * to a file (<stdout> reports what systems were found).
@@ -136,7 +137,7 @@ status_print(
                         tcb_rate,
                         global_tcb_count
                         );
-    } else {
+    } else if (rate > 0) {
         fprintf(stderr, 
                 "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs, rr=%.0f       \r",
                         x/1000.0,

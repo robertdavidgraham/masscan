@@ -44,7 +44,6 @@ timeout_unlink(struct TimeoutEntry *entry)
     entry->next = 0;
     entry->prev = 0;
     entry->timestamp = 0;
-//printf("--PREV=0x%llx\n", entry->prev);
 }
 
 /***************************************************************************
@@ -69,6 +68,7 @@ void *timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp);
  * that we use for timeouts. The timeval structure probably will come
  * from the packets that we are capturing.
  */
+#define TICKS_PER_SECOND (16384ULL)
 #define TICKS_FROM_SECS(secs) ((secs)*16384ULL)
 #define TICKS_FROM_USECS(usecs) ((usecs)/16384ULL)
 #define TICKS_FROM_TV(secs,usecs) (TICKS_FROM_SECS(secs)+TICKS_FROM_USECS(usecs))

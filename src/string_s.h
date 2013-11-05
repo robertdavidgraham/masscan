@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdint.h>
 
 #undef strcpy
 #define strcpy      STRCPY_FUNCTION_IS_BAD
@@ -87,6 +88,7 @@ errno_t gmtime_s(struct tm* _tm, const time_t *time);
 #else
 # error unknown compiler
 #endif
+
 
 
 

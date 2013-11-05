@@ -1,6 +1,6 @@
 #include "output.h"
-#include "masscan.h"
 #include "masscan-app.h"
+#include "string_s.h"
 
 
 
@@ -9,13 +9,13 @@
 static void
 xml_out_open(struct Output *out, FILE *fp)
 {
-    const struct Masscan *masscan = out->masscan;
+    //const struct Masscan *masscan = out->masscan;
     
     fprintf(fp, "<?xml version=\"1.0\"?>\r\n");
     fprintf(fp, "<!-- masscan v1.0 scan -->\r\n");
-    if (masscan->nmap.stylesheet[0]) {
+    if (out->xml.stylesheet) {
         fprintf(fp, "<?xml-stylesheet href=\"%s\" type=\"text/xsl\"?>\r\n",
-            masscan->nmap.stylesheet);
+            out->xml.stylesheet);
     }
     fprintf(fp, "<nmaprun scanner=\"%s\" start=\"%u\" version=\"%s\"  xmloutputversion=\"%s\">\r\n",
         "masscan",
@@ -37,7 +37,10 @@ xml_out_close(struct Output *out, FILE *fp)
     time_t now = time(0);
     struct tm tm;
 
-    localtime_s(&tm, &now);
+    if (out->is_gmt)
+        gmtime_s(&tm, &now);
+    else
+        localtime_s(&tm, &now);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
 
     fprintf(fp,
@@ -48,7 +51,7 @@ xml_out_close(struct Output *out, FILE *fp)
             "</nmaprun>\r\n",
             (unsigned)now,                    /* time */
             buffer,                 /* timestr */
-            (unsigned)(now - out->last_rotate), /* elapsed */
+            (unsigned)(now - out->rotate.last), /* elapsed */
             out->counts.tcp.open,
             out->counts.tcp.closed,
             out->counts.tcp.open + out->counts.tcp.closed

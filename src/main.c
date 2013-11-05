@@ -16,7 +16,7 @@
     to make this file relative "flat" this way so that everything is visible.
 */
 #include "masscan.h"
-
+#include "masscan-status.h"     /* open or closed */
 #include "rand-blackrock.h"     /* the BlackRock shuffling func */
 #include "rand-lcg.h"           /* the LCG randomization func */
 #include "templ-pkt.h"          /* packet template, that we use to send */
@@ -107,6 +107,9 @@ struct ThreadPair {
      * The index of the network adapter that we are using for this
      * thread-pair. This is an index into the "masscan->nic[]"
 	 * array.
+     *
+     * NOTE: this is also the "thread-id", because we create one
+     * transmit/receive thread pair per NIC.
      */
     unsigned nic_index;
 
@@ -528,14 +531,15 @@ receive_thread(void *v)
      * strange things people send us. Note that we don't record transmitted
      * packets, just the packets we've received.
      */
-    /*if (masscan->pcap_filename[0])
-        pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);*/
+    if (masscan->pcap_filename[0]) {
+        pcapfile = pcapfile_openwrite(masscan->pcap_filename, 1);
+    }
 
     /*
      * Open output. This is where results are reported when saving
      * the --output-format to the --output-filename
      */
-    out = output_create(masscan);
+    out = output_create(masscan, parms->nic_index);
 
     /*
      * Create deduplication table. This is so when somebody sends us
@@ -599,7 +603,7 @@ receive_thread(void *v)
         unsigned cookie;
 
         /*
-         * RECIEVE
+         * RECEIVE
          *
          * This is the boring part of actually receiving a packet
          */
@@ -610,8 +614,11 @@ receive_thread(void *v)
                     &usecs,
                     &px);
         
-        if (err != 0)
+        if (err != 0) {
+            if (tcpcon)
+                tcpcon_timeouts(tcpcon, (unsigned)time(0), 0);
             continue;
+        }
         
 
         /*
@@ -923,6 +930,8 @@ main_scan(struct Masscan *masscan)
     time_t now = time(0);
     struct Status status;
     uint64_t min_index = UINT64_MAX;
+
+    memset(parms_array, 0, sizeof(parms_array));
 
     /*
      * Initialize the task size
@@ -1371,6 +1380,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += output_selftest();
             x += siphash24_selftest();
             x += snmp_selftest();
             x += payloads_selftest();
