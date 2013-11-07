@@ -328,6 +328,13 @@ int banner1_selftest()
     }*/
 
 
-    return 0;
+    {
+        int x = 0;
+
+        x += banner_ssl.selftest();
+        x += banner_http.selftest();
+
+        return x;
+    }
 }
 

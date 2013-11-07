@@ -829,6 +829,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
             case 2096:  /* cPanel webmail - SSL */
             case 8443:  /* Plesk Control Panel - SSL */
             case 9050:  /* Tor */
+            case 8140:  /* puppet */
                 tcb->banner1_state.is_sent_sslhello = 1;
                 x = (const unsigned char *)banner_ssl.hello;
                 x_len = banner_ssl.hello_length;
