@@ -54,7 +54,7 @@ struct TCP_Control_Block
     time_t when_created;
     const unsigned char *payload;
 
-    unsigned char banner[1024];
+    unsigned char banner[4096];
     unsigned banner_length;
     unsigned char banner_proto;
 
