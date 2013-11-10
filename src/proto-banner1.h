@@ -27,10 +27,12 @@ struct SSL_SERVER_HELLO {
 struct SSL_SERVER_CERT {
     unsigned state;
     unsigned remaining;
-    unsigned cert_remaining;
-    unsigned cert_state;
-    unsigned b64x;
     unsigned banner_offset_start;
+    struct {
+        unsigned remaining;
+        unsigned state;
+        unsigned b64x;
+    } sub;
 };
 
 struct SSLRECORD {

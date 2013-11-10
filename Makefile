@@ -50,6 +50,13 @@ INCLUDES = -I.
 FLAGS2 = 
 endif
 
+# FreeBSD
+ifneq (, $(findstring freebsd, $(SYS)))
+LIBS = -lpcap -lm -pthread
+INCLUDES = -I.
+FLAGS2 =
+endif
+
 # this works on llvm or real gcc
 CC = gcc
 

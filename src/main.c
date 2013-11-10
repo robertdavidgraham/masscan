@@ -1380,6 +1380,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += banner1_selftest();
             x += output_selftest();
             x += siphash24_selftest();
             x += snmp_selftest();
@@ -1392,7 +1393,6 @@ int main(int argc, char *argv[])
             x += pixie_time_selftest();
             x += rte_ring_selftest();
             x += smack_selftest();
-            x += banner1_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
 
