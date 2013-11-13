@@ -14,9 +14,9 @@ ranges and port ranges.
 
 On Debian/Ubuntu, it goes something like this:
 
+	$ sudo apt-get install git gcc make libpcap-dev
 	$ git clone https://github.com/robertdavidgraham/masscan
 	$ cd masscan
-	$ sudo apt-get install libpcap-dev
 	$ make
 
 This puts the program in the `masscan/bin` subdirectory. You'll have to
