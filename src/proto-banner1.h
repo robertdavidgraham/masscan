@@ -3,7 +3,7 @@
 #include <stdint.h>
 #define STATE_DONE 0xFFFFFFFF
 #include <stdio.h>
-
+#include "proto-banout.h"
 
 struct Banner1
 {
@@ -13,6 +13,8 @@ struct Banner1
 
     unsigned char *http_header;
     unsigned http_header_length;
+    unsigned is_capture_html:1;
+    unsigned is_capture_cert:1;
 };
 
 struct SSL_SERVER_HELLO {
@@ -27,7 +29,6 @@ struct SSL_SERVER_HELLO {
 struct SSL_SERVER_CERT {
     unsigned state;
     unsigned remaining;
-    unsigned banner_offset_start;
     struct {
         unsigned remaining;
         unsigned state;
@@ -57,10 +58,13 @@ struct SSLRECORD {
 
 };
 
-struct Banner1State {
+
+
+struct ProtocolState {
     unsigned state;
     unsigned remaining;
     unsigned short port;
+    unsigned short app_proto;
     unsigned is_sent_sslhello:1;
     union {
         struct SSLRECORD ssl;
@@ -71,7 +75,7 @@ struct Banner1State {
  * A registration structure for various TCP stream protocols
  * like HTTP, SSL, and SSH
  */
-struct Banner1Stream {
+struct ProtocolParserStream {
     const char *name;
     unsigned port;
     const void *hello;
@@ -81,9 +85,9 @@ struct Banner1Stream {
     void (*parse)(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct Banner1State *stream_state,
+        struct ProtocolState *stream_state,
         const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max);
+        struct BannerOutput *banout);
 };
 
 
@@ -100,19 +104,14 @@ banner1_create(void);
 void
 banner1_destroy(struct Banner1 *b);
 
-void
+unsigned
 banner1_parse(
-        struct Banner1 *banner1,
-        struct Banner1State *pstate,
-        unsigned *proto,
+        const struct Banner1 *banner1,
+        struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max);
+        struct BannerOutput *banout);
 
-void
-banner_append(const void *src, size_t src_len, void *banner, unsigned *banner_offset, size_t banner_max);
 
-void
-banner_append_char(int c, void *banner, unsigned *banner_offset, size_t banner_max);
 
 /**
  * Test the banner protocol-parsing system by reading

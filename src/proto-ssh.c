@@ -1,6 +1,7 @@
 #include "proto-ssh.h"
 #include "proto-banner1.h"
 #include "unusedparm.h"
+#include "masscan-app.h"
 #include <ctype.h>
 
 
@@ -9,9 +10,9 @@
 static void
 ssh_parse(  const struct Banner1 *banner1,
         void *banner1_private,
-        struct Banner1State *pstate,
+        struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max)
+        struct BannerOutput *banout)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -28,8 +29,7 @@ ssh_parse(  const struct Banner1 *banner1,
             state = STATE_DONE;
             continue;
         }
-        if (*banner_offset < banner_max)
-            banner[(*banner_offset)++] = px[i];
+        banout_append_char(banout, PROTO_SSH2, px[i]);
         break;
     default:
         i = (unsigned)length;
@@ -58,7 +58,7 @@ ssh_selftest(void)
 
 /***************************************************************************
  ***************************************************************************/
-const struct Banner1Stream banner_ssh = {
+const struct ProtocolParserStream banner_ssh = {
     "ssh", 22, 0, 0,
     ssh_selftest,
     ssh_init,

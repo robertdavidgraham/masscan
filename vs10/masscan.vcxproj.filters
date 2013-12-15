@@ -198,6 +198,12 @@
     <ClCompile Include="..\src\proto-zeroaccess.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-ssl-test.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-banout.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -342,6 +348,9 @@
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-zeroaccess.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-banout.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>

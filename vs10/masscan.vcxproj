@@ -33,12 +33,14 @@
     <ClCompile Include="..\src\pixie-file.c" />
     <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
+    <ClCompile Include="..\src\proto-banout.c" />
     <ClCompile Include="..\src\proto-dns.c" />
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
+    <ClCompile Include="..\src\proto-ssl-test.c" />
     <ClCompile Include="..\src\proto-ssl.c" />
     <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
@@ -97,6 +99,7 @@
     <ClInclude Include="..\src\pixie-timer.h" />
     <ClInclude Include="..\src\proto-arp.h" />
     <ClInclude Include="..\src\proto-banner1.h" />
+    <ClInclude Include="..\src\proto-banout.h" />
     <ClInclude Include="..\src\proto-dns-parse.h" />
     <ClInclude Include="..\src\proto-dns.h" />
     <ClInclude Include="..\src\proto-http.h" />

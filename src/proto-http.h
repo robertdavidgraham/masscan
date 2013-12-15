@@ -2,7 +2,7 @@
 #define PROTO_HTTP_H
 #include "proto-banner1.h"
 
-extern struct Banner1Stream banner_http;
+extern struct ProtocolParserStream banner_http;
 
 unsigned
 http_change_field(unsigned char **inout_header, unsigned header_length,

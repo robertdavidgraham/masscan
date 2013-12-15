@@ -1107,7 +1107,7 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->seed = time(0);
         else
             masscan->seed = parseInt(value);
-    } else if (EQUALS("sendq", name)) {
+    } else if (EQUALS("sendq", name) || EQUALS("sendqueue", name)) {
         masscan->is_sendq = 1;
     } else if (EQUALS("send-eth", name)) {
         fprintf(stderr, "nmap(%s): unnecessary, we always do --send-eth\n", name);
