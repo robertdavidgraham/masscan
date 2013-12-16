@@ -93,6 +93,8 @@ struct Masscan
     unsigned is_interactive:1;  /* --interactive */
 	unsigned is_arp:1;			/* --arp */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
+    unsigned is_capture_cert:1; /* --capture cert */
+    unsigned is_capture_html:1; /* --capture html */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

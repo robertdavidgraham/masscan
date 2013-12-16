@@ -285,6 +285,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
                     masscan->http_headers[i].header_value_length,
                 masscan->http_headers[i].header_value);
     }
+
+    
+    fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
+    fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
 }
 
 /***************************************************************************
@@ -784,6 +788,24 @@ masscan_set_parameter(struct Masscan *masscan,
             free(masscan->bpf_filter);
         masscan->bpf_filter = (char*)malloc(len);
         memcpy(masscan->bpf_filter, value, len);
+    } else if (EQUALS("capture", name)) {
+        if (EQUALS("cert", value))
+            masscan->is_capture_cert = 1;
+        else if (EQUALS("html", value))
+            masscan->is_capture_html = 1;
+        else {
+            fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
+            exit(1);
+        }
+    } else if (EQUALS("nocapture", name)) {
+        if (EQUALS("cert", value))
+            masscan->is_capture_cert = 0;
+        else if (EQUALS("html", value))
+            masscan->is_capture_html = 0;
+        else {
+            fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
+            exit(1);
+        }
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
         struct Range range;

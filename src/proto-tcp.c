@@ -182,6 +182,17 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
 
 /***************************************************************************
+ ***************************************************************************/
+void
+tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
+    unsigned is_capture_cert,
+    unsigned is_capture_html)
+{
+    tcpcon->banner1->is_capture_cert = is_capture_cert;
+    tcpcon->banner1->is_capture_html = is_capture_html;
+}
+
+/***************************************************************************
  * Called at startup, by a receive thread, to create a TCP connection
  * table.
  ***************************************************************************/

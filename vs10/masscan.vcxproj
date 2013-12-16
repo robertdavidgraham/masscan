@@ -55,6 +55,7 @@
     <ClCompile Include="..\src\pixie-timer.c" />
     <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\proto-udp.c" />
+    <ClCompile Include="..\src\proto-x509.c" />
     <ClCompile Include="..\src\proto-zeroaccess.c" />
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
@@ -111,6 +112,7 @@
     <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-udp.h" />
+    <ClInclude Include="..\src\proto-x509.h" />
     <ClInclude Include="..\src\proto-zeroaccess.h" />
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />

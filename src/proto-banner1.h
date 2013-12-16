@@ -4,6 +4,7 @@
 #define STATE_DONE 0xFFFFFFFF
 #include <stdio.h>
 #include "proto-banout.h"
+#include "proto-x509.h"
 
 struct Banner1
 {
@@ -34,6 +35,7 @@ struct SSL_SERVER_CERT {
         unsigned state;
         unsigned b64x;
     } sub;
+    struct CertDecode x509;
 };
 
 struct SSLRECORD {

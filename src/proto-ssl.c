@@ -16,6 +16,7 @@
 #include "string_s.h"
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 /**
  * Fugly macro for doing state-machine parsing
@@ -317,7 +318,10 @@ server_cert(
     case CLEN2:
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
-        server_cert_copy(data, 0, CERT_COPY_START, banout);
+        if (banner1->is_capture_cert)
+            server_cert_copy(data, 0, CERT_COPY_START, banout);
+        memset(&data->x509, 0, sizeof(data->x509));
+        x509_init_state(&data->x509, cert_remaining);
         DROPDOWN(i,length,state);
 
     case CERT:
@@ -329,7 +333,11 @@ server_cert(
                 len = cert_remaining;
 
             /* parse the certificate */
-            server_cert_copy(data, px+i, len, banout);
+            if (banner1->is_capture_cert)
+                server_cert_copy(data, px+i, len, banout);
+
+            x509_decode(&data->x509, px+i, len, banout);
+            //assert(((size_t)banout->next>>32) == 0);
 
 
             remaining -= len;
@@ -339,7 +347,8 @@ server_cert(
             if (cert_remaining == 0) {
                 /* We've reached the end of the certificate, so make
                  * a record of it */
-                server_cert_copy(data,  0, CERT_COPY_FINISH,  banout);
+                if (banner1->is_capture_cert)
+                    server_cert_copy(data,  0, CERT_COPY_FINISH,  banout);
                 state = CLEN0;
             }
         }
@@ -624,6 +633,7 @@ ssl_selftest(void)
      * Do the normal parse
      */
     banner1 = banner1_create();
+    banner1->is_capture_cert = 1;
     memset(state, 0, sizeof(state));
     banout_init(banout1);
     ssl_parse(  banner1,
@@ -639,6 +649,7 @@ ssl_selftest(void)
      * Do the fragmented parse
      */
     banner1 = banner1_create();
+    banner1->is_capture_cert = 1;
     memset(state, 0, sizeof(state));
     banout_init(banout2);
     for (ii=0; ii<ssl_test_case_3_size; ii++)

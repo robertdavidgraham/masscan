@@ -194,6 +194,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
             | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
     /* Decrypt the response packet */
+    buf[0] = '\0';
     len = zadecrypt(px + parsed->app_offset, 
                     parsed->app_length,
                     buf, sizeof(buf));

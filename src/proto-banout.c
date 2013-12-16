@@ -205,10 +205,6 @@ banout_selftest(void)
 
     if (banout->next == 0)
         return 1;
-    if (banout->next->next == 0)
-        return 1;
-    if (banout->next->next->next != 0)
-        return 1;
     if (banout_string_length(banout, 1) != 40)
         return 1;
     if (banout_string_length(banout, 2) != 50)
