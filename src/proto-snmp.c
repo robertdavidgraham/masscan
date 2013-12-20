@@ -205,7 +205,7 @@ next_id(const unsigned char *oid, unsigned *offset, uint64_t oid_length)
  ****************************************************************************/
 static void
 snmp_banner_oid(const unsigned char *oid, size_t oid_length,
-            unsigned char *banner, unsigned *banner_offset, unsigned banner_max)
+            struct BannerOutput *banout)
 {
     unsigned i;
     size_t id;
@@ -234,10 +234,7 @@ snmp_banner_oid(const unsigned char *oid, size_t oid_length,
     /* Do the string */
     if (found_id != SMACK_NOT_FOUND) {
         const char *str = mib[found_id].name;
-        for (i=0; str[i]; i++) {
-            if (*banner_offset < banner_max)
-                banner[(*banner_offset)++] = str[i];
-        }
+        banout_append(banout, PROTO_SNMP, str, strlen(str));
     }
 
     /* Do remaining OIDs */
@@ -249,10 +246,7 @@ snmp_banner_oid(const unsigned char *oid, size_t oid_length,
             break;
 
         sprintf_s(foo, sizeof(foo), ".%llu", x);
-        if (*banner_offset + strlen(foo) < banner_max) {
-            memcpy(banner + *banner_offset, foo, strlen(foo));
-            *banner_offset += (unsigned)strlen(foo);
-        }
+        banout_append(banout, PROTO_SNMP, foo, strlen(foo));
     }
 }
 
@@ -262,19 +256,17 @@ static void
 snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t var_tag,
             const unsigned char *var, size_t var_length,
-            unsigned char *banner, unsigned *banner_offset, unsigned banner_max)
+            struct BannerOutput *banout)
 {
     size_t i;
 
-    if (*banner_offset != 0 && *banner_offset < banner_max)
-        banner[(*banner_offset)++] = '\n';
+    banout_newline(banout, PROTO_SNMP);
 
     /* print the OID */
     snmp_banner_oid(oid, oid_length,
-                    banner, banner_offset, banner_max);
+                    banout);
 
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = ':';
+    banout_append_char(banout, PROTO_SNMP, ':');
 
     switch (var_tag) {
     case 2:
@@ -284,25 +276,17 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
             sprintf_s(foo, sizeof(foo), "%llu", (unsigned long long)(size_t)foo);
-            if (*banner_offset + strlen(foo) < banner_max) {
-                memcpy(banner + *banner_offset, foo, strlen(foo));
-                *banner_offset += (unsigned)strlen(foo);
-            }
+            banout_append(banout, PROTO_SNMP, foo, strlen(foo));
         }
         break;
     case 6:
         snmp_banner_oid(var, var_length,
-                        banner, banner_offset, banner_max);
+                        banout);
         break;
     case 4:
     default:
-        {
-            /* TODO: this needs to be normalized */
-            for (i=0; i<var_length; i++) {
-                if (*banner_offset < banner_max)
-                    banner[(*banner_offset)++] = var[i];
-            }
-        }
+        /* TODO: this needs to be normalized */
+        banout_append(banout, PROTO_SNMP, var, var_length);
         break;
     }
 }
@@ -316,7 +300,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
  ****************************************************************************/
 static void
 snmp_parse(const unsigned char *px, uint64_t length,
-    unsigned char *banner, unsigned *banner_offset, unsigned banner_max,
+    struct BannerOutput *banout,
     unsigned *request_id)
 {
 	uint64_t offset=0;
@@ -408,7 +392,7 @@ snmp_parse(const unsigned char *px, uint64_t length,
             if (var_tag == 5)
                 continue; /* null */
 
-            snmp_banner(oid, oid_length, var_tag, var, var_length, banner, banner_offset, banner_max);
+            snmp_banner(oid, oid_length, var_tag, var, var_length, banout);
 		}
 	}
 }
@@ -554,20 +538,19 @@ handle_snmp(struct Output *out, time_t timestamp,
             struct PreprocessedInfo *parsed
             )
 {
-    unsigned char banner[1024];
-    unsigned banner_offset = 0;
-    unsigned banner_length = sizeof(banner);
     unsigned ip_them;
     unsigned ip_me;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     unsigned seqno;
     unsigned request_id;
+    struct BannerOutput banout[1];
     
     UNUSEDPARM(length);
 
+    banout_init(banout);
     snmp_parse(px + parsed->app_offset, parsed->app_length,
-        banner, &banner_offset, banner_length,
+        banout,
         &request_id);
 
 
@@ -580,13 +563,12 @@ handle_snmp(struct Output *out, time_t timestamp,
     if ((seqno&0x7FFFffff) != request_id)
         return 1;
 
-    if (banner_offset) {
-        output_report_banner(
-            out, timestamp,
-            ip_them, 17, parsed->port_src, 
-            PROTO_SNMP,
-            banner, banner_offset);
-    }
+    output_report_banner(
+        out, timestamp,
+        ip_them, 17, parsed->port_src, 
+        PROTO_SNMP,
+        banout_string(banout, PROTO_SNMP),
+        banout_string_length(banout, PROTO_SNMP));
 
     return 0;
 }
@@ -650,18 +632,25 @@ snmp_selftest_banner()
               0x06, 0x12, 
                 0x2B, 0x06, 0x01, 0x04, 0x01, 0x8F, 0x51, 0x01, 0x01, 0x01, 0x82, 0x29, 0x5D, 0x01, 0x1B, 0x02, 0x02, 0x01, 
     };
-    unsigned char banner[256];
-    unsigned banner_offset = 0;
-    unsigned banner_max = sizeof(banner);
     unsigned request_id;
+    struct BannerOutput banout[1];
+    banout_init(banout);
 
     snmp_parse(snmp_response, sizeof(snmp_response),
-                banner, &banner_offset, banner_max, &request_id);
+                banout,
+                 &request_id);
 
     if (request_id != 0x26)
         return 1;
 
-    return memcmp(banner, "sysObjectID:okidata.1.1.1.297.93", 30) != 0;
+    {
+        const unsigned char *str = banout_string(banout, PROTO_SNMP);
+        size_t str_length = banout_string_length(banout, PROTO_SNMP);
+        if (memcmp(str, "sysObjectID:okidata.1.1.1.297.93.1.27.2.2.1", str_length) != 0)
+            return 1;
+    }
+
+    return 0;
 }
 
 /****************************************************************************

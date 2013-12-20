@@ -46,6 +46,8 @@
 #include "main-globals.h"       /* all the global variables in the program */
 #include "proto-zeroaccess.h"
 #include "siphash24.h"
+#include "proto-x509.h"
+
 
 #include <assert.h>
 #include <limits.h>
@@ -561,6 +563,9 @@ receive_thread(void *v)
             out,
             masscan->tcb.timeout
             );
+        tcpcon_set_banner_flags(tcpcon,
+                masscan->is_capture_cert,
+                masscan->is_capture_html);
         if (masscan->http_user_agent_length)
             tcpcon_set_parameter(   tcpcon, 
                                     "http-user-agent",
@@ -1258,6 +1263,7 @@ int main(int argc, char *argv[])
     strcpy_s(   masscan->rotate_directory,
                 sizeof(masscan->rotate_directory),
                 ".");
+    masscan->is_capture_cert = 1;
 
     /*
      * On non-Windows systems, read the defaults from the file in
@@ -1286,6 +1292,7 @@ int main(int argc, char *argv[])
 
     /* Init some protocol parser data structures */
     snmp_init();
+    x509_init();
 
     /* Set randomization seed for SYN-cookies */
     syn_set_entropy(masscan->seed);

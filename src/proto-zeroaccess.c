@@ -178,8 +178,11 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
     unsigned ip_me;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
-    unsigned char banner[2048];
-    unsigned banner_offset = 0;
+    struct BannerOutput banout[1];
+
+    banout->length = 0;
+    banout->next = 0;
+    banout->protocol = PROTO_UDP_ZEROACCESS;
 
     UNUSEDPARM(px);
     UNUSEDPARM(length);
@@ -191,6 +194,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
             | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
     /* Decrypt the response packet */
+    buf[0] = '\0';
     len = zadecrypt(px + parsed->app_offset, 
                     parsed->app_length,
                     buf, sizeof(buf));
@@ -215,7 +219,8 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
         return 0; /* not "retL" */
 
     /* List IP addresses */
-    banner_append("ZeroAccess:", 11, banner, &banner_offset, sizeof(banner));
+    banout_append(banout, PROTO_UDP_ZEROACCESS, "ZeroAccess:", 11);
+
     {
         unsigned i;
         unsigned ip_count = buf[12] | buf[13]<<8 | buf[14]<<16 | buf[15]<<24;
@@ -238,7 +243,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
                     (unsigned char)(ip_found>> 8),
                     (unsigned char)(ip_found>> 0)
                     );
-            banner_append(szaddr, strlen(szaddr), banner, &banner_offset, sizeof(banner));
+            banout_append(banout, PROTO_UDP_ZEROACCESS, szaddr, strlen(szaddr));
         }
     }
 
@@ -250,7 +255,8 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
             out, timestamp,
             ip_them, 17, port_them, 
             PROTO_UDP_ZEROACCESS,
-            (const unsigned char*)banner, banner_offset);
+            banout_string(banout, PROTO_UDP_ZEROACCESS),
+            banout_string_length(banout, PROTO_UDP_ZEROACCESS));
 
     return 0; /* is zeroaccess botnet*/
 }

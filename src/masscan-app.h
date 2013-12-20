@@ -2,7 +2,8 @@
 #define MASSCAN_APP_H
 
 enum ApplicationProtocol {
-    PROTO_UNKNOWN,
+    PROTO_NONE,
+    PROTO_HEUR,
     PROTO_SSH1,
     PROTO_SSH2,
     PROTO_HTTP,
@@ -16,6 +17,9 @@ enum ApplicationProtocol {
     PROTO_POP3,
     PROTO_IMAP4,
     PROTO_UDP_ZEROACCESS,
+    PROTO_X509_CERT,
+    PROTO_HTML_TITLE,
+    PROTO_HTML_FULL,
 };
 
 const char *

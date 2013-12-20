@@ -3,6 +3,7 @@
 #include "smack.h"
 #include "unusedparm.h"
 #include "string_s.h"
+#include "masscan-app.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -125,7 +126,7 @@ http_hello[] =      "GET / HTTP/1.0\r\n"
 /*****************************************************************************
  *****************************************************************************/
 static void
-field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id, 
+field_name(struct BannerOutput *banout, size_t id, 
            struct Patterns *xhttp_fields)
 {
     unsigned i;
@@ -137,15 +138,13 @@ field_name(void *banner, unsigned *banner_offset, size_t banner_max, size_t id,
         return;
     for (i=0; xhttp_fields[i].pattern; i++) {
         if (xhttp_fields[i].id == id) {
-            if (*banner_offset != 0)
-                banner_append("\n", 1, banner, banner_offset, banner_max);
-            banner_append(xhttp_fields[i].pattern 
-                            + ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
-                          xhttp_fields[i].pattern_length
-                            - ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
-                          banner,
-                          banner_offset,
-                          banner_max);
+            banout_newline(banout, PROTO_HTTP);
+            banout_append(  banout, PROTO_HTTP,
+                            (const unsigned char*)xhttp_fields[i].pattern 
+                                + ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
+                            xhttp_fields[i].pattern_length
+                                - ((xhttp_fields[i].pattern[0]=='<')?1:0) /* bah. hack. ugly. */
+                          );
             return;
         }
     }
@@ -214,9 +213,9 @@ static void
 http_parse(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct Banner1State *pstate,
+        struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max)
+        struct BannerOutput *banout)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -273,7 +272,7 @@ http_parse(
             state2 = 0;
             state = CONTENT;
             log_end = i;
-            banner_append(px+log_begin, log_end-log_begin, banner, banner_offset, banner_max);
+            banout_append(banout, PROTO_HTTP, px+log_begin, log_end-log_begin);
             log_begin = log_end;
             break;
         } else {
@@ -316,7 +315,7 @@ http_parse(
         } else if (isspace(px[i])) {
             break;
         } else {
-            //field_name(banner, banner_offset, banner_max, id, http_fields);
+            //field_name(banout, id, http_fields);
             state = FIELD_VALUE;
             /* drop down */
         }
@@ -332,7 +331,7 @@ http_parse(
         case HTTPFIELD_SERVER:
         case HTTPFIELD_LOCATION:
         case HTTPFIELD_VIA:
-            //banner_append(&px[i], 1, banner, banner_offset, banner_max);
+            //banner_append(&px[i], 1, banout);
             break;
         case HTTPFIELD_CONTENT_LENGTH:
                 if (isdigit(px[i]&0xFF)) {
@@ -350,8 +349,8 @@ http_parse(
                                    px, &i, (unsigned)length);
             i--;
             if (id != SMACK_NOT_FOUND) {
-                field_name(banner, banner_offset, banner_max, id, html_fields);
-                banner_append(":", 1, banner, banner_offset, banner_max);
+                field_name(banout, id, html_fields);
+                //banout_append_char(banout, PROTO_HTML_TITLE, ':');
                 state = CONTENT_TAG;
             }
             break;
@@ -367,7 +366,7 @@ http_parse(
         if (px[i] == '<')
             state = CONTENT;
         else {
-            banner_append(&px[i], 1, banner, banner_offset, banner_max);
+            banout_append_char(banout, PROTO_HTML_TITLE, px[i]);
         }
         break;
     case STATE_DONE:
@@ -379,7 +378,7 @@ http_parse(
     if (log_end == 0 && state < CONTENT)
         log_end = i;
     if (log_begin < log_end)
-    banner_append(px + log_begin, log_end-log_begin, banner, banner_offset, banner_max);
+        banout_append(banout, PROTO_HTTP, px + log_begin, log_end-log_begin);
 
 
     
@@ -402,7 +401,7 @@ http_selftest(void)
 
 /***************************************************************************
  ***************************************************************************/
-struct Banner1Stream banner_http = {
+struct ProtocolParserStream banner_http = {
     "http", 80, http_hello, sizeof(http_hello)-1,
     http_selftest,
     http_init,

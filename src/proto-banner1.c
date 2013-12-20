@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 
 
@@ -39,63 +40,64 @@ struct Patterns patterns[] = {
 
 /***************************************************************************
  ***************************************************************************/
-void
+unsigned
 banner1_parse(
-        struct Banner1 *banner1,
-        struct Banner1State *pstate, 
-        unsigned *proto,
+        const struct Banner1 *banner1,
+        struct ProtocolState *tcb_state, 
         const unsigned char *px, size_t length,
-        char *banner, unsigned *banner_offset, size_t banner_max)
+        struct BannerOutput *banout)
 {
     size_t x;
     unsigned offset = 0;
 
-    switch (*proto) {
-    case PROTO_UNKNOWN:
+    switch (tcb_state->app_proto) {
+    case PROTO_NONE:
+    case PROTO_HEUR:
         x = smack_search_next(
                         banner1->smack,
-                        &pstate->state,
+                        &tcb_state->state,
                         px, &offset, (unsigned)length);
         if (x != SMACK_NOT_FOUND
-            && !(x == PROTO_SSL3 && !pstate->is_sent_sslhello)) {
+            && !(x == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
             unsigned i;
+            
+            /* re-read the stuff that we missed */
+            for (i=0; patterns[i].id && patterns[i].id != tcb_state->app_proto; i++)
+                ;
             
             /* Kludge: patterns look confusing, so add port info to the
              * pattern */
-            switch (*proto) {
+            switch (x) {
             case PROTO_FTP2:
-                if (pstate->port == 25 || pstate->port == 587)
-                    *proto = PROTO_SMTP;
+                if (tcb_state->port == 25 || tcb_state->port == 587)
+                    x = PROTO_SMTP;
                 break;
             }
 
-            *proto = (unsigned)x;
+            tcb_state->app_proto = (unsigned short)x;
 
             /* reset the state back again */
-            pstate->state = 0;
+            tcb_state->state = 0;
 
-            /* re-read the stuff that we missed */
-            for (i=0; patterns[i].id != *proto; i++)
-                ;
+            /* If there is any data from a previous packet, re-parse that */
+            {
+                const unsigned char *s = banout_string(banout, PROTO_HEUR);
+                unsigned s_len = banout_string_length(banout, PROTO_HEUR);
 
-            *banner_offset = 0;
-
+                if (s && s_len)
+                banner1_parse(
+                                banner1, 
+                                tcb_state,
+                                s, s_len,
+                                banout);
+            }
             banner1_parse(
                             banner1, 
-                            pstate, proto, 
-                            (const unsigned char*)patterns[i].pattern, patterns[i].pattern_length,
-                            banner, banner_offset, banner_max);
-            banner1_parse(
-                            banner1, 
-                            pstate, proto, 
-                            px+offset, length-offset,
-                            banner, banner_offset, banner_max);
+                            tcb_state,
+                            px, length,
+                            banout);
         } else {
-            size_t len = length;
-            if (len > banner_max - *banner_offset)
-                len = banner_max - *banner_offset;
-            memcpy(banner + *banner_offset, px, len);
-            (*banner_offset) += (unsigned)len;
+            banout_append(banout, PROTO_HEUR, px, length);
         }
         break;
     case PROTO_SSH1:
@@ -110,31 +112,33 @@ banner1_parse(
          * especially when binary parsing is added to SSH */
         banner_ssh.parse(   banner1, 
                             banner1->http_fields,
-                            pstate,
+                            tcb_state,
                             px, length,
-                            banner, banner_offset, banner_max);
+                            banout);
         break;
     case PROTO_HTTP:
         banner_http.parse(
                         banner1, 
                         banner1->http_fields,
-                        pstate,
+                        tcb_state,
                         px, length,
-                        banner, banner_offset, banner_max);
+                        banout);
         break;
     case PROTO_SSL3:
         banner_ssl.parse(
                         banner1, 
                         banner1->http_fields,
-                        pstate,
+                        tcb_state,
                         px, length,
-                        banner, banner_offset, banner_max);
+                        banout);
         break;
     default:
         fprintf(stderr, "banner1: internal error\n");
         break;
 
     }
+
+    return tcb_state->app_proto;
 }
 
 /***************************************************************************
@@ -169,31 +173,6 @@ banner1_create(void)
     return b;
 }
 
-/***************************************************************************
- ***************************************************************************/
-void
-banner_append(const void *vsrc, size_t src_len,
-              void *vbanner, unsigned *banner_offset, size_t banner_max)
-{
-    const unsigned char *src = (const unsigned char *)vsrc;
-    unsigned char *banner = (unsigned char *)vbanner;
-    size_t i;
-    
-    for (i=0; i<src_len; i++) {
-        if (*banner_offset < banner_max)
-            banner[(*banner_offset)++] = src[i];
-    }
-}
-
-void
-banner_append_char(int c,
-        void *vbanner, unsigned *banner_offset, size_t banner_max)
-{
-    unsigned char *banner = (unsigned char *)vbanner;
-    
-    if (*banner_offset < banner_max)
-        banner[(*banner_offset)++] = (unsigned char)c;
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -208,6 +187,9 @@ banner1_destroy(struct Banner1 *b)
         smack_destroy(b->http_fields);
     free(b);
 }
+
+
+
 
 
 /***************************************************************************
@@ -258,16 +240,15 @@ banner1_test(const char *filename)
 
 /***************************************************************************
  ***************************************************************************/
-int banner1_selftest()
+int
+banner1_selftest()
 {
     unsigned i;
     struct Banner1 *b;
-    char banner[128];
-    unsigned banner_offset;
-    struct Banner1State pstate[1];
-    unsigned proto;
+    struct ProtocolState tcb_state[1];
     const unsigned char *px;
     unsigned length;
+    struct BannerOutput banout[1];
     static const char *http_header =
         "HTTP/1.0 302 Redirect\r\n"
         "Date: Tue, 03 Sep 2013 06:50:01 GMT\r\n"
@@ -279,48 +260,56 @@ int banner1_selftest()
         "Content-Language: en\r\n"
         "Location: http://failsafe.fp.yahoo.com/404.html\r\n"
         "Content-Length: 227\r\n"
-        "\r\n";
+        "\r\n<title>hello</title>\n";
     px = (const unsigned char *)http_header;
     length = (unsigned)strlen(http_header);
+
+
+    /*
+     * First, test the "banout" subsystem
+     */
+    if (banout_selftest() != 0) {
+        fprintf(stderr, "banout: failed\n");
+        return 1;
+    }
 
 
     /*
      * Test one character at a time
      */
     b = banner1_create();
-    memset(banner, 0xa3, sizeof(banner));
-    memset(pstate, 0, sizeof(pstate[0]));
-    proto = 0;
-    banner_offset = 0;
+    banout_init(banout);
+    
+    memset(tcb_state, 0, sizeof(tcb_state[0]));
+    
     for (i=0; i<length; i++)
         banner1_parse(
                     b,
-                    pstate,
-                    &proto,
+                    tcb_state,
                     px+i, 1,
-                    banner, &banner_offset, sizeof(banner)
-                    );
+                    banout);
+    {
+        const unsigned char *s = banout_string(banout, PROTO_HTTP);
+        if (memcmp(s, "HTTP/1.0 302", 11) != 0) {
+            printf("banner1: test failed\n");
+            return 1;
+        }
+    }
+    banout_release(banout);
     banner1_destroy(b);
-    /*if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
-        printf("banner1: test failed\n");
-        return 1;
-    }*/
 
     /*
      * Test whole buffer
      */
     b = banner1_create();
-    memset(banner, 0xa3, sizeof(banner));
-    memset(pstate, 0, sizeof(pstate[0]));
-    proto = 0;
-    banner_offset = 0;
+    
+    memset(tcb_state, 0, sizeof(tcb_state[0]));
+    
     banner1_parse(
                     b,
-                    pstate,
-                    &proto,
+                    tcb_state,
                     px, length,
-                    banner, &banner_offset, sizeof(banner)
-                    );
+                    banout);
     banner1_destroy(b);
     /*if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");
@@ -331,8 +320,17 @@ int banner1_selftest()
     {
         int x = 0;
 
-        x += banner_ssl.selftest();
-        x += banner_http.selftest();
+        x = banner_ssl.selftest();
+        if (x) {
+            fprintf(stderr, "SSL banner: selftest failed\n");
+            return 1;
+        }
+
+        x = banner_http.selftest();
+        if (x) {
+            fprintf(stderr, "HTTP banner: selftest failed\n");
+            return 1;
+        }
 
         return x;
     }

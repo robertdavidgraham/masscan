@@ -266,6 +266,16 @@ convert_binary_files(struct Masscan *masscan,
 
     out = output_create(masscan, 0);
 
+    /*
+     * We don't parse the entire argument list, just a subrange
+     * containing the list of files. The 'arg_first' parameter
+     * points to the first filename after the '--readscan'
+     * parameter, and 'arg_max' is the parameter after
+     * the last filename. For example, consider an argument list that
+     * looks like:
+     *   masscan --foo --readscan file1.scan file2.scan --bar
+     * Then arg_first=3 and arg_max=5.
+     */
     for (i=arg_first; i<arg_max; i++) {
         parse_file(out, argv[i]);
     }

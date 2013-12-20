@@ -46,6 +46,10 @@ tcpcon_create_table(    size_t entry_count,
                         unsigned timeout
                         );
 
+void tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
+    unsigned is_capture_cert,
+    unsigned is_capture_html);
+
 /**
  * Gracefully destroy a TCP connection table. This is the last chance for any
  * partial banners (like HTTP server version) to be sent to the output. At the

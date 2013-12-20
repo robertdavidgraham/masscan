@@ -54,11 +54,9 @@ struct TCP_Control_Block
     time_t when_created;
     const unsigned char *payload;
 
-    unsigned char banner[4096];
-    unsigned banner_length;
-    unsigned char banner_proto;
+    struct BannerOutput banout;
 
-    struct Banner1State banner1_state;
+    struct ProtocolState banner1_state;
 };
 
 struct TCP_ConnectionTable {
@@ -184,6 +182,17 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
 
 /***************************************************************************
+ ***************************************************************************/
+void
+tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
+    unsigned is_capture_cert,
+    unsigned is_capture_html)
+{
+    tcpcon->banner1->is_capture_cert = is_capture_cert;
+    tcpcon->banner1->is_capture_html = is_capture_html;
+}
+
+/***************************************************************************
  * Called at startup, by a receive thread, to create a TCP connection
  * table.
  ***************************************************************************/
@@ -289,6 +298,7 @@ tcpcon_destroy_tcb(
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
+    struct BannerOutput *banout;
 
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
@@ -301,47 +311,62 @@ tcpcon_destroy_tcb(
      * traverse that linked list until we find our TCB
      */
     r_entry = &tcpcon->entries[index & tcpcon->mask];
-    while (*r_entry) {
-        if (*r_entry == tcb) {
-            if (tcb->banner_length || tcb->banner_proto) {
-                tcpcon->report_banner(
-                    tcpcon->out,
-                    global_now,
-                    tcb->ip_them,
-                    6,
-                    tcb->port_them,
-                    tcb->banner_proto,
-                    tcb->banner,
-                    tcb->banner_length);
-            }
-            timeout_unlink(tcb->timeout);
-            
-            tcb->ip_them = 0;
-            tcb->port_them = 0;
-            tcb->ip_me = 0;
-            tcb->port_me = 0;
+    while (*r_entry && *r_entry != tcb)
+        r_entry = &(*r_entry)->next;
 
-            (*r_entry) = tcb->next;
-            tcb->next = tcpcon->freed_list;
-            tcpcon->freed_list = tcb;
-            tcpcon->active_count--;
-            global_tcb_count = tcpcon->active_count;
-            return;
-        } else
-            r_entry = &(*r_entry)->next;
+    if (*r_entry == NULL) {
+        /* TODO: this should be impossible, but it's happening anyway, about
+         * 20 times on a full Internet scan. I don't know why, and I'm too
+         * lazy to fix it right now, but I'll get around to eventually */
+        fprintf(stderr, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
+                (tcb->ip_them>>24)&0xFF,
+                (tcb->ip_them>>16)&0xFF,
+                (tcb->ip_them>> 8)&0xFF,
+                (tcb->ip_them>> 0)&0xFF,
+                tcb->port_them,
+                tcb->seqno_them
+                );
+        return;
     }
-    
-    /* TODO: this should be impossible, but it's happening anyway, about
-     * 20 times on a full Internet scan. I don't know why, and I'm too
-     * lazy to fix it right now, but I'll get around to eventually */
-    fprintf(stderr, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
-            (tcb->ip_them>>24)&0xFF,
-            (tcb->ip_them>>16)&0xFF,
-            (tcb->ip_them>> 8)&0xFF,
-            (tcb->ip_them>> 0)&0xFF,
-            tcb->port_them,
-            tcb->seqno_them
-            );
+
+    /*
+     * Print out any banners associated with this TCP session. Most of the
+     * time, there'll only be one.
+     */
+    for (banout = &tcb->banout; banout != NULL; banout = banout->next) {
+        if (banout->length && banout->protocol) {
+            tcpcon->report_banner(
+                tcpcon->out,
+                global_now,
+                tcb->ip_them,
+                6, /*TCP protocol*/
+                tcb->port_them,
+                banout->protocol & 0x0FFFFFFF,
+                banout->banner,
+                banout->length);
+        }
+    }
+
+    /*
+     * If there are multiple banners, then free the additional ones
+     */
+    banout_release(&tcb->banout);
+
+    /*
+     * Unlink this from the timeout system.
+     */
+    timeout_unlink(tcb->timeout);
+            
+    tcb->ip_them = 0;
+    tcb->port_them = 0;
+    tcb->ip_me = 0;
+    tcb->port_me = 0;
+
+    (*r_entry) = tcb->next;
+    tcb->next = tcpcon->freed_list;
+    tcpcon->freed_list = tcb;
+    tcpcon->active_count--;
+    global_tcb_count = tcpcon->active_count;
 }
 
 
@@ -430,7 +455,7 @@ tcpcon_create_tcb(
         tcb->banner1_state.port = tmp.port_them;
 
         timeout_init(tcb->timeout);
-        
+        banout_init(&tcb->banout);
 
         tcpcon->active_count++;
         global_tcb_count = tcpcon->active_count;
@@ -632,20 +657,13 @@ parse_banner(
     const unsigned char *payload,
     size_t payload_length)
 {
-    unsigned proto = tcb->banner_proto;
-
+    assert(tcb->banout.max_length);
     banner1_parse(
-        tcpcon->banner1,
-        &tcb->banner1_state,
-        &proto,
-        payload,
-        payload_length,
-        (char*)tcb->banner,
-        &tcb->banner_length,
-        sizeof(tcb->banner)
-        );
-
-    tcb->banner_proto = (unsigned char)proto;
+                                    tcpcon->banner1,
+                                    &tcb->banner1_state,
+                                    payload,
+                                    payload_length,
+                                    &tcb->banout);
 
 
     return tcb->banner1_state.state;

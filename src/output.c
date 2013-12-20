@@ -715,12 +715,13 @@ output_report_banner(struct Output *out, time_t now,
         unsigned count;
         char banner_buffer[4096];
 
-        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: %s",
+        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: [%s] %s",
             port,
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,
             (ip>> 0)&0xFF,
+            masscan_app_to_string(proto),
             normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
 
