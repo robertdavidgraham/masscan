@@ -205,8 +205,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
     case Output_None:       fprintf(fp, "output-format = none\n"); break;
-    case Output_Redis:      
-        fprintf(fp, "output-format = redis\n"); 
+    case Output_Redis:
+        fprintf(fp, "output-format = redis\n");
         fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
             (unsigned char)(masscan->redis.ip>>24),
             (unsigned char)(masscan->redis.ip>>16),
@@ -271,11 +271,11 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "\n");
     if (masscan->http_user_agent)
-        fprintf(    fp, 
+        fprintf(    fp,
                 "http-user-agent = %.*s\n",
                 masscan->http_user_agent_length,
                 masscan->http_user_agent);
-    
+
     for (i=0; i<sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); i++) {
         if (masscan->http_headers[i].header_name == 0)
             continue;
@@ -286,7 +286,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
                 masscan->http_headers[i].header_value);
     }
 
-    
+
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
 }
@@ -408,7 +408,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
             /* parse the address range */
             range = range_parse_ipv4(address, &offset, (unsigned)i);
             if (range.begin == 0xFFFFFFFF && range.end == 0) {
-                LOG(0, "%s:%u:%u: bad range spec: \"%.*s\"\n", 
+                LOG(0, "%s:%u:%u: bad range spec: \"%.*s\"\n",
                         filename, line_number, offset, i, address);
                 exit(1);
             } else {
@@ -562,7 +562,7 @@ is_power_of_two(uint64_t x)
 
 /***************************************************************************
  * Tests if the named parameter on the command-line. We do a little
- * more than a straight string compare, because I get confused 
+ * more than a straight string compare, because I get confused
  * whether parameter have punctuation. Is it "--excludefile" or
  * "--exclude-file"? I don't know if it's got that dash. Screw it,
  * I'll just make the code so it don't care.
@@ -602,7 +602,7 @@ ARRAY(const char *rhs)
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
 static void
-masscan_set_parameter(struct Masscan *masscan, 
+masscan_set_parameter(struct Masscan *masscan,
                       const char *name, const char *value)
 {
     unsigned index = ARRAY(name);
@@ -619,13 +619,13 @@ masscan_set_parameter(struct Masscan *masscan,
         }
         if (masscan->nic_count < index + 1)
             masscan->nic_count = index + 1;
-        sprintf_s(  masscan->nic[index].ifname, 
-                    sizeof(masscan->nic[index].ifname), 
+        sprintf_s(  masscan->nic[index].ifname,
+                    sizeof(masscan->nic[index].ifname),
                     "%s",
                     value);
 
     }
-    else if (EQUALS("adapter-ip", name) || EQUALS("source-ip", name) 
+    else if (EQUALS("adapter-ip", name) || EQUALS("source-ip", name)
              || EQUALS("source-address", name) || EQUALS("spoof-ip", name)
              || EQUALS("spoof-address", name) || EQUALS("src-ip", name)) {
         /* Send packets FROM this IP address */
@@ -635,7 +635,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Check for bad format */
         if (range.begin > range.end) {
-            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n", 
+            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n",
                     name, value);
             LOG(0, "hint   addresses look like \"19.168.1.23\"\n");
             exit(1);
@@ -644,7 +644,7 @@ masscan_set_parameter(struct Masscan *masscan,
         /* If more than one IP address given, make the range is
             * an even power of two (1, 2, 4, 8, 16, ...) */
         if (!is_power_of_two(range.end - range.begin + 1)) {
-            LOG(0, "FAIL: range must be even power of two: %s=%s\n", 
+            LOG(0, "FAIL: range must be even power of two: %s=%s\n",
                     name, value);
             exit(1);
         }
@@ -660,24 +660,24 @@ masscan_set_parameter(struct Masscan *masscan,
         memset(&ports, 0, sizeof(ports));
 
         rangelist_parse_ports(&ports, value, &is_error);
-        
+
         /* Check if there was an error in parsing */
         if (is_error) {
-            LOG(0, "FAIL: bad source port specification: %s\n", 
+            LOG(0, "FAIL: bad source port specification: %s\n",
                     name);
             exit(1);
         }
 
         /* Only allow one range of ports */
         if (ports.count != 1) {
-            LOG(0, "FAIL: only one source port range may be specified: %s\n", 
+            LOG(0, "FAIL: only one source port range may be specified: %s\n",
                     name);
             exit(1);
         }
 
         /* verify range is even power of 2 (1, 2, 4, 8, 16, ...) */
         if (!is_power_of_two(ports.list[0].end - ports.list[0].begin + 1)) {
-            LOG(0, "FAIL: source port range must be even power of two: %s=%s\n", 
+            LOG(0, "FAIL: source port range must be even power of two: %s=%s\n",
                     name, value);
             exit(1);
         }
@@ -717,7 +717,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Check for bad format */
         if (range.begin != range.end) {
-            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n", 
+            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n",
                     name, value);
             LOG(0, "hint   addresses look like \"19.168.1.23\"\n");
             exit(1);
@@ -744,7 +744,7 @@ masscan_set_parameter(struct Masscan *masscan,
             while (value[i]) {
                 char c = value[i];
                 if (c < '0' || '9' < c) {
-                    fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n", 
+                    fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n",
                             name, value);
                     return;
                 }
@@ -757,9 +757,9 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->max_rate = rate;
 
     }
-    else if (EQUALS("ports", name) || EQUALS("port", name) 
+    else if (EQUALS("ports", name) || EQUALS("port", name)
              || EQUALS("dst-port", name) || EQUALS("dest-port", name)
-             || EQUALS("destination-port", name) 
+             || EQUALS("destination-port", name)
              || EQUALS("target-port", name)) {
         unsigned is_error = 0;
         rangelist_parse_ports(&masscan->ports, value, &is_error);
@@ -779,8 +779,8 @@ masscan_set_parameter(struct Masscan *masscan,
         range.begin = Templ_ARP;
         range.end = Templ_ARP;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
-		masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
-		masscan->is_arp = 1; /* needs additional flag */
+        masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
+        masscan->is_arp = 1; /* needs additional flag */
         LOG(5, "--arpscan\n");
     } else if (EQUALS("bpf", name)) {
         size_t len = strlen(value) + 1;
@@ -813,7 +813,7 @@ masscan_set_parameter(struct Masscan *masscan,
         range.end = Templ_ICMP_echo;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
         LOG(5, "--ping\n");
-    } else if (EQUALS("range", name) || EQUALS("ranges", name) 
+    } else if (EQUALS("range", name) || EQUALS("ranges", name)
                || EQUALS("ip", name) || EQUALS("ipv4", name)
                || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
                || EQUALS("destination-ip", name)
@@ -896,7 +896,7 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->op = Operation_DebugIF;
         }
     } else if (EQUALS("dns-servers", name)) {
-        fprintf(stderr, "nmap(%s): unsupported: DNS lookups too synchronous\n", 
+        fprintf(stderr, "nmap(%s): unsupported: DNS lookups too synchronous\n",
                 name);
         exit(1);
     } else if (EQUALS("echo", name)) {
@@ -909,7 +909,7 @@ masscan_set_parameter(struct Masscan *masscan,
         ranges_from_file(&masscan->exclude_ip, value);
         count2 = masscan->exclude_ip.count;
         if (count2 - count1)
-        fprintf(stderr, "%s: excluding %u ranges from file\n", 
+        fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
@@ -929,12 +929,12 @@ masscan_set_parameter(struct Masscan *masscan,
         char *newname;
         unsigned value_length = (unsigned)strlen(value);
         unsigned char *newvalue;
-        
+
         /* allcoate new value */
         newvalue = (unsigned char*)malloc(value_length+1);
         memcpy(newvalue, value, value_length+1);
         newvalue[value_length] = '\0';
-        
+
         /* allocate a new name */
         name += 11;
         while (ispunct(*name))
@@ -946,7 +946,7 @@ masscan_set_parameter(struct Masscan *masscan,
         memcpy(newname, name, name_length+1);
         newname[name_length] = '\0';
 
-        
+
         for (j=0; j < sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); j++) {
             if (masscan->http_headers[j].header_name == 0) {
                 masscan->http_headers[j].header_name = newname;
@@ -955,7 +955,7 @@ masscan_set_parameter(struct Masscan *masscan,
                 return;
             }
         }
-        
+
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
@@ -1144,7 +1144,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("shard", name) || EQUALS("shards", name)) {
         unsigned one = 0;
         unsigned of = 0;
-        
+
         while (isdigit(*value))
             one = one*10 + (*(value++)) - '0';
         while (ispunct(*value))
@@ -1229,7 +1229,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "offline", "ping", "ping-sweep",
-		"arp",  "infinite", "interactive",
+        "arp",  "infinite", "interactive",
         0};
     size_t i;
 
@@ -1368,7 +1368,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     int v;
                     for (v=1; argv[i][v] == 'd'; v++) {
                         LOG_add_level(1);
-					}
+                    }
                 }
                 break;
             case 'e':
@@ -1627,7 +1627,7 @@ trim(char *line, size_t sizeof_line)
 {
     if (sizeof_line > strlen(line))
         sizeof_line = strlen(line);
-    
+
     while (isspace(*line & 0xFF))
         memmove(line, line+1, sizeof_line--);
     while (isspace(line[sizeof_line-1] & 0xFF))
@@ -1680,14 +1680,14 @@ int
 mainconf_selftest()
 {
     char test[] = " test 1 ";
-    
+
     trim(test, sizeof(test));
     if (strcmp(test, "test 1") != 0)
         return 1; /* failure */
- 
+
     {
         struct Range range;
-        
+
         range.begin = 16;
         range.end = 32-1;
         if (count_cidr_bits(range) != 28)

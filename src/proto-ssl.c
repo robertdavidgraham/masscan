@@ -6,7 +6,7 @@
 
     BIZARRE CODE ALERT: This module uses "state-machines" to parse
     SSL. This has a number of advantages, such as handling TCP
-    segmentation and SSL record fragmentation without having to 
+    segmentation and SSL record fragmentation without having to
     buffer any packets. But it's quite weird if you aren't used to
     it.
 */
@@ -44,7 +44,7 @@ server_hello(
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
     unsigned remaining = hello->remaining;
-	unsigned i;
+    unsigned i;
     enum {
         VERSION_MAJOR, VERSION_MINOR,
         TIME0, TIME1, TIME2, TIME3,
@@ -60,7 +60,7 @@ server_hello(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
 
-    for (i=0; i<length; i++) 
+    for (i=0; i<length; i++)
     switch (state) {
     case VERSION_MAJOR:
         hello->version_major = px[i];
@@ -138,7 +138,7 @@ server_hello(
         {
             char foo[64];
             sprintf_s(foo, sizeof(foo), "cipher:0x%x", hello->cipher_suite);
-            banout_append(banout, PROTO_SSL3, foo, strlen(foo)); 
+            banout_append(banout, PROTO_SSL3, foo, strlen(foo));
         }
         DROPDOWN(i,length,state);
 
@@ -146,7 +146,7 @@ server_hello(
         hello->compression_method = px[i];
         DROPDOWN(i,length,state);
 
-    case LENGTH0: 
+    case LENGTH0:
         remaining = px[i];
         DROPDOWN(i,length,state);
 
@@ -195,7 +195,7 @@ out_b64(unsigned x, struct BannerOutput *banout, unsigned proto)
 static void
 server_cert_copy(   struct SSL_SERVER_CERT *data,
                     const unsigned char *px,
-                    unsigned length, 
+                    unsigned length,
                     struct BannerOutput *banout
                     )
 {
@@ -280,7 +280,7 @@ server_cert(
     unsigned state = data->state;
     unsigned remaining = data->remaining;
     unsigned cert_remaining = data->sub.remaining;
-	unsigned i;
+    unsigned i;
     enum {
         LEN0, LEN1, LEN2,
         CLEN0, CLEN1, CLEN2,
@@ -291,7 +291,7 @@ server_cert(
     UNUSEDPARM(banner1);
     UNUSEDPARM(banner1_private);
 
-    for (i=0; i<length; i++) 
+    for (i=0; i<length; i++)
     switch (state) {
     case LEN0:
         remaining = px[i];
@@ -378,7 +378,7 @@ content_parse(
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->record.state;
     unsigned remaining = ssl->record.remaining;
-	unsigned i;
+    unsigned i;
     enum {
         START,
         LENGTH0, LENGTH1, LENGTH2,
@@ -386,7 +386,7 @@ content_parse(
         UNKNOWN,
     };
 
-    for (i=0; i<length; i++) 
+    for (i=0; i<length; i++)
     switch (state) {
     case START:
         if (px[i] & 0x80) {
@@ -398,7 +398,7 @@ content_parse(
         ssl->x.all.state = 0;
         DROPDOWN(i,length,state);
 
-    case LENGTH0: 
+    case LENGTH0:
         remaining = px[i];
         DROPDOWN(i,length,state);
 
@@ -467,7 +467,7 @@ ssl_parse(
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
     struct SSLRECORD *ssl = &pstate->sub.ssl;
-	unsigned i;
+    unsigned i;
     enum {
         START,
         VERSION_MAJOR,
@@ -476,8 +476,8 @@ ssl_parse(
         CONTENTS,
         UNKNOWN,
     };
-	
-    for (i=0; i<length; i++) 
+
+    for (i=0; i<length; i++)
     switch (state) {
     case START:
         if (px[i] & 0x80) {
@@ -499,7 +499,7 @@ ssl_parse(
         ssl->version_minor = px[i];
         DROPDOWN(i,length,state);
 
-    case LENGTH0: 
+    case LENGTH0:
         remaining = px[i]<<8;
         DROPDOWN(i,length,state);
 
@@ -551,8 +551,8 @@ ssl_init(struct Banner1 *banner1)
 
 /***************************************************************************
  ***************************************************************************/
-static const char 
-ssl_hello[] = 
+static const char
+ssl_hello[] =
 "\x16\x03\x02\x01\x6f"          /* TLSv1.1 record layer */
 "\x01" /* type = client-hello */
 "\x00\x01\x6b" /* length = 363 */
@@ -571,7 +571,7 @@ ssl_hello[] =
 "\x00\x04\x00\x2f\x00\x3c\x00\x0a"
 
 "\x01" /* compression-methods-length = 1 */
-"\x00" 
+"\x00"
 
 "\x00\xfa" /* extensions lkength */
 

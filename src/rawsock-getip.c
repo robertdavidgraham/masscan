@@ -2,13 +2,13 @@
     retrieve IPv4 address of the named network interface/adapter
     like "eth0"
 
- 
+
     This works on:
         - Windows
         - Linux
         - Apple
         - FreeBSD
- 
+
  I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
@@ -156,15 +156,15 @@ rawsock_get_adapter_ip(const char *ifname)
     struct ifaddrs *ifap;
     struct ifaddrs *p;
     unsigned ip;
-    
-    
+
+
     /* Get the list of all network adapters */
     err = getifaddrs(&ifap);
     if (err != 0) {
         perror("getifaddrs");
         return 0;
     }
-    
+
     /* Look through the list until we get our adapter */
     for (p = ifap; p; p = p->ifa_next) {
         if (strcmp(ifname, p->ifa_name) == 0
@@ -174,11 +174,11 @@ rawsock_get_adapter_ip(const char *ifname)
     }
     if (p == NULL)
         goto error; /* not found */
-    
+
     /* Return the address */
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)p->ifa_addr;
-        
+
         ip = ntohl(sin->sin_addr.s_addr);
     }
 

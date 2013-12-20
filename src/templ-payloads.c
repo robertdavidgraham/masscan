@@ -37,7 +37,7 @@ struct Payload2 {
     unsigned source_port;
     unsigned length;
     unsigned xsum;
-    SET_COOKIE set_cookie; 
+    SET_COOKIE set_cookie;
     char *buf;
 
 };
@@ -98,14 +98,14 @@ struct Payload2 hard_coded_payloads[] = {
         "Content-Length: 0\r\n"
     },
 
-    //16464,16465,16470, 16471 
-    {16464, 65536, zeroaccess_getL_length, 0, 0, 
+    //16464,16465,16470, 16471
+    {16464, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
-    {16465, 65536, zeroaccess_getL_length, 0, 0, 
+    {16465, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
-    {16470, 65536, zeroaccess_getL_length, 0, 0, 
+    {16470, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
-    {16471, 65536, zeroaccess_getL_length, 0, 0, 
+    {16471, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
 
     {0,0,0,0,0}
@@ -122,16 +122,16 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
 {
     uint64_t xsum = 0;
     unsigned i;
-    
+
     for (i=0; i<icmp_length; i += 2) {
         xsum += px[i]<<8 | px[i + 1];
     }
-    
+
     xsum -= (icmp_length & 1) * px[i - 1]; /* yea I know going off end of packet is bad so sue me */
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    
+
     return (unsigned)xsum;
 }
 
@@ -140,18 +140,18 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
  ***************************************************************************/
 int
 payloads_lookup(
-        const struct NmapPayloads *payloads, 
-        unsigned port, 
-        const unsigned char **px, 
-        unsigned *length, 
-        unsigned *source_port, 
+        const struct NmapPayloads *payloads,
+        unsigned port,
+        const unsigned char **px,
+        unsigned *length,
+        unsigned *source_port,
         uint64_t *xsum,
         SET_COOKIE *set_cookie)
 {
     unsigned i;
     if (payloads == 0)
         return 0;
-    
+
     port &= 0xFFFF;
 
     for (i=0; i<payloads->count; i++) {
@@ -176,7 +176,7 @@ payloads_destroy(struct NmapPayloads *payloads)
     unsigned i;
     if (payloads == NULL)
         return;
-    
+
     for (i=0; i<payloads->count; i++)
         free(payloads->list[i]);
 
@@ -195,36 +195,36 @@ payloads_destroy(struct NmapPayloads *payloads)
 void
 payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_ports)
 {
-	unsigned i;
-	struct Payload **list2;
-	unsigned count2 = 0;
+    unsigned i;
+    struct Payload **list2;
+    unsigned count2 = 0;
 
-	/* Create a new list */
+    /* Create a new list */
     if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
         exit(1); /* integer overflow */
     else
-	list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+    list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
         exit(1); /* out of memory */
-	
-	/* Add to the new list any used ports */
-	for (i=0; i<payloads->count; i++) {
-		unsigned found;
 
-		found = rangelist_is_contains(	target_ports, 
-										payloads->list[i]->port + Templ_UDP);
-		if (found) {
-			list2[count2++] = payloads->list[i];
-		} else {
-			free(payloads->list[i]);
-		}
-		//payloads->list[i] = 0;
-	}
+    /* Add to the new list any used ports */
+    for (i=0; i<payloads->count; i++) {
+        unsigned found;
 
-	/* Replace the old list */
-	free(payloads->list);
-	payloads->list = list2;
-	payloads->count = count2;
+        found = rangelist_is_contains(  target_ports,
+                                        payloads->list[i]->port + Templ_UDP);
+        if (found) {
+            list2[count2++] = payloads->list[i];
+        } else {
+            free(payloads->list[i]);
+        }
+        //payloads->list[i] = 0;
+    }
+
+    /* Replace the old list */
+    free(payloads->list);
+    payloads->list = list2;
+    payloads->count = count2;
 }
 
 /***************************************************************************
@@ -235,7 +235,7 @@ trim(char *line, size_t sizeof_line)
 {
     if (sizeof_line > strlen(line))
         sizeof_line = strlen(line);
-    
+
     while (isspace(*line & 0xFF))
         memmove(line, line+1, sizeof_line--);
     while (isspace(line[sizeof_line-1] & 0xFF))
@@ -291,7 +291,7 @@ hexval(unsigned c)
 /***************************************************************************
  ***************************************************************************/
 static const char *
-parse_c_string(unsigned char *buf, size_t *buf_length, 
+parse_c_string(unsigned char *buf, size_t *buf_length,
                size_t buf_max, const char *line)
 {
     size_t offset;
@@ -360,7 +360,7 @@ parse_c_string(unsigned char *buf, size_t *buf_length,
                 append_byte(buf, buf_length, buf_max, line[offset]);
                 break;
             }
-        } else 
+        } else
             append_byte(buf, buf_length, buf_max, line[offset]);
 
         offset++;
@@ -406,7 +406,7 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
  ***************************************************************************/
 static unsigned
 payload_add(struct NmapPayloads *payloads,
-            const unsigned char *buf, size_t length, 
+            const unsigned char *buf, size_t length,
             struct RangeList *ports, unsigned source_port,
             SET_COOKIE set_cookie)
 {
@@ -426,7 +426,7 @@ payload_add(struct NmapPayloads *payloads,
             new_list = (struct Payload**)malloc(new_max * sizeof(new_list[0]));
             if (new_list == NULL)
                 exit(1); /* out of memory */
-                          
+
             memcpy(new_list, payloads->list, payloads->count * sizeof(new_list[0]));
             free(payloads->list);
             payloads->list = new_list;
@@ -460,7 +460,7 @@ payload_add(struct NmapPayloads *payloads,
                     count = 0; /* don't increment count */
                 } else
                     memmove(payloads->list + j + 1,
-                            payloads->list + j, 
+                            payloads->list + j,
                             (payloads->count-j) * sizeof(payloads->list[0]));
             }
             payloads->list[j] = p;
@@ -478,12 +478,12 @@ payload_add(struct NmapPayloads *payloads,
  * and port number.
  ***************************************************************************/
 void
-payloads_read_pcap(const char *filename, 
+payloads_read_pcap(const char *filename,
                    struct NmapPayloads *payloads)
 {
     struct PcapFile *pcap;
     unsigned count = 0;
- 
+
     LOG(2, "payloads:'%s': opening packet capture\n", filename);
 
     /* open packet-capture */
@@ -514,7 +514,7 @@ payloads_read_pcap(const char *filename,
             unsigned time_usecs;
             unsigned original_length;
 
-            x = pcapfile_readframe(pcap, 
+            x = pcapfile_readframe(pcap,
                     &time_secs, &time_usecs,
                     &original_length, &captured_length,
                     buf, (unsigned)sizeof(buf));
@@ -553,10 +553,10 @@ payloads_read_pcap(const char *filename,
          * Now we've completely parsed the record, so add it to our
          * list of payloads
          */
-        count += payload_add(   payloads, 
-                                buf + parsed.app_offset, 
+        count += payload_add(   payloads,
+                                buf + parsed.app_offset,
                                 parsed.app_length,
-                                ports, 
+                                ports,
                                 0x10000,
                                 0);
     }
@@ -570,7 +570,7 @@ payloads_read_pcap(const char *filename,
  * Called during processing of the "--nmap-payloads <filename>" directive.
  ***************************************************************************/
 void
-payloads_read_file(FILE *fp, const char *filename, 
+payloads_read_file(FILE *fp, const char *filename,
                    struct NmapPayloads *payloads)
 {
     char line[16384];
@@ -632,7 +632,7 @@ payloads_read_file(FILE *fp, const char *filename,
             memmove(line, line+6, strlen(line+5));
             trim(line, sizeof(line));
             if (!isdigit(line[0])) {
-                fprintf(stderr, "%s:%u: expected source port\n", 
+                fprintf(stderr, "%s:%u: expected source port\n",
                         filename, line_number);
                 goto end;
             }
@@ -689,22 +689,22 @@ payloads_create(void)
     if (payloads == NULL)
         exit(1);
     memset(payloads, 0, sizeof(*payloads));
-    
+
     for (i=0; hard_coded_payloads[i].length; i++) {
         struct Range range;
         struct RangeList list;
         unsigned length;
-        
+
         /* Kludge: create a pseudo-rangelist to hold the one port */
         list.list = &range;
         list.count = 1;
         range.begin = hard_coded_payloads[i].port;
         range.end = range.begin;
-        
+
         length = hard_coded_payloads[i].length;
         if (length == 0xFFFFFFFF)
             length = (unsigned)strlen(hard_coded_payloads[i].buf);
-        
+
         /* Add this to our real payloads. This will get overwritten
          * if the user adds their own with the same port */
         payload_add(payloads,

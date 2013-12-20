@@ -102,13 +102,13 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
     if (task->count + 1 >= task->max) {
         size_t new_max = (size_t)task->max * 2 + 1;
         struct Range *new_list;
-        
+
         if (new_max >= SIZE_MAX/sizeof(*new_list))
             exit(1); /* integer overflow */
         new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
         if (new_list == NULL)
             exit(1); /* out of memory */
-        
+
         memcpy(new_list, task->list, task->count * sizeof(*new_list));
         if (task->list)
             free(task->list);
@@ -393,7 +393,7 @@ end:
 /***************************************************************************
  ***************************************************************************/
 uint64_t
-rangelist_exclude(  struct RangeList *targets, 
+rangelist_exclude(  struct RangeList *targets,
               const struct RangeList *excludes)
 {
     uint64_t count = 0;
@@ -470,7 +470,7 @@ rangelist_pick2_create(struct RangeList *targets)
     picker = (unsigned *)malloc(targets->count * sizeof(*picker));
     if (picker == NULL)
         exit(1); /* out of memory */
-    
+
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;
@@ -520,12 +520,12 @@ rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned 
  * 'rand()' is unrandom, when in fact we want the non-random properties of
  * rand() for regression testing.
  ***************************************************************************/
-static unsigned 
+static unsigned
 r_rand(unsigned *seed)
 {
     static const unsigned a = 214013;
- 	static const unsigned c = 2531011;
-    
+    static const unsigned c = 2531011;
+
     *seed = (*seed) * a + c;
     return (*seed)>>16 & 0x7fff;
 }
@@ -608,11 +608,11 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
         /* skip whitespace */
         while (*p && isspace(*p & 0xFF))
             p++;
-        
+
         /* end at comment */
         if (*p == 0 || *p == '#')
             break;
-        
+
         /* special processing. Nmap allows ports to be prefixed with a
          * characters to clarify TCP, UDP, or SCTP */
         if (isalpha(*p&0xFF) && p[1] == ':') {
@@ -636,7 +636,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
             }
             p += 2;
         }
-        
+
         if (!isdigit(p[0] & 0xFF))
             break;
 
@@ -737,9 +737,9 @@ ranges_selftest(void)
      * Test removal
      */
     memset(task, 0, sizeof(task[0]));
-    
+
     rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
-    
+
     /* These removals shouldn't change anything */
     rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
     rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
@@ -750,7 +750,7 @@ ranges_selftest(void)
         ERROR();
         return 1;
     }
-    
+
     /* These removals should remove a bit from the edges */
     rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
     rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
@@ -760,8 +760,8 @@ ranges_selftest(void)
         ERROR();
         return 1;
     }
-    
-    
+
+
     /* remove things from the middle */
     rangelist_remove_range2(task, range_parse_ipv4("10.10.0.0/16", 0, 0));
     rangelist_remove_range2(task, range_parse_ipv4("10.20.0.0/16", 0, 0));
@@ -769,19 +769,19 @@ ranges_selftest(void)
         ERROR();
         return 1;
     }
-    
+
     rangelist_remove_range2(task, range_parse_ipv4("10.12.0.0/16", 0, 0));
     if (task->count != 4) {
         ERROR();
         return 1;
     }
-    
+
     rangelist_remove_range2(task, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
     if (task->count != 3) {
         ERROR();
         return 1;
     }
-    
+
 
     /* test ports */
     {

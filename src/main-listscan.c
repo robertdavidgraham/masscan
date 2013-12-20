@@ -20,7 +20,7 @@ main_listscan(struct Masscan *masscan)
     if (count_ports == 0)
         rangelist_add_range(&masscan->ports, 80, 80);
     count_ports = rangelist_count(&masscan->ports);
-    
+
     count_ips = rangelist_count(&masscan->targets);
     if (count_ips == 0) {
         LOG(0, "FAIL: target IP address list empty\n");
@@ -33,27 +33,27 @@ main_listscan(struct Masscan *masscan)
 
 infinite:
     blackrock_init(&blackrock, range, seed);
-    
+
     start = masscan->resume.index + (masscan->shard.one-1);
     end = range;
     if (masscan->resume.count && end > start + masscan->resume.count)
         end = start + masscan->resume.count;
     end += (uint64_t)(masscan->retries * masscan->max_rate);
 
-    
+
     for (i=start; i<end; ) {
         uint64_t xXx;
         unsigned ip;
         unsigned port;
-        
-        
+
+
         xXx = (i + (uint64_t)((r--) * masscan->max_rate));
         while (xXx >= range)
             xXx -= range;
         xXx = blackrock_shuffle(&blackrock,  xXx);
         ip = rangelist_pick(&masscan->targets, xXx % count_ips);
         port = rangelist_pick(&masscan->ports, xXx / count_ips);
-        
+
         if (count_ports == 1)
             printf("%u.%u.%u.%u\n",
                    (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF
@@ -63,7 +63,7 @@ infinite:
                    (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF,
                    port
                    );
-        
+
         if (r == 0) {
             i += increment; /* <------ increment by 1 normally, more with shards/nics */
             r = masscan->retries + 1;

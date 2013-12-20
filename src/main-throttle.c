@@ -101,7 +101,7 @@ again:
      */
     current_rate = 1.0*(packet_count - old_packet_count)/((timestamp - old_timestamp)/1000000.0);
 
-    
+
     /*
      * If we've been going too fast, then <pause> for a moment, then
      * try again.
@@ -124,7 +124,7 @@ again:
         if (waittime > 0.1)
             waittime = 0.1;
 
-        /* Since we've exceeded the speed limit, we should reduce the 
+        /* Since we've exceeded the speed limit, we should reduce the
          * batch size slightly. We don't do it only by a little bit to
          * avoid over-correcting. We want to converge on the correct
          * speed gradually. Note that since this happens hundres or

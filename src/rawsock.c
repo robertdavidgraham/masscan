@@ -39,7 +39,7 @@
 
 /*
  * PORTABILITY: Windows supports the "sendq" feature, and is really slow
- * without this feature. It's not needed on Linux, so we just create 
+ * without this feature. It's not needed on Linux, so we just create
  * equivelent functions that do nothing
  */
 struct pcap_send_queue;
@@ -155,10 +155,10 @@ rawsock_init(void)
                 char *name = (char*)malloc(name_len);
                 size_t addr_len = pAdapter->AddressLength * 3 + 1;
                 char *addr = (char*)malloc(addr_len);
-                
+
                 if (name == NULL || addr == NULL)
                     exit(1);
-                
+
                 sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
 
                 //printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
@@ -281,7 +281,7 @@ rawsock_send_packet(
 {
     if (adapter == 0)
         return 0;
-    
+
     /* Print --packet-trace if debugging */
     if (adapter->is_packet_trace) {
         packet_trace(stdout, adapter->pt_start, packet, length, 1);
@@ -383,7 +383,7 @@ int rawsock_recv_packet(
         *secs = hdr.ts.tv_sec;
         *usecs = hdr.ts.tv_usec;
     }
-    
+
 
     return 0;
 }
@@ -591,8 +591,8 @@ is_pfring_dna(const char *name)
 /***************************************************************************
  ***************************************************************************/
 struct Adapter *
-rawsock_init_adapter(const char *adapter_name, 
-                     unsigned is_pfring, 
+rawsock_init_adapter(const char *adapter_name,
+                     unsigned is_pfring,
                      unsigned is_sendq,
                      unsigned is_packet_trace,
                      unsigned is_offline,
@@ -620,7 +620,7 @@ rawsock_init_adapter(const char *adapter_name,
 
         new_adapter_name = adapter_from_index(atoi(adapter_name));
         if (new_adapter_name == 0) {
-            fprintf(stderr, "pcap_open_live(%s) error: bad index\n", 
+            fprintf(stderr, "pcap_open_live(%s) error: bad index\n",
                     adapter_name);
             return 0;
         } else
@@ -652,7 +652,7 @@ rawsock_init_adapter(const char *adapter_name,
         adapter->ring = PFRING.open(adapter_name, 1500, 0);//PF_RING_REENTRANT);
         adapter->pcap = (pcap_t*)adapter->ring;
         if (adapter->ring == NULL) {
-            LOG(0, "pfring:'%s': OPEN ERROR: %s\n", 
+            LOG(0, "pfring:'%s': OPEN ERROR: %s\n",
                 adapter_name, strerror_x(errno));
             return 0;
         } else
@@ -671,7 +671,7 @@ rawsock_init_adapter(const char *adapter_name,
         LOG(2, "pfring:'%s': setting direction\n", adapter_name);
         err = PFRING.set_direction(adapter->ring, rx_only_direction);
         if (err) {
-            fprintf(stderr, "pfring:'%s': setdirection = %d\n", 
+            fprintf(stderr, "pfring:'%s': setdirection = %d\n",
                     adapter_name, err);
         } else
             LOG(2, "pfring:'%s': direction success\n", adapter_name);
@@ -684,7 +684,7 @@ rawsock_init_adapter(const char *adapter_name,
         LOG(2, "pfring:'%s': activating\n", adapter_name);
         err = PFRING.enable_ring(adapter->ring);
         if (err != 0) {
-                LOG(0, "pfring: '%s': ENABLE ERROR: %s\n", 
+                LOG(0, "pfring: '%s': ENABLE ERROR: %s\n",
                     adapter_name, strerror_x(errno));
                 PFRING.close(adapter->ring);
                 adapter->ring = 0;

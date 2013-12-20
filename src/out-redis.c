@@ -111,7 +111,7 @@ clean_response_queue(struct Output *out, SOCKET fd)
     int nfds;
     unsigned char buf[1024];
     size_t bytes_read;
-    
+
     FD_ZERO(&readfds);
 #ifdef _MSC_VER
 #pragma warning(disable:4127)
@@ -225,7 +225,7 @@ myvalue
      * KEY: "host"
      * VALUE: ip
      */
-    sprintf_s(line, sizeof(line), 
+    sprintf_s(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%u\r\n%s\r\n"
@@ -234,7 +234,7 @@ myvalue
             (unsigned)strlen("host"), "host",
             (unsigned)strlen(ip_string), ip_string
             );
-    
+
     count = send(fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");
@@ -246,7 +246,7 @@ myvalue
      * KEY: ip
      * VALUE: port
      */
-    sprintf_s(line, sizeof(line), 
+    sprintf_s(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%u\r\n%s\r\n"
@@ -254,7 +254,7 @@ myvalue
             ,
             (unsigned)strlen(ip_string), ip_string,
             (unsigned)strlen(port_string), port_string);
-    
+
     count = send(fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");
@@ -269,17 +269,17 @@ myvalue
      */
     sprintf_s(values, sizeof(values), "%u:%u:%u:%u",
         (unsigned)timestamp, status, reason, ttl);
-    sprintf_s(line, sizeof(line), 
+    sprintf_s(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%u\r\n%s:%s\r\n"
             "$%u\r\n%s\r\n"
             ,
-            (unsigned)(strlen(ip_string) + 1 + strlen(port_string)), 
+            (unsigned)(strlen(ip_string) + 1 + strlen(port_string)),
             ip_string,port_string,
             (unsigned)strlen(values), values
             );
-    
+
     count = send(fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");

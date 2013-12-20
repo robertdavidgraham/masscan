@@ -29,7 +29,7 @@ banout_release(struct BannerOutput *banout)
 
 /***************************************************************************
  ***************************************************************************/
-struct BannerOutput *
+static struct BannerOutput *
 banout_find_proto(struct BannerOutput *banout, unsigned proto)
 {
     while (banout && banout->protocol != proto)
@@ -44,7 +44,7 @@ banout_string(const struct BannerOutput *banout, unsigned proto)
 {
     while (banout && banout->protocol != proto)
         banout = banout->next;
-    
+
     if (banout)
         return banout->banner;
     else
@@ -58,7 +58,7 @@ banout_string_length(const struct BannerOutput *banout, unsigned proto)
 {
     while (banout && banout->protocol != proto)
         banout = banout->next;
-    
+
     if (banout)
         return banout->length;
     else
@@ -71,7 +71,7 @@ void
 banout_newline(struct BannerOutput *banout, unsigned proto)
 {
     struct BannerOutput *p;
-    
+
     p = banout_find_proto(banout, proto);
     if (p && p->length) {
         banout_append_char(banout, proto, '\n');
@@ -84,7 +84,7 @@ void
 banout_end(struct BannerOutput *banout, unsigned proto)
 {
     struct BannerOutput *p;
-    
+
     p = banout_find_proto(banout, proto);
     if (p && p->length) {
         p->protocol |= 0x80000000;
@@ -102,7 +102,7 @@ banout_append_char(struct BannerOutput *banout, unsigned proto, int c)
 
 /***************************************************************************
  ***************************************************************************/
-struct BannerOutput *
+static struct BannerOutput *
 banout_new_proto(struct BannerOutput *banout, unsigned proto)
 {
     struct BannerOutput *p;
@@ -124,13 +124,13 @@ banout_new_proto(struct BannerOutput *banout, unsigned proto)
 
 /***************************************************************************
  ***************************************************************************/
-struct BannerOutput *
+static struct BannerOutput *
 banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
 {
     struct BannerOutput *n;
 
     /* Double the space */
-    n = (struct BannerOutput *)malloc(  offsetof(struct BannerOutput, banner) 
+    n = (struct BannerOutput *)malloc(  offsetof(struct BannerOutput, banner)
                                         + 2 * p->max_length);
     if (n == NULL)
         exit(1);
@@ -162,7 +162,7 @@ void
 banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_t length)
 {
     struct BannerOutput *p;
-    
+
     /*
      * Get the matching record for the protocol (e.g. HTML, SSL, etc.).
      * If it doesn't already exist, add the protocol object to the linked
@@ -209,7 +209,7 @@ banout_selftest(void)
         return 1;
     if (banout_string_length(banout, 2) != 50)
         return 1;
-    
+
     banout_release(banout);
     if (banout->next != 0)
         return 1;

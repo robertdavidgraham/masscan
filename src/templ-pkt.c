@@ -106,7 +106,7 @@ static unsigned char default_icmp_ping_template[] =
     "\x00\x00"      /* checksum */
 
     "\x00\x00\x00\x00" /* ID, seqno */
-    
+
     "\x08\x09\x0a\x0b" /* payload */
     "\x0c\x0d\x0e\x0f"
     "\x10\x11\x12\x13"
@@ -149,16 +149,16 @@ static unsigned char default_arp_template[] =
     "\xff\xff\xff\xff\xff\xff"  /* Ethernet: destination */
     "\x00\x00\x00\x00\x00\x00"  /* Ethernet: source */
     "\x08\x06"      /* Ethernet type: ARP */
-	"\x00\x01" /* hardware = Ethernet */
+    "\x00\x01" /* hardware = Ethernet */
     "\x08\x00" /* protocol = IPv4 */
     "\x06\x04" /* MAC length = 6, IPv4 length = 4 */
     "\x00\x01" /* opcode = request */
-  
-	"\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00"
 
-	"\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00"
+    "\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
+
+    "\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x00\x00"
 ;
 
 
@@ -176,7 +176,7 @@ ip_header_checksum(const unsigned char *px, unsigned offset, unsigned max_offset
     /* restrict check only over packet */
     if (max_offset > offset + header_length)
         max_offset = offset + header_length;
-    
+
     /* add all the two-byte words together */
     xsum = 0;
     for (i = offset; i < max_offset; i += 2) {
@@ -199,7 +199,7 @@ tcp_checksum2(const unsigned char *px, unsigned offset_ip,
 {
     uint64_t xsum = 0;
     unsigned i;
-    
+
     /* pseudo checksum */
     xsum = 6;
     xsum += tcp_length;
@@ -207,17 +207,17 @@ tcp_checksum2(const unsigned char *px, unsigned offset_ip,
     xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
-    
+
     /* tcp checksum */
     for (i=0; i<tcp_length; i += 2) {
         xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
     }
-    
+
     xsum -= (tcp_length & 1) * px[offset_tcp + i - 1]; /* yea I know going off end of packet is bad so sue me */
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    
+
     return (unsigned)xsum;
 }
 
@@ -231,7 +231,7 @@ tcp_checksum(struct TemplatePacket *tmpl)
     const unsigned char *px = tmpl->packet;
     unsigned xsum = 0;
     unsigned i;
-    
+
     /* pseudo checksum */
     xsum = 6;
     xsum += tmpl->offset_app - tmpl->offset_tcp;
@@ -239,7 +239,7 @@ tcp_checksum(struct TemplatePacket *tmpl)
     xsum += px[tmpl->offset_ip + 14] << 8 | px[tmpl->offset_ip + 15];
     xsum += px[tmpl->offset_ip + 16] << 8 | px[tmpl->offset_ip + 17];
     xsum += px[tmpl->offset_ip + 18] << 8 | px[tmpl->offset_ip + 19];
-    
+
     /* tcp checksum */
     for (i=tmpl->offset_tcp; i<tmpl->offset_app; i += 2) {
         xsum += tmpl->packet[i]<<8 | tmpl->packet[i+1];
@@ -247,7 +247,7 @@ tcp_checksum(struct TemplatePacket *tmpl)
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    
+
     return xsum;
 }
 
@@ -261,7 +261,7 @@ udp_checksum2(const unsigned char *px, unsigned offset_ip,
 {
     uint64_t xsum = 0;
     unsigned i;
-    
+
     /* pseudo checksum */
     xsum = 17;
     xsum += tcp_length;
@@ -269,17 +269,17 @@ udp_checksum2(const unsigned char *px, unsigned offset_ip,
     xsum += px[offset_ip + 14] << 8 | px[offset_ip + 15];
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
-    
+
     /* tcp checksum */
     for (i=0; i<tcp_length; i += 2) {
         xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
     }
-    
+
     xsum -= (tcp_length & 1) * px[offset_tcp + i - 1]; /* yea I know going off end of packet is bad so sue me */
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    
+
     return (unsigned)xsum;
 }
 
@@ -303,16 +303,16 @@ icmp_checksum2(const unsigned char *px,
 {
     uint64_t xsum = 0;
     unsigned i;
-    
+
     for (i=0; i<icmp_length; i += 2) {
         xsum += px[offset_icmp + i]<<8 | px[offset_icmp + i + 1];
     }
-    
+
     xsum -= (icmp_length & 1) * px[offset_icmp + i - 1]; /* yea I know going off end of packet is bad so sue me */
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
     xsum = (xsum & 0xFFFF) + (xsum >> 16);
-    
+
     return (unsigned)xsum;
 }
 
@@ -351,7 +351,7 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
  ***************************************************************************/
 size_t
 tcp_create_packet(
-        struct TemplatePacket *tmpl, 
+        struct TemplatePacket *tmpl,
         unsigned ip_them, unsigned port_them,
         unsigned ip_me, unsigned port_me,
         unsigned seqno, unsigned ackno,
@@ -367,7 +367,7 @@ tcp_create_packet(
     uint64_t xsum;
     size_t ip_len = (offset_payload - offset_ip) + payload_length;
     unsigned old_len;
-    
+
     if (new_length > px_length) {
         fprintf(stderr, "tcp: err generating packet: too much payload\n");
         return 0;
@@ -376,7 +376,7 @@ tcp_create_packet(
     memcpy(px + 0,              tmpl->packet,   tmpl->length);
     memcpy(px + offset_payload, payload,        payload_length);
     old_len = px[offset_ip+2]<<8 | px[offset_ip+3];
-    
+
     /*
      * Fill in the empty fields in the IP header and then re-calculate
      * the checksum.
@@ -417,21 +417,21 @@ tcp_create_packet(
     px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
     px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
     px[offset_tcp+ 7] = (unsigned char)(seqno >>  0);
-    
+
     px[offset_tcp+ 8] = (unsigned char)(ackno >> 24);
     px[offset_tcp+ 9] = (unsigned char)(ackno >> 16);
     px[offset_tcp+10] = (unsigned char)(ackno >>  8);
     px[offset_tcp+11] = (unsigned char)(ackno >>  0);
 
     px[offset_tcp+13] = (unsigned char)flags;
-    
+
     px[offset_tcp+14] = (unsigned char)(1200>>8);
     px[offset_tcp+15] = (unsigned char)(1200 & 0xFF);
 
     px[offset_tcp+16] = (unsigned char)(0 >>  8);
     px[offset_tcp+17] = (unsigned char)(0 >>  0);
 
-    xsum = tcp_checksum2(px, tmpl->offset_ip, tmpl->offset_tcp, 
+    xsum = tcp_checksum2(px, tmpl->offset_ip, tmpl->offset_tcp,
                          new_length - tmpl->offset_tcp);
     xsum = ~xsum;
 
@@ -486,7 +486,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
  ***************************************************************************/
 void
 template_set_target(
-    struct TemplateSet *tmplset, 
+    struct TemplateSet *tmplset,
     unsigned ip_them, unsigned port_them,
     unsigned ip_me, unsigned port_me,
     unsigned seqno)
@@ -497,7 +497,7 @@ template_set_target(
     uint64_t xsum;
     unsigned ip_id;
     struct TemplatePacket *tmpl = NULL;
-    
+
     /*
      * Find out which packet template to use. This is because we can
      * simultaneously scan for both TCP and UDP (and others). We've
@@ -519,18 +519,18 @@ template_set_target(
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-		px = tmpl->packet + tmpl->offset_ip;
-		px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
-		px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
-		px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
-		px[17] = (unsigned char)((ip_me >>  0) & 0xFF);
-		px[24] = (unsigned char)((ip_them >> 24) & 0xFF);
-		px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
-		px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
-		px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
-		tmplset->px = tmpl->packet;
-		tmplset->length = tmpl->length;
-		return;
+        px = tmpl->packet + tmpl->offset_ip;
+        px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
+        px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
+        px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
+        px[17] = (unsigned char)((ip_me >>  0) & 0xFF);
+        px[24] = (unsigned char)((ip_them >> 24) & 0xFF);
+        px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
+        px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
+        px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
+        tmplset->px = tmpl->packet;
+        tmplset->length = tmpl->length;
+        return;
     } else {
         return;
     }
@@ -623,7 +623,7 @@ template_set_target(
         px[offset_tcp+ 3] = (unsigned char)(port_them & 0xFF);
         px[offset_tcp+ 4] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)>>8);
         px[offset_tcp+ 5] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)&0xFF);
-        
+
         px[offset_tcp+6] = (unsigned char)(0);
         px[offset_tcp+7] = (unsigned char)(0);
         xsum = udp_checksum(tmpl);
@@ -693,7 +693,7 @@ _template_init(
      */
     memset(tmpl, 0, sizeof(*tmpl));
     tmpl->length = (unsigned)packet_size;
-    
+
     tmpl->packet = (unsigned char *)malloc(2048);
     if (tmpl->packet == NULL)
         exit(1);
@@ -712,10 +712,10 @@ _template_init(
     tmpl->offset_ip = parsed.ip_offset;
     tmpl->offset_tcp = parsed.transport_offset;
     tmpl->offset_app = parsed.app_offset;
-	if (parsed.found == FOUND_ARP) {
-		tmpl->length = parsed.ip_offset + 28;
-	} else 
-	    tmpl->length = parsed.ip_offset + parsed.ip_length;
+    if (parsed.found == FOUND_ARP) {
+        tmpl->length = parsed.ip_offset + 28;
+    } else
+        tmpl->length = parsed.ip_offset + parsed.ip_length;
 
     /*
      * Overwrite the MAC and IP addresses
@@ -753,8 +753,8 @@ _template_init(
     memset(px + tmpl->offset_ip + 4, 0, 2);  /* IP ID field */
     memset(px + tmpl->offset_ip + 10, 0, 2); /* checksum */
     memset(px + tmpl->offset_ip + 12, 0, 8); /* addresses */
-    tmpl->checksum_ip = ip_header_checksum( tmpl->packet, 
-                                            tmpl->offset_ip, 
+    tmpl->checksum_ip = ip_header_checksum( tmpl->packet,
+                                            tmpl->offset_ip,
                                             tmpl->length);
 
     /*
@@ -766,7 +766,7 @@ _template_init(
             tmpl->offset_app = tmpl->length;
             tmpl->checksum_tcp = icmp_checksum(tmpl);
             switch (px[tmpl->offset_tcp]) {
-                case 8: 
+                case 8:
                     tmpl->proto = Proto_ICMP_ping;
                     break;
                 case 13:
@@ -833,7 +833,7 @@ template_packet_init(
                    sizeof(default_icmp_ping_template)-1
                    );
     templset->count++;
-    
+
     /* [ICMP timestamp] */
     _template_init( &templset->pkts[Proto_ICMP_timestamp],
                    source_mac, router_mac,
@@ -841,7 +841,7 @@ template_packet_init(
                    sizeof(default_icmp_timestamp_template)-1
                    );
     templset->count++;
-    
+
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
                     source_mac, router_mac,

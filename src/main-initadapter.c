@@ -40,7 +40,7 @@ masscan_initialize_adapter(
     else {
         /* no adapter specified, so find a default one */
         int err;
-		ifname2[0] = '\0';
+        ifname2[0] = '\0';
         err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
         if (err || ifname2[0] == '\0') {
             fprintf(stderr, "FAIL: could not determine default interface\n");
@@ -111,9 +111,9 @@ masscan_initialize_adapter(
      * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
-    masscan->nic[index].adapter = rawsock_init_adapter(   
-                                            ifname, 
-                                            masscan->is_pfring, 
+    masscan->nic[index].adapter = rawsock_init_adapter(
+                                            ifname,
+                                            masscan->is_pfring,
                                             masscan->is_sendq,
                                             masscan->nmap.packet_trace,
                                             masscan->is_offline,

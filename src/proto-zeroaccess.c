@@ -21,7 +21,7 @@
  * then has been CRCed and encrypted.
  ***************************************************************************/
 const unsigned char zeroaccess_getL[] = {
-    0x46, 0x5d, 0x49, 0x9e, 0x28, 0x94, 0x8d, 0xab, 
+    0x46, 0x5d, 0x49, 0x9e, 0x28, 0x94, 0x8d, 0xab,
     0xc9, 0xc0, 0xd1, 0x99, 0xe0, 0xf2, 0xc2, 0x5e,
 };
 
@@ -90,14 +90,14 @@ static const unsigned crc32_table[256] = {
 static unsigned
 crc_calc(const unsigned char *px, unsigned length)
 {
-	unsigned i;
-	unsigned crc;
+    unsigned i;
+    unsigned crc;
 
-	crc = (unsigned)~0;
-	for (i = 0; i < length; i++) {
-		crc = crc32_table[(crc ^ px[i]) & 0xff] ^ (crc >> 8);
-	}
-	crc = ~crc;
+    crc = (unsigned)~0;
+    for (i = 0; i < length; i++) {
+        crc = crc32_table[(crc ^ px[i]) & 0xff] ^ (crc >> 8);
+    }
+    crc = ~crc;
 
     return crc;
 }
@@ -168,8 +168,8 @@ generate_getL(unsigned char *out_buf, size_t out_buf_len, unsigned xrand)
  * so that we know about even more infected machines.
  ***************************************************************************/
 unsigned
-handle_zeroaccess(  struct Output *out, time_t timestamp, 
-                    const unsigned char *px, unsigned length, 
+handle_zeroaccess(  struct Output *out, time_t timestamp,
+                    const unsigned char *px, unsigned length,
                     struct PreprocessedInfo *parsed)
 {
     unsigned char buf[2048];
@@ -195,7 +195,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
 
     /* Decrypt the response packet */
     buf[0] = '\0';
-    len = zadecrypt(px + parsed->app_offset, 
+    len = zadecrypt(px + parsed->app_offset,
                     parsed->app_length,
                     buf, sizeof(buf));
     if (len != parsed->app_length) {
@@ -206,7 +206,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
     {
         unsigned old_crc;
         unsigned new_crc;
-    
+
         old_crc = buf[0] | buf[1]<<8 | buf[2]<<16 | buf[3]<<24;
         memset(buf, 0, 4);
         new_crc = crc_calc(buf, len);
@@ -253,7 +253,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
 
     output_report_banner(
             out, timestamp,
-            ip_them, 17, port_them, 
+            ip_them, 17, port_them,
             PROTO_UDP_ZEROACCESS,
             banout_string(banout, PROTO_UDP_ZEROACCESS),
             banout_string_length(banout, PROTO_UDP_ZEROACCESS));
@@ -264,9 +264,9 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
 /***************************************************************************
  ***************************************************************************/
 static const unsigned char sample[] = {
-    0xda, 0xbe, 0x6e, 0xce, 
-    0x28, 0x94, 0x8d, 0xab, 
-    0xc9, 0xc0, 0xd1, 0x99, 
+    0xda, 0xbe, 0x6e, 0xce,
+    0x28, 0x94, 0x8d, 0xab,
+    0xc9, 0xc0, 0xd1, 0x99,
     0xec, 0xd6, 0xa9, 0x3c
 };
 
@@ -281,7 +281,7 @@ zeroaccess_selftest(void)
     unsigned new_crc;
 
     zadecrypt(sample, sizeof(sample), buf, sizeof(buf));
-    
+
     old_crc = buf[0] | buf[1]<<8 | buf[2]<<16 | buf[3]<<24;
 
 

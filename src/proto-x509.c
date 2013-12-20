@@ -1,3 +1,9 @@
+/*
+
+    This is a state-machine parser for the X.509 protocol. When scanning
+    SSL targets with the --banner option, this will extract information
+    from the certificate, especially the "subject common name"
+ */
 #include "proto-x509.h"
 #include "proto-banout.h"
 #include "masscan-app.h"
@@ -169,7 +175,7 @@ x509_init(void)
 
 /****************************************************************************
  ****************************************************************************/
-void
+static void
 push_remaining(struct CertDecode *x, unsigned next_state, uint64_t remaining)
 {
     if ((remaining >> 16) != 0) {
@@ -196,7 +202,7 @@ push_remaining(struct CertDecode *x, unsigned next_state, uint64_t remaining)
     x->states[0] = (unsigned char)next_state;
     x->remainings_count++;
 }
-unsigned
+static unsigned
 pop_remaining(struct CertDecode *x)
 {
     unsigned next_state;
@@ -210,7 +216,7 @@ pop_remaining(struct CertDecode *x)
 enum X509state {
     TAG0,           TAG0_LEN,       TAG0_LENLEN,
     TAG1,           TAG1_LEN,       TAG1_LENLEN,
-    VERSION0_TAG,   VERSION0_LEN,   VERSION0_LENLEN,    
+    VERSION0_TAG,   VERSION0_LEN,   VERSION0_LENLEN,
     VERSION1_TAG,   VERSION1_LEN,   VERSION1_LENLEN,    VERSION_CONTENTS,
     SERIAL_TAG,     SERIAL_LEN,     SERIAL_LENLEN,      SERIAL_CONTENTS,
     SIG0_TAG,       SIG0_LEN,       SIG0_LENLEN,
@@ -243,7 +249,7 @@ enum X509state {
 
 /****************************************************************************
  ****************************************************************************/
-unsigned
+static unsigned
 kludge_next(unsigned state)
 {
     switch (state) {
@@ -288,7 +294,7 @@ x509_decode(struct CertDecode *x, const unsigned char *px, size_t length, struct
 {
     unsigned i;
     enum X509state state = x->state;
-    
+
 
 #define GOTO_ERROR(state, i, length) (state)=0xFFFFFFFF;(i)=(length);continue
 
@@ -455,7 +461,7 @@ x509_decode(struct CertDecode *x, const unsigned char *px, size_t length, struct
             if (x->remainings[0] == 0)
                 state = PADDING;
             break;
-    
+
         case TAG0:
         case TAG1:
         case SIG0_TAG:
@@ -481,13 +487,13 @@ x509_decode(struct CertDecode *x, const unsigned char *px, size_t length, struct
             }
             state++;
             break;
-        
+
         case EXT_TAG:
             /* can be anything */
             state++;
             break;
 
-    
+
         case TAG0_LEN:
         case TAG1_LEN:
         case VERSION0_LEN:

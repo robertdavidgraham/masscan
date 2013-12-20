@@ -32,7 +32,7 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ttl);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
-    
+
 
     fprintf(fp, "%s tcp %u %u.%u.%u.%u %u\n",
         status_string(status),
@@ -50,7 +50,7 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 static void
 text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-        unsigned ip, unsigned ip_proto, unsigned port, 
+        unsigned ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];

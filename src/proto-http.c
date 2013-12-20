@@ -26,7 +26,7 @@ static struct Patterns http_fields[] = {
     {"Via:",             4, HTTPFIELD_VIA,              SMACK_ANCHOR_BEGIN},
     {"Location:",        9, HTTPFIELD_LOCATION,         SMACK_ANCHOR_BEGIN},
     {":",                1, HTTPFIELD_UNKNOWN, 0},
-    {"\n",               1, HTTPFIELD_NEWLINE, 0}, 
+    {"\n",               1, HTTPFIELD_NEWLINE, 0},
     {0,0,0,0}
 };
 enum {
@@ -53,11 +53,11 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
     unsigned i;
     unsigned is_newline_seen = 0;
     unsigned field_name_len = (unsigned)strlen(field_name);
-    
+
     hdr2 = (unsigned char *)malloc(header_length + field_value_len + 1 + 2);
 
     memcpy(hdr2, hdr1, header_length);
-   
+
     /* Remove the previous header and remember the location in the header
      * where it was located */
     for (i=0; i<header_length; i++) {
@@ -111,22 +111,22 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
     *inout_header = hdr2;
     return header_length;
 }
-                
+
 /***************************************************************************
  ***************************************************************************/
-static const char 
+static const char
 http_hello[] =      "GET / HTTP/1.0\r\n"
                     "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
                     "Accept: */*\r\n"
                     //"Connection: Keep-Alive\r\n"
                     //"Content-Length: 0\r\n"
-                    "\r\n"; 
+                    "\r\n";
 
 
 /*****************************************************************************
  *****************************************************************************/
 static void
-field_name(struct BannerOutput *banout, size_t id, 
+field_name(struct BannerOutput *banout, size_t id,
            struct Patterns *xhttp_fields)
 {
     unsigned i;
@@ -140,7 +140,7 @@ field_name(struct BannerOutput *banout, size_t id,
         if (xhttp_fields[i].id == id) {
             banout_newline(banout, PROTO_HTTP);
             banout_append(  banout, PROTO_HTTP,
-                            (const unsigned char*)xhttp_fields[i].pattern 
+                            (const unsigned char*)xhttp_fields[i].pattern
                                 + ((xhttp_fields[i].pattern[0]=='<')?1:0), /* bah. hack. ugly. */
                             xhttp_fields[i].pattern_length
                                 - ((xhttp_fields[i].pattern[0]=='<')?1:0) /* bah. hack. ugly. */
@@ -157,7 +157,7 @@ static void *
 http_init(struct Banner1 *b)
 {
     unsigned i;
-    
+
     /*
      * These match HTTP Header-Field: names
      */
@@ -170,7 +170,7 @@ http_init(struct Banner1 *b)
                           http_fields[i].id,
                           http_fields[i].is_anchored);
     smack_compile(b->http_fields);
-    
+
     /*
      * These match HTML <tag names
      */
@@ -205,7 +205,7 @@ http_init(struct Banner1 *b)
  * Either way, we don't. We don't need to buffer the entire response
  * header waiting for the final packet to arrive, but handle each packet
  * individually.
- * 
+ *
  * This is especially useful with our custom TCP stack, which simply
  * rejects out-of-order packets.
  ***************************************************************************/
@@ -239,7 +239,7 @@ http_parse(
     id = (state>>8) & 0xFF;
     state = (state>>0) & 0xFF;
 
-    
+
     for (i=0; i<length; i++)
     switch (state) {
     case 0: case 1: case 2: case 3: case 4:
@@ -286,7 +286,7 @@ http_parse(
             break;
         id = smack_search_next(
                         banner1->http_fields,
-                        &state2, 
+                        &state2,
                         px, &i, (unsigned)length);
         i--;
         if (id == HTTPFIELD_NEWLINE) {
@@ -303,7 +303,7 @@ http_parse(
             id2 = smack_next_match(banner1->http_fields, &state2);
             if (id2 != SMACK_NOT_FOUND)
                 id = id2;
-        
+
             state = FIELD_COLON;
         } else
             state = FIELD_COLON;
@@ -345,7 +345,7 @@ http_parse(
     case CONTENT:
             id = smack_search_next(
                                    banner1->html_fields,
-                                   &state2, 
+                                   &state2,
                                    px, &i, (unsigned)length);
             i--;
             if (id != SMACK_NOT_FOUND) {
@@ -381,7 +381,7 @@ http_parse(
         banout_append(banout, PROTO_HTTP, px + log_begin, log_end-log_begin);
 
 
-    
+
     if (state == STATE_DONE)
         pstate->state = state;
     else

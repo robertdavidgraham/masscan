@@ -24,9 +24,9 @@
  ***************************************************************************/
 void
 status_print(
-    struct Status *status, 
-    uint64_t count, 
-    uint64_t max_count, 
+    struct Status *status,
+    uint64_t count,
+    uint64_t max_count,
     double x,
     uint64_t total_tcbs,
     uint64_t total_synacks,
@@ -62,7 +62,7 @@ status_print(
     now = (double)pixie_gettime();
 
     /* Figure how many SECONDS have elapsed, in a floating point value.
-     * Since the above timestamp is in microseconds, we need to 
+     * Since the above timestamp is in microseconds, we need to
      * shift it by 1-million
      */
     elapsed_time = (now - status->last.clock)/1000000.0;
@@ -76,7 +76,7 @@ status_print(
     rate = (count - status->last.count)*1.0/elapsed_time;
 
     /*
-     * Smooth the number by averaging over the last 8 seconds 
+     * Smooth the number by averaging over the last 8 seconds
      */
      status->last_rates[status->last_count++ & 0x7] = rate;
      rate =     status->last_rates[0]
@@ -129,7 +129,7 @@ status_print(
      * to a file (<stdout> reports what systems were found).
      */
     if (status->is_infinite) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %llu-tcbs,         \r",
                         x/1000.0,
                         syn_rate,
@@ -138,7 +138,7 @@ status_print(
                         global_tcb_count
                         );
     } else if (rate > 0) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs, rr=%.0f       \r",
                         x/1000.0,
                         percent_done,
@@ -164,7 +164,7 @@ void
 status_finish(struct Status *status)
 {
     UNUSEDPARM(status);
-    fprintf(stderr, 
+    fprintf(stderr,
 "                                                                             \r");
 }
 

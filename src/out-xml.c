@@ -10,7 +10,7 @@ static void
 xml_out_open(struct Output *out, FILE *fp)
 {
     //const struct Masscan *masscan = out->masscan;
-    
+
     fprintf(fp, "<?xml version=\"1.0\"?>\r\n");
     fprintf(fp, "<!-- masscan v1.0 scan -->\r\n");
     if (out->xml.stylesheet) {
@@ -56,13 +56,13 @@ xml_out_close(struct Output *out, FILE *fp)
             out->counts.tcp.closed,
             out->counts.tcp.open + out->counts.tcp.closed
             );
-    
+
 }
 
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status, 
+xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];

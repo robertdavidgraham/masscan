@@ -222,7 +222,7 @@ void pixie_usleep(uint64_t microseconds)
     else {
         t.tv_sec = 0;
     }
-    
+
     nanosleep(&t, 0);
     //usleep(microseconds);
 }

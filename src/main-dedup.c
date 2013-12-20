@@ -54,8 +54,8 @@ dedup_destroy(struct DedupTable *table)
 /***************************************************************************
  ***************************************************************************/
 unsigned
-dedup_is_duplicate(struct DedupTable *dedup, 
-                   unsigned ip_them, unsigned port_them, 
+dedup_is_duplicate(struct DedupTable *dedup,
+                   unsigned ip_them, unsigned port_them,
                    unsigned ip_me, unsigned port_me)
 {
     unsigned hash;

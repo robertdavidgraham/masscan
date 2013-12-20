@@ -41,7 +41,7 @@ typedef uint64_t PRIMEFACTORS[20];
  *      interesting numbers.
  ****************************************************************************/
 static unsigned
-sieve_prime_factors(uint64_t number, PRIMEFACTORS factors, 
+sieve_prime_factors(uint64_t number, PRIMEFACTORS factors,
                     PRIMEFACTORS non_factors, double *elapsed)
 {
     primegen pg;

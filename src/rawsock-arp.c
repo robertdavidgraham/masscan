@@ -38,7 +38,7 @@ struct ARP_IncomingRequest
 /****************************************************************************
  ****************************************************************************/
 static void
-proto_arp_parse(struct ARP_IncomingRequest *arp, 
+proto_arp_parse(struct ARP_IncomingRequest *arp,
                 const unsigned char px[], unsigned offset, unsigned max)
 {
 
@@ -219,7 +219,7 @@ int arp_resolve_sync(struct Adapter *adapter,
 
 /****************************************************************************
  ****************************************************************************/
-int 
+int
 arp_response(
     unsigned my_ip, const unsigned char *my_mac,
     const unsigned char *px, unsigned length,
@@ -246,7 +246,7 @@ arp_response(
     if (response == NULL)
         return -1; /* just to supress warnings */
 
-    /* ARP packets are too short, so increase the packet size to 
+    /* ARP packets are too short, so increase the packet size to
      * the Ethernet minimum */
     response->length = 60;
 

@@ -43,7 +43,7 @@ struct Patterns patterns[] = {
 unsigned
 banner1_parse(
         const struct Banner1 *banner1,
-        struct ProtocolState *tcb_state, 
+        struct ProtocolState *tcb_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout)
 {
@@ -60,11 +60,11 @@ banner1_parse(
         if (x != SMACK_NOT_FOUND
             && !(x == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
             unsigned i;
-            
+
             /* re-read the stuff that we missed */
             for (i=0; patterns[i].id && patterns[i].id != tcb_state->app_proto; i++)
                 ;
-            
+
             /* Kludge: patterns look confusing, so add port info to the
              * pattern */
             switch (x) {
@@ -86,13 +86,13 @@ banner1_parse(
 
                 if (s && s_len)
                 banner1_parse(
-                                banner1, 
+                                banner1,
                                 tcb_state,
                                 s, s_len,
                                 banout);
             }
             banner1_parse(
-                            banner1, 
+                            banner1,
                             tcb_state,
                             px, length,
                             banout);
@@ -107,10 +107,10 @@ banner1_parse(
     case PROTO_SMTP:
     case PROTO_POP3:
     case PROTO_IMAP4:
-        /* generic text-based parser 
+        /* generic text-based parser
          * TODO: in future, need to split these into separate protocols,
          * especially when binary parsing is added to SSH */
-        banner_ssh.parse(   banner1, 
+        banner_ssh.parse(   banner1,
                             banner1->http_fields,
                             tcb_state,
                             px, length,
@@ -118,7 +118,7 @@ banner1_parse(
         break;
     case PROTO_HTTP:
         banner_http.parse(
-                        banner1, 
+                        banner1,
                         banner1->http_fields,
                         tcb_state,
                         px, length,
@@ -126,7 +126,7 @@ banner1_parse(
         break;
     case PROTO_SSL3:
         banner_ssl.parse(
-                        banner1, 
+                        banner1,
                         banner1->http_fields,
                         tcb_state,
                         px, length,
@@ -200,7 +200,7 @@ banner1_test(const char *filename)
 {
     struct PcapFile *cap;
     unsigned link_type;
-    
+
     cap = pcapfile_openread(filename);
     if (cap == NULL) {
         fprintf(stderr, "%s: can't open capture file\n", filename);
@@ -219,7 +219,7 @@ banner1_test(const char *filename)
         struct PreprocessedInfo parsed;
         unsigned x;
 
-        
+
         packets_read = pcapfile_readframe(
                     cap,    /* capture dump file */
                     &secs, &usecs,
@@ -228,7 +228,7 @@ banner1_test(const char *filename)
         if (packets_read == 0)
             break;
 
-        
+
         x = preprocess_frame(px, length, link_type, &parsed);
         if (x == 0)
             continue;
@@ -279,9 +279,9 @@ banner1_selftest()
      */
     b = banner1_create();
     banout_init(banout);
-    
+
     memset(tcb_state, 0, sizeof(tcb_state[0]));
-    
+
     for (i=0; i<length; i++)
         banner1_parse(
                     b,
@@ -302,9 +302,9 @@ banner1_selftest()
      * Test whole buffer
      */
     b = banner1_create();
-    
+
     memset(tcb_state, 0, sizeof(tcb_state[0]));
-    
+
     banner1_parse(
                     b,
                     tcb_state,

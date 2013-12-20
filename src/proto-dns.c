@@ -46,7 +46,7 @@ dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length
         /* grab length of next label */
         len = px[offset];
 
-        /* Do two types of processing, either a compression code or a 
+        /* Do two types of processing, either a compression code or a
          * original label. Note that we can alternate back and forth
          * between these two states. */
         if (len & 0xC0) {
@@ -72,7 +72,7 @@ dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length
              * the end of the name */
             if (len == 0) {
                 return result; /* end of domain name */
-            } 
+            }
 
             /* There are more labels to come, therefore skip this and go
              * to the next one */
@@ -103,7 +103,7 @@ dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
             return max + 1;
 
         switch (px[offset]>>6) {
-        case 0: 
+        case 0:
             /* uncompressed label */
             if (px[offset] == 0) {
                 return offset+1; /* end of domain name */
@@ -118,7 +118,7 @@ dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
             return dns_name_skip_validate(px, offset, max, name_length);
         case 2:
             /* 0x40 - ENDS0 extended label type
-             * rfc2671 section 3.1 
+             * rfc2671 section 3.1
              * I have no idea how to parse this */
             return max + 1; /* totally clueless how to parse it */
         case 1:
@@ -130,7 +130,7 @@ dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
 /****************************************************************************
  ****************************************************************************/
 static void
-dns_extract_name(const unsigned char px[], unsigned offset, unsigned max, 
+dns_extract_name(const unsigned char px[], unsigned offset, unsigned max,
                  struct DomainPointer *name)
 {
     name->length = 0;
@@ -388,7 +388,7 @@ handle_dns(struct Output *out, time_t timestamp, const unsigned char *px, unsign
         unsigned xclass = px[offset+2]<<8 | px[offset+3];
         unsigned rrlen = px[offset+8]<<8 | px[offset+9];
         unsigned txtlen = px[offset+10];
-        
+
         if (rrlen == 0 || txtlen > rrlen-1)
             return 0;
         if (type != 0x10 || xclass != 3)
@@ -398,7 +398,7 @@ handle_dns(struct Output *out, time_t timestamp, const unsigned char *px, unsign
 
         output_report_banner(
                 out, timestamp,
-                ip_them, 17, port_them, 
+                ip_them, 17, port_them,
                 PROTO_DNS_VERSIONBIND,
                 px + offset, txtlen);
     }

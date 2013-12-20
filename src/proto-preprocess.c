@@ -163,7 +163,7 @@ parse_udp:
         }
         return 1;
     }
-    
+
 parse_icmp:
     {
         VERIFY_REMAINING(4, FOUND_ICMP);
@@ -171,7 +171,7 @@ parse_icmp:
         info->port_dst = px[offset+1];
         return 1;
     }
-    
+
 parse_sctp:
     {
         VERIFY_REMAINING(4, FOUND_SCTP);
@@ -459,7 +459,7 @@ parse_arp:
         info->ip_src = px + offset + hardware_length;
         info->ip_dst = px + offset + 2*hardware_length + protocol_length;
         info->ip_protocol = opcode;
-		info->found_offset = info->ip_offset;
+        info->found_offset = info->ip_offset;
         return 1;
     }
 

@@ -121,7 +121,7 @@ murmur(uint64_t entropy, ...)
 /***************************************************************************
  ***************************************************************************/
 uint64_t
-syn_cookie( unsigned ip_them, unsigned port_them, 
+syn_cookie( unsigned ip_them, unsigned port_them,
             unsigned ip_me, unsigned port_me)
 {
     unsigned data[4];

@@ -15,7 +15,7 @@ static const size_t BUF_MAX = 1024*1024;
 struct MasscanRecord {
     unsigned timestamp;
     unsigned ip;
-	unsigned char ip_proto;
+    unsigned char ip_proto;
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
@@ -26,7 +26,7 @@ struct MasscanRecord {
 /***************************************************************************
  ***************************************************************************/
 static void
-parse_status(struct Output *out, 
+parse_status(struct Output *out,
         enum PortStatus status, /* open/closed */
         const unsigned char *buf, size_t buf_length)
 {
@@ -34,18 +34,18 @@ parse_status(struct Output *out,
 
     if (buf_length < 12)
         return;
-    
-    /* parse record */        
+
+    /* parse record */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
     record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
     record.port      = buf[8]<<8 | buf[9];
     record.reason    = buf[10];
     record.ttl       = buf[11];
-    
+
     /*
      * Now report ther result
      */
-    output_report_status(out, 
+    output_report_status(out,
                     record.timestamp,
                     status,
                     record.ip,
@@ -65,7 +65,7 @@ static void
 parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
-    
+
     /*
      * Parse the parts that are common to most records
      */
@@ -97,13 +97,13 @@ static void
 parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
-    
+
     /*
      * Parse the parts that are common to most records
      */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
     record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
-	record.ip_proto  = buf[8];
+    record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.app_proto = buf[11]<<8 | buf[12];
 
@@ -156,8 +156,8 @@ parse_file(struct Output *out, const char *filename)
 
     /* Make sure it's got the format string */
     if (memcmp(buf, "masscan/1.1", 11) != 0) {
-        fprintf(stderr, 
-                "%s: unknown file format (expeced \"masscan/1.1\")\n", 
+        fprintf(stderr,
+                "%s: unknown file format (expeced \"masscan/1.1\")\n",
                 filename);
         goto end;
     }
@@ -182,7 +182,7 @@ parse_file(struct Output *out, const char *filename)
                 break;
             type = (type << 7) | (buf[0] & 0x7F);
         }
-        
+
         /* [LENGTH]
          * Is one byte for lengths smaller than 127 bytes, or two
          * bytes for lengths up to 16384.
@@ -201,8 +201,8 @@ parse_file(struct Output *out, const char *filename)
             fprintf(stderr, "file corrupt\n");
             goto end;
         }
-        
-        
+
+
         /* get the remainder fo the record */
         bytes_read = fread(buf, 1, length, fp);
         if (bytes_read < (int)length)
@@ -219,15 +219,15 @@ parse_file(struct Output *out, const char *filename)
             case 3: /* BANNER */
                 parse_banner3(out, buf, bytes_read);
                 break;
-			case 4:
+            case 4:
                 if (fread(buf+bytes_read,1,1,fp) != 1) {
                     fprintf(stderr, "read() error\n");
                     exit(1);
                 }
-				bytes_read++;
+                bytes_read++;
                 parse_banner4(out, buf, bytes_read);
                 break;
-			case 5:
+            case 5:
                 parse_banner4(out, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
@@ -258,7 +258,7 @@ end:
  * other formats. This preserves the original timestamps.
  *****************************************************************************/
 void
-convert_binary_files(struct Masscan *masscan, 
+convert_binary_files(struct Masscan *masscan,
                      int arg_first, int arg_max, char *argv[])
 {
     struct Output *out;

@@ -58,8 +58,8 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
  * Process one of them many "resource-records" within the NBTSTAT response
  *****************************************************************************/
 static unsigned
-handle_nbtstat_rr(struct Output *out, time_t timestamp, 
-                  const unsigned char *px, unsigned length, 
+handle_nbtstat_rr(struct Output *out, time_t timestamp,
+                  const unsigned char *px, unsigned length,
                   unsigned ip_them, unsigned port_them)
 {
     unsigned char banner[65536];
@@ -96,7 +96,7 @@ handle_nbtstat_rr(struct Output *out, time_t timestamp,
 
     output_report_banner(
             out, timestamp,
-            ip_them, 17, port_them, 
+            ip_them, 17, port_them,
             PROTO_NBTSTAT,
             banner, banner_length);
     return 0;
@@ -151,7 +151,7 @@ handle_nbtstat(struct Output *out, time_t timestamp, const unsigned char *px, un
         unsigned xclass = px[offset+2]<<8 | px[offset+3];
         unsigned rrlen = px[offset+8]<<8 | px[offset+9];
         unsigned txtlen = px[offset+10];
-        
+
         if (rrlen == 0 || txtlen > rrlen-1)
             return 0;
         if (type != 0x21 || xclass != 1)
@@ -162,7 +162,7 @@ handle_nbtstat(struct Output *out, time_t timestamp, const unsigned char *px, un
         return handle_nbtstat_rr(out, timestamp,
                                     px + offset,
                                     length - offset,
-                                    ip_them, 
+                                    ip_them,
                                     port_them);
     }
 

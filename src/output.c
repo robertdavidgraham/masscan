@@ -3,9 +3,9 @@
 
     This is the file that formats the output files -- that is to say,
     where we report everything we find.
- 
+
     PLUGINS
- 
+
     The various types of output (XML, binary, Redis, etc.) are written vaguely
     as "plugins", which means as a structure with function pointers. In the
     future, it should be possible to write plugins as DDLs/shared-objects
@@ -57,8 +57,8 @@ proto_from_status(unsigned status)
         case Port_IcmpEchoResponse: return "icmp";
         case Port_UdpOpen: return "udp";
         case Port_UdpClosed: return "udp";
-		case Port_ArpOpen: return "arp";
-		default: return "err";
+        case Port_ArpOpen: return "arp";
+        default: return "err";
     }
 }
 
@@ -77,7 +77,7 @@ status_string(int x)
         case Port_UdpOpen: return "open";
         case Port_UdpClosed: return "closed";
         case Port_IcmpEchoResponse: return "open";
-		case Port_ArpOpen: return "open";
+        case Port_ArpOpen: return "open";
         default: return "unknown";
     }
 }
@@ -112,7 +112,7 @@ reason_string(int x, char *buffer, size_t sizeof_buffer)
  * control codes.
  *****************************************************************************/
 const char *
-normalize_string(const unsigned char *px, size_t length, 
+normalize_string(const unsigned char *px, size_t length,
                  char *buf, size_t buf_len)
 {
     size_t i=0;
@@ -187,7 +187,7 @@ open_rotate(struct Output *out, const char *filename)
      * of this. */
     x = pixie_fopen_shareable(&fp, filename, is_append);
     if (x != 0 || fp == NULL) {
-        fprintf(stderr, "out: could not open file for %s\n", 
+        fprintf(stderr, "out: could not open file for %s\n",
                 is_append?"appending":"writing");
         perror(filename);
         control_c_pressed = 1;
@@ -222,7 +222,7 @@ close_rotate(struct Output *out, FILE *fp)
     out->funcs->close(out, fp);
 
     memset(&out->counts, 0, sizeof(out->counts));
- 
+
     /* Redis Kludge*/
     if (out->format == Output_Redis)
         return;
@@ -236,8 +236,8 @@ close_rotate(struct Output *out, FILE *fp)
  * Returns the time when the next rotate should occur. Rotations are
  * aligned to the period, which means that if you rotate hourly, it's done
  * on the hour every hour, like at 9:00:00 oclock exactly. In other words,
- * a period of "hourly" doesn't really mean "every 60 minutes", but 
- * on the hour". Since the program will be launched midway in a period, 
+ * a period of "hourly" doesn't really mean "every 60 minutes", but
+ * on the hour". Since the program will be launched midway in a period,
  * that means the first rotation will happen in less than a full period.
  *****************************************************************************/
 static time_t
@@ -280,26 +280,26 @@ duplicate_string(const char *str)
 {
     size_t length;
     char *result;
-    
+
     /* Find the length of the string. We allow NULL strings, in which case
      * the length is zero */
     if (str == NULL)
         length = 0;
     else
         length = strlen(str);
-    
+
     /* Allocate memory for the string */
     result = (char*)malloc(length + 1);
     if (result == 0) {
         fprintf(stderr, "output: out of memory error\n");
         exit(1);
     }
-    
+
     /* Copy the string */
     memcpy(result, str, length+1);
     result[length] = '\0';
-    
-    return result;    
+
+    return result;
 }
 
 /*****************************************************************************
@@ -316,7 +316,7 @@ indexed_filename(const char *filename, unsigned index)
     size_t ext;
     char *new_filename;
     size_t new_length = strlen(filename) + 32;
-    
+
     /* find the extension */
     ext = len;
     while (ext) {
@@ -331,22 +331,22 @@ indexed_filename(const char *filename, unsigned index)
     }
     if (ext == 0 && len > 0 && filename[0] != '.')
         ext = len;
-    
-    /* allocate memory */   
+
+    /* allocate memory */
     new_filename = (char*)malloc(new_length);
     if (new_filename == NULL) {
         fprintf(stderr, "output: out of memory\n");
         exit(1);
     }
-    
+
     /* format the new name */
     sprintf_s(new_filename, new_length, "%.*s.%02u%s",
               (unsigned)ext, filename,
               index,
               filename+ext);
-    
+
     return new_filename;
-                  
+
 }
 
 /*****************************************************************************
@@ -365,7 +365,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     if (out == NULL)
         return NULL;
     memset(out, 0, sizeof(*out));
-    
+
     /*
      * Copy the configuration information from the 'masscan' structure.
      */
@@ -444,11 +444,11 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     } else {
         if (out->rotate.offset > 1) {
             out->rotate.next = next_rotate_time(
-                                    out->rotate.last-out->rotate.period, 
+                                    out->rotate.last-out->rotate.period,
                                     out->rotate.period, out->rotate.offset);
         } else {
             out->rotate.next = next_rotate_time(
-                                    out->rotate.last, 
+                                    out->rotate.last,
                                     out->rotate.period, out->rotate.offset);
         }
     }
@@ -523,7 +523,7 @@ output_do_rotate(struct Output *out, int is_closing)
      * happen. */
     err = 0;
 again:
-    sprintf_s(new_filename, new_filename_size, 
+    sprintf_s(new_filename, new_filename_size,
               "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
         dir,
         tm.tm_year % 100,
@@ -550,17 +550,17 @@ again:
         free(new_filename);
         return out->fp;
     }
-    
+
     /*
      * Set the next rotate time, which is the current time plus the period
      * length
      */
-    out->rotate.next = next_rotate_time(time(0), 
+    out->rotate.next = next_rotate_time(time(0),
                                         out->rotate.period, out->rotate.offset);
 
     LOG(1, "rotated: %s\n", new_filename);
     free(new_filename);
-    
+
     /*
      * Now create a new file
      */
@@ -589,7 +589,7 @@ again:
  * back.
  ***************************************************************************/
 void
-output_report_status(struct Output *out, time_t timestamp, int status, 
+output_report_status(struct Output *out, time_t timestamp, int status,
         unsigned ip, unsigned port, unsigned reason, unsigned ttl)
 {
     FILE *fp = out->fp;
@@ -604,7 +604,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     case Port_Open:
     case Port_IcmpEchoResponse:
     case Port_UdpOpen:
-	case Port_ArpOpen:
+    case Port_ArpOpen:
     default:
         break;
 
@@ -617,7 +617,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * line screen */
     if (out->is_interactive) {
         unsigned count;
-        
+
         count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
                     status_string(status),
                     port,
@@ -634,9 +634,9 @@ output_report_status(struct Output *out, time_t timestamp, int status,
             fprintf(stdout, "%.*s", (int)(79-count),
                     "                                          "
                     "                                          ");
-        
+
         fprintf(stdout, "\n");
- 
+
     }
 
 
@@ -702,9 +702,9 @@ output_report_banner(struct Output *out, time_t now,
                 unsigned proto, const unsigned char *px, unsigned length)
 {
     FILE *fp = out->fp;
-    
+
     /* If we aren't doing banners, then don't do anything. That's because
-     * when doing UDP scans, we'll still get banner information from 
+     * when doing UDP scans, we'll still get banner information from
      * decoding the response packets, even if the user isn't interested */
     if (!out->is_banner)
         return;
@@ -731,7 +731,7 @@ output_report_banner(struct Output *out, time_t now,
             fprintf(stdout, "%.*s", (int)(79-count),
                     "                                          "
                     "                                          ");
-        
+
         fprintf(stdout, "\n");
     }
 
@@ -780,7 +780,7 @@ output_destroy(struct Output *out)
         close_rotate(out, out->fp);
 
 
-    
+
     free(out->xml.stylesheet);
     free(out->rotate.directory);
     free(out->filename);
@@ -796,28 +796,28 @@ int
 output_selftest(void)
 {
     char *f;
-    
+
     f = indexed_filename("foo.bar", 1);
     if (strcmp(f, "foo.01.bar") != 0) {
         fprintf(stderr, "output: failed selftest\n");
         return 1;
     }
     free(f);
-    
+
     f = indexed_filename("foo.b/ar", 2);
     if (strcmp(f, "foo.b/ar.02") != 0) {
         fprintf(stderr, "output: failed selftest\n");
         return 1;
     }
     free(f);
-    
+
     f = indexed_filename(".foobar", 3);
     if (strcmp(f, ".03.foobar") != 0) {
         fprintf(stderr, "output: failed selftest\n");
         return 1;
     }
     free(f);
-    
+
     return 0;
 }
 

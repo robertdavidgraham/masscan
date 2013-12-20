@@ -32,7 +32,7 @@ parse_port_unreachable(const unsigned char *px, unsigned length,
         return -1;
     *r_ip_me = px[12]<<24 | px[13]<<16 | px[14]<<8 | px[15];
     *r_ip_them = px[16]<<24 | px[17]<<16 | px[18]<<8 | px[19];
-    
+
     px += (px[0]&0xF)<<2;
     length -= (px[0]&0xF)<<2;
 
@@ -51,8 +51,8 @@ parse_port_unreachable(const unsigned char *px, unsigned length,
  * be inadvertent, such as "destination unreachable" messages.
  ***************************************************************************/
 void
-handle_icmp(struct Output *out, time_t timestamp, 
-            const unsigned char *px, unsigned length, 
+handle_icmp(struct Output *out, time_t timestamp,
+            const unsigned char *px, unsigned length,
             struct PreprocessedInfo *parsed)
 {
     unsigned type = parsed->port_src;
@@ -103,7 +103,7 @@ handle_icmp(struct Output *out, time_t timestamp,
             if (length - parsed->transport_offset > 8) {
                 unsigned ip_me2, ip_them2, port_me2, port_them2;
                 int err;
-                
+
                 err = parse_port_unreachable(
                     px + parsed->transport_offset + 8,
                     length - parsed->transport_offset + 8,
@@ -129,7 +129,7 @@ handle_icmp(struct Output *out, time_t timestamp,
         }
         break;
     default:
-	;
+    ;
     }
 
 }

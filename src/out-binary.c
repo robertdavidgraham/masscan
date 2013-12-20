@@ -32,7 +32,7 @@ binary_out_close(struct Output *out, FILE *fp)
 {
     char firstrecord[2+'a'];
     size_t bytes_written;
-    
+
     UNUSEDPARM(out);
 
     memset(firstrecord, 0, 2+'a');
@@ -54,7 +54,7 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
     size_t bytes_written;
 
     UNUSEDPARM(out);
-    
+
     /* [TYPE] field */
     switch (status) {
     case Port_Open:

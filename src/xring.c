@@ -28,7 +28,7 @@ xring_remove(struct XRing *xring)
 
     if (xring->tail >= xring->head)
         return 0;
-    
+
 
     num = ring[xring->tail & (XRING_SIZE-1)];
     if (num) {
@@ -112,7 +112,7 @@ test_consumer_thread(void *v)
             test->total_count += e;
         }
     }
-    
+
     while (xring->tail < xring->head) {
         Element e;
 
@@ -173,7 +173,7 @@ run_test(struct Test *test)
 
     /* Tell consumer thread to end */
     test->not_active = 1;
-    
+
 
     /* Wait for consumer thread to end */
     while (!test->consumer_done)

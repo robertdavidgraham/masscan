@@ -1,5 +1,5 @@
 /****************************************************************************
-        
+
           SMACK1 - an Aho-Corasick search engine
 
   This creates a state-machine out of patterns, like a DFA implementation
@@ -10,7 +10,7 @@
   the "method" from HTTP and later comparing against GET, PUT, POST, etc.,
   we create an Aho-Corasick pattern matcher for those patterns, match all
   known ones, and otherwise generate an error for unknown methods.
- 
+
 
   In addition to normal and nocase patterns, SMACK also supports "anchored"
   patterns. This is like the (^) and ($) symbols in regex patterns,
@@ -22,15 +22,15 @@
   the flavor of the textbook example pseudo-code. Therefore, you see code
   that looks like the following:
 
-	while (queue_has_more_items(queue)) {
-		r = dequeue(queue);
-		for (a=0; a<ALPHABET_SIZE; a++) {
-			if (GOTO(r,a) == FAIL)
-				GOTO(r,a) = GOTO(GOTO_FAIL(r),a);
-			else
-				enqueue(queue, GOTO(r,a));
-		}
-	}
+    while (queue_has_more_items(queue)) {
+        r = dequeue(queue);
+        for (a=0; a<ALPHABET_SIZE; a++) {
+            if (GOTO(r,a) == FAIL)
+                GOTO(r,a) = GOTO(GOTO_FAIL(r),a);
+            else
+                enqueue(queue, GOTO(r,a));
+        }
+    }
 
   You aren't supposed to understand the code so much that you are supposed
   to be able to confirm the code matches the textbook pseudo-code.
@@ -56,7 +56,7 @@
   we convert that into a shift for performance reasons.
 
   Ideally, we should do even more optimizations, like a shift-add, allowing
-  half widths (3, 6, 24, 48, 96, 192) that would more closely match the 
+  half widths (3, 6, 24, 48, 96, 192) that would more closely match the
   table width to the number of characters. Maybe I'll get around to adding
   that.
 
@@ -64,7 +64,7 @@
   COMPILATION
 
   Once the patterns have been entered and compiled into a typical state
-  machine, I've added one more compilation step. I create a block of 
+  machine, I've added one more compilation step. I create a block of
   memory that contains all the transitions.
 
   I then DISCARD all the original pattern information. The only memory
@@ -91,12 +91,12 @@
   64-BIT COMPILATION
 
   The "id" that triggers for a pattern is declared as "size_t". This allows
-  it to hold a pointer as well as an integer. On most 64-bit systems 
-  (Windows 7, Linux, Mac OS X), the 'size_t' will be a 64-bit value, while 
+  it to hold a pointer as well as an integer. On most 64-bit systems
+  (Windows 7, Linux, Mac OS X), the 'size_t' will be a 64-bit value, while
   'unsigned' will be a 32-bit value. The 'unsigned short' type will still
   be 16-bits, which means the tables will still be small.
 
-  
+
   TODO
   Make it so that the longest match triggers first.
 
@@ -149,8 +149,8 @@ enum {
 
 static const unsigned BASE_STATE = 0;
 static const unsigned UNANCHORED_STATE = 1;
-#define GOTO(r, a)		smack->m_state_table[r].m_next_state[a]
-#define GOTO_FAIL(r)	smack->m_state_table[r].m_fail_state
+#define GOTO(r, a)      smack->m_state_table[r].m_next_state[a]
+#define GOTO_FAIL(r)   smack->m_state_table[r].m_fail_state
 
 
 
@@ -166,27 +166,27 @@ unsigned print_transitions = 0;
 
 /****************************************************************************
  ****************************************************************************/
-struct SmackPattern 
+struct SmackPattern
 {
     /** The 'id' is what's reported back when the pattern matches.
      * This value can be either an integer, or a pointer to some
      * private data structure */
-    size_t					id;
+    size_t                    id;
 
     /** This holds a malloc-ed copy of the pattern the caller gave us.
      * If the engine is running "nocase", then this is converted to
      * lower case */
-    unsigned char *			pattern;
+    unsigned char *          pattern;
 
     /** The number of characters in the pattern */
-    unsigned				pattern_length;
+    unsigned                pattern_length;
 
-    /** Whether this pattern is "anchored" (^) at the start of the 
+    /** Whether this pattern is "anchored" (^) at the start of the
      * input. This means the pattern will only trigger when it's at the
      * very start, but not when it's in the middle */
     unsigned                is_anchor_begin:1;
 
-    /** Whether this pattern is "anchored" ($) at the END of the 
+    /** Whether this pattern is "anchored" ($) at the END of the
      * input. This means the pattern will only trigger when it's
      * the last characters of the input, and the caller also calls
      * "smack_search_end()" */
@@ -200,10 +200,10 @@ struct SmackPattern
  * This is an INTERMEDIATE structure created and freed during compilation.
  * It holds the expanded state-table before it is compressed.
  ****************************************************************************/
-struct SmackRow 
+struct SmackRow
 {
-    unsigned				m_next_state[ALPHABET_SIZE];  
-    unsigned				m_fail_state;   
+    unsigned                m_next_state[ALPHABET_SIZE];
+    unsigned                m_fail_state;
 };
 
 
@@ -213,11 +213,11 @@ struct SmackRow
  * for the state, based on the pattern.
  ****************************************************************************/
 struct SmackMatches {
-	size_t *	            m_ids;
-	unsigned				m_count;
+    size_t *               m_ids;
+    unsigned                m_count;
 
 #ifdef DEBUG
-	char *DEBUG_name;
+    char *DEBUG_name;
 #endif
 };
 
@@ -233,7 +233,7 @@ struct SMACK {
     char *              name;
 
     /**
-     * Whether or not this table is case-sensitive or case-insenstive 
+     * Whether or not this table is case-sensitive or case-insenstive
      */
     unsigned            is_nocase:1;
 
@@ -258,26 +258,26 @@ struct SMACK {
      * However, after the patterns have been compiled, this structure can
      * be freed.
      */
-	struct SmackPattern **m_pattern_list;
-	unsigned			m_pattern_count;
-	unsigned			m_pattern_max;
+    struct SmackPattern **m_pattern_list;
+    unsigned            m_pattern_count;
+    unsigned            m_pattern_max;
 
     /**
-     * Temporary place holder for DFA state transitions. After we 
+     * Temporary place holder for DFA state transitions. After we
      * compress the table, this is thrown away */
-	struct SmackRow *	m_state_table;
-	unsigned			m_state_count;  
-	unsigned			m_state_max;  
+    struct SmackRow *  m_state_table;
+    unsigned            m_state_count;
+    unsigned            m_state_max;
     struct SmackMatches *m_match;
-    
+
 
     /**
      * The opposite of "char_to_symbol", this table takes a symbol and
      * converts it back to a  character. This can be useful in debugging,
-     * but it's real purpose is just during compilation in order to 
+     * but it's real purpose is just during compilation in order to
      * count the number of characters used in patterns, and consequently,
      * how wide 'rows' need to be. */
-	unsigned		    symbol_to_char[ALPHABET_SIZE];
+    unsigned            symbol_to_char[ALPHABET_SIZE];
 
     /**
      * The "symbol compression dictionary". As we parse incoming bytes,
@@ -288,28 +288,28 @@ struct SMACK {
      * 32 different characters are used in the patterns, then rows only
      * have tob e 32 symbols wide, instead of 256 characters wide.
      */
-	unsigned char		char_to_symbol[ALPHABET_SIZE];
+    unsigned char       char_to_symbol[ALPHABET_SIZE];
 
     /**
      * The number different characters used in all the patterns we are
      * looking for. See "char_to_symbol" for more information.
      */
-	unsigned			symbol_count;
+    unsigned            symbol_count;
 
     /**
      * This is the row width, log2. Rows are expanded to the nearest
-     * power-of-2. Thus, if we have 26 different characters used in 
+     * power-of-2. Thus, if we have 26 different characters used in
      * patterns, then we'll use row sizes of 32 elements. This allows
      * use to optimize row lookups using the fast "shift" operation
      * rather than the slow "multiplication" operation.
      */
-	unsigned			row_shift;
+    unsigned            row_shift;
 
-	/**
-	 * This is the final compressed table. It contains one row for each 
-     * sub-pattern, and each row is wide enough to hold all the symbols 
+    /**
+     * This is the final compressed table. It contains one row for each
+     * sub-pattern, and each row is wide enough to hold all the symbols
      * (must be a power of two) */
-	transition_t *	    table;
+    transition_t *       table;
 };
 
 
@@ -318,17 +318,17 @@ struct SMACK {
  * that can hold that row. Return the number of bits needed to left-shift
  * in order to multiple by that number (shifts are faster than multiply).
  ****************************************************************************/
-static unsigned 
+static unsigned
 row_shift_from_symbol_count(unsigned symbol_count)
 {
-	unsigned row_shift = 1;
+    unsigned row_shift = 1;
 
-	symbol_count++;
+    symbol_count++;
 
-	while ((unsigned)(1 << row_shift) < symbol_count)
-		row_shift++;
+    while ((unsigned)(1 << row_shift) < symbol_count)
+        row_shift++;
 
-	return row_shift;
+    return row_shift;
 }
 
 
@@ -338,23 +338,23 @@ row_shift_from_symbol_count(unsigned symbol_count)
 struct SMACK *
 smack_create(const char *name, unsigned nocase)
 {
-	struct SMACK *smack;
+    struct SMACK *smack;
 
-	smack = (struct SMACK *)malloc(sizeof (struct SMACK));
-	if (smack == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-	memset (smack, 0, sizeof (struct SMACK));
+    smack = (struct SMACK *)malloc(sizeof (struct SMACK));
+    if (smack == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+    memset (smack, 0, sizeof (struct SMACK));
 
     smack->is_nocase = nocase;
     smack->name = (char*)malloc(strlen(name)+1);
-	if (smack->name == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-	memcpy(smack->name, name, strlen(name)+1);
-	return smack;
+    if (smack->name == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+    memcpy(smack->name, name, strlen(name)+1);
+    return smack;
 }
 
 
@@ -366,10 +366,10 @@ create_intermediate_table(struct SMACK *smack, unsigned size)
     struct SmackRow *x;
 
     x = (struct SmackRow *)malloc(sizeof(*x) * size);
-	if (x == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
+    if (x == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
     memset(x, 0, sizeof(*x) * size);
     smack->m_state_table = x;
 }
@@ -394,10 +394,10 @@ create_matches_table(struct SMACK *smack, unsigned size)
     struct SmackMatches *x;
 
     x = (struct SmackMatches *)malloc(sizeof(*x) * size);
-	if (x == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
+    if (x == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
     memset(x, 0, sizeof(*x) * size);
 
     smack->m_match = x;
@@ -409,7 +409,7 @@ static void
 destroy_matches_table(struct SMACK *smack)
 {
     unsigned i;
-    
+
     if (!smack->m_match)
         return;
 
@@ -447,14 +447,14 @@ destroy_pattern_table(struct SMACK *smack)
     if (!smack->m_pattern_list)
         return;
 
-	for (i=0; i<smack->m_pattern_count; i++) {
-	    struct SmackPattern *pat;
-		pat = smack->m_pattern_list[i];
+    for (i=0; i<smack->m_pattern_count; i++) {
+        struct SmackPattern *pat;
+        pat = smack->m_pattern_list[i];
         free(pat->pattern);
         free(pat);
     }
 
-	free(smack->m_pattern_list);
+    free(smack->m_pattern_list);
     smack->m_pattern_list = 0;
 }
 
@@ -463,17 +463,17 @@ destroy_pattern_table(struct SMACK *smack)
  * Frees everything allocated by "smack_create()", and further allocated
  * during compilation.
  ****************************************************************************/
-void 
+void
 smack_destroy(struct SMACK *smack)
 {
     destroy_intermediate_table(smack);
     destroy_matches_table(smack);
     destroy_pattern_table(smack);
-    
+
     if (smack->table)
         free(smack->table);
-    
-	free(smack);
+
+    free(smack);
 }
 
 /****************************************************************************
@@ -499,42 +499,42 @@ id_already_exists(const size_t *ids, unsigned count, size_t new_id)
  ****************************************************************************/
 static void
 smack_copy_matches(
-	struct SmackMatches *row, 
-	const size_t *new_ids, 
-	unsigned new_count)
+    struct SmackMatches *row,
+    const size_t *new_ids,
+    unsigned new_count)
 {
-	size_t *total_ids;
+    size_t *total_ids;
     unsigned total_count;
     size_t *old_ids = row->m_ids;
-	unsigned old_count = row->m_count;
-	unsigned i;
+    unsigned old_count = row->m_count;
+    unsigned i;
 
     /* Allocate space for both lists */
-	total_ids = (size_t *)malloc((old_count + new_count)*sizeof(*total_ids));
-	if (total_ids == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
+    total_ids = (size_t *)malloc((old_count + new_count)*sizeof(*total_ids));
+    if (total_ids == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
 
-	/* Copy existing matches */
-	for (i=0; i<old_count; i++)
-		total_ids[i] = old_ids[i];
+    /* Copy existing matches */
+    for (i=0; i<old_count; i++)
+        total_ids[i] = old_ids[i];
     total_count = old_count;
 
-	/* Copy new matches, if needed */
-	for (i=0; i<new_count; i++) {
+    /* Copy new matches, if needed */
+    for (i=0; i<new_count; i++) {
         if (!id_already_exists(old_ids, old_count, new_ids[i]))
-    		total_ids[total_count++] = new_ids[i];
-	}
+            total_ids[total_count++] = new_ids[i];
+    }
 
     /* Free the old list */
-	if (row->m_ids) {
-		free(row->m_ids);
-	}
-	
+    if (row->m_ids) {
+        free(row->m_ids);
+    }
+
     /* Replace old list with total combined list */
     row->m_ids = total_ids;
-	row->m_count = total_count;
+    row->m_count = total_count;
 }
 
 
@@ -548,24 +548,24 @@ smack_copy_matches(
 static unsigned
 smack_add_symbol(struct SMACK *smack, unsigned c)
 {
-	unsigned i;
-	unsigned symbol;
+    unsigned i;
+    unsigned symbol;
 
-	/* See if we already know the symbol */
-	for (i=1; i<=smack->symbol_count; i++) {
-		if (smack->symbol_to_char[i] == c)
-			return i;
-	}
+    /* See if we already know the symbol */
+    for (i=1; i<=smack->symbol_count; i++) {
+        if (smack->symbol_to_char[i] == c)
+            return i;
+    }
 
-	/* Add the symbol to our list */
-	smack->symbol_count++;
-	symbol = smack->symbol_count;
+    /* Add the symbol to our list */
+    smack->symbol_count++;
+    symbol = smack->symbol_count;
 
     /* Map it in both directions */
-	smack->symbol_to_char[symbol] = c;
-	smack->char_to_symbol[c] = (unsigned char)symbol;
+    smack->symbol_to_char[symbol] = c;
+    smack->char_to_symbol[c] = (unsigned char)symbol;
 
-	return symbol;
+    return symbol;
 }
 
 
@@ -575,15 +575,15 @@ smack_add_symbol(struct SMACK *smack, unsigned c)
 static void
 smack_add_symbols(struct SMACK *smack, const unsigned char *pattern, unsigned pattern_length)
 {
-	unsigned i;
-	
-	/* Add all the bytes in this pattern to the symbol table */
-	for (i=0; i<pattern_length; i++) {
+    unsigned i;
+
+    /* Add all the bytes in this pattern to the symbol table */
+    for (i=0; i<pattern_length; i++) {
         if (smack->is_nocase)
-    		smack_add_symbol(smack, tolower(pattern[i]));
+            smack_add_symbol(smack, tolower(pattern[i]));
         else
             smack_add_symbol(smack, pattern[i]);
-	}
+    }
 }
 
 
@@ -595,19 +595,19 @@ smack_add_symbols(struct SMACK *smack, const unsigned char *pattern, unsigned pa
  * going to normalize it to all lower case.
  ****************************************************************************/
 static unsigned char *
-make_copy_of_pattern(   const unsigned char *pattern, 
-                        unsigned pattern_length, 
+make_copy_of_pattern(   const unsigned char *pattern,
+                        unsigned pattern_length,
                         unsigned is_nocase)
 {
-	unsigned char *result;
+    unsigned char *result;
 
     /* allocate space */
-	result = (unsigned char *)malloc(pattern_length+1);
-	if (result == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-    
+    result = (unsigned char *)malloc(pattern_length+1);
+    if (result == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+
     /* copy, removing case if necessary */
     if (is_nocase) {
         unsigned i;
@@ -615,12 +615,12 @@ make_copy_of_pattern(   const unsigned char *pattern,
             result[i] = (unsigned char)(tolower(pattern[i]));
         }
     } else
-    	memcpy(result, pattern, pattern_length);
+        memcpy(result, pattern, pattern_length);
 
-	/* NUL terminate the string. This makes debugging easier when patterns
-	 * are text. However, the NUL terminator is never used by the program
-	 * to end the string -- we always use the length instead. */
-	result[pattern_length] = '\0';
+    /* NUL terminate the string. This makes debugging easier when patterns
+     * are text. However, the NUL terminator is never used by the program
+     * to end the string -- we always use the length instead. */
+    result[pattern_length] = '\0';
 
     return result;
 }
@@ -631,78 +631,78 @@ make_copy_of_pattern(   const unsigned char *pattern,
  ****************************************************************************/
 void
 smack_add_pattern(
-	struct SMACK *  smack, 
-	const void *    v_pattern, 
-	unsigned        pattern_length, 
-	size_t          id,
+    struct SMACK *  smack,
+    const void *    v_pattern,
+    unsigned        pattern_length,
+    size_t          id,
     unsigned        flags)
 {
-	const unsigned char *pattern = (const unsigned char*)v_pattern;
-	struct SmackPattern *pat;
-	
-	
-    /* 
+    const unsigned char *pattern = (const unsigned char*)v_pattern;
+    struct SmackPattern *pat;
+
+
+    /*
      * Create a pattern structure based on the input
      */
-	pat = (struct SmackPattern *)malloc(sizeof (struct SmackPattern));
-	if (pat == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-	pat->pattern_length = pattern_length;
-	pat->is_anchor_begin = ((flags & SMACK_ANCHOR_BEGIN) > 0);
-	pat->is_anchor_end = ((flags & SMACK_ANCHOR_END) > 0);
-	pat->is_snmp_hack = ((flags & SMACK_SNMP_HACK) > 0);
-	pat->id = id;
-	pat->pattern = make_copy_of_pattern(pattern, pattern_length, smack->is_nocase);
+    pat = (struct SmackPattern *)malloc(sizeof (struct SmackPattern));
+    if (pat == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+    pat->pattern_length = pattern_length;
+    pat->is_anchor_begin = ((flags & SMACK_ANCHOR_BEGIN) > 0);
+    pat->is_anchor_end = ((flags & SMACK_ANCHOR_END) > 0);
+    pat->is_snmp_hack = ((flags & SMACK_SNMP_HACK) > 0);
+    pat->id = id;
+    pat->pattern = make_copy_of_pattern(pattern, pattern_length, smack->is_nocase);
     if (pat->is_anchor_begin)
         smack->is_anchor_begin = 1;
     if (pat->is_anchor_end)
         smack->is_anchor_end = 1;
 
 
-	/* 
+    /*
      * Register the symbols used in the pattern. Hopefully, not all 256
-	 * possible combinations will be used, allowing us to shrink the 
-	 * size of the rows in the final table 
+     * possible combinations will be used, allowing us to shrink the
+     * size of the rows in the final table
      */
-	smack_add_symbols(smack, pattern, pattern_length);
+    smack_add_symbols(smack, pattern, pattern_length);
     if (pat->is_snmp_hack)
         smack_add_symbols(smack, (const unsigned char *)"\x80", 1);
 
 
-	/* 
+    /*
      * Automatically expand the table in order to hold more patterns,
      * as the caller keeps adding more.
      */
-	if (smack->m_pattern_count + 1 >= smack->m_pattern_max) {
-		struct SmackPattern **new_list;
-		unsigned new_max;
+    if (smack->m_pattern_count + 1 >= smack->m_pattern_max) {
+        struct SmackPattern **new_list;
+        unsigned new_max;
 
-		new_max = smack->m_pattern_max * 2 + 1;
-		new_list = (struct SmackPattern **)malloc(sizeof(*new_list)*new_max);
-		if (new_list == NULL) {
-			fprintf(stderr, "%s: out of memory error\n", "smack");
-			exit(1);
-		}
+        new_max = smack->m_pattern_max * 2 + 1;
+        new_list = (struct SmackPattern **)malloc(sizeof(*new_list)*new_max);
+        if (new_list == NULL) {
+            fprintf(stderr, "%s: out of memory error\n", "smack");
+            exit(1);
+        }
 
-		if (smack->m_pattern_list) {
-			memcpy(	new_list, 
-					smack->m_pattern_list, 
-					sizeof(*new_list) * smack->m_pattern_count);
-			free(smack->m_pattern_list);
-		}
+        if (smack->m_pattern_list) {
+            memcpy(    new_list,
+                    smack->m_pattern_list,
+                    sizeof(*new_list) * smack->m_pattern_count);
+            free(smack->m_pattern_list);
+        }
 
-		smack->m_pattern_list = new_list;
-		smack->m_pattern_max = new_max;
-	}
+        smack->m_pattern_list = new_list;
+        smack->m_pattern_max = new_max;
+    }
 
 
-	/* 
-     * Put this pattern onto the end of our list 
+    /*
+     * Put this pattern onto the end of our list
      */
-	smack->m_pattern_list[smack->m_pattern_count] = pat;
-	smack->m_pattern_count++;
+    smack->m_pattern_list[smack->m_pattern_count] = pat;
+    smack->m_pattern_count++;
 }
 
 
@@ -710,17 +710,17 @@ smack_add_pattern(
  ****************************************************************************/
 #ifdef DEBUG
 static void
-DEBUG_set_name(struct SMACK *smack, const void *pattern, 
+DEBUG_set_name(struct SMACK *smack, const void *pattern,
                unsigned length, unsigned state)
 {
-	char *name = (char*)malloc(length+1);
-	if (name == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-	memcpy(name, pattern, length);
-	name[length] = '\0';
-	smack->m_match[state].DEBUG_name = name;
+    char *name = (char*)malloc(length+1);
+    if (name == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+    memcpy(name, pattern, length);
+    name[length] = '\0';
+    smack->m_match[state].DEBUG_name = name;
 }
 #else
 #define DEBUG_set_name(a,b,c,d);
@@ -732,59 +732,59 @@ DEBUG_set_name(struct SMACK *smack, const void *pattern,
 static void
 smack_add_prefixes(struct SMACK *smack, struct SmackPattern *pat)
 {
-	unsigned i;
-	unsigned pattern_length;
-	unsigned char *pattern;
-	int state=0;
-	
-	pattern_length = pat->pattern_length;
-	pattern = pat->pattern;
+    unsigned i;
+    unsigned pattern_length;
+    unsigned char *pattern;
+    int state=0;
+
+    pattern_length = pat->pattern_length;
+    pattern = pat->pattern;
 
     /*
-     * If we anchor at the beginning, then start with that 
+     * If we anchor at the beginning, then start with that
      */
     if (pat->is_anchor_begin)
         state = GOTO(state, CHAR_ANCHOR_START);
-  
-    /* 
+
+    /*
      * Match the existing prefix patterns. For example, if we add all the
-	 * prefixes for "football", then add "foobar", there will already be
-	 * prefixes for 'f', 'fo', and 'foo'. We won't start adding new states
-	 * until we reach 'foob', 'fooba', and 'foobar'.
+     * prefixes for "football", then add "foobar", there will already be
+     * prefixes for 'f', 'fo', and 'foo'. We won't start adding new states
+     * until we reach 'foob', 'fooba', and 'foobar'.
      */
-	for (i=0; i<pattern_length && GOTO(state,pattern[i]) != FAIL; i++)
-		state = GOTO(state,pattern[i]);
-  
+    for (i=0; i<pattern_length && GOTO(state,pattern[i]) != FAIL; i++)
+        state = GOTO(state,pattern[i]);
+
     /*
      * Now that we've matched existing states, start creating new states to
-	 * complete this pattern.
-     */ 
+     * complete this pattern.
+     */
     for ( ; i<pattern_length; i++) {
-		unsigned new_state = smack->m_state_count++;
+        unsigned new_state = smack->m_state_count++;
         if (pat->is_snmp_hack)
-		    GOTO(state, 0x80) = state; /* snmp_hack, space_hack */
+            GOTO(state, 0x80) = state; /* snmp_hack, space_hack */
         GOTO(state, pattern[i]) = new_state;
-		state = new_state;
-		DEBUG_set_name(smack, pattern, i+1, new_state);
+        state = new_state;
+        DEBUG_set_name(smack, pattern, i+1, new_state);
     }
 
     /*
      * If there is an anchor at the end, then create one more state
      */
     if (pat->is_anchor_end) {
-		unsigned new_state = smack->m_state_count++;
-		GOTO(state, CHAR_ANCHOR_END) = new_state;
-		state = new_state;
+        unsigned new_state = smack->m_state_count++;
+        GOTO(state, CHAR_ANCHOR_END) = new_state;
+        state = new_state;
 #ifdef DEBUG
-		DEBUG_set_name(smack, pattern, i+1, new_state);
+        DEBUG_set_name(smack, pattern, i+1, new_state);
         smack->m_match[new_state].DEBUG_name[i] = '$';
 #endif
     }
 
     /*
-	 * Now mark the final state as a "match" state.
-	 */
-	smack_copy_matches(&smack->m_match[state], &pat->id, 1);
+     * Now mark the final state as a "match" state.
+     */
+    smack_copy_matches(&smack->m_match[state], &pat->id, 1);
 }
 
 
@@ -794,36 +794,36 @@ smack_add_prefixes(struct SMACK *smack, struct SmackPattern *pat)
 static void
 smack_stage0_compile_prefixes(struct SMACK *smack)
 {
-	unsigned s;
-	unsigned a;
+    unsigned s;
+    unsigned a;
 
     /*
-	 * Initialize the base-state.
-	 */ 
+     * Initialize the base-state.
+     */
     smack->m_state_count = 1;
     for (s=0; s<smack->m_state_max; s++) {
         for (a=0; a<ALPHABET_SIZE; a++)
             GOTO(s,a) = FAIL;
     }
-	DEBUG_set_name(smack, "*", 1, 0);
+    DEBUG_set_name(smack, "*", 1, 0);
 
     /*
      * Initialize the anchor-state
      */
     if (smack->is_anchor_begin) {
         unsigned anchor_begin = smack->m_state_count++;
-		GOTO(BASE_STATE, CHAR_ANCHOR_START) = anchor_begin;
-	    DEBUG_set_name(smack, "^", 1, anchor_begin);
+        GOTO(BASE_STATE, CHAR_ANCHOR_START) = anchor_begin;
+        DEBUG_set_name(smack, "^", 1, anchor_begin);
     }
 
-    /* 
-	 * Split a pattern into its subpatterns and add each of them
-	 * to the table.
-	 */ 
-	for (a=0; a<(int)smack->m_pattern_count; a++)
+    /*
+     * Split a pattern into its subpatterns and add each of them
+     * to the table.
+     */
+    for (a=0; a<(int)smack->m_pattern_count; a++)
         smack_add_prefixes(smack, smack->m_pattern_list[a]);
 
-    /* Set all failed state transitions to return to the 0'th state */ 
+    /* Set all failed state transitions to return to the 0'th state */
     for (a=0; a<ALPHABET_SIZE; a++) {
         if (GOTO(BASE_STATE,a) == FAIL)
             GOTO(BASE_STATE,a) = BASE_STATE;
@@ -835,57 +835,57 @@ smack_stage0_compile_prefixes(struct SMACK *smack)
 static void
 smack_stage1_generate_fails(struct SMACK * smack)
 {
-	unsigned s;
-	unsigned a;
-	struct Queue *queue;
-	
-	/* Create a queue for breadth-first enumeration of the patterns*/
-	queue = queue_create();
+    unsigned s;
+    unsigned a;
+    struct Queue *queue;
 
-	/* Do the base-state first */
-	for (a=0; a<ALPHABET_SIZE; a++) {
-		s = GOTO(BASE_STATE,a);
-		if (s != BASE_STATE) {
-			enqueue(queue, s);
-			GOTO_FAIL(s) = BASE_STATE;
-		}
-	}
+    /* Create a queue for breadth-first enumeration of the patterns*/
+    queue = queue_create();
 
-	/* Build the fail state transitions for each valid state */ 
-	while (queue_has_more_items(queue)) {
-		unsigned r;
-		
-		r = dequeue(queue);
+    /* Do the base-state first */
+    for (a=0; a<ALPHABET_SIZE; a++) {
+        s = GOTO(BASE_STATE,a);
+        if (s != BASE_STATE) {
+            enqueue(queue, s);
+            GOTO_FAIL(s) = BASE_STATE;
+        }
+    }
 
-		/* Find Final States for any Failure */ 
-		for (a=0; a<ALPHABET_SIZE; a++) {
-			unsigned f;
+    /* Build the fail state transitions for each valid state */
+    while (queue_has_more_items(queue)) {
+        unsigned r;
 
-			s = GOTO(r, a);
-			if (s == FAIL)
-				continue;
+        r = dequeue(queue);
+
+        /* Find Final States for any Failure */
+        for (a=0; a<ALPHABET_SIZE; a++) {
+            unsigned f;
+
+            s = GOTO(r, a);
+            if (s == FAIL)
+                continue;
             if (s == r)
                 continue; /* snmp_hack, space_hack */
 
-			enqueue(queue, s); /* Breadth first search on states */
+            enqueue(queue, s); /* Breadth first search on states */
 
-			f = GOTO_FAIL(r);
+            f = GOTO_FAIL(r);
 
-			while (GOTO(f,a) == FAIL)
-				f = GOTO_FAIL(f);
+            while (GOTO(f,a) == FAIL)
+                f = GOTO_FAIL(f);
 
-			GOTO_FAIL(s) = GOTO(f,a);
+            GOTO_FAIL(s) = GOTO(f,a);
 
-			if (smack->m_match[GOTO(f,a)].m_count)
-				smack_copy_matches(	
-					&smack->m_match[s], 
-					smack->m_match[GOTO(f,a)].m_ids,
-					smack->m_match[GOTO(f,a)].m_count
-					);
-		}
-	}
+            if (smack->m_match[GOTO(f,a)].m_count)
+                smack_copy_matches(
+                    &smack->m_match[s],
+                    smack->m_match[GOTO(f,a)].m_ids,
+                    smack->m_match[GOTO(f,a)].m_count
+                    );
+        }
+    }
 
-	queue_destroy(queue);
+    queue_destroy(queue);
 }
 
 
@@ -895,80 +895,80 @@ smack_stage1_generate_fails(struct SMACK * smack)
 static void
 smack_stage2_link_fails(struct SMACK * smack)
 {
-	unsigned r;
-	unsigned a;
-	struct Queue *queue;
+    unsigned r;
+    unsigned a;
+    struct Queue *queue;
 
-	queue = queue_create();
+    queue = queue_create();
 
-	for (a=0; a<ALPHABET_SIZE; a++) {
-		if (GOTO(BASE_STATE, a) != BASE_STATE)
-			enqueue(queue, GOTO(BASE_STATE, a));
-	}
+    for (a=0; a<ALPHABET_SIZE; a++) {
+        if (GOTO(BASE_STATE, a) != BASE_STATE)
+            enqueue(queue, GOTO(BASE_STATE, a));
+    }
 
-	while (queue_has_more_items(queue)) {
-		r = dequeue(queue);
+    while (queue_has_more_items(queue)) {
+        r = dequeue(queue);
 
-		for (a=0; a<ALPHABET_SIZE; a++) {
-			if (GOTO(r,a) == FAIL)
-				GOTO(r,a) = GOTO(GOTO_FAIL(r),a);
+        for (a=0; a<ALPHABET_SIZE; a++) {
+            if (GOTO(r,a) == FAIL)
+                GOTO(r,a) = GOTO(GOTO_FAIL(r),a);
             else if (GOTO(r,a) == r)
                 ; /* snmp_hack, space_hack */
-			else
-				enqueue(queue, GOTO(r,a));
-		}
-	}
+            else
+                enqueue(queue, GOTO(r,a));
+        }
+    }
 
-	queue_destroy(queue);
+    queue_destroy(queue);
 }
 
 
- 
+
 /****************************************************************************
  ****************************************************************************/
 static void
 smack_stage4_make_final_table(struct SMACK *smack)
 {
-	unsigned row;
-	unsigned row_count = smack->m_state_count;
-	unsigned column_count; 
-	transition_t *table;
-	unsigned char *char_to_symbol = smack->char_to_symbol;
+    unsigned row;
+    unsigned row_count = smack->m_state_count;
+    unsigned column_count;
+    transition_t *table;
+    unsigned char *char_to_symbol = smack->char_to_symbol;
 
-	/*
-	 * Figure out the row-size-shift. Instead of doing a multiply by the
+    /*
+     * Figure out the row-size-shift. Instead of doing a multiply by the
      * row-width, we expand it out to the nearest pattern of two, and
      * then use shifts instead of multiplies.
-	 */
-	smack->row_shift = row_shift_from_symbol_count(smack->symbol_count);
-	column_count = 1 << smack->row_shift;
+     */
+    smack->row_shift = row_shift_from_symbol_count(smack->symbol_count);
+    column_count = 1 << smack->row_shift;
 
-	/*
-	 * Allocate table:
-	 * rows*columns
-	 */
-	table = (transition_t*)malloc(sizeof(transition_t*) * row_count * column_count);
-	if (table == NULL) {
-		fprintf(stderr, "%s: out of memory error\n", "smack");
-		exit(1);
-	}
-	memset(table, 0, sizeof(transition_t*) * row_count * column_count);
+    /*
+     * Allocate table:
+     * rows*columns
+     */
+    table = (transition_t*)malloc(sizeof(transition_t*) * row_count * column_count);
+    if (table == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }
+    memset(table, 0, sizeof(transition_t*) * row_count * column_count);
 
 
-	for (row=0; row<row_count; row++) {
-		unsigned col;
+    for (row=0; row<row_count; row++) {
+        unsigned col;
 
-		for (col=0; col<ALPHABET_SIZE; col++) {
-			unsigned transition;
-			unsigned symbol = char_to_symbol[col];
+        for (col=0; col<ALPHABET_SIZE; col++) {
+            unsigned transition;
+            unsigned symbol = char_to_symbol[col];
 
-			transition = GOTO(row,col);
+            transition = GOTO(row,col);
 
-			*(table + row*column_count + symbol) = (transition_t)transition;
-		}
-	}
+            *(table + row*column_count + symbol) = (transition_t)transition;
+        }
+    }
 
-	smack->table = table;
+    smack->table = table;
 }
 
 
@@ -977,7 +977,7 @@ smack_stage4_make_final_table(struct SMACK *smack)
 void
 smack_compile(struct SMACK *smack)
 {
-	unsigned i;
+    unsigned i;
 
     /*
      * Fix up the symbol table to handle "anchors" and "nocase" conditions.
@@ -994,22 +994,22 @@ smack_compile(struct SMACK *smack)
 
 
     /*
-	 * Calculate the maximum possible number of states. This will be somewhat
-	 * larger than the number of states we'll actually use because there can
-	 * be overlaps
-	 */ 
+     * Calculate the maximum possible number of states. This will be somewhat
+     * larger than the number of states we'll actually use because there can
+     * be overlaps
+     */
     smack->m_state_max = 1;
     for (i=0; i<(int)smack->m_pattern_count; i++) {
         struct SmackPattern *pat = smack->m_pattern_list[i];
-        
-		smack->m_state_max += pat->pattern_length;
+
+        smack->m_state_max += pat->pattern_length;
         smack->m_state_max += pat->is_anchor_begin;
         smack->m_state_max += pat->is_anchor_end;
     }
 
-	/*
-	 * Allocate a state-table that can hold that number of states
-	 */
+    /*
+     * Allocate a state-table that can hold that number of states
+     */
     create_intermediate_table(smack, smack->m_state_max);
     create_matches_table(smack, smack->m_state_max);
 
@@ -1017,7 +1017,7 @@ smack_compile(struct SMACK *smack)
     /*
      * Go throug the various compilation stages
      */
-	smack_stage0_compile_prefixes(smack);
+    smack_stage0_compile_prefixes(smack);
     smack_stage1_generate_fails(smack);
     smack_stage2_link_fails(smack);
 
@@ -1057,11 +1057,11 @@ smack_compile(struct SMACK *smack)
     /*
      * Build the final table we use for evaluation
      */
-	smack_stage4_make_final_table(smack);
+    smack_stage4_make_final_table(smack);
 
     /*
      * Get rid of the original pattern tables, since we no longer need them.
-     * However, if this is a debug build, keep the tables around to make 
+     * However, if this is a debug build, keep the tables around to make
      * debugging easier
      */
 #ifndef DEBUG
@@ -1078,18 +1078,18 @@ smack_compile(struct SMACK *smack)
  * and notify the caller of "smack_search()" which ones we found.
  ****************************************************************************/
 static unsigned
-handle_match(	struct SMACK * smack, 
-				unsigned index, 
-				int (*callback_function)(size_t id, int index, void *callback_data),
-				void *callback_data,
-				unsigned state)
+handle_match(    struct SMACK * smack,
+                unsigned index,
+                int (*callback_function)(size_t id, int index, void *callback_data),
+                void *callback_data,
+                unsigned state)
 {
-	unsigned i;
+    unsigned i;
     struct SmackMatches *match = &smack->m_match[state];
 
-	/*
-	 * Notify caller of all possible matches. 
-	 */
+    /*
+     * Notify caller of all possible matches.
+     */
     for (i=0; i<match->m_count; i++) {
         size_t id = match->m_ids[i];
         callback_function(id, index, callback_data);
@@ -1107,40 +1107,40 @@ handle_match(	struct SMACK * smack,
 /****************************************************************************
  ****************************************************************************/
 unsigned
-smack_search(	struct SMACK * smack, 
-				const void *v_px, 
-				unsigned length,
-				FOUND_CALLBACK cb_found,
-				void *callback_data, 
-				unsigned *current_state)
+smack_search(    struct SMACK * smack,
+                const void *v_px,
+                unsigned length,
+                FOUND_CALLBACK cb_found,
+                void *callback_data,
+                unsigned *current_state)
 {
     const unsigned char *px = (const unsigned char*)v_px;
     unsigned row;
-	unsigned i;
-	const unsigned char *char_to_symbol = smack->char_to_symbol;
-	transition_t *table = smack->table;
-	unsigned row_shift = smack->row_shift;
-	unsigned found_count = 0;
+    unsigned i;
+    const unsigned char *char_to_symbol = smack->char_to_symbol;
+    transition_t *table = smack->table;
+    unsigned row_shift = smack->row_shift;
+    unsigned found_count = 0;
     const struct SmackMatches *match = smack->m_match;
-    
-	/* Get the row. This is encoded as the lower 24-bits of the state
-	 * variable */
-	row = *current_state & 0xFFFFFF;
+
+    /* Get the row. This is encoded as the lower 24-bits of the state
+     * variable */
+    row = *current_state & 0xFFFFFF;
 
     /* 'for all bytes in this block' */
-	for (i=0; i<length; i++) {
-		unsigned char column;
-		unsigned char c;
-        
+    for (i=0; i<length; i++) {
+        unsigned char column;
+        unsigned char c;
+
         /* Get the next character of input */
         c = px[i];
 
         /* Convert that character into a symbol. This compresses the table.
-         * Even though there are 256 possible combinations for a byte, we 
+         * Even though there are 256 possible combinations for a byte, we
          * are probably using fewer than 32 individual characters in the
          * patterns we are looking for. This step allows us to create tables
          * that are only 32 elements wide, instead of 256 elements wide */
-		column = char_to_symbol[c];
+        column = char_to_symbol[c];
 
         /*
          * If debugging, and the variable is set, then print out the
@@ -1167,13 +1167,13 @@ smack_search(	struct SMACK * smack,
          * number of charactes in a pattern), we have to do the calculation
          * manually.
          */
-		row = *(table + (row<<row_shift) + column); 
+        row = *(table + (row<<row_shift) + column);
 
         /* Test to see if we have one (or more) matches, and if so, call
          * the callback function */
         if (match[row].m_count)
-			found_count = handle_match(smack, i, cb_found, callback_data, row);
-	}
+            found_count = handle_match(smack, i, cb_found, callback_data, row);
+    }
     *current_state = row;
     return found_count;
 }
@@ -1183,44 +1183,44 @@ smack_search(	struct SMACK * smack,
  ****************************************************************************/
 size_t
 smack_search_next(      struct SMACK *  smack,
-		                unsigned *      current_state,
-			            const void *    v_px, 
-						unsigned *		offset,
-			            unsigned        length
-						)
+                        unsigned *      current_state,
+                        const void *    v_px,
+                        unsigned *       offset,
+                        unsigned        length
+                        )
 {
     const unsigned char *px = (const unsigned char*)v_px;
     unsigned row;
-	unsigned i = *offset;
-	const unsigned char *char_to_symbol = smack->char_to_symbol;
-	transition_t *table = smack->table;
-	unsigned row_shift = smack->row_shift;
+    unsigned i = *offset;
+    const unsigned char *char_to_symbol = smack->char_to_symbol;
+    transition_t *table = smack->table;
+    unsigned row_shift = smack->row_shift;
     const struct SmackMatches *match = smack->m_match;
-	unsigned current_matches = 0;
-	size_t id = (size_t)-1;
-    
-	/* Get the row. This is encoded as the lower 24-bits of the state
-	 * variable */
-	row = *current_state & 0xFFFFFF;
+    unsigned current_matches = 0;
+    size_t id = (size_t)-1;
 
-	/* See if there are current matches we are processing */
-	current_matches = (*current_state)>>24;
+    /* Get the row. This is encoded as the lower 24-bits of the state
+     * variable */
+    row = *current_state & 0xFFFFFF;
+
+    /* See if there are current matches we are processing */
+    current_matches = (*current_state)>>24;
 
     /* 'for all bytes in this block' */
-	if (!current_matches)
-	for (i=*offset; i<length; i++) {
-		unsigned char column;
-		unsigned char c;
-        
+    if (!current_matches)
+    for (i=*offset; i<length; i++) {
+        unsigned char column;
+        unsigned char c;
+
         /* Get the next character of input */
         c = px[i];
 
         /* Convert that character into a symbol. This compresses the table.
-         * Even though there are 256 possible combinations for a byte, we 
+         * Even though there are 256 possible combinations for a byte, we
          * are probably using fewer than 32 individual characters in the
          * patterns we are looking for. This step allows us to create tables
          * that are only 32 elements wide, instead of 256 elements wide */
-		column = char_to_symbol[c];
+        column = char_to_symbol[c];
 
         /*
          * If debugging, and the variable is set, then print out the
@@ -1247,24 +1247,24 @@ smack_search_next(      struct SMACK *  smack,
          * number of charactes in a pattern), we have to do the calculation
          * manually.
          */
-		row = *(table + (row<<row_shift) + column); 
+        row = *(table + (row<<row_shift) + column);
 
         /* Test to see if we have one (or more) matches, and if so, call
          * the callback function */
         if (match[row].m_count) {
-			i++; /* points to first byte after match */
-			current_matches = match[row].m_count;
-			break;
-		}
-	}
+            i++; /* points to first byte after match */
+            current_matches = match[row].m_count;
+            break;
+        }
+    }
 
-	*offset = i;
+    *offset = i;
 
-	/* If we broke early because we found a match, return that match */
-	if (current_matches) {
-		id = match[row].m_ids[current_matches-1];
-		current_matches--;
-	}
+    /* If we broke early because we found a match, return that match */
+    if (current_matches) {
+        id = match[row].m_ids[current_matches-1];
+        current_matches--;
+    }
 
     *current_state = row | (current_matches<<24);
     return id;
@@ -1276,21 +1276,21 @@ smack_search_next(      struct SMACK *  smack,
 size_t
 smack_next_match(struct SMACK *smack, unsigned *current_state)
 {
-	unsigned row, current_matches;
-	size_t id = SMACK_NOT_FOUND;
+    unsigned row, current_matches;
+    size_t id = SMACK_NOT_FOUND;
 
-	/* split the state variable */
-	row = *current_state & 0xFFFFFF;
-	current_matches = (*current_state)>>24;
+    /* split the state variable */
+    row = *current_state & 0xFFFFFF;
+    current_matches = (*current_state)>>24;
 
-	/* If we broke early because we found a match, return that match */
-	if (current_matches) {
-	    const struct SmackMatches *match = smack->m_match;
-		id = match[row].m_ids[current_matches-1];
-		current_matches--;
-	}
+    /* If we broke early because we found a match, return that match */
+    if (current_matches) {
+        const struct SmackMatches *match = smack->m_match;
+        id = match[row].m_ids[current_matches-1];
+        current_matches--;
+    }
 
-	/* Recombine the state */
+    /* Recombine the state */
     *current_state = row | (current_matches<<24);
 
     return id;
@@ -1301,13 +1301,13 @@ smack_next_match(struct SMACK *smack, unsigned *current_state)
  ****************************************************************************/
 unsigned
 smack_search_end(       struct SMACK *  smack,
-		                FOUND_CALLBACK  cb_found,
+                        FOUND_CALLBACK  cb_found,
                         void *          callback_data,
                         unsigned *      current_state)
 {
     unsigned found_count = 0;
-	transition_t *table = smack->table;
-	unsigned row_shift = smack->row_shift;
+    transition_t *table = smack->table;
+    unsigned row_shift = smack->row_shift;
     unsigned row = *current_state;
     const struct SmackMatches *match = smack->m_match;
     unsigned column = smack->char_to_symbol[CHAR_ANCHOR_END];
@@ -1317,9 +1317,9 @@ smack_search_end(       struct SMACK *  smack,
      * only one byte of input -- the virtual character ($) that represents
      * the anchor at the end of some patterns.
      */
-    row = *(table + (row<<row_shift) + column); 
+    row = *(table + (row<<row_shift) + column);
     if (match[row].m_count)
-		found_count = handle_match(smack, 0, cb_found, callback_data, row);
+        found_count = handle_match(smack, 0, cb_found, callback_data, row);
 
     *current_state = row;
     return found_count;
@@ -1334,20 +1334,20 @@ smack_selftest(void)
 
     {
         const char *patterns[] = {
-            "GET",      "PUT",      "POST",     "OPTIONS", 
-            "HEAD",     "DELETE",   "TRACE",    "CONNECT", 
-            "PROPFIND", "PROPPATCH","MKCOL",    "MKWORKSPACE", 
-            "MOVE",     "LOCK",     "UNLOCK",   "VERSION-CONTROL", 
-            "REPORT",   "CHECKOUT", "CHECKIN",  "UNCHECKOUT", 
-            "COPY",     "UPDATE",   "LABEL",    "BASELINE-CONTROL", 
-            "MERGE",    "SEARCH",   "ACL",      "ORDERPATCH", 
+            "GET",      "PUT",      "POST",     "OPTIONS",
+            "HEAD",     "DELETE",   "TRACE",    "CONNECT",
+            "PROPFIND", "PROPPATCH","MKCOL",    "MKWORKSPACE",
+            "MOVE",     "LOCK",     "UNLOCK",   "VERSION-CONTROL",
+            "REPORT",   "CHECKOUT", "CHECKIN",  "UNCHECKOUT",
+            "COPY",     "UPDATE",   "LABEL",    "BASELINE-CONTROL",
+            "MERGE",    "SEARCH",   "ACL",      "ORDERPATCH",
             "PATCH",    "MKACTIVITY", 0};
         unsigned i;
         const char *text = "ahpropfinddf;orderpatchposearchmoversion-controlockasldhf";
         unsigned text_length = (unsigned)strlen(text);
         size_t id;
         unsigned state = 0;
-        
+
         /*
          * using SMACK is 5 steps:
          * #1 create an instance at program startup

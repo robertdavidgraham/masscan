@@ -1,7 +1,7 @@
 /*
    SipHash reference C implementation
 
-   Written in 2012 by 
+   Written in 2012 by
    Jean-Philippe Aumasson <jeanphilippe.aumasson@gmail.com>
    Daniel J. Bernstein <djb@cr.yp.to>
 
@@ -136,8 +136,8 @@ siphash24(const void *in, size_t inlen, uint64_t key[2])
 {
     uint64_t result;
 
-    crypto_auth((unsigned char*)&result, 
-                (const unsigned char *)in, 
+    crypto_auth((unsigned char*)&result,
+                (const unsigned char *)in,
                 inlen,
                 (const unsigned char *)&key[0]);
 

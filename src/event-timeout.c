@@ -17,7 +17,7 @@
     the timeout is actually held within the TCB structure. In other
     words, each TCB can have one-and-only-one timeout.
 
-    NOTE: a recurring bug is that the TCP code removes a TCB from the 
+    NOTE: a recurring bug is that the TCP code removes a TCB from the
     timeout ring and forgets to put it back somewhere else. Since the
     TCB is cleaned up on a timeout, such TCBs never get cleaned up,
     leading to a memory leak. I keep fixing this bug, then changing the
@@ -46,7 +46,7 @@ struct Timeouts {
      * number minus 1
      */
     unsigned mask;
-    
+
     /**
      * The ring of entries.
      */
@@ -87,7 +87,7 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
         LOG(1, "***CHANGE %d-seconds\n", (int)((timestamp-entry->timestamp)/16384ULL));
     }
 
-    /* Initialize the new entry */    
+    /* Initialize the new entry */
     entry->timestamp = timestamp;
     entry->offset = (unsigned)offset;
 
@@ -110,7 +110,7 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
 
     /* Search until we find one */
     while (timeouts->current_index <= timestamp) {
-        
+
         /* Start at the current slot */
         entry = timeouts->slots[timeouts->current_index & timeouts->mask];
 
@@ -119,7 +119,7 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
             entry = entry->next;
         if (entry)
             break;
-    
+
         /* found nothing at this slot, so move to next slot */
         timeouts->current_index++;
     }
@@ -129,10 +129,10 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
          * left to timeout, so return NULL */
         return NULL;
     }
-    
+
     /* unlink this entry from the timeout system */
     timeout_unlink(entry);
- 
+
     /* return a pointer to the structure holding this entry */
     return ((char*)entry) - entry->offset;
 }

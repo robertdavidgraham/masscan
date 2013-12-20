@@ -6,17 +6,17 @@
     This is a randomization/reshuffling function based on a crypto
     "Feistal network" as describ ed in the paper:
 
-    'Ciphers with Arbitrary Finite Domains' 
-        by John Black and Phillip Rogaway 
+    'Ciphers with Arbitrary Finite Domains'
+        by John Black and Phillip Rogaway
         http://www.cs.ucdavis.edu/~rogaway/papers/subset.pdf
 
     This is a crypto-like construction that encrypts an arbitrary sized
-    range. Given a number in the range [0..9999], it'll produce a mapping 
+    range. Given a number in the range [0..9999], it'll produce a mapping
     to a distinct different number in the same range (and back again).
     In other words, it randomizes the order of numbers in a sequence.
 
     For example, it can be used to  randomize the sequence [0..9]:
-    
+
      0 ->      6
      1 ->      4
      2 ->      8
@@ -36,7 +36,7 @@
     randomize it, yet be assured that we've probed every IP and port
     within the range.
 
-    The cryptographic strength of this construction depends upon the 
+    The cryptographic strength of this construction depends upon the
     number of rounds, and the exact nature of the inner "F()" function.
     Because it's a Feistal network, that "F()" function can be almost
     anything.
@@ -44,7 +44,7 @@
     We don't care about cryptographic strength, just speed, so we are
     using a trivial F() function.
 
-    This is a class of "format-preserving encryption". There are 
+    This is a class of "format-preserving encryption". There are
     probably better constructions than what I'm using.
 */
 #include "rand-blackrock.h"
@@ -64,14 +64,14 @@
  * It's an s-box. You gotta have an s-box
  ***************************************************************************/
 const unsigned char sbox[256] = {
-0x91, 0x58, 0xb3, 0x31, 0x6c, 0x33, 0xda, 0x88, 
-0x57, 0xdd, 0x8c, 0xf2, 0x29, 0x5a, 0x08, 0x9f, 
-0x49, 0x34, 0xce, 0x99, 0x9e, 0xbf, 0x0f, 0x81, 
-0xd4, 0x2f, 0x92, 0x3f, 0x95, 0xf5, 0x23, 0x00, 
-0x0d, 0x3e, 0xa8, 0x90, 0x98, 0xdd, 0x20, 0x00, 
-0x03, 0x69, 0x0a, 0xca, 0xba, 0x12, 0x08, 0x41, 
-0x6e, 0xb9, 0x86, 0xe4, 0x50, 0xf0, 0x84, 0xe2, 
-0xb3, 0xb3, 0xc8, 0xb5, 0xb2, 0x2d, 0x18, 0x70, 
+0x91, 0x58, 0xb3, 0x31, 0x6c, 0x33, 0xda, 0x88,
+0x57, 0xdd, 0x8c, 0xf2, 0x29, 0x5a, 0x08, 0x9f,
+0x49, 0x34, 0xce, 0x99, 0x9e, 0xbf, 0x0f, 0x81,
+0xd4, 0x2f, 0x92, 0x3f, 0x95, 0xf5, 0x23, 0x00,
+0x0d, 0x3e, 0xa8, 0x90, 0x98, 0xdd, 0x20, 0x00,
+0x03, 0x69, 0x0a, 0xca, 0xba, 0x12, 0x08, 0x41,
+0x6e, 0xb9, 0x86, 0xe4, 0x50, 0xf0, 0x84, 0xe2,
+0xb3, 0xb3, 0xc8, 0xb5, 0xb2, 0x2d, 0x18, 0x70,
 
 0x0a, 0xd7, 0x92, 0x90, 0x9e, 0x1e, 0x0c, 0x1f,
 0x08, 0xe8, 0x06, 0xfd, 0x85, 0x2f, 0xaa, 0x5d,
@@ -190,7 +190,7 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 
     L = m % a;
     R = m / a;
-    
+
     for (j=1; j<=r; j++) {
         if (j & 1) {
             tmp = (L + F(j, R, seed)) % a;
@@ -214,11 +214,11 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
     uint64_t tmp;
 
     if (r & 1) {
-		R = m % a;
-		L = m / a;
+        R = m % a;
+        L = m / a;
     } else {
-		L = m % a;
-		R = m / a;
+        L = m % a;
+        R = m / a;
     }
 
     for (j=r; j>=1; j--) {
@@ -248,7 +248,7 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
         R = L;
         L = tmp;
     }
-	return a * R + L;
+    return a * R + L;
 }
 
 /***************************************************************************
@@ -326,26 +326,26 @@ blackrock_selftest(void)
     int is_success = 0;
     uint64_t range;
 
-	/* @marshray
-	 * Basic test of decryption. I take the index, encrypt it, then decrypt it,
-	 * which means I should get the original index back again. Only, it's not
-	 * working. The decryption fails. The reason it's failing is obvious -- I'm
-	 * just not seeing it though. The error is probably in the 'unfe()' 
-	 * function above.
-	 */
-	{
+    /* @marshray
+     * Basic test of decryption. I take the index, encrypt it, then decrypt it,
+     * which means I should get the original index back again. Only, it's not
+     * working. The decryption fails. The reason it's failing is obvious -- I'm
+     * just not seeing it though. The error is probably in the 'unfe()'
+     * function above.
+     */
+    {
         struct BlackRock br;
-		uint64_t result, result2;
+        uint64_t result, result2;
         blackrock_init(&br, 1000, 0);
 
-		for (i=0; i<10; i++) {
-			result = blackrock_shuffle(&br, i);
-			result2 = blackrock_unshuffle(&br, result);
-			if (i != result2)
+        for (i=0; i<10; i++) {
+            result = blackrock_shuffle(&br, i);
+            result2 = blackrock_unshuffle(&br, result);
+            if (i != result2)
                 return 1; /*fail*/
-		}
+        }
 
-	}
+    }
 
 
     range = 3015 * 3;
