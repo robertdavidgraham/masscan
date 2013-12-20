@@ -20,7 +20,7 @@ int snmp_selftest(void);
 unsigned snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
 
 unsigned
-handle_snmp(struct Output *out, time_t timestamp, 
-            const unsigned char *px, unsigned length, 
+handle_snmp(struct Output *out, time_t timestamp,
+            const unsigned char *px, unsigned length,
             struct PreprocessedInfo *parsed);
 #endif

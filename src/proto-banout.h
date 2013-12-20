@@ -28,7 +28,7 @@ banout_init(struct BannerOutput *banout);
 
 /**
  * Release any memory. If the list contains only one short
- * banner, then no memory was allocated, so nothing gets 
+ * banner, then no memory was allocated, so nothing gets
  * freed.
  */
 void
@@ -51,7 +51,7 @@ void
 banout_end(struct BannerOutput *banout, unsigned proto);
 
 /**
- * Append text onto the banner. If this exceeds the buffer, then the 
+ * Append text onto the banner. If this exceeds the buffer, then the
  * buffer will be expanded.
  */
 void

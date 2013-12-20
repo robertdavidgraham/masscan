@@ -23,8 +23,8 @@ struct PreprocessedInfo;
  *      transmission by a transmit thread.
  */
 int arp_response(
-        unsigned my_ip, const unsigned char *my_mac, 
-        const unsigned char *px, unsigned length, 
+        unsigned my_ip, const unsigned char *my_mac,
+        const unsigned char *px, unsigned length,
         PACKET_QUEUE *packet_buffers,
         PACKET_QUEUE *transmit_queue);
 

@@ -7,7 +7,7 @@
  * incoming responses with their original requests
  */
 uint64_t
-syn_cookie( unsigned ip_dst, unsigned port_dst, 
+syn_cookie( unsigned ip_dst, unsigned port_dst,
             unsigned ip_src, unsigned port_src);
 
 

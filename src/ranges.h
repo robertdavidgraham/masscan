@@ -26,8 +26,8 @@ int rangelist_is_contains(const struct RangeList *task, unsigned number);
 struct Range range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
 
 /**
- * Remove things from the target list. The primary use of this is the 
- * "exclude-file" containing a list of IP addresses that we should 
+ * Remove things from the target list. The primary use of this is the
+ * "exclude-file" containing a list of IP addresses that we should
  * not scan
  * @param targets
  *      Our array of target IP address (or port) ranges that we'll be
@@ -40,7 +40,7 @@ struct Range range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned
  *      the total number of IP addresses or ports removed.
  */
 uint64_t
-rangelist_exclude(  struct RangeList *targets, 
+rangelist_exclude(  struct RangeList *targets,
               const struct RangeList *excludes);
 
 /**
@@ -60,7 +60,7 @@ rangelist_count(const struct RangeList *targets);
  * number (IP address or port) from a list of non-continuous ranges (not
  * necessarily starting from 0). In other words, given the two ranges
  *    10-19 50-69
- * we'll have a total of 30 possible numbers. Thus, the index goes from 
+ * we'll have a total of 30 possible numbers. Thus, the index goes from
  * [0..29], with the values 0..9 picking the corresponding values from the
  * first range, and the values 10..29 picking the corresponding values
  * from the second range.
@@ -93,14 +93,14 @@ unsigned rangelist_pick(const struct RangeList *targets, uint64_t i);
  *      A string from either the command-line or configuration file
  *      in the nmap "ports" format.
  * @param is_error
- *      Set to zero is no error occurred while parsing the string, or 
+ *      Set to zero is no error occurred while parsing the string, or
  *      set to a non-zero value if an error was found.
  * @return
  *      the pointer in the string where the parsing ended, so that additional
  *      things can be contained in the string, such as comments
  */
 const char *
-rangelist_parse_ports(  struct RangeList *ports, 
+rangelist_parse_ports(  struct RangeList *ports,
                         const char *string,
                         unsigned *is_error);
 

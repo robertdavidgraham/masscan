@@ -30,7 +30,7 @@ struct DNS_Incoming
     } edns0;
     const unsigned char *req;
     unsigned req_length;
-    
+
     /* the query name */
     struct DomainPointer query_name;
     unsigned query_type;

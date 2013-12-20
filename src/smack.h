@@ -30,8 +30,8 @@ typedef int (*FOUND_CALLBACK)(size_t id, int offset, void *data);
 
 
 /**
- * Create the Aho-Corasick search object. After creation, you can start 
- * adding patterns, but you cannot use it for searching until you've 
+ * Create the Aho-Corasick search object. After creation, you can start
+ * adding patterns, but you cannot use it for searching until you've
  * compiled the patterns.
  */
 struct SMACK *
@@ -41,7 +41,7 @@ smack_create(const char *name, unsigned nocase);
 /**
  * Cleans up and frees an object created with smack_create().
  */
-void 
+void
 smack_destroy(struct SMACK *smack);
 
 
@@ -52,11 +52,11 @@ smack_destroy(struct SMACK *smack);
  * "id" field can contain a pointer (size_t is 64-bit on 64-bit
  * systems).
  */
-void 
-smack_add_pattern(	    struct SMACK *  smack, 
-						const void *    pattern, 
-						unsigned        pattern_length,
-						size_t          id,
+void
+smack_add_pattern(        struct SMACK *  smack,
+                        const void *    pattern,
+                        unsigned        pattern_length,
+                        size_t          id,
                         unsigned        flags);
 
 /**
@@ -65,7 +65,7 @@ smack_add_pattern(	    struct SMACK *  smack,
  * Don't use the state-machine with 'smack_search()' until you have
  * compiled all the patterns with this function.
  */
-void 
+void
 smack_compile(struct SMACK *smack);
 
 
@@ -84,21 +84,21 @@ smack_compile(struct SMACK *smack);
  * to zero between each fragment, then patterns that cross fragment
  * boundaries cannot be detected).
  */
-unsigned 
+unsigned
 smack_search(           struct SMACK *  smack,
-			            const void *    px, 
-			            unsigned        length, 
-		                FOUND_CALLBACK  cb_found,
+                        const void *    px,
+                        unsigned        length,
+                        FOUND_CALLBACK  cb_found,
                         void *          cb_data,
                         unsigned *      state);
 
 size_t
 smack_search_next(      struct SMACK *  smack,
-		                unsigned *      state,
-			            const void *    px, 
-						unsigned *		offset,
-			            unsigned        length
-						);
+                        unsigned *      state,
+                        const void *    px,
+                        unsigned *       offset,
+                        unsigned        length
+                        );
 
 /**
  * If there are multiple matches at the current state, returns the next
@@ -106,7 +106,7 @@ smack_search_next(      struct SMACK *  smack,
  */
 size_t
 smack_next_match(      struct SMACK *  smack,
-		                unsigned *      state);
+                        unsigned *      state);
 
 /**
  * Call this after search is done. This is not generally necesary.
@@ -116,7 +116,7 @@ smack_next_match(      struct SMACK *  smack,
  */
 unsigned
 smack_search_end(       struct SMACK *  smack,
-		                FOUND_CALLBACK  cb_found,
+                        FOUND_CALLBACK  cb_found,
                         void *          cb_data,
                         unsigned *      state);
 

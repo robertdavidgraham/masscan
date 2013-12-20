@@ -91,7 +91,7 @@ struct Masscan
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
     unsigned is_interactive:1;  /* --interactive */
-	unsigned is_arp:1;			/* --arp */
+    unsigned is_arp:1;           /* --arp */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
@@ -105,10 +105,10 @@ struct Masscan
     struct {
         uint64_t index;
         uint64_t count;
-		struct {
-			unsigned ip;
-			unsigned port;
-		} target;
+        struct {
+            unsigned ip;
+            unsigned port;
+        } target;
     } resume;
 
     struct {
@@ -176,7 +176,7 @@ struct Masscan
         unsigned char *header_value;
         unsigned header_value_length;
     } http_headers[16];
-    
+
     char *bpf_filter;
 
     struct {

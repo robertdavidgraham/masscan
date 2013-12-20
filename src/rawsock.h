@@ -30,7 +30,7 @@ void rawsock_init(void);
  * @param is_sendq
  *      Whether we should attempt to use a ring-buffer for sending packets.
  *      Currently Windows-only, but it'll be enabled for Linux soon. Big
- *      performance gains for Windows, but insignificant performance 
+ *      performance gains for Windows, but insignificant performance
  *      difference for Linux.
  * @param is_packet_trace
  *      Whether then Nmap --packet-trace option was set on the command-line
@@ -41,8 +41,8 @@ void rawsock_init(void);
  *      a fully instantiated network adapter
  */
 struct Adapter *
-rawsock_init_adapter(const char *adapter_name, 
-                     unsigned is_pfring, 
+rawsock_init_adapter(const char *adapter_name,
+                     unsigned is_pfring,
                      unsigned is_sendq,
                      unsigned is_packet_trace,
                      unsigned is_offline,

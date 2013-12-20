@@ -27,11 +27,11 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 /**
  * Create a TCP connection table (to store TCP control blocks) with
  * the desired initial size.
- * 
+ *
  * @param entry_count
  *      A hint about the desired initial size. This should be about twice
  *      the number of oustanding connections, so you should base this number
- *      on your transmit rate (the faster the transmit rate, the more 
+ *      on your transmit rate (the faster the transmit rate, the more
  *      outstanding connections you'll have). This function will automatically
  *      round this number up to the nearest power of 2, or round it down
  *      if it causes malloc() to not be able to allocate enoug memory.
@@ -88,7 +88,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entr
  */
 struct TCP_Control_Block *
 tcpcon_lookup_tcb(
-    struct TCP_ConnectionTable *tcpcon, 
+    struct TCP_ConnectionTable *tcpcon,
     unsigned ip_src, unsigned ip_dst,
     unsigned port_src, unsigned port_dst);
 
@@ -97,7 +97,7 @@ tcpcon_lookup_tcb(
  */
 struct TCP_Control_Block *
 tcpcon_create_tcb(
-    struct TCP_ConnectionTable *tcpcon, 
+    struct TCP_ConnectionTable *tcpcon,
     unsigned ip_src, unsigned ip_dst,
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno);

@@ -30,7 +30,7 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed);
  *      The randomization parameters created with 'blackrock_init()'
  * @param index
  *      An input within the specified range. We call it an 'index' variable
- *      because that's how we intend to use this function, shuffling a 
+ *      because that's how we intend to use this function, shuffling a
  *      monotonically increasing index variable, but in truth, any sort
  *      of integer can be used. This must be within the 'range' specified
  *      during the call to blackrock_init(), or the results are undefined.

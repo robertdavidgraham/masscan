@@ -17,14 +17,14 @@ unsigned pixie_cpu_get_count(void);
 /**
  * Launch a thread
  */
-size_t pixie_begin_thread(void (*worker_thread)(void*), 
+size_t pixie_begin_thread(void (*worker_thread)(void*),
                           unsigned flags,
                           void *worker_data);
 
 void pixie_cpu_set_affinity(unsigned processor);
 void pixie_cpu_raise_priority(void);
 
-void pixie_locked_subtract_u32(unsigned *lhs, unsigned rhs); 
+void pixie_locked_subtract_u32(unsigned *lhs, unsigned rhs);
 
 
 
@@ -47,7 +47,7 @@ void pixie_locked_subtract_u32(unsigned *lhs, unsigned rhs);
 #else
 #define rte_wmb() asm volatile("sfence;" : : : "memory")
 #define rte_rmb() asm volatile("lfence;" : : : "memory")
-#define rte_pause()	asm volatile ("pause")
+#define rte_pause()   asm volatile ("pause")
 #endif
 #else
 unsigned pixie_locked_add_u32(volatile unsigned *lhs, unsigned rhs);

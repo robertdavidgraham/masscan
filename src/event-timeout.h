@@ -12,7 +12,7 @@ struct Timeouts;
 /***************************************************************************
  ***************************************************************************/
 struct TimeoutEntry {
-    /** 
+    /**
      * In units of 1/16384 of a second. We use power-of-two units here
      * to make the "modulus" operatation a simple binary "and".
      * See the TICKS_FROM_TV() macro for getting the timestamp from
@@ -58,7 +58,7 @@ timeout_init(struct TimeoutEntry *entry)
 
 struct Timeouts *timeouts_create(uint64_t timestamp);
 
-void timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry, 
+void timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
                   size_t offset, uint64_t timestamp);
 
 void *timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp);

@@ -6,7 +6,7 @@ struct RangeList;
 
 /**
  * Regression test this module.
- * @return 
+ * @return
  *      0 on success, or postivie integer on failure.
  */
 int
@@ -26,12 +26,12 @@ void
 payloads_destroy(struct NmapPayloads *payloads);
 
 /**
- * Read payloads from an "nmap-payloads" formatted file. The caller is 
- * responsible for opening/closing the file, but should passin the 
+ * Read payloads from an "nmap-payloads" formatted file. The caller is
+ * responsible for opening/closing the file, but should passin the
  * filename so that we can print helpful error messages.
  */
 void
-payloads_read_file(FILE *fp, const char *filename, 
+payloads_read_file(FILE *fp, const char *filename,
                    struct NmapPayloads *payloads);
 
 /**
@@ -56,7 +56,7 @@ payloads_trim(struct NmapPayloads *payloadsd, const struct RangeList *ports);
  * different. For example, SNMP can use a 32-bit transaction ID, whereas DNS
  * can use only a 16-bit transaction ID.
  */
-typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length, 
+typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length,
                                uint64_t seqno);
 
 
@@ -77,16 +77,16 @@ typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length,
  *      The returned partial checksum of the payload bytes, so that it
  *      doesn't need to be recalculated for every packet.
  * @param set_cookie
- *      The returned function that will set the "cookie" field in the 
+ *      The returned function that will set the "cookie" field in the
  *      packet for each transmission
  */
 int
 payloads_lookup(
-                const struct NmapPayloads *payloads, 
-                unsigned port, 
-                const unsigned char **px, 
-                unsigned *length, 
-                unsigned *source_port, 
+                const struct NmapPayloads *payloads,
+                unsigned port,
+                const unsigned char **px,
+                unsigned *length,
+                unsigned *source_port,
                 uint64_t *xsum,
                 SET_COOKIE *set_cookie);
 

@@ -54,13 +54,13 @@ struct TemplateSet templ_copy(const struct TemplateSet *templ);
 
 /**
  * Initialize the "template" packets. As we spew out probes, we simply make
- * minor adjustments to the template, such as changing the target IP 
+ * minor adjustments to the template, such as changing the target IP
  * address or port number
  *
  * @param templset
  *      The template we are creating.
  * @param source_ip
- *      Our own IP address that we send packets from. The caller will have 
+ *      Our own IP address that we send packets from. The caller will have
  *      retrieved this automatically from the network interface/adapter, or
  *      the user will have set this with --source-ip parameter.
  * @param source_mac
@@ -121,7 +121,7 @@ template_set_target(
  */
 size_t
 tcp_create_packet(
-        struct TemplatePacket *pkt, 
+        struct TemplatePacket *pkt,
         unsigned ip_them, unsigned port_them,
         unsigned ip_me, unsigned port_me,
         unsigned seqno, unsigned ackno,
