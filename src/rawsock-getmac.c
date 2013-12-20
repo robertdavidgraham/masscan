@@ -176,7 +176,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
             len = link->sdl_alen;
         }
 
-        memcpy(     mac,
+        memcpy(mac,
                link->sdl_data + link->sdl_nlen,
                len);
 

@@ -1025,15 +1025,16 @@ main_scan(struct Masscan *masscan)
         if (masscan->nic[index].src.ip.range == 0) {
             LOG(0, "FAIL: failed to detect IP of interface\n");
             LOG(0, " [hint] did you spell the name correctly?\n");
-            LOG(0, " [hint] if it has no IP address, manually set with \"--adapter-ip 192.168.100.5\"\n");
+            LOG(0, " [hint] if it has no IP address, "
+                    "manually set with \"--adapter-ip 192.168.100.5\"\n");
             exit(1);
         }
 
         /*
-         * Initialize the TCP packet template. The way this works is that we parse
-         * an existing TCP packet, and use that as the template for scanning. Then,
-         * we adjust the template with additional features, such as the IP address
-         * and so on.
+         * Initialize the TCP packet template. The way this works is that
+         * we parse an existing TCP packet, and use that as the template for
+         * scanning. Then, we adjust the template with additional features,
+         * such as the IP address and so on.
          */
         template_packet_init(
                     parms->tmplset,

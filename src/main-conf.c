@@ -144,12 +144,12 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
             );
 
     fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
-            masscan->nic[i].adapter_mac[0],
-            masscan->nic[i].adapter_mac[1],
-            masscan->nic[i].adapter_mac[2],
-            masscan->nic[i].adapter_mac[3],
-            masscan->nic[i].adapter_mac[4],
-            masscan->nic[i].adapter_mac[5]);
+            masscan->nic[i].my_mac[0],
+            masscan->nic[i].my_mac[1],
+            masscan->nic[i].my_mac[2],
+            masscan->nic[i].my_mac[3],
+            masscan->nic[i].my_mac[4],
+            masscan->nic[i].my_mac[5]);
     if (masscan->nic[i].router_ip) {
         fprintf(fp, "router-ip%s = %u.%u.%u.%u\n", zzz,
             (masscan->nic[i].router_ip>>24)&0xFF,
@@ -694,8 +694,18 @@ masscan_set_parameter(struct Masscan *masscan,
             fprintf(stderr, "CONF: bad MAC address: %s=%s\n", name, value);
             return;
         }
+        
+        /* Check for duplicates */
+        if (memcmp(masscan->nic[index].my_mac, mac, 6) == 0)
+            return;
+        
+        /* Warn if we are overwriting a Mac address */
+        if (masscan->nic[index].my_mac_count != 0) {
+            LOG(0, "WARNING: overwriting MAC address\n");
+        }
 
-        memcpy(masscan->nic[index].adapter_mac, mac, 6);
+        memcpy(masscan->nic[index].my_mac, mac, 6);
+        masscan->nic[index].my_mac_count = 1;
     }
     else if (EQUALS("router-mac", name) || EQUALS("router", name)
              || EQUALS("dest-mac", name) || EQUALS("destination-mac", name)
@@ -1703,3 +1713,4 @@ mainconf_selftest()
 
     return 0;
 }
+

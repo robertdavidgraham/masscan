@@ -51,9 +51,10 @@ struct Masscan
         char ifname[256];
         struct Adapter *adapter;
         struct Source src;
-        unsigned char adapter_mac[6];
+        unsigned char my_mac[6];
         unsigned char router_mac[6];
         unsigned router_ip;
+        unsigned char my_mac_count;
     } nic[8];
     unsigned nic_count;
 
