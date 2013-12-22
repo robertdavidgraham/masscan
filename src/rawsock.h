@@ -81,6 +81,15 @@ const char *rawsock_win_name(const char *ifname);
 
 int rawsock_is_adapter_names_equal(const char *lhs, const char *rhs);
 
+/**
+ * Transmit any queued (but not yet transmitted) packets. Useful only when
+ * using a high-speed transmit mechanism. Since flushing happens automatically
+ * whenever the transmit queue is full, this is only needed in boundary
+ * cases, like when shutting down.
+ */
+void
+rawsock_flush(struct Adapter *adapter);
+
 int rawsock_send_packet(
     struct Adapter *adapter,
     const unsigned char *packet,

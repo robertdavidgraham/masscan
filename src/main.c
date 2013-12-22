@@ -440,6 +440,13 @@ infinite:
         goto infinite;
     }
 
+    /*
+     * Flush any untransmitted packets. High-speed mechanisms like Windows
+     * "sendq" and Linux's "PF_RING" queue packets and transmit many together,
+     * so there may be some packets that we've queueud but not yet transmitted.
+     * This call makes sure they are transmitted.
+     */
+    rawsock_flush(adapter);
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -465,6 +472,10 @@ infinite:
                             parms->transmit_queue,
                             &packets_sent,
                             &batch_size);
+
+            /* Make sure they've actually been transmitted, not just queued up for
+             * transmit */
+            rawsock_flush(adapter);
 
             pixie_usleep(1000);
         }

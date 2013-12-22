@@ -264,6 +264,25 @@ adapter_from_index(unsigned index)
     }
 }
 
+/***************************************************************************
+ * Some methods of transmit queue multiple packets in a buffer then
+ * send all queued packets at once. At the end of a scan, we might have
+ * some pending packets that haven't been transmitted yet. Therefore,
+ * we'll have to flush them.
+ ***************************************************************************/
+void
+rawsock_flush(struct Adapter *adapter)
+{
+    if (adapter->sendq) {
+        pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+
+        /* Dude, I totally forget why this step is necessary. I vaguely
+         * remember there's a good reason for it though */
+        pcap_sendqueue_destroy(adapter->sendq);
+        adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
+    }
+
+}
 
 /***************************************************************************
  * wrapper for libpcap's sendpacket
@@ -309,25 +328,14 @@ rawsock_send_packet(
 
         err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
         if (err) {
-            //printf("sendpacket() failed %d\n", x);
-            //for (;;)
-            pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
-            //printf("pcap_send_queue)() returned %u\n", x);
-            pcap_sendqueue_destroy(adapter->sendq);
-            adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
+            rawsock_flush(adapter);
             pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
-            //("sendpacket() returned %d\n", x);
-            //exit(1);
-        } else
-            ; //printf("+%u\n", count++);
-        if (flush) {
-            pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
-
-            /* Dude, I totally forget why this step is necessary. I vaguely
-             * remember there's a good reason for it though */
-            pcap_sendqueue_destroy(adapter->sendq);
-            adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
         }
+
+        if (flush) {
+            rawsock_flush(adapter);
+        }
+
         return 0;
     }
 
