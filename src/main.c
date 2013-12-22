@@ -503,6 +503,7 @@ receive_thread(void *v)
     struct ThreadPair *parms = (struct ThreadPair *)v;
     const struct Masscan *masscan = parms->masscan;
     struct Adapter *adapter = parms->adapter;
+    int data_link = rawsock_datalink(adapter);
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
@@ -524,7 +525,8 @@ receive_thread(void *v)
             cpu -= cpu_count;
             cpu++;
         }
-        pixie_cpu_set_affinity(cpu);
+        //TODO:
+        //pixie_cpu_set_affinity(cpu);
     }
 
     /*
@@ -643,7 +645,7 @@ receive_thread(void *v)
          * figure out where the TCP/IP headers are and the locations of
          * some fields, like IP address and port numbers.
          */
-        x = preprocess_frame(px, length, 1, &parsed);
+        x = preprocess_frame(px, length, data_link, &parsed);
         if (!x)
             continue; /* corrupt packet */
         ip_me = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
@@ -1040,7 +1042,8 @@ main_scan(struct Masscan *masscan)
                     parms->tmplset,
                     parms->adapter_mac,
                     parms->router_mac,
-                    masscan->payloads);
+                    masscan->payloads,
+                    rawsock_datalink(masscan->nic[index].adapter));
 
         /*
          * Set the "source port" of everything we transmit.
@@ -1054,16 +1057,6 @@ main_scan(struct Masscan *masscan)
 
         parms->src = masscan->nic[index].src;
 
-#if 0
-        if (masscan->nic[index].adapter_port == 0x10000)
-            masscan->nic[index].adapter_port = 40000 + now % 20000;
-        template_set_source_port(   parms->tmplset,
-                                    masscan->nic[index].adapter_port);
-        /*
-         * Read back what we've set
-         */
-        parms->adapter_port = template_get_source_port(parms->tmplset);
-#endif
 
         /*
          * Set the "TTL" (IP time-to-live) of everything we send.

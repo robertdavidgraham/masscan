@@ -54,6 +54,7 @@ struct Masscan
         unsigned char my_mac[6];
         unsigned char router_mac[6];
         unsigned router_ip;
+        int link_type; /* libpcap definitions */
         unsigned char my_mac_count;
     } nic[8];
     unsigned nic_count;

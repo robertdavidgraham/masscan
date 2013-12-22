@@ -75,7 +75,7 @@ hexdump(const void *v, size_t len)
 #define RTA_BRD         0x80    /* for NEWADDR, broadcast or p-p dest addr */
 #endif
 
-static void
+void
 dump_rt_addresses(struct rt_msghdr *rtm)
 {
     int i;
@@ -220,7 +220,8 @@ struct route_info {
     char ifName[IF_NAMESIZE];
 };
 
-static int read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
+static int 
+read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
 {
     struct nlmsghdr *nlHdr;
     int readLen = 0, msgLen = 0;
@@ -261,7 +262,8 @@ static int read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, 
 }
 
 /* For parsing the route info returned */
-static int parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
+static int 
+parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
 {
     struct rtmsg *rtMsg;
     struct rtattr *rtAttr;

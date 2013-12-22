@@ -53,7 +53,8 @@
 /****************************************************************************
  ****************************************************************************/
 unsigned
-preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, struct PreprocessedInfo *info)
+preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, 
+                 struct PreprocessedInfo *info)
 {
     unsigned offset = 0;
     unsigned ethertype = 0;
@@ -422,6 +423,7 @@ parse_linktype:
      */
     switch (link_type) {
     case 1:     goto parse_ethernet;
+    case 12:    goto parse_ipv4;
     case 0x69:  goto parse_wifi;
     case 119:   goto parse_prism_header;
     case 127:   goto parse_radiotap_header;

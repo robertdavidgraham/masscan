@@ -57,7 +57,7 @@ masscan_initialize_adapter(
      * IP ADDRESS
      *
      * We need to figure out that IP address to send packets from. This
-     * is done by queryin the adapter (or configured by user). If the
+     * is done by querying the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
     adapter_ip = masscan->nic[index].src.ip.first;
@@ -74,9 +74,11 @@ masscan_initialize_adapter(
         masscan->nic[index].src.ip.range = 1;
     }
     if (adapter_ip == 0) {
-        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n", ifname);
+        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n", 
+                        ifname);
         fprintf(stderr, " [hint] did you spell the name correctly?\n");
-        fprintf(stderr, " [hint] if it has no IP address, manually set with \"--adapter-ip 192.168.100.5\"\n");
+        fprintf(stderr, " [hint] if it has no IP address, manually set with "
+                        "\"--adapter-ip 192.168.100.5\"\n");
         return -1;
     }
 
@@ -88,28 +90,29 @@ masscan_initialize_adapter(
      * try to use the hardware address in the network card.
      */
     memcpy(adapter_mac, masscan->nic[index].my_mac, 6);
-    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-        unsigned is_error;
-        
-        is_error = rawsock_get_adapter_mac(ifname, adapter_mac);
-        LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
-            adapter_mac[0],
-            adapter_mac[1],
-            adapter_mac[2],
-            adapter_mac[3],
-            adapter_mac[4],
-            adapter_mac[5]
-            );
+    if (masscan->nic[index].my_mac_count == 0) {
+        if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
+            
+            rawsock_get_adapter_mac(ifname, adapter_mac);
+            
+            LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
+                adapter_mac[0],
+                adapter_mac[1],
+                adapter_mac[2],
+                adapter_mac[3],
+                adapter_mac[4],
+                adapter_mac[5]
+                );
+        }
+        if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
+            fprintf(stderr, "FAIL: failed to detect MAC address of interface:" 
+                    " \"%s\"\n", ifname);
+            fprintf(stderr, " [hint] try something like " 
+                    "\"--adapter-mac 00-11-22-33-44-55\"\n");
+            return -1;
+        }
     }
-    if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0 
-            && masscan->nic[index].my_mac_count == 0) {
-        fprintf(stderr, "FAIL: failed to detect MAC address of interface:" 
-                        " \"%s\"\n", ifname);
-        fprintf(stderr, " [hint] try something like " 
-                        "\"--adapter-mac 00-11-22-33-44-55\"\n");
-        return -1;
-    }
-
+    
     /*
      * START ADAPTER
      *

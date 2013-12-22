@@ -679,7 +679,8 @@ _template_init(
     const unsigned char *mac_source,
     const unsigned char *mac_dest,
     const void *packet_bytes,
-    size_t packet_size
+    size_t packet_size,
+    unsigned data_link
     )
 {
     unsigned char *px;
@@ -788,6 +789,23 @@ _template_init(
         tmpl->proto = Proto_UDP;
         break;
     }
+    
+    /*
+     * DATALINK KLUDGE
+     *
+     * Adjust the data link header in case of Raw IP packets. This isn't
+     * the correct way to do this, but I'm too lazy to refactor code
+     * for the right way, so we'll do it this way now.
+     */
+    if (data_link == 12 /* Raw IP */) {
+        tmpl->length -= tmpl->offset_ip;
+        tmpl->offset_tcp -= tmpl->offset_ip;
+        tmpl->offset_app -= tmpl->offset_ip;
+        memmove(tmpl->packet, 
+                tmpl->packet + tmpl->offset_ip,
+                tmpl->length);
+        tmpl->offset_ip = 0;
+    }
 }
 
 /***************************************************************************
@@ -797,57 +815,58 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads)
+    struct NmapPayloads *payloads,
+    int data_link)
 {
     templset->count = 0;
 
     /* [TCP] */
-    _template_init( &templset->pkts[Proto_TCP],
-                    source_mac, router_mac,
-                    default_tcp_template,
-                    sizeof(default_tcp_template)-1
-                    );
+    _template_init(&templset->pkts[Proto_TCP],
+                   source_mac, router_mac,
+                   default_tcp_template,
+                   sizeof(default_tcp_template)-1,
+                   data_link);
     templset->count++;
 
     /* [UDP] */
-    _template_init( &templset->pkts[Proto_UDP],
-                    source_mac, router_mac,
-                    default_udp_template,
-                    sizeof(default_udp_template)-1
-                    );
+    _template_init(&templset->pkts[Proto_UDP],
+                   source_mac, router_mac,
+                   default_udp_template,
+                   sizeof(default_udp_template)-1,
+                   data_link);
     templset->pkts[Proto_UDP].payloads = payloads;
     templset->count++;
 
     /* [SCTP] */
-    _template_init( &templset->pkts[Proto_SCTP],
-                    source_mac, router_mac,
-                    default_sctp_template,
-                    sizeof(default_sctp_template)-1
-                    );
+    _template_init(&templset->pkts[Proto_SCTP],
+                   source_mac, router_mac,
+                   default_sctp_template,
+                   sizeof(default_sctp_template)-1,
+                   data_link);
     templset->count++;
 
     /* [ICMP ping] */
-    _template_init( &templset->pkts[Proto_ICMP_ping],
+    _template_init(&templset->pkts[Proto_ICMP_ping],
                    source_mac, router_mac,
                    default_icmp_ping_template,
-                   sizeof(default_icmp_ping_template)-1
-                   );
+                   sizeof(default_icmp_ping_template)-1,
+                   data_link);
     templset->count++;
 
     /* [ICMP timestamp] */
-    _template_init( &templset->pkts[Proto_ICMP_timestamp],
+    _template_init(&templset->pkts[Proto_ICMP_timestamp],
                    source_mac, router_mac,
                    default_icmp_timestamp_template,
-                   sizeof(default_icmp_timestamp_template)-1
-                   );
+                   sizeof(default_icmp_timestamp_template)-1,
+                   data_link);
     templset->count++;
 
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
                     source_mac, router_mac,
                     default_arp_template,
-                    sizeof(default_arp_template)-1
-                    );
+                    sizeof(default_arp_template)-1,
+                    data_link);
     templset->count++;
 }
 
@@ -933,7 +952,8 @@ template_selftest(void)
             tmplset,
             (const unsigned char*)"\x00\x11\x22\x33\x44\x55",
             (const unsigned char*)"\x66\x55\x44\x33\x22\x11",
-            0
+            0,
+            1 /*Ethernet*/
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;

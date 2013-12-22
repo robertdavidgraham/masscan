@@ -70,13 +70,18 @@ struct TemplateSet templ_copy(const struct TemplateSet *templ);
  *      The MAC address of the local router/gateway, which will be placed in
  *      the Ethernet destination address field. This is gotten by ARPing
  *      the local router, or by --router-mac configuration parameter.
+ * @param data_link
+ *      The OSI layer 2 protocol, as defined in <pcap.h> standard.
+ *       1 = Ethernet
+ *      12 = Raw IP (no data link)
  */
 void
 template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads);
+    struct NmapPayloads *payloads,
+    int data_link);
 
 /**
  * Sets the target/destination IP address of the packet, the destination port

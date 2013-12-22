@@ -61,6 +61,7 @@ struct Adapter
     pfring *ring;
     unsigned is_packet_trace:1; /* is --packet-trace option set? */
     double pt_start;
+    int link_type;
 };
 
 #define SENDQ_SIZE 65536 * 8
@@ -590,6 +591,18 @@ is_pfring_dna(const char *name)
 
 /***************************************************************************
  ***************************************************************************/
+int
+rawsock_datalink(struct Adapter *adapter)
+{
+    if (adapter->ring)
+        return 1; /* ethernet */
+    else {
+        return adapter->link_type;
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
 struct Adapter *
 rawsock_init_adapter(const char *adapter_name,
                      unsigned is_pfring,
@@ -651,6 +664,7 @@ rawsock_init_adapter(const char *adapter_name,
         LOG(2, "pfring:'%s': opening...\n", adapter_name);
         adapter->ring = PFRING.open(adapter_name, 1500, 0);//PF_RING_REENTRANT);
         adapter->pcap = (pcap_t*)adapter->ring;
+        adapter->link_type = 1;
         if (adapter->ring == NULL) {
             LOG(0, "pfring:'%s': OPEN ERROR: %s\n",
                 adapter_name, strerror_x(errno));
@@ -721,10 +735,30 @@ rawsock_init_adapter(const char *adapter_name,
                 LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
             }
 #endif
+            
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
 
+        /* Figure out the link-type. We suport Ethernet and IP */
+        {
+            int dl = pcap_datalink(adapter->pcap);
+            switch (dl) {
+                case 1: /* Ethernet */
+                    adapter->link_type = dl;
+                    break;
+                case 12: /* IP Raw */
+                    adapter->link_type = dl;
+                    break;
+                default:
+                    LOG(0, "unknown data link type: %u(%s)\n",
+                        dl, pcap_datalink_val_to_name(dl));
+                    break;
+                        
+            }
+        }
+        
+        /* Set any BPF filters the user might've set */        
         if (bpf_filter) {
             int err;
             struct bpf_program prog;

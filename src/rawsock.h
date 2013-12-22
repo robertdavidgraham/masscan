@@ -49,6 +49,15 @@ rawsock_init_adapter(const char *adapter_name,
                      const char *bpf_filter);
 
 /**
+ * Retrieve the datalink type of the adapter
+ *
+ *  1 = Ethernet
+ * 12 = Raw IP (no datalink)
+ */
+int
+rawsock_datalink(struct Adapter *adapter);
+
+/**
  * Print to the command-line the list of available adapters. It's called
  * when the "--iflist" option is specified on the command-line.
  */
@@ -78,6 +87,26 @@ int rawsock_send_packet(
     unsigned length,
     unsigned flush);
 
+/**
+ * Called to read the next packet from the network.
+ * @param adapter
+ *      The network interface on which to receive packets.
+ * @param length
+ *      returns the length of the packet
+ * @param secs
+ *      returns the timestamp of the packet as a time_t value (the number
+ *      of seconds since Jan 1 1970).
+ * @param usecs
+ *      returns part of the timestamp, the number of microseconds since the
+ *      start of the current second
+ * @param packet
+ *      returns a pointer to the packet that was read from the netwrok.
+ *      The contents of this pointer are good until the next call to this
+ *      function.
+ * @return
+ *      0 for success, something else for failure
+ *      
+ */
 int rawsock_recv_packet(
     struct Adapter *adapter,
     unsigned *length,
@@ -90,6 +119,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned your_ipv4, unsigned char *your_mac_address);
 
 
-void rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac);
+void rawsock_ignore_transmits(struct Adapter *adapter, 
+                              const unsigned char *adapter_mac);
 
 #endif

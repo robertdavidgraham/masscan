@@ -758,13 +758,20 @@ handle_ack(
 }
 
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * Handles incoming events, like timeouts and packets, that cause a change
+ * in the TCP control block "state".
+ *
+ * This is the part of the code that implements the famous TCP state-machine
+ * you see drawn everywhere, where they have states like "TIME_WAIT". Only
+ * we don't really have those states.
+ *****************************************************************************/
 void
-tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
-    int what, const void *vpayload, size_t payload_length,
-    unsigned secs, unsigned usecs,
-    unsigned seqno_them)
+tcpcon_handle(struct TCP_ConnectionTable *tcpcon, 
+              struct TCP_Control_Block *tcb,
+              int what, const void *vpayload, size_t payload_length,
+              unsigned secs, unsigned usecs,
+              unsigned seqno_them)
 {
     const unsigned char *payload = (const unsigned char *)vpayload;
 

@@ -84,8 +84,12 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
 
 
 /****************************************************************************
+ * Resolve the IP address into a MAC address. Do this synchronously, meaning,
+ * we'll stop and wait for the response. This is done at program startup,
+ * but not during then normal asynchronous operation during the scan.
  ****************************************************************************/
-int arp_resolve_sync(struct Adapter *adapter,
+int
+arp_resolve_sync(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address)
 {
@@ -95,6 +99,17 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned is_arp_notice_given = 0;
     struct ARP_IncomingRequest response;
 
+    /*
+     * [KLUDGE]
+     *  If this is a VPN connection with raw IPv4, then we don't do any
+     *  ARPing, just return immediately. In other words, there's nothing
+     *  here to ARP
+     */
+    if (rawsock_datalink(adapter) == 12) {
+        memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
+        return 0; /* success */
+    }
+    
     memset(&response, 0, sizeof(response));
 
     /* zero out bytes in packet to avoid leaking stuff in the padding
