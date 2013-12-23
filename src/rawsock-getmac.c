@@ -46,8 +46,8 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
     }
 
     LOG(1, "%s: type=0x%4x\n", ifname, ifr.ifr_ifru.ifru_hwaddr.sa_family);
-    
-    
+
+
     memcpy(mac, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
 
     /*
@@ -60,7 +60,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
         LOG(1, "%s: creating fake address\n", ifname);
         mac[5] = 1;
     }
-    
+
 end:
     close(fd);
     return 0;
@@ -191,7 +191,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
             memset(mac, 0, 6);
             len = link->sdl_alen;
         }
-        
+
         LOG(1, "family=%u, type=%u\n",
                link->sdl_family,
                link->sdl_type);

@@ -109,7 +109,7 @@ arp_resolve_sync(struct Adapter *adapter,
         memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }
-    
+
     memset(&response, 0, sizeof(response));
 
     /* zero out bytes in packet to avoid leaking stuff in the padding

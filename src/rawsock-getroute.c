@@ -220,7 +220,7 @@ struct route_info {
     char ifName[IF_NAMESIZE];
 };
 
-static int 
+static int
 read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
 {
     struct nlmsghdr *nlHdr;
@@ -262,7 +262,7 @@ read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
 }
 
 /* For parsing the route info returned */
-static int 
+static int
 parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
 {
     struct rtmsg *rtMsg;

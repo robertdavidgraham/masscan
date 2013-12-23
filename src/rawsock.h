@@ -114,7 +114,7 @@ int rawsock_send_packet(
  *      function.
  * @return
  *      0 for success, something else for failure
- *      
+ *
  */
 int rawsock_recv_packet(
     struct Adapter *adapter,
@@ -128,7 +128,7 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned your_ipv4, unsigned char *your_mac_address);
 
 
-void rawsock_ignore_transmits(struct Adapter *adapter, 
+void rawsock_ignore_transmits(struct Adapter *adapter,
                               const unsigned char *adapter_mac);
 
 #endif

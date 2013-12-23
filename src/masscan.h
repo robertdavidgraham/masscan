@@ -70,8 +70,8 @@ struct Masscan
     struct RangeList ports;
 
     /**
-     * IPv4 addresses/ranges that are to be exluded from the scan. This teakes
-     * precendence over any 'include' statement
+     * IPv4 addresses/ranges that are to be exluded from the scan. This takes
+     * precedence over any 'include' statement
      */
     struct RangeList exclude_ip;
     struct RangeList exclude_port;
@@ -145,7 +145,7 @@ struct Masscan
         unsigned ttl; /* starting IP TTL field */
         unsigned badsum; /* bad TCP/UDP/SCTP checksum */
 
-        /* ouput options */
+        /* output options */
         unsigned packet_trace:1; /* print transmit messages */
         unsigned open_only:1; /* show only open ports */
         unsigned reason; /* print reason port is open, which is redundant for us */

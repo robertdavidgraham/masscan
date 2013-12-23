@@ -109,7 +109,7 @@ extern const struct OutputType redis_output;
  * @param masscan
  *      The master configuration.
  * @param thread_index
- *      When there are more than one receive threads, they are diferentiated
+ *      When there are more than one receive threads, they are differentiated
  *      by this index number.
  * @return
  *      an output object that must eventually be destroyed by output_destroy().

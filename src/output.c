@@ -235,7 +235,7 @@ close_rotate(struct Output *out, FILE *fp)
 /*****************************************************************************
  * Returns the time when the next rotate should occur. Rotations are
  * aligned to the period, which means that if you rotate hourly, it's done
- * on the hour every hour, like at 9:00:00 oclock exactly. In other words,
+ * on the hour every hour, like at 9:00:00 o'clock exactly. In other words,
  * a period of "hourly" doesn't really mean "every 60 minutes", but
  * on the hour". Since the program will be launched midway in a period,
  * that means the first rotation will happen in less than a full period.
@@ -390,7 +390,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     }
 
     /*
-     * Link the the appropriate output module.
+     * Link the appropriate output module.
      * TODO: support multiple output modules
      */
     out->format = masscan->nmap.format;
@@ -417,7 +417,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
 
     /*
      * Open the desired output file. We do this now at the start of the scan
-     * so that we can immediatley notify the user of an error, rather than
+     * so that we can immediately notify the user of an error, rather than
      * waiting midway through a long scan and have it fail.
      */
     if (masscan->nmap.filename[0] && out->funcs != &null_output) {
@@ -629,7 +629,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                     );
 
         /* Because this line may overwrite the "%done" status line, print
-         * some spaces afterward to completely coverup the line */
+         * some spaces afterward to completely cover up the line */
         if (count < 80)
             fprintf(stdout, "%.*s", (int)(79-count),
                     "                                          "
@@ -644,7 +644,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
         return;
 
     /* Rotate, if we've pass the time limit. Rotating the log files happens
-     * inline while writing output, whenever there's ouitput to write to the
+     * inline while writing output, whenever there's output to write to the
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
@@ -726,7 +726,7 @@ output_report_banner(struct Output *out, time_t now,
             );
 
         /* Because this line may overwrite the "%done" status line, print
-         * some spaces afterward to completely coverup the line */
+         * some spaces afterward to completely cover up the line */
         if (count < 80)
             fprintf(stdout, "%.*s", (int)(79-count),
                     "                                          "
@@ -740,7 +740,7 @@ output_report_banner(struct Output *out, time_t now,
         return;
 
     /* Rotate, if we've pass the time limit. Rotating the log files happens
-     * inline while writing output, whenever there's ouitput to write to the
+     * inline while writing output, whenever there's output to write to the
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */

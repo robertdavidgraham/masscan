@@ -454,7 +454,7 @@ content_parse(
 
 /***************************************************************************
  * Parse just the outer record, then hands down the contents to the
- * a subparser at "content_parse()"
+ * sub parser at "content_parse()"
  ***************************************************************************/
 static void
 ssl_parse(
@@ -573,7 +573,7 @@ ssl_hello[] =
 "\x01" /* compression-methods-length = 1 */
 "\x00"
 
-"\x00\xfa" /* extensions lkength */
+"\x00\xfa" /* extensions length */
 
 /* server name */
 "\xef\x00"

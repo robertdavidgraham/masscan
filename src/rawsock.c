@@ -743,7 +743,7 @@ rawsock_init_adapter(const char *adapter_name,
                 LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
             }
 #endif
-            
+
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
@@ -762,11 +762,11 @@ rawsock_init_adapter(const char *adapter_name,
                     LOG(0, "unknown data link type: %u(%s)\n",
                         dl, pcap_datalink_val_to_name(dl));
                     break;
-                        
+
             }
         }
-        
-        /* Set any BPF filters the user might've set */        
+
+        /* Set any BPF filters the user might've set */
         if (bpf_filter) {
             int err;
             struct bpf_program prog;

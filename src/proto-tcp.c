@@ -767,7 +767,7 @@ handle_ack(
  * we don't really have those states.
  *****************************************************************************/
 void
-tcpcon_handle(struct TCP_ConnectionTable *tcpcon, 
+tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
               struct TCP_Control_Block *tcb,
               int what, const void *vpayload, size_t payload_length,
               unsigned secs, unsigned usecs,

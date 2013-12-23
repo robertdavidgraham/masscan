@@ -25,7 +25,7 @@
 static unsigned char default_tcp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x08\x00"      /* Ethernet type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
     "\x00\x28"      /* total length = 40 bytes */
@@ -50,7 +50,7 @@ static unsigned char default_tcp_template[] =
 static unsigned char default_udp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x08\x00"      /* Ethernet type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
     "\x00\x1c"      /* total length = 28 bytes */
@@ -70,7 +70,7 @@ static unsigned char default_udp_template[] =
 static unsigned char default_sctp_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etenrent type: IPv4 */
+    "\x08\x00"      /* Ethernet type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
     "\x00\x1c"      /* total length = 40 bytes */
@@ -91,7 +91,7 @@ static unsigned char default_sctp_template[] =
 static unsigned char default_icmp_ping_template[] =
     "\0\1\2\3\4\5"  /* Ethernet: destination */
     "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-    "\x08\x00"      /* Etherent type: IPv4 */
+    "\x08\x00"      /* Ethernet type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
     "\x00\x4c"      /* total length = 76 bytes */
@@ -123,8 +123,8 @@ static unsigned char default_icmp_ping_template[] =
 
 static unsigned char default_icmp_timestamp_template[] =
 "\0\1\2\3\4\5"  /* Ethernet: destination */
-"\6\7\x8\x9\xa\xb"  /* Ethernet: source */
-"\x08\x00"      /* Etenrent type: IPv4 */
+    "\6\7\x8\x9\xa\xb"  /* Ethernet: source */
+"\x08\x00"      /* Ethernet type: IPv4 */
 "\x45"          /* IP type */
 "\x00"
 "\x00\x28"      /* total length = 84 bytes */
@@ -789,7 +789,7 @@ _template_init(
         tmpl->proto = Proto_UDP;
         break;
     }
-    
+
     /*
      * DATALINK KLUDGE
      *
@@ -801,7 +801,7 @@ _template_init(
         tmpl->length -= tmpl->offset_ip;
         tmpl->offset_tcp -= tmpl->offset_ip;
         tmpl->offset_app -= tmpl->offset_ip;
-        memmove(tmpl->packet, 
+        memmove(tmpl->packet,
                 tmpl->packet + tmpl->offset_ip,
                 tmpl->length);
         tmpl->offset_ip = 0;

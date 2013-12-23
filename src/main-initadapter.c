@@ -11,7 +11,7 @@
  *
  * Note that we don't update the "static" configuration with the discovered
  * values, but instead return them as the "running" configuration. That's
- * so if we pause and resume a scan, autodiscovered values don't get saved
+ * so if we pause and resume a scan, auto discovered values don't get saved
  * in the configuration file.
  ***************************************************************************/
 int
@@ -74,7 +74,7 @@ masscan_initialize_adapter(
         masscan->nic[index].src.ip.range = 1;
     }
     if (adapter_ip == 0) {
-        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n", 
+        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n",
                         ifname);
         fprintf(stderr, " [hint] did you spell the name correctly?\n");
         fprintf(stderr, " [hint] if it has no IP address, manually set with "
@@ -92,9 +92,9 @@ masscan_initialize_adapter(
     memcpy(adapter_mac, masscan->nic[index].my_mac, 6);
     if (masscan->nic[index].my_mac_count == 0) {
         if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-            
+
             rawsock_get_adapter_mac(ifname, adapter_mac);
-            
+
             LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
                 adapter_mac[0],
                 adapter_mac[1],
@@ -105,14 +105,14 @@ masscan_initialize_adapter(
                 );
         }
         if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-            fprintf(stderr, "FAIL: failed to detect MAC address of interface:" 
+            fprintf(stderr, "FAIL: failed to detect MAC address of interface:"
                     " \"%s\"\n", ifname);
-            fprintf(stderr, " [hint] try something like " 
+            fprintf(stderr, " [hint] try something like "
                     "\"--adapter-mac 00-11-22-33-44-55\"\n");
             return -1;
         }
     }
-    
+
     /*
      * START ADAPTER
      *

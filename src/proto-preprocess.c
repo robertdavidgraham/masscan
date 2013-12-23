@@ -53,7 +53,7 @@
 /****************************************************************************
  ****************************************************************************/
 unsigned
-preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type, 
+preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type,
                  struct PreprocessedInfo *info)
 {
     unsigned offset = 0;
