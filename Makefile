@@ -1,4 +1,5 @@
-
+PREFIX ?= /usr
+BINDIR ?= $(PREFIX)/bin
 SYS := $(shell gcc -dumpmachine)
 
 # LINUX
@@ -79,7 +80,6 @@ OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC)))))
 bin/masscan: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)
 
-
 clean:
 	rm tmp/*.o
 	rm bin/masscan
@@ -88,6 +88,6 @@ regress: bin/masscan
 	bin/masscan --selftest
 
 install: bin/masscan
-	echo "No install, binary is bin/masscan"
+	install -pDm755 bin/masscan $(DESTDIR)$(BINDIR)/masscan
 	
 default: bin/masscan
