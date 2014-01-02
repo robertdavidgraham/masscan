@@ -4,7 +4,9 @@
     This parses out the SSL "certificate" and "ephemeral keys", and
     any other information we want from SSL.
 
-    BIZARRE CODE ALERT: This module uses "state-machines" to parse
+    !!!!!!!!!!!!  BIZARRE CODE ALERT !!!!!!!!!!!!!!!
+    
+    This module uses "state-machines" to parse
     SSL. This has a number of advantages, such as handling TCP
     segmentation and SSL record fragmentation without having to
     buffer any packets. But it's quite weird if you aren't used to
@@ -25,13 +27,9 @@
 
 
 /***************************************************************************
-       struct {
-           ProtocolVersion server_version;
-           Random random;
-           SessionID session_id;
-           CipherSuite cipher_suite;
-           CompressionMethod compression_method;
-       } ServerHello;
+ * This parses the "Server Hello" packet, the packet that comes before 
+ * certificates. What we want from this are the SSL version info and the
+ * "cipher-suite" (which encryption protocol the server uses).
  ***************************************************************************/
 static void
 server_hello(
@@ -60,6 +58,17 @@ server_hello(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
 
+    /* What this structure looks like
+       struct {
+           ProtocolVersion server_version;
+           Random random;
+           SessionID session_id;
+           CipherSuite cipher_suite;
+           CompressionMethod compression_method;
+       } ServerHello;
+    */
+
+    /* 'for all bytes in the packet...' */
     for (i=0; i<length; i++)
     switch (state) {
     case VERSION_MAJOR:

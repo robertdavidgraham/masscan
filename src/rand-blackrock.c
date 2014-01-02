@@ -156,20 +156,26 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed)
 
 
 /***************************************************************************
- * This is a random meaningless function. Well, if we actually wanted
- * crypto-strength, we'd have to improve it, but for now, we just want
- * some random properties.
+ * The inner round/mixer function. In DES, it's a series of S-box lookups,
+ * which 
  ***************************************************************************/
 static inline uint64_t
-F(uint64_t j, uint64_t R, uint64_t seed)
+F(uint64_t r, uint64_t R, uint64_t seed)
 {
-    static const uint64_t primes[] = {
-        961752031, 982324657, 15485843, 961752031,  };
+    uint64_t r0, r1, r2, r3;
 
-    R = ((R << (R&0x4)) + R + seed);
-    R ^= sbox[R&0xF];
+#define GETBYTE(R,n) ((((R)>>(n*8))^seed^r)&0xFF)
 
-    return (((primes[j] * R + 25ULL) ^ R) + j);
+    R ^= seed;
+
+    r0 = sbox[GETBYTE(R,0)]<< 0 | sbox[GETBYTE(R,1)]<< 8;
+    r1 = (sbox[GETBYTE(R,2)]<<16UL | sbox[GETBYTE(R,3)]<<24UL)&0x0ffffFFFFUL;
+    r2 = sbox[GETBYTE(R,4)]<< 0 | sbox[GETBYTE(R,5)]<< 8;
+    r3 = (sbox[GETBYTE(R,6)]<<16UL | sbox[GETBYTE(R,7)]<<24UL)&0x0ffffFFFFUL;
+
+    R = r0 ^ r1 ^ r2<<23UL ^ r3<<33UL;
+
+    return R;
 }
 
 

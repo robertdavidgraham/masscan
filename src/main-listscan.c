@@ -54,11 +54,21 @@ infinite:
         ip = rangelist_pick(&masscan->targets, xXx % count_ips);
         port = rangelist_pick(&masscan->ports, xXx / count_ips);
 
-        if (count_ports == 1)
-            printf("%u.%u.%u.%u\n",
-                   (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF
-                   );
-        else
+        if (count_ports == 1) {
+            if (masscan->is_test_csv) {
+                /* [KLUDGE] [TEST]
+                 * For testing randomness output, prints last two bytes of
+                 * IP address as CSV format for import into spreadsheet
+                 */
+                printf("%u,%u\n",
+                       (ip>>8)&0xFF, (ip>>0)&0xFF
+                       );
+            } else {
+                printf("%u.%u.%u.%u\n",
+                       (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF
+                       );
+            }
+        } else
             printf("%u.%u.%u.%u:%u\n",
                    (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF,
                    port

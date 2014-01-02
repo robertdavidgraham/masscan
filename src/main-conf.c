@@ -1189,6 +1189,12 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("traceroute", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
+    } else if (EQUALS("test", name)) {
+        if (EQUALS("csv", value))
+            masscan->is_test_csv = 1;
+    } else if (EQUALS("notest", name)) {
+        if (EQUALS("csv", value))
+            masscan->is_test_csv = 0;
     } else if (EQUALS("ttl", name)) {
         unsigned x = strtoul(value, 0, 0);
         if (x >= 256) {
