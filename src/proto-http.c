@@ -35,7 +35,7 @@ enum {
     HTML_UNKNOWN,
 };
 static struct Patterns html_fields[] = {
-    {"<Title",          6, HTML_TITLE, 0},
+    {"<TiTle",          6, HTML_TITLE, 0},
     {0,0,0,0}
 };
 
@@ -349,7 +349,7 @@ http_parse(
                                    px, &i, (unsigned)length);
             i--;
             if (id != SMACK_NOT_FOUND) {
-                field_name(banout, id, html_fields);
+                //field_name(banout, id, html_fields);
                 //banout_append_char(banout, PROTO_HTML_TITLE, ':');
                 state = CONTENT_TAG;
             }
