@@ -39,6 +39,8 @@ static struct Patterns html_fields[] = {
     {0,0,0,0}
 };
 
+extern struct ProtocolParserStream banner_http;
+
 
 
 /***************************************************************************
@@ -184,9 +186,8 @@ http_init(struct Banner1 *b)
                           html_fields[i].is_anchored);
     smack_compile(b->html_fields);
 
-    b->http_header_length = sizeof(http_hello) - 1;
-    b->http_header = (unsigned char *)malloc(b->http_header_length + 1);
-    memcpy(b->http_header, http_hello, b->http_header_length + 1);
+    banner_http.hello = (unsigned char*)malloc(banner_http.hello_length);
+    memcpy((char*)banner_http.hello, http_hello, banner_http.hello_length);
 
     return b->http_fields;
 }

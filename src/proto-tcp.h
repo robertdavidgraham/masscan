@@ -18,6 +18,11 @@ struct TCP_ConnectionTable;
 #define TCP_IS_RST(px,i) ((TCP_FLAGS(px,i) & 0x4) == 0x4)
 #define TCP_IS_FIN(px,i) ((TCP_FLAGS(px,i) & 0x1) == 0x1)
 
+/**
+ * [KLUDGE] The 'tcpcon' module doens't have access to the main configuration,
+ * so specific configuration options have to be sent to it using this
+ * function.
+ */
 void
 tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const char *name,

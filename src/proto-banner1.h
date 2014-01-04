@@ -12,10 +12,12 @@ struct Banner1
     struct SMACK *http_fields;
     struct SMACK *html_fields;
 
-    unsigned char *http_header;
-    unsigned http_header_length;
+    /*unsigned char *http_header;
+    unsigned http_header_length;*/
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
+
+    const struct ProtocolParserStream *tcp_payloads[65536];
 };
 
 struct SSL_SERVER_HELLO {

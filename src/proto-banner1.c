@@ -141,7 +141,9 @@ banner1_parse(
     return tcb_state->app_proto;
 }
 
+
 /***************************************************************************
+ * Create the --banners systems
  ***************************************************************************/
 struct Banner1 *
 banner1_create(void)
@@ -169,6 +171,22 @@ banner1_create(void)
 
 
     banner_http.init(b);
+
+    b->tcp_payloads[80] = &banner_http;
+    b->tcp_payloads[8080] = &banner_http;
+    
+    b->tcp_payloads[443] = &banner_ssl;   /* HTTP/s */
+    b->tcp_payloads[465] = &banner_ssl;   /* SMTP/s */
+    b->tcp_payloads[990] = &banner_ssl;   /* FTP/s */
+    b->tcp_payloads[993] = &banner_ssl;   /* IMAP4/s */
+    b->tcp_payloads[995] = &banner_ssl;   /* POP3/s */
+    b->tcp_payloads[2083] = &banner_ssl;  /* cPanel - SSL */
+    b->tcp_payloads[2087] = &banner_ssl;  /* WHM - SSL */
+    b->tcp_payloads[2096] = &banner_ssl;  /* cPanel webmail - SSL */
+    b->tcp_payloads[8443] = &banner_ssl;  /* Plesk Control Panel - SSL */
+    b->tcp_payloads[9050] = &banner_ssl;  /* Tor */
+    b->tcp_payloads[8140] = &banner_ssl;  /* puppet */
+
 
     return b;
 }

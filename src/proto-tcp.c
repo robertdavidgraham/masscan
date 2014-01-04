@@ -30,6 +30,12 @@
 uint64_t global_tcb_count;
 
 
+/***************************************************************************
+ * A "TCP control block" is what most operating-systems/network-stack
+ * calls the structure that corresponds to a TCP connection. It contains
+ * things like the IP addresses, port numbers, sequence numbers, timers,
+ * and other things.
+ ***************************************************************************/
 struct TCP_Control_Block
 {
 
@@ -171,12 +177,17 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const void *value)
 {
     if (name_equals(name, "http-user-agent")) {
-        tcpcon->banner1->http_header_length =
-            http_change_field(&tcpcon->banner1->http_header,
-                                tcpcon->banner1->http_header_length,
+        banner_http.hello_length = http_change_field(
+                                (unsigned char**)&banner_http.hello,
+                                (unsigned)banner_http.hello_length,
                                 "User-Agent:",
                                 (const unsigned char *)value,
                                 (unsigned)value_length);
+        return;
+    }
+
+    if (name_equals(name, "tcp-payload")) {
+        return;
     }
 }
 
@@ -774,6 +785,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
               unsigned seqno_them)
 {
     const unsigned char *payload = (const unsigned char *)vpayload;
+    struct Banner1 *banner1 = tcpcon->banner1;
 
     if (tcb == NULL)
         return;
@@ -838,32 +850,15 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         {
             size_t x_len = 0;
             const unsigned char *x;
-            switch (tcb->port_them) {
-            case 80:
-            case 8080:
-                x = tcpcon->banner1->http_header;
-                x_len = tcpcon->banner1->http_header_length;
-                break;
-            case 443:   /* HTTP/s */
-            case 465:   /* SMTP/s */
-            case 990:   /* FTP/s */
-            case 993:   /* IMAP4/s */
-            case 995:   /* POP3/s */
-            case 2083:  /* cPanel - SSL */
-            case 2087:  /* WHM - SSL */
-            case 2096:  /* cPanel webmail - SSL */
-            case 8443:  /* Plesk Control Panel - SSL */
-            case 9050:  /* Tor */
-            case 8140:  /* puppet */
-                tcb->banner1_state.is_sent_sslhello = 1;
-                x = (const unsigned char *)banner_ssl.hello;
-                x_len = banner_ssl.hello_length;
-                break;
-            default:
-                x = 0;
-                break;
-            }
-            if (x && x_len) {
+
+            /* if we have a "hello" message to send to the server,
+             * then send it */
+            if (banner1->tcp_payloads[tcb->port_them]) {
+                x_len = banner1->tcp_payloads[tcb->port_them]->hello_length;
+                x = banner1->tcp_payloads[tcb->port_them]->hello;
+                if (banner1->tcp_payloads[tcb->port_them] == &banner_ssl)
+                    tcb->banner1_state.is_sent_sslhello = 1;
+
                 /* Send request. This actually doens't send the packet right
                  * now, but instead queues up a packet that the transmit
                  * thread will send soon. */
