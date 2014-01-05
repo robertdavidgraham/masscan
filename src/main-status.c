@@ -30,7 +30,8 @@ status_print(
     double x,
     uint64_t total_tcbs,
     uint64_t total_synacks,
-    uint64_t total_syns)
+    uint64_t total_syns,
+    uint64_t exiting)
 {
     double elapsed_time;
     double rate;
@@ -135,10 +136,19 @@ status_print(
                         syn_rate,
                         synack_rate,
                         tcb_rate,
-                        global_tcb_count
+                        total_tcbs
                         );
-    } else if (rate > 0) {
-        fprintf(stderr,
+    } else {
+        if (control_c_pressed) {
+            fprintf(stderr,
+                "rate:%6.2f-kpps, %5.2f%% done, waiting %llu-secs, found=%llu       \r",
+                        x/1000.0,
+                        percent_done,
+                        exiting,
+                        total_synacks
+                       );
+        } else {
+            fprintf(stderr,
                 "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%llu       \r",
                         x/1000.0,
                         percent_done,
@@ -146,9 +156,8 @@ status_print(
                         (unsigned)(time_remaining/60)%60,
                         (unsigned)(time_remaining)%60,
                         total_synacks
-                        //global_tcb_count,
-                        //synack_rate
                        );
+        }
     }
     fflush(stderr);
 

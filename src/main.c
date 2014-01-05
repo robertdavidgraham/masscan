@@ -271,15 +271,24 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     unsigned src_port_mask;
     uint64_t seed = masscan->seed;
     uint64_t repeats = 0; /* --infinite repeats */
-    uint64_t total_syns = 0;
+    uint64_t *status_syn_count;
 
-    parms->total_syns = &total_syns;
+    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
+    /* export a pointer to this variable outside this threads so
+     * that the 'status' system can print the rate of syns we are
+     * sending */
+    status_syn_count = (uint64_t*)malloc(sizeof(uint64_t));
+    *status_syn_count = 0;
+    parms->total_syns = status_syn_count;
+
+
+    /* Normally, we have just one source address. In special cases, though
+     * we can have multiple. */
     get_sources(masscan, parms->nic_index,
                 &src_ip, &src_ip_mask,
                 &src_port, &src_port_mask);
 
-    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
     /* "THROTTLER" rate-limits how fast we transmit, set with the
      * --max-rate parameter */
@@ -399,7 +408,7 @@ infinite:
                     );
             batch_size--;
             packets_sent++;
-            total_syns++;
+            (*status_syn_count)++;
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -447,6 +456,8 @@ infinite:
      * This call makes sure they are transmitted.
      */
     rawsock_flush(adapter);
+
+    control_c_pressed = 1;
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -519,11 +530,17 @@ receive_thread(void *v)
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
     struct TCP_ConnectionTable *tcpcon = 0;
-    uint64_t total_synacks = 0;
-    uint64_t total_tcbs = 0;
+    uint64_t *status_synack_count;
+    uint64_t *status_tcb_count;
 
-    parms->total_synacks = &total_synacks;
-    parms->total_tcbs = &total_tcbs;
+    /* some status variables */
+    status_synack_count = (uint64_t*)malloc(sizeof(uint64_t));
+    *status_synack_count = 0;
+    parms->total_synacks = status_synack_count;
+
+    status_tcb_count = (uint64_t*)malloc(sizeof(uint64_t));
+    *status_tcb_count = 0;
+    parms->total_tcbs = status_tcb_count;
 
     LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
 
@@ -780,7 +797,7 @@ receive_thread(void *v)
                                     ip_me, ip_them,
                                     port_me, port_them,
                                     seqno_me, seqno_them+1);
-                    total_tcbs++;
+                    (*status_tcb_count)++;
                 }
 
                 tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK,
@@ -850,7 +867,7 @@ receive_thread(void *v)
             /* verify: ignore duplicates */
             if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me))
                 continue;
-            total_synacks++;
+            (*status_synack_count)++;
 
             /*
              * This is where we do the output
@@ -907,6 +924,7 @@ end:
 
     /* Thread is about to exit */
     parms->done_receiving = 1;
+
 }
 
 
@@ -1179,7 +1197,8 @@ main_scan(struct Masscan *masscan)
          * namely packets/second.
          */
         status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns);
+            total_tcbs, total_synacks, total_syns,
+            0);
 
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1204,10 +1223,34 @@ main_scan(struct Masscan *masscan)
         unsigned transmit_count = 0;
         unsigned receive_count = 0;
         unsigned i;
+        double rate = 0;
+        uint64_t total_tcbs = 0;
+        uint64_t total_synacks = 0;
+        uint64_t total_syns = 0;
 
-        pixie_mssleep(750);
 
-        status_print(&status, masscan->resume.index, range, 0, 0, 0, 0);
+        /* Find the minimum index of all the threads */
+        min_index = UINT64_MAX;
+        for (i=0; i<masscan->nic_count; i++) {
+            struct ThreadPair *parms = &parms_array[i];
+
+            if (min_index > parms->my_index)
+                min_index = parms->my_index;
+
+            rate += parms->throttler->current_rate;
+
+            if (parms->total_tcbs)
+                total_tcbs += *parms->total_tcbs;
+            if (parms->total_synacks)
+                total_synacks += *parms->total_synacks;
+            if (parms->total_syns)
+                total_syns += *parms->total_syns;
+        }
+
+
+        status_print(&status, masscan->resume.index, range, rate,
+            total_tcbs, total_synacks, total_syns,
+            masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
             control_c_pressed_again = 1;
@@ -1219,6 +1262,8 @@ main_scan(struct Masscan *masscan)
             receive_count += parms->done_receiving;
 
         }
+
+        pixie_mssleep(750);
 
         if (transmit_count < masscan->nic_count)
             continue;

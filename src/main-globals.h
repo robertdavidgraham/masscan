@@ -5,6 +5,5 @@
 extern unsigned control_c_pressed;
 extern time_t global_now;
 
-extern uint64_t global_tcb_count;
 
 #endif

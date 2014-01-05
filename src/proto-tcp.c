@@ -24,10 +24,6 @@
 #include "string_s.h"
 #include "main-globals.h"
 
-/* [GLOBALS]
- * I want to print the number of TCBs in status messages, so I'm hacking this count
- * in here */
-uint64_t global_tcb_count;
 
 
 /***************************************************************************
@@ -377,7 +373,6 @@ tcpcon_destroy_tcb(
     tcb->next = tcpcon->freed_list;
     tcpcon->freed_list = tcb;
     tcpcon->active_count--;
-    global_tcb_count = tcpcon->active_count;
 }
 
 
@@ -469,7 +464,6 @@ tcpcon_create_tcb(
         banout_init(&tcb->banout);
 
         tcpcon->active_count++;
-        global_tcb_count = tcpcon->active_count;
     }
 
     return tcb;
