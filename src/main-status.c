@@ -139,14 +139,15 @@ status_print(
                         );
     } else if (rate > 0) {
         fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, %llu-tcbs, rr=%.0f       \r",
+                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%llu       \r",
                         x/1000.0,
                         percent_done,
                         (unsigned)(time_remaining/60/60),
                         (unsigned)(time_remaining/60)%60,
                         (unsigned)(time_remaining)%60,
-                        global_tcb_count,
-                        synack_rate
+                        total_synacks
+                        //global_tcb_count,
+                        //synack_rate
                        );
     }
     fflush(stderr);
