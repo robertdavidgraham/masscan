@@ -1250,7 +1250,7 @@ main_scan(struct Masscan *masscan)
 
         status_print(&status, masscan->resume.index, range, rate,
             total_tcbs, total_synacks, total_syns,
-            masscan->wait - (time(0) - now));
+            masscan->wait + 1 - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
             control_c_pressed_again = 1;
@@ -1316,6 +1316,13 @@ int main(int argc, char *argv[])
     masscan->is_capture_cert = 1;
 
     /*
+     * Pre-parse the command-line
+     */
+    if (masscan_conf_contains("--readscan", argc, argv)) {
+        masscan->is_readscan = 1;
+    }
+
+    /*
      * On non-Windows systems, read the defaults from the file in
      * the /etc directory. These defaults will contain things
      * like the output directory, max packet rates, and so on. Most
@@ -1324,8 +1331,10 @@ int main(int argc, char *argv[])
      * makes a mistake
      */
 #if !defined(WIN32)
-    if (access("/etc/masscan/masscan.conf", 0) == 0) {
-        masscan_read_config_file(masscan, "/etc/masscan/masscan.conf");
+    if (!masscan->is_readscan) {
+        if (access("/etc/masscan/masscan.conf", 0) == 0) {
+            masscan_read_config_file(masscan, "/etc/masscan/masscan.conf");
+        }
     }
 #endif
 

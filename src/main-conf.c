@@ -1690,6 +1690,22 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
 }
 
 
+
+/***************************************************************************
+ ***************************************************************************/
+int masscan_conf_contains(const char *x, int argc, char **argv)
+{
+    int i;
+
+    for (i=0; i<argc; i++) {
+        if (strcmp(argv[i], x) == 0)
+            return 1;
+    }
+
+    return 0;
+}
+
+
 /***************************************************************************
  ***************************************************************************/
 int
@@ -1715,6 +1731,18 @@ mainconf_selftest()
             return 1;
 
 
+    }
+
+    /* */
+    {
+        int argc = 6;
+        char *argv[] = { "foo", "bar", "-ddd", "--readscan", "xxx", "--something" };
+    
+        if (masscan_conf_contains("--nothing", argc, argv))
+            return 1;
+
+        if (!masscan_conf_contains("--readscan", argc, argv))
+            return 1;
     }
 
     return 0;
