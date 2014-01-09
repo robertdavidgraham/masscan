@@ -163,6 +163,22 @@ name_equals(const char *lhs, const char *rhs)
 }
 
 /***************************************************************************
+ ***************************************************************************/
+static uint64_t
+parseInt(const void *vstr, size_t length)
+{
+    const char *str = (const char *)vstr;
+    uint64_t result = 0;
+    size_t i;
+
+    for (i=0; i<length; i++) {
+        result = result * 10 + (str[i] - '0');
+        str++;
+    }
+    return result;
+}
+
+/***************************************************************************
  * Called at startup, when processing command-line options, to set
  * parameters specific to TCP processing.
  ***************************************************************************/
@@ -182,7 +198,10 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
-    if (name_equals(name, "tcp-payload")) {
+    if (name_equals(name, "timeout")) {
+        uint64_t n = parseInt(value, value_length);
+        tcpcon->timeout = (unsigned)n;
+        LOG(1, "TCP connection-timeout = %u\n", tcpcon->timeout);
         return;
     }
 }

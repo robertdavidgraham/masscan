@@ -173,6 +173,7 @@ struct Masscan
 
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
+    unsigned tcp_connection_timeout;
 
     struct {
         const char *header_name;

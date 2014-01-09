@@ -601,6 +601,14 @@ receive_thread(void *v)
                                     "http-user-agent",
                                     masscan->http_user_agent_length,
                                     masscan->http_user_agent);
+        if (masscan->tcp_connection_timeout) {
+            char foo[64];
+            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
+            tcpcon_set_parameter(   tcpcon,
+                                    "timeout",
+                                    strlen(foo),
+                                    foo);
+        }
 
     }
 

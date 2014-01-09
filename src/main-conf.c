@@ -892,6 +892,8 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("banners", name) || EQUALS("banner", name)) {
         masscan->is_banners = 1;
+    } else if (EQUALS("connection-timeout", name)) {
+        masscan->tcp_connection_timeout = parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
