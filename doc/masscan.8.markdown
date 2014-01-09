@@ -208,7 +208,17 @@ one port.
   *  `--readscan <binary-files>`: reads the files created by the `-oB` option
     from a scan, then outputs them in one of the other formats, depending
     on command-line parameters. In other words, it can take the binary
-    version of the output and convert it to an XML or JSON format.
+    version of the output and convert it to an XML or JSON format. When this option
+    is given, defaults from `/etc/masscan/masscan.conf` will not be read.
+
+  * `--connection-timeout <secs>`: when doing banner checks, this specifies the
+    maximum number of seconds that a TCP connection can be held open. The default
+    is 30 seconds. Increase this time if banners are incomplete. For example,
+    we have to increase the timeout when downloading all the SSL certs from
+    the Internet, because some sites take that long to deliver all the certs
+    in the chain. However, beware that when this is set to a large value, it'll
+    consume a lot of memory on fast scans. While the code may handle millions of 
+    open TCP connections, you may not have enough memory for that.
     
 
 ## CONFIGURATION FILE FORMAT
