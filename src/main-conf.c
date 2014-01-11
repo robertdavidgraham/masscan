@@ -18,6 +18,7 @@
 #include "proto-banner1.h"
 #include "templ-payloads.h"
 #include "templ-port.h"
+#include "crypto-base64.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -289,6 +290,18 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
+
+    /*
+     *  TCP payloads
+     */
+    fprintf(fp, "\n");
+    {
+        struct TcpCfgPayloads *pay;
+        for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
+            fprintf(fp, "hello-string[%u] = %s\n",
+                pay->port, pay->payload_base64);
+        }
+    }
 }
 
 /***************************************************************************
@@ -606,7 +619,7 @@ masscan_set_parameter(struct Masscan *masscan,
                       const char *name, const char *value)
 {
     unsigned index = ARRAY(name);
-    if (index >= 8) {
+    if (index >= 65536) {
         fprintf(stderr, "%s: bad index\n", name);
         exit(1);
     }
@@ -893,7 +906,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("banners", name) || EQUALS("banner", name)) {
         masscan->is_banners = 1;
     } else if (EQUALS("connection-timeout", name)) {
-        masscan->tcp_connection_timeout = parseInt(value);
+        masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
@@ -923,6 +936,51 @@ masscan_set_parameter(struct Masscan *masscan,
         if (count2 - count1)
         fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
+    } else if (EQUALS("hello-file", name)) {
+        /* When connecting via TCP, send this file */
+        FILE *fp;
+        int x;
+        char buf[16384];
+        char buf2[16384];
+        size_t bytes_read;
+        size_t bytes_encoded;
+        char foo[64];
+
+        x = fopen_s(&fp, value, "rb");
+        if (x != 0) {
+            LOG(0, "[FAILED] could not read hello file\n");
+            perror(value);
+            exit(1);
+        }
+
+        bytes_read = fread(buf, 1, sizeof(buf), fp);
+        if (bytes_read == 0) {
+            LOG(0, "[FAILED] could not read hello file\n");
+            perror(value);
+            fclose(fp);
+            exit(1);
+        }
+        fclose(fp);
+
+        bytes_encoded = base64_encode(buf2, sizeof(buf2)-1, buf, bytes_read);
+        buf2[bytes_encoded] = '\0';
+
+        sprintf_s(foo, sizeof(foo), "hello-string[%u]", (unsigned)index);
+
+        masscan_set_parameter(masscan, foo, buf2);
+    } else if (EQUALS("hello-string", name)) {
+        char *value2;
+        struct TcpCfgPayloads *pay;
+
+        value2 = (char*)malloc(strlen(value)+1);
+        memcpy(value2, value, strlen(value)+1);
+
+        pay = (struct TcpCfgPayloads *)malloc(sizeof(*pay));
+        
+        pay->payload_base64 = value2;
+        pay->port = index;
+        pay->next = masscan->tcp_payloads;
+        masscan->tcp_payloads = pay;
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);

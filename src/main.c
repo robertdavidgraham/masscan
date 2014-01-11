@@ -47,6 +47,7 @@
 #include "proto-zeroaccess.h"
 #include "siphash24.h"
 #include "proto-x509.h"
+#include "crypto-base64.h"      /* base64 encode/decode */
 
 
 #include <assert.h>
@@ -584,6 +585,8 @@ receive_thread(void *v)
      * connections when doing --banners
      */
     if (masscan->is_banners) {
+        struct TcpCfgPayloads *pay;
+
         tcpcon = tcpcon_create_table(
             (size_t)((masscan->max_rate/5) / masscan->nic_count),
             parms->transmit_queue,
@@ -608,6 +611,15 @@ receive_thread(void *v)
                                     "timeout",
                                     strlen(foo),
                                     foo);
+        }
+        
+        for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
+            char name[64];
+            sprintf_s(name, sizeof(name), "hello-string[%u]", pay->port);
+            tcpcon_set_parameter(   tcpcon, 
+                                    name, 
+                                    strlen(pay->payload_base64), 
+                                    pay->payload_base64);
         }
 
     }
@@ -1454,6 +1466,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += base64_selftest();
             x += banner1_selftest();
             x += output_selftest();
             x += siphash24_selftest();

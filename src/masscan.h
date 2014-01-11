@@ -39,6 +39,12 @@ enum OutpuFormat {
 };
 
 
+struct TcpCfgPayloads
+{
+    char *payload_base64;
+    unsigned port;
+    struct TcpCfgPayloads *next;
+};
 
 struct Masscan
 {
@@ -170,6 +176,7 @@ struct Masscan
     } tcb;
 
     struct NmapPayloads *payloads;
+    struct TcpCfgPayloads *tcp_payloads;
 
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;

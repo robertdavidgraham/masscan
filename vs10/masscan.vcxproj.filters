@@ -207,6 +207,9 @@
     <ClCompile Include="..\src\proto-x509.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\crypto-base64.c">
+      <Filter>Source Files\rand</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -358,6 +361,9 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-x509.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-base64.h">
+      <Filter>Source Files\rand</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

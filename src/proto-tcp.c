@@ -23,6 +23,7 @@
 #include "output.h"
 #include "string_s.h"
 #include "main-globals.h"
+#include "crypto-base64.h"
 
 
 
@@ -153,6 +154,8 @@ name_equals(const char *lhs, const char *rhs)
             rhs++;
         if (*lhs == '\0' && *rhs == '[')
             return 1; /*arrays*/
+        if (*rhs == '\0' && *lhs == '[')
+            return 1; /*arrays*/
         if (tolower(*lhs & 0xFF) != tolower(*rhs & 0xFF))
             return 0;
         if (*lhs == '\0')
@@ -188,6 +191,8 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         size_t value_length,
                         const void *value)
 {
+    struct Banner1 *banner1 = tcpcon->banner1;
+
     if (name_equals(name, "http-user-agent")) {
         banner_http.hello_length = http_change_field(
                                 (unsigned char**)&banner_http.hello,
@@ -204,6 +209,33 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         LOG(1, "TCP connection-timeout = %u\n", tcpcon->timeout);
         return;
     }
+
+    if (name_equals(name, "hello-string")) {
+        struct ProtocolParserStream *x;
+        const char *p = strchr(name, '[');
+        unsigned port;
+
+
+        if (p == NULL) {
+            fprintf(stderr, "tcpcon: parmeter: expected array []: %s\n", name);
+            exit(1);
+        }
+        port = strtoul(p+1, 0, 0);
+
+        x = banner1->tcp_payloads[port];
+        if (x == NULL) {
+            x = (struct ProtocolParserStream *)malloc(sizeof(*x));
+            memset(x, 0, sizeof(*x));
+
+            x->name = "(allocated)";
+        }
+
+        x->hello = malloc(value_length);
+        x->hello_length = base64_decode((char*)x->hello, value_length, value, value_length);
+
+        banner1->tcp_payloads[port] = x;
+    }
+
 }
 
 

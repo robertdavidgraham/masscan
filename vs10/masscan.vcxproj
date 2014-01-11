@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\crypto-base64.c" />
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
@@ -80,6 +81,7 @@
     <ClCompile Include="..\src\xring.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\crypto-base64.h" />
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />
