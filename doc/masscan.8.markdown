@@ -219,6 +219,16 @@ one port.
     in the chain. However, beware that when this is set to a large value, it'll
     consume a lot of memory on fast scans. While the code may handle millions of 
     open TCP connections, you may not have enough memory for that.
+
+  * `--hello-file[<port>] <filename>`: send the contents of the file once the 
+    TCP connection has been established with the given port. Requires that
+    `--banners` also be set. Heuristics will be performed on the reponse in
+    an attempt to discover what protocol, so HTTP responses will be parsed
+    differently than other protocols.
+
+  * `--hello-string[<port>] <base64>`: same as `--hello-file` except that the
+    contents of the BASE64 encoded string are decoded, then used as the hello
+    string that greets the server.
     
 
 ## CONFIGURATION FILE FORMAT
