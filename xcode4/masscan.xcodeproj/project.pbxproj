@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
+		11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A773E91881BFC700B135DE /* crypto-base64.c */; };
 		11A868151816F3A7008E00B8 /* in-binary.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868081816F3A7008E00B8 /* in-binary.c */; };
 		11A868161816F3A7008E00B8 /* main-src.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680B1816F3A7008E00B8 /* main-src.c */; };
 		11A868171816F3A7008E00B8 /* masscan-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680D1816F3A7008E00B8 /* masscan-app.c */; };
@@ -90,6 +91,8 @@
 		115C0CA818035BC5004E6CD7 /* proto-ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssl.h"; sourceTree = "<group>"; };
 		115C0CA918035BC5004E6CD7 /* templ-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-port.h"; sourceTree = "<group>"; };
 		115C0CAA18035BC5004E6CD7 /* unusedparm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unusedparm.h; sourceTree = "<group>"; };
+		11A773E91881BFC700B135DE /* crypto-base64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-base64.c"; sourceTree = "<group>"; };
+		11A773EA1881BFC700B135DE /* crypto-base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-base64.h"; sourceTree = "<group>"; };
 		11A868081816F3A7008E00B8 /* in-binary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-binary.c"; sourceTree = "<group>"; };
 		11A868091816F3A7008E00B8 /* in-binary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-binary.h"; sourceTree = "<group>"; };
 		11A8680A1816F3A7008E00B8 /* main-globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "main-globals.h"; sourceTree = "<group>"; };
@@ -228,6 +231,8 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11A773E91881BFC700B135DE /* crypto-base64.c */,
+				11A773EA1881BFC700B135DE /* crypto-base64.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
 				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
 				11A868081816F3A7008E00B8 /* in-binary.c */,
@@ -454,6 +459,7 @@
 				11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */,
 				11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */,
 				11B22ED718641DCC00DA5438 /* proto-x509.c in Sources */,
+				11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
