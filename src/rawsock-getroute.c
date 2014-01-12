@@ -76,6 +76,9 @@ hexdump(const void *v, size_t len)
 #endif
 
 void
+dump_rt_addresses(struct rt_msghdr *rtm);
+
+void
 dump_rt_addresses(struct rt_msghdr *rtm)
 {
     int i;

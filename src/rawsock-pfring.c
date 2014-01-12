@@ -20,6 +20,9 @@ struct PFRING PFRING;
  * This checks whether the "pf_ring" driver is installed.
  ***************************************************************************/
 int
+PFRING_is_installed(void);
+
+int
 PFRING_is_installed(void)
 {
 #if defined(__linux__)

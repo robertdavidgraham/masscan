@@ -377,16 +377,16 @@ x509_decode(struct CertDecode *x, const unsigned char *px, size_t length, struct
             break;
         case ISSUERNAME_CONTENTS:
             //printf("%c", px[i]);
-            if (x->remainings[0] == 0)
-                ; //printf("\n");
+            //if (x->remainings[0] == 0)
+            //    printf("\n");
             break;
         case SUBJECTNAME_CONTENTS:
         case EXT_CONTENTS:
             //printf("%c", px[i]);
             if (x->subject.type == Subject_Common)
                 banout_append(banout, PROTO_SSL3, px+i, 1);
-            if (x->remainings[0] == 0)
-                ; //printf("\n");
+            //if (x->remainings[0] == 0)
+            //    printf("\n");
             break;
         case VERSION_CONTENTS:
             x->u.num <<= 8;

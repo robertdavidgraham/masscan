@@ -127,7 +127,10 @@ http_hello[] =      "GET / HTTP/1.0\r\n"
 
 /*****************************************************************************
  *****************************************************************************/
-static void
+void
+field_name(struct BannerOutput *banout, size_t id,
+           struct Patterns *xhttp_fields);
+void
 field_name(struct BannerOutput *banout, size_t id,
            struct Patterns *xhttp_fields)
 {
