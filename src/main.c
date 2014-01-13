@@ -48,7 +48,7 @@
 #include "siphash24.h"
 #include "proto-x509.h"
 #include "crypto-base64.h"      /* base64 encode/decode */
-
+#include "pixie-backtrace.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1305,6 +1305,8 @@ main_scan(struct Masscan *masscan)
 }
 
 
+
+
 /***************************************************************************
  ***************************************************************************/
 int main(int argc, char *argv[])
@@ -1318,6 +1320,9 @@ int main(int argc, char *argv[])
 
     global_now = time(0);
 
+    /* Set system to report debug information on crash */
+    pixie_backtrace_init(argv[0]);
+    
     /*
      * Initialize those defaults that aren't zero
      */

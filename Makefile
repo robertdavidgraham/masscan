@@ -7,9 +7,9 @@ SYS := $(shell gcc -dumpmachine)
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt -ldl -rdynamic -lpthread
+LIBS = -lpcap -lm -lrt -ldl -lpthread
 INCLUDES = -I.
-FLAGS2 = 
+FLAGS2 = -fno-omit-frame-pointer -rdynamic
 endif
 
 # MAC OS X

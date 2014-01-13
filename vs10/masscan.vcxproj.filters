@@ -210,6 +210,9 @@
     <ClCompile Include="..\src\crypto-base64.c">
       <Filter>Source Files\rand</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\pixie-backtrace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -364,6 +367,9 @@
     </ClInclude>
     <ClInclude Include="..\src\crypto-base64.h">
       <Filter>Source Files\rand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-backtrace.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

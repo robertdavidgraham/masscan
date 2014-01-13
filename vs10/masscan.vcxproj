@@ -31,6 +31,7 @@
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-xml.c" />
+    <ClCompile Include="..\src\pixie-backtrace.c" />
     <ClCompile Include="..\src\pixie-file.c" />
     <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
@@ -96,6 +97,7 @@
     <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\packet-queue.h" />
+    <ClInclude Include="..\src\pixie-backtrace.h" />
     <ClInclude Include="..\src\pixie-file.h" />
     <ClInclude Include="..\src\pixie-sockets.h" />
     <ClInclude Include="..\src\pixie-threads.h" />
