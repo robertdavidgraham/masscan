@@ -46,7 +46,7 @@ xml_out_close(struct Output *out, FILE *fp)
     fprintf(fp,
              "<runstats>\r\n"
               "<finished time=\"%u\" timestr=\"%s\" elapsed=\"%u\" />\r\n"
-              "<hosts up=\"%llu\" down=\"%llu\" total=\"%llu\" />\r\n"
+              "<hosts up=\"%" PRIu64 "\" down=\"%" PRIu64 "\" total=\"%" PRIu64 "\" />\r\n"
              "</runstats>\r\n"
             "</nmaprun>\r\n",
             (unsigned)now,                    /* time */

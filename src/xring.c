@@ -1,7 +1,7 @@
 #include "xring.h"
 #include "pixie-threads.h"
 #include "pixie-timer.h"
-#include <string.h>
+#include "string_s.h"
 #include <stdio.h>
 
 
@@ -191,12 +191,12 @@ xring_selftest(void)
     unsigned i;
 
     for (i=0; i<1000; i++) {
-        unsigned long long result;
+        uint64_t result;
         struct Test test[1];
 
         result = run_test(test);
         if (result != 500500) {
-            printf("xring: selftest failed with %llu\n", result);
+            printf("xring: selftest failed with %" PRIu64 "\n", result);
             return 1;
         } else
             ;

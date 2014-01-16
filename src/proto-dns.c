@@ -1,3 +1,10 @@
+/*
+
+    Parses DNS response information
+
+    The scanner sends a CHAOS TXT query for "version.bind". This module parses
+    DNS in order to find the response string.
+*/
 #include "proto-udp.h"
 #include "proto-dns.h"
 #include "proto-dns-parse.h"
@@ -402,6 +409,7 @@ handle_dns(struct Output *out, time_t timestamp, const unsigned char *px, unsign
                 PROTO_DNS_VERSIONBIND,
                 px + offset, txtlen);
     }
+
 
     return 0;
 }

@@ -186,7 +186,7 @@ base64_selftest(void)
     size_t buf2_len;
     size_t buf3_len;
     unsigned i;
-    unsigned seed = time(0);
+    unsigned seed = (unsigned)time(0);
 
     buf_len = base64_encode(buf, sizeof(buf), "hello", 5);
     buf2_len = base64_decode(buf2, sizeof(buf2), buf, buf_len);

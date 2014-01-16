@@ -653,6 +653,7 @@ ssl_selftest(void)
                 banout1
                 );
     banner1_destroy(banner1);
+    banout_release(banout1);
 
     /*
      * Do the fragmented parse
@@ -670,7 +671,7 @@ ssl_selftest(void)
                 banout2
                 );
     banner1_destroy(banner1);
-
+    banout_release(banout2);
 
     /*
      * Do checking

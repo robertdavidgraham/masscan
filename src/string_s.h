@@ -61,7 +61,11 @@ const char *strerror_x(int x);
 # include <string.h>
 # define strcasecmp     _stricmp
 # define memcasecmp     _memicmp
-
+# ifndef PRIu64
+#  define PRIu64 "llu"
+#  define PRId64 "lld"
+#  define PRIx64 "llx"
+# endif
 
 
 #elif defined(_MSC_VER) && (_MSC_VER == 1200)
@@ -74,6 +78,7 @@ const char *strerror_x(int x);
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 
 #elif defined(__GNUC__) && (__GNUC__ == 4)
+#include <inttypes.h>
 /* GCC 4 */
 # define sprintf_s      snprintf
 # define vsprintf_s     vsnprintf

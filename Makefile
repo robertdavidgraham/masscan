@@ -8,8 +8,8 @@ SYS := $(shell gcc -dumpmachine)
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt -ldl -lpthread
-INCLUDES = -I.
-FLAGS2 = -fno-omit-frame-pointer -rdynamic
+INCLUDES =
+FLAGS2 = -rdynamic
 endif
 
 # MAC OS X
@@ -29,7 +29,7 @@ endif
 # to then fix all the errors, so this kinda works now. It's not the
 # intended environment, so it make break in the future.
 ifneq (, $(findstring mingw, $(SYS)))
-INCLUDES = -I. -Ivs10/include
+INCLUDES = -Ivs10/include
 LIBS = -L vs10/lib -lwpcap -lIPHLPAPI -lWs2_32
 FLAGS2 = -march=i686
 endif
@@ -62,7 +62,7 @@ endif
 CC = gcc
 
 DEFINES = 
-CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3 -Wno-format
+CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
 .SUFFIXES: .c .cpp
 
 all: bin/masscan 

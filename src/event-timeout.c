@@ -33,6 +33,12 @@
 
 
 /***************************************************************************
+ * The timeout system is a circular ring. We move an index around the 
+ * ring. At each slot in the ring is a linked-list of all entries at
+ * that time index. Because the ring can wrap, not everything at a given
+ * entry will be the same timestamp. Therefore, when doing the timeout
+ * logic at a slot, we have to doublecheck the actual timestamp, and skip
+ * those things that are further in the future.
  ***************************************************************************/
 struct Timeouts {
     /**
@@ -60,19 +66,38 @@ timeouts_create(uint64_t timestamp)
 {
     struct Timeouts *timeouts;
 
+    /*
+     * Allocate memory and initialize it to zero
+     */
     timeouts = (struct Timeouts *)malloc(sizeof(*timeouts));
     if (timeouts == NULL)
         exit(1);
     memset(timeouts, 0, sizeof(*timeouts));
 
+    /*
+     * We just mask off the low order bits to determine wrap. I'm using
+     * a variable here because one of these days I'm going to make
+     * the size of the ring dynamically adjustable depending upon
+     * the speed of the scan.
+     */
     timeouts->mask = sizeof(timeouts->slots)/sizeof(timeouts->slots[0]) - 1;
 
+    /*
+     * Set the index to the current time. Note that this timestamp is
+     * the 'time_t' value multiplied by the number of ticks-per-second,
+     * where 'ticks' is something I've defined for scanning. Right now
+     * I hard-code in the size of the ticks, but eventually they'll be
+     * dynamically resized depending upon the speed of the scan.
+     */
     timeouts->current_index = timestamp;
+
 
     return timeouts;
 }
 
 /***************************************************************************
+ * This inserts the timeout entry into the appropriate place in the
+ * timeout ring.
  ***************************************************************************/
 void
 timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
@@ -84,7 +109,8 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     timeout_unlink(entry);
 
     if (entry->prev) {
-        LOG(1, "***CHANGE %d-seconds\n", (int)((timestamp-entry->timestamp)/16384ULL));
+        LOG(1, "***CHANGE %d-seconds\n", 
+                    (int)((timestamp-entry->timestamp)/TICKS_PER_SECOND));
     }
 
     /* Initialize the new entry */

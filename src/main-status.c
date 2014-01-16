@@ -12,8 +12,8 @@
 #include "pixie-timer.h"
 #include "unusedparm.h"
 #include "main-globals.h"
+#include "string_s.h"
 #include <stdio.h>
-#include <string.h>
 
 
 
@@ -131,7 +131,7 @@ status_print(
      */
     if (status->is_infinite) {
         fprintf(stderr,
-                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %llu-tcbs,         \r",
+                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %" PRIu64 "-tcbs,         \r",
                         x/1000.0,
                         syn_rate,
                         synack_rate,
@@ -141,15 +141,15 @@ status_print(
     } else {
         if (control_c_pressed) {
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done, waiting %llu-secs, found=%llu       \r",
+                "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
                         x/1000.0,
                         percent_done,
-                        exiting,
+                        (int)exiting,
                         total_synacks
                        );
         } else {
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%llu       \r",
+                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       \r",
                         x/1000.0,
                         percent_done,
                         (unsigned)(time_remaining/60/60),

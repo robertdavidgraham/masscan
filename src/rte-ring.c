@@ -69,16 +69,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ***************************************************************************/
+#include "string_s.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <signal.h>
-//#include <inttypes.h>
 #include <errno.h>
-//#include <sys/queue.h>
 
 #include "pixie-threads.h"
 #include "pixie-timer.h"
@@ -381,14 +379,14 @@ rte_ring_selftest(void)
 
 
     for (i=0; i<100; i++) {
-        unsigned long long result;
+        uint64_t result;
         struct Test test[1];
 
         x_test = test;
 
         result = run_test(test);
         if (result != 500500) {
-            printf("xring: selftest failed with %llu\n", result);
+            printf("xring: selftest failed with %" PRIu64 "\n", result);
             return 1;
         } else
             ;

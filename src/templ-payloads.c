@@ -646,7 +646,7 @@ payloads_read_file(FILE *fp, const char *filename,
          */
         payload_add(payloads, buf, buf_length, ports, source_port, 0);
 
-        rangelist_free(ports);
+        rangelist_remove_all(ports);
     }
 
 #if 0

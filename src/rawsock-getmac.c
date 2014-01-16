@@ -112,7 +112,7 @@ again:
         goto again;
     }
     if (err != NO_ERROR) {
-        fprintf(stderr, "GetAdaptersInfo failed with error: %u\n", err);
+        fprintf(stderr, "GetAdaptersInfo failed with error: %u\n", (unsigned)err);
         return EFAULT;
     }
 

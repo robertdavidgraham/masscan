@@ -38,9 +38,7 @@
 
 */
 #include "proto-snmp.h"
-#include <string.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
 #include "smack.h"
 #include "string_s.h"
@@ -69,6 +67,8 @@ struct SNMP
 };
 
 /****************************************************************************
+ * This is the "compiled MIB" essentially. At program startup, we compile
+ * this into an OID tree. We use this to replace OIDs with names.
  ****************************************************************************/
 struct SnmpOid {
     const char *oid;
@@ -245,7 +245,7 @@ snmp_banner_oid(const unsigned char *oid, size_t oid_length,
         if (x == 0 && i >= oid_length)
             break;
 
-        sprintf_s(foo, sizeof(foo), ".%llu", x);
+        sprintf_s(foo, sizeof(foo), ".%" PRIu64 "", x);
         banout_append(banout, PROTO_SNMP, foo, strlen(foo));
     }
 }
@@ -275,7 +275,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t result = 0;
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
-            sprintf_s(foo, sizeof(foo), "%llu", (unsigned long long)(size_t)foo);
+            sprintf_s(foo, sizeof(foo), "%" PRIu64 "", (uint64_t)(size_t)foo);
             banout_append(banout, PROTO_SNMP, foo, strlen(foo));
         }
         break;
@@ -531,6 +531,7 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 }
 
 /****************************************************************************
+ * Handles an SNMP response.
  ****************************************************************************/
 unsigned
 handle_snmp(struct Output *out, time_t timestamp,
@@ -543,15 +544,21 @@ handle_snmp(struct Output *out, time_t timestamp,
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     unsigned seqno;
-    unsigned request_id;
+    unsigned request_id = 0;
     struct BannerOutput banout[1];
 
     UNUSEDPARM(length);
 
+    /* Initialize the "banner output" module that we'll use to print
+     * pretty text in place of the raw packet */
     banout_init(banout);
-    snmp_parse(px + parsed->app_offset, parsed->app_length,
-        banout,
-        &request_id);
+
+    /* Parse the SNMP packet */
+    snmp_parse(
+        px + parsed->app_offset,    /* incoming SNMP response */
+        parsed->app_length,         /* length of SNMP response */
+        banout,                     /* banner printing */
+        &request_id);               /* syn-cookie info */
 
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
@@ -559,16 +566,23 @@ handle_snmp(struct Output *out, time_t timestamp,
     ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
             | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
+    /* Validate the "syn-cookie" style information. In the case of SNMP,
+     * this will be held in the "request-id" field. If the cookie isn't
+     * a good one, then we'll ignore the response */
     seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
     if ((seqno&0x7FFFffff) != request_id)
         return 1;
 
+    /* Print the banner information, or save to a file, depending */
     output_report_banner(
         out, timestamp,
         ip_them, 17, parsed->port_src,
         PROTO_SNMP,
         banout_string(banout, PROTO_SNMP),
         banout_string_length(banout, PROTO_SNMP));
+
+    /* Free memory for the banner, if there was any allocated */
+    banout_release(banout);
 
     return 0;
 }
@@ -632,14 +646,18 @@ snmp_selftest_banner()
               0x06, 0x12,
                 0x2B, 0x06, 0x01, 0x04, 0x01, 0x8F, 0x51, 0x01, 0x01, 0x01, 0x82, 0x29, 0x5D, 0x01, 0x1B, 0x02, 0x02, 0x01,
     };
-    unsigned request_id;
+    unsigned request_id = 0;
     struct BannerOutput banout[1];
     banout_init(banout);
 
-    snmp_parse(snmp_response, sizeof(snmp_response),
+    /* parse a test packet */
+    snmp_parse( snmp_response, 
+                sizeof(snmp_response),
                 banout,
-                 &request_id);
-
+                &request_id
+                );
+    
+    
     if (request_id != 0x26)
         return 1;
 
@@ -649,6 +667,8 @@ snmp_selftest_banner()
         if (memcmp(str, "sysObjectID:okidata.1.1.1.297.93.1.27.2.2.1", str_length) != 0)
             return 1;
     }
+
+    banout_release(banout);
 
     return 0;
 }

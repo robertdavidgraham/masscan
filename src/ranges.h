@@ -1,5 +1,5 @@
-#ifndef RANGE_H
-#define RANGE_H
+#ifndef RANGES_H
+#define RANGES_H
 #include <stdint.h>
 
 /**
@@ -18,12 +18,70 @@ struct RangeList
     unsigned max;
 };
 
-void rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
-void rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end);
-void rangelist_remove_range2(struct RangeList *task, struct Range range);
-int rangelist_is_contains(const struct RangeList *task, unsigned number);
+/**
+ * Adds the given range to the task list. The given range can be a duplicate
+ * or overlap with an existing range, which will get combined with existing
+ * ranges. 
+ * @param task
+ *      A list of ranges of either IPv4 addresses or port numbers.
+ * @param begin
+ *      The first address of the range that'll be added.
+ * @param end
+ *      The last address (inclusive) of the range that'll be added.
+ */
+void
+rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
 
-struct Range range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
+/**
+ * Removes the given range from the target list. The input range doesn't
+ * have to exist, or can partial overlap with existing ranges.
+ * @param task
+ *      A list of ranges of either IPv4 addresses or port numbers.
+ * @param begin
+ *      The first address of the range that'll be removed.
+ * @param end
+ *      The last address of the range that'll be removed (inclusive).
+ */
+void
+rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end);
+
+/**
+ * Same as 'rangelist_remove_range()', except the input is a range
+ * structure instead of a start/stop numbers.
+ */
+void
+rangelist_remove_range2(struct RangeList *task, struct Range range);
+
+/**
+ * Returns 'true' is the indicated port or IP address is in one of the task
+ * ranges.
+ * @param task
+ *      A list of ranges of either IPv4 addresses or port numbers.
+ * @param number
+ *      Either an IPv4 address or a TCP/UDP port number.
+ * @return 
+ *      'true' if the ranges contain the item, or 'false' otherwise
+ */
+int
+rangelist_is_contains(const struct RangeList *task, unsigned number);
+
+
+/**
+ * Parses IPv4 addresses out of a string. A number of formats are allowed,
+ * either an individual IPv4 address, a CIDR spec, or a start/stop address.
+ * @param line
+ *      A line of text, probably read from a configuration file, or a string
+ *      probably input from the command line. It doesn't need to be nul
+ *      terminated.
+ * @param inout_offset
+ *      The offset into the line were we are parsing. This integer will be
+ *      be incremented by the number of bytes we've parsed from the string.
+ * @param max
+ *      The length of the line, in other words, the max value of inout_offset.
+ */
+struct Range 
+range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
+
 
 /**
  * Remove things from the target list. The primary use of this is the
@@ -104,13 +162,42 @@ rangelist_parse_ports(  struct RangeList *ports,
                         const char *string,
                         unsigned *is_error);
 
-void rangelist_free(struct RangeList *list);
+
+/**
+ * Remove all the ranges in the range list.
+ */
+void
+rangelist_remove_all(struct RangeList *list);
 
 
-unsigned *rangelist_pick2_create(struct RangeList *targets);
-void rangelist_pick2_destroy(unsigned *picker);
+/**
+ * Creates an optimized enumerator for translating indexes into
+ * IP addresses/ports. When doing an entire Internet scan, there
+ * will be thousands of exclude ranges, meaning that translating
+ * an index into an address/port can be slow. Instead of doing
+ * a linear search, the 'pick2' does it with a faster binary
+ * search.
+ * FIXME: this is rather a kludge, I should clean it up, but in practice
+ * it works really well.
+ */
+unsigned *
+rangelist_pick2_create(struct RangeList *targets);
 
-unsigned rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker);
+/**
+ * Frees the memory allocated by 'rangelist_pick2_create()'
+ */
+void
+rangelist_pick2_destroy(unsigned *picker);
+
+/**
+ * Enumerate the IP address or port number given an index variable.
+ * We are choosing an IP/port from the targets list, but we are using
+ * the 'picker' numbers to optimize the enumeration.
+ */
+unsigned
+rangelist_pick2(const struct RangeList *targets, 
+                uint64_t index,
+                const unsigned *picker);
 
 /**
  * Does a regression test of this module

@@ -1081,6 +1081,7 @@ main_scan(struct Masscan *masscan)
             exit(1);
         }
 
+
         /*
          * Initialize the TCP packet template. The way this works is that
          * we parse an existing TCP packet, and use that as the template for
@@ -1294,6 +1295,7 @@ main_scan(struct Masscan *masscan)
         break;
     }
 
+    LOG(1, "EXITING main thread\n");
 
     /*
      * Now cleanup everything

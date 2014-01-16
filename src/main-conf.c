@@ -181,7 +181,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
-    fprintf(fp, "seed = %llu\n", masscan->seed);
+    fprintf(fp, "seed = %" PRIu64 "\n", masscan->seed);
     fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
     if (masscan->is_banners)
         fprintf(fp, "banners = true\n");
@@ -326,7 +326,7 @@ masscan_save_state(struct Masscan *masscan)
     }
 
     fprintf(fp, "\n# resume information\n");
-    fprintf(fp, "resume-index = %llu\n", masscan->resume.index);
+    fprintf(fp, "resume-index = %" PRIu64 "\n", masscan->resume.index);
 
     masscan_echo(masscan, fp);
 

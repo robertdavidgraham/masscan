@@ -239,7 +239,7 @@ parse_file(struct Output *out, const char *filename)
         }
         total_records++;
         if ((total_records & 0xFFFF) == 0)
-            fprintf(stderr, "%s: %8llu\r", filename, total_records);
+            fprintf(stderr, "%s: %8" PRIu64 "\r", filename, total_records);
     }
 
 end:

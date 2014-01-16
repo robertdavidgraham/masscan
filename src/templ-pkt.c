@@ -340,7 +340,7 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
     for (i=0; i<templset->count; i++) {
         const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->packet = (unsigned char*)malloc(p2->length);
+        p2->packet = (unsigned char*)malloc(p2->length + 1);
         memcpy(p2->packet, p1->packet, p2->length);
     }
 

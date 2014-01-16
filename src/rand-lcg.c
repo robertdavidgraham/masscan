@@ -5,7 +5,7 @@
 
 #include "rand-lcg.h"
 #include "rand-primegen.h" /* DJB's prime factoring code */
-
+#include "string_s.h"
 
 #include <math.h>  /* for 'sqrt()', may need -lm for gcc */
 #include <stdint.h>
@@ -313,17 +313,17 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
         /*
          * print the results
          */
-        //printf("sizeof(int) = %llu-bits\n", (uint64_t)(sizeof(size_t)*8));
+        //printf("sizeof(int) = %" PRIu64 "-bits\n", (uint64_t)(sizeof(size_t)*8));
         printf("elapsed     = %5.3f-seconds\n", elapsed);
         printf("factors     = ");
         for (i=0; factors[i]; i++)
-            printf("%llu ", factors[i]);
+            printf("%" PRIu64 " ", factors[i]);
         printf("%s\n", factors[0]?"":"(none)");
-        printf("m           = %-24llu (0x%llx)\n", m, m);
-        printf("a           = %-24llu (0x%llx)\n", a, a);
-        printf("c           = %-24llu (0x%llx)\n", c, c);
-        printf("c%%m         = %-24llu (0x%llx)\n", c%m, c%m);
-        printf("a%%m         = %-24llu (0x%llx)\n", a%m, a%m);
+        printf("m           = %-24" PRIu64 " (0x%" PRIx64 ")\n", m, m);
+        printf("a           = %-24" PRIu64 " (0x%" PRIx64 ")\n", a, a);
+        printf("c           = %-24" PRIu64 " (0x%" PRIx64 ")\n", c, c);
+        printf("c%%m         = %-24" PRIu64 " (0x%" PRIx64 ")\n", c%m, c%m);
+        printf("a%%m         = %-24" PRIu64 " (0x%" PRIx64 ")\n", a%m, a%m);
 
         if (m < 1000000000) {
             if (lcg_verify(a, c+1, m, 280))
@@ -346,7 +346,7 @@ lcg_calculate_constants(uint64_t m, uint64_t *out_a, uint64_t *inout_c, int is_d
 
             for (i=0; i<100 && i < m; i++) {
                 x = lcg_rand(x, a, c, m);
-                count += printf("%*llu ", digits, x);
+                count += printf("%*" PRIu64 " ", digits, x);
                 if (count >= 70) {
                     count = 0;
                     printf("\n");

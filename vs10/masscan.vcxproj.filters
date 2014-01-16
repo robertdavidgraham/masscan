@@ -28,6 +28,9 @@
     <Filter Include="Source Files\rand">
       <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\pixie">
+      <UniqueIdentifier>{cbd42363-ae71-4e2d-9633-0cb518d5e447}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -132,12 +135,6 @@
     <ClCompile Include="..\src\main-throttle.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\pixie-threads.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\pixie-timer.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rte-ring.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
@@ -186,9 +183,6 @@
     <ClCompile Include="..\src\out-redis.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\pixie-file.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\masscan-app.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
@@ -211,7 +205,16 @@
       <Filter>Source Files\rand</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pixie-backtrace.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-file.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-threads.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-timer.c">
+      <Filter>Source Files\pixie</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -296,12 +299,6 @@
     <ClInclude Include="..\src\packet-queue.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\pixie-threads.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\pixie-timer.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\rte-ring.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
@@ -344,12 +341,6 @@
     <ClInclude Include="..\src\in-binary.h">
       <Filter>Source Files\output</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\pixie-file.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\pixie-sockets.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\main-globals.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -368,8 +359,20 @@
     <ClInclude Include="..\src\crypto-base64.h">
       <Filter>Source Files\rand</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\pixie-timer.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\pixie-backtrace.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-file.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-sockets.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-threads.h">
+      <Filter>Source Files\pixie</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
