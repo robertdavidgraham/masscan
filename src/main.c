@@ -711,7 +711,6 @@ receive_thread(void *v)
         seqno_me = TCP_ACKNO(px, parsed.transport_offset);
         cookie = syn_cookie(ip_them, port_them, ip_me, port_me) & 0xFFFFFFFF;
 
-
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
             continue;
@@ -1238,7 +1237,6 @@ main_scan(struct Masscan *masscan)
     if (min_index < count_ips * count_ports) {
         masscan->resume.index = min_index;
 
-        printf("min=%llu max=%llu\n", min_index, count_ips*count_ports);
         /* Write current settings to "paused.conf" so that the scan can be restarted */
         masscan_save_state(masscan);
     }

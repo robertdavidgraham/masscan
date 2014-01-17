@@ -26,12 +26,14 @@ matches_me(struct Output *out, unsigned ip, unsigned port)
 static int
 parse_port_unreachable(const unsigned char *px, unsigned length,
         unsigned *r_ip_me, unsigned *r_ip_them,
-        unsigned *r_port_me, unsigned *r_port_them)
+        unsigned *r_port_me, unsigned *r_port_them,
+        unsigned *r_ip_proto)
 {
     if (length < 24)
         return -1;
     *r_ip_me = px[12]<<24 | px[13]<<16 | px[14]<<8 | px[15];
     *r_ip_them = px[16]<<24 | px[17]<<16 | px[18]<<8 | px[19];
+    *r_ip_proto = px[9]; /* TCP=6, UDP=17 */
 
     px += (px[0]&0xF)<<2;
     length -= (px[0]&0xF)<<2;
@@ -102,12 +104,14 @@ handle_icmp(struct Output *out, time_t timestamp,
         case 3: /* port unreachable */
             if (length - parsed->transport_offset > 8) {
                 unsigned ip_me2, ip_them2, port_me2, port_them2;
+                unsigned ip_proto;
                 int err;
 
                 err = parse_port_unreachable(
                     px + parsed->transport_offset + 8,
                     length - parsed->transport_offset + 8,
-                    &ip_me2, &ip_them2, &port_me2, &port_them2);
+                    &ip_me2, &ip_them2, &port_me2, &port_them2,
+                    &ip_proto);
 
                 if (err)
                     return;
@@ -115,15 +119,28 @@ handle_icmp(struct Output *out, time_t timestamp,
                 if (!matches_me(out, ip_me2, port_me2))
                     return;
 
-                output_report_status(
-                                    out,
-                                    timestamp,
-                                    Port_UdpClosed,
-                                    ip_them2,
-                                    port_them2,
-                                    0,
-                                    px[parsed->ip_offset + 8]);
-
+                switch (ip_proto) {
+                case 6:
+                    output_report_status(
+                                        out,
+                                        timestamp,
+                                        Port_Closed,
+                                        ip_them2,
+                                        port_them2,
+                                        0,
+                                        px[parsed->ip_offset + 8]);
+                    break;
+                case 17:
+                    output_report_status(
+                                        out,
+                                        timestamp,
+                                        Port_UdpClosed,
+                                        ip_them2,
+                                        port_them2,
+                                        0,
+                                        px[parsed->ip_offset + 8]);
+                    break;
+                }
             }
 
         }
