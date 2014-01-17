@@ -194,15 +194,15 @@ pixie_backtrace_init(const char *self)
 
         h = LoadLibraryA("DbgHelp.dll");
         if (h != NULL) {
-            printf("found DbgHelp.dll\n");
+            //printf("found DbgHelp.dll\n");
             Dbg.SymFromAddr = (FUNC_SymFromAddr)GetProcAddress(h, "SymFromAddr");
-            if (Dbg.SymFromAddr) printf("found Dbg.SymFromAddr\n");
+            //if (Dbg.SymFromAddr) printf("found Dbg.SymFromAddr\n");
             Dbg.SymInitialize = (FUNC_SymInitialize)GetProcAddress(h, "SymInitialize");
-            if (Dbg.SymInitialize) printf("found Dbg.SymInitialize\n");
+            //if (Dbg.SymInitialize) printf("found Dbg.SymInitialize\n");
 
             h = LoadLibraryA("Kernel32.dll");
             if (GetProcAddress(NULL, "RtlCaptureStackBackTrace") != NULL)
-                printf("found Dbg.SymInitialize\n");
+                ; //printf("found Dbg.SymInitialize\n");
         }
     }
 

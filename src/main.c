@@ -129,7 +129,7 @@ struct ThreadPair {
      * A copy of the master 'index' variable. This is just advisory for
      * other threads, to tell them how far we've gotten.
      */
-    uint64_t my_index;
+    volatile uint64_t my_index;
 
 
     /* This is used both by the transmit and receive thread for
@@ -428,16 +428,16 @@ infinite:
         } /* end of batch */
 
 
+        /* save our current location for resuming, if the user pressed
+         * <ctrl-c> to exit early */
+        parms->my_index = i;
+
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to --resume the scan later, we save the current
          * state in a file */
         if (control_c_pressed) {
             break;
         }
-
-        /* save our current location for resuming, if the user pressed
-         * <ctrl-c> to exit early */
-        parms->my_index = i;
     }
 
     /*
@@ -458,7 +458,12 @@ infinite:
      */
     rawsock_flush(adapter);
 
-    control_c_pressed = 1;
+    /*
+     * Wait until the receive thread realizes the scan is over
+     */
+    LOG(1, "Transmit thread done, waiting for receive thread to realize this\n");
+    while (!control_c_pressed)
+        pixie_usleep(1000);
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -1210,6 +1215,7 @@ main_scan(struct Masscan *masscan)
         }
 
         if (min_index >= range && !masscan->is_infinite) {
+            /* Note: This is how we can tell the scan has ended */
             control_c_pressed = 1;
         }
 
@@ -1231,6 +1237,9 @@ main_scan(struct Masscan *masscan)
      */
     if (min_index < count_ips * count_ports) {
         masscan->resume.index = min_index;
+
+        printf("min=%llu max=%llu\n", min_index, count_ips*count_ports);
+        /* Write current settings to "paused.conf" so that the scan can be restarted */
         masscan_save_state(masscan);
     }
 
@@ -1269,7 +1278,7 @@ main_scan(struct Masscan *masscan)
         }
 
 
-        status_print(&status, masscan->resume.index, range, rate,
+        status_print(&status, min_index, range, rate,
             total_tcbs, total_synacks, total_syns,
             masscan->wait + 1 - (time(0) - now));
 
