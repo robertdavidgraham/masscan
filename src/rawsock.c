@@ -360,7 +360,7 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet)
 {
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+        
     if (adapter->ring) {
         struct pfring_pkthdr hdr;
         int err;
@@ -417,20 +417,19 @@ rawsock_send_probe(
     unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset)
 {
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+    unsigned char px[2048];
+    size_t packet_length;
+
     /*
      * Construct the destination packet
      */
-    template_set_target(tmplset, ip_them, port_them, ip_me, port_me, seqno);
-    if (tmplset->length < 60)
-        tmplset->length = 60;
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
-
+    template_set_target(tmplset, ip_them, port_them, ip_me, port_me, seqno,
+        px, sizeof(px), &packet_length);
+    
     /*
      * Send it
      */
-    rawsock_send_packet(adapter, tmplset->px, tmplset->length, flush);
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+    rawsock_send_packet(adapter, px, (unsigned)packet_length, flush);
 }
 
 
@@ -639,7 +638,6 @@ rawsock_init_adapter(const char *adapter_name,
 
     if (is_offline)
         return adapter;
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
 
     /*----------------------------------------------------------------
      * PORTABILITY: WINDOWS
@@ -656,7 +654,6 @@ rawsock_init_adapter(const char *adapter_name,
         } else
             adapter_name = new_adapter_name;
     }
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
 
     /*----------------------------------------------------------------
      * PORTABILITY: PF_RING
@@ -727,7 +724,6 @@ rawsock_init_adapter(const char *adapter_name,
         return adapter;
     }
 
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
     
     /*----------------------------------------------------------------
      * PORTABILITY: LIBPCAP
@@ -737,14 +733,14 @@ rawsock_init_adapter(const char *adapter_name,
     {
         LOG(1, "pcap: %s\n", pcap_lib_version());
         LOG(2, "pcap:'%s': opening...\n", adapter_name);
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+     
         adapter->pcap = pcap_open_live(
                     adapter_name,           /* interface name */
                     65536,                  /* max packet size */
                     8,                      /* promiscuous mode */
                     1000,                   /* read timeout in milliseconds */
                     errbuf);
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+        
         if (adapter->pcap == NULL) {
             LOG(0, "FAIL: %s\n", errbuf);
             if (strstr(errbuf, "perm")) {
@@ -761,7 +757,7 @@ rawsock_init_adapter(const char *adapter_name,
             return 0;
         } else
             LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+        
 
         /* Figure out the link-type. We suport Ethernet and IP */
         {
@@ -780,7 +776,7 @@ rawsock_init_adapter(const char *adapter_name,
 
             }
         }
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+        
 
         /* Set any BPF filters the user might've set */
         if (bpf_filter) {
@@ -806,7 +802,7 @@ rawsock_init_adapter(const char *adapter_name,
             }
         }
 
-        /*--*/LOG(1, "%u 0x%llx\n", __LINE__, (unsigned long long)adapter->ring);
+        
 
     }
 

@@ -243,7 +243,6 @@ http_parse(
     id = (state>>8) & 0xFF;
     state = (state>>0) & 0xFF;
 
-
     for (i=0; i<length; i++)
     switch (state) {
     case 0: case 1: case 2: case 3: case 4:

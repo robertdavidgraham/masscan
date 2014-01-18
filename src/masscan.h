@@ -206,6 +206,12 @@ struct Masscan
      * --readscan
      */
     unsigned is_readscan:1;
+
+
+    /**
+     * --min-packet
+     */
+    unsigned min_packet_size;
 };
 
 

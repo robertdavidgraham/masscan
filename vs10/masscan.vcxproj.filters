@@ -216,6 +216,9 @@
     <ClCompile Include="..\src\pixie-timer.c">
       <Filter>Source Files\pixie</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-tcp-telnet.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -373,6 +376,9 @@
     </ClInclude>
     <ClInclude Include="..\src\pixie-threads.h">
       <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp-telnet.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

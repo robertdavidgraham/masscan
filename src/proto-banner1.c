@@ -50,6 +50,7 @@ banner1_parse(
     size_t x;
     unsigned offset = 0;
 
+
     switch (tcb_state->app_proto) {
     case PROTO_NONE:
     case PROTO_HEUR:

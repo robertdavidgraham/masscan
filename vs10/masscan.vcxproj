@@ -56,6 +56,7 @@
     <ClCompile Include="..\src\pixie-threads.c" />
     <ClCompile Include="..\src\pixie-timer.c" />
     <ClCompile Include="..\src\proto-preprocess.c" />
+    <ClCompile Include="..\src\proto-tcp-telnet.c" />
     <ClCompile Include="..\src\proto-udp.c" />
     <ClCompile Include="..\src\proto-x509.c" />
     <ClCompile Include="..\src\proto-zeroaccess.c" />
@@ -115,6 +116,7 @@
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
+    <ClInclude Include="..\src\proto-tcp-telnet.h" />
     <ClInclude Include="..\src\proto-udp.h" />
     <ClInclude Include="..\src\proto-x509.h" />
     <ClInclude Include="..\src\proto-zeroaccess.h" />

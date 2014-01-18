@@ -846,7 +846,7 @@ receive_thread(void *v)
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN,
-                        0, 0, secs, usecs, seqno_them);
+                        0, parsed.app_length, secs, usecs, seqno_them);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
@@ -1343,6 +1343,7 @@ int main(int argc, char *argv[])
     masscan->nic_count = 1;
     masscan->shard.one = 1;
     masscan->shard.of = 1;
+    masscan->min_packet_size = 60;
     masscan->payloads = payloads_create();
     strcpy_s(   masscan->rotate_directory,
                 sizeof(masscan->rotate_directory),

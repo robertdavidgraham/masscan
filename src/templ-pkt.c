@@ -340,7 +340,7 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
     for (i=0; i<templset->count; i++) {
         const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->packet = (unsigned char*)malloc(p2->length + 1);
+        p2->packet = (unsigned char*)malloc(p2->length);
         memcpy(p2->packet, p1->packet, p2->length);
     }
 
@@ -481,17 +481,15 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
 
 
 /***************************************************************************
- * Here we take a packet template, parse it, then make it easier to work
- * with.
  ***************************************************************************/
 void
 template_set_target(
     struct TemplateSet *tmplset,
     unsigned ip_them, unsigned port_them,
     unsigned ip_me, unsigned port_me,
-    unsigned seqno)
+    unsigned seqno,
+    unsigned char *px, size_t sizeof_px, size_t *r_length)
 {
-    unsigned char *px;
     unsigned offset_ip;
     unsigned offset_tcp;
     uint64_t xsum;
@@ -519,7 +517,11 @@ template_set_target(
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-        px = tmpl->packet + tmpl->offset_ip;
+        
+        if (sizeof_px > tmpl->length)
+            sizeof_px = tmpl->length;
+        memcpy(px, tmpl->packet, sizeof_px);
+        px = px + tmpl->offset_ip;
         px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
         px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
         px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
@@ -528,15 +530,17 @@ template_set_target(
         px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
         px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
         px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
-        tmplset->px = tmpl->packet;
-        tmplset->length = tmpl->length;
+        *r_length = sizeof_px;
         return;
     } else {
         return;
     }
 
     /* Create some shorter local variables to work with */
-    px = tmpl->packet;
+    if (sizeof_px > tmpl->length)
+        sizeof_px = tmpl->length;
+    *r_length = sizeof_px;
+    memcpy(px, tmpl->packet, sizeof_px);
     offset_ip = tmpl->offset_ip;
     offset_tcp = tmpl->offset_tcp;
     ip_id = ip_them ^ port_them ^ seqno;
@@ -663,9 +667,6 @@ template_set_target(
         /* don't do any checksumming */
         break;
     }
-
-    tmplset->px = tmpl->packet;
-    tmplset->length = tmpl->length;
 }
 
 

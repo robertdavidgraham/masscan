@@ -44,8 +44,6 @@ struct TemplatePacket {
 
 struct TemplateSet
 {
-    const unsigned char *px;
-    unsigned length;
     unsigned count;
     struct TemplatePacket pkts[8];
 };
@@ -117,7 +115,8 @@ template_set_target(
     struct TemplateSet *templset,
     unsigned ip_them, unsigned port_them,
     unsigned ip_me, unsigned port_me,
-    unsigned seqno);
+    unsigned seqno,
+    unsigned char *px, size_t sizeof_px, size_t *r_length);
 
 
 /**

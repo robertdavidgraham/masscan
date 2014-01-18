@@ -295,6 +295,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
      *  TCP payloads
      */
     fprintf(fp, "\n");
+    fprintf(fp, "min-packet = %u\n", masscan->min_packet_size);
+
     {
         struct TcpCfgPayloads *pay;
         for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
@@ -656,7 +658,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* If more than one IP address given, make the range is
             * an even power of two (1, 2, 4, 8, 16, ...) */
-        if (!is_power_of_two(range.end - range.begin + 1)) {
+        if (!is_power_of_two((uint64_t)range.end - range.begin + 1)) {
             LOG(0, "FAIL: range must be even power of two: %s=%s\n",
                     name, value);
             exit(1);
@@ -664,7 +666,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         masscan->nic[index].src.ip.first = range.begin;
         masscan->nic[index].src.ip.last = range.end;
-        masscan->nic[index].src.ip.range = range.end - range.begin + 1;
+        masscan->nic[index].src.ip.range = (uint64_t)range.end - range.begin + 1;
     } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)
                || EQUALS("src-port", name)) {
         /* Send packets FROM this port number */
@@ -1040,6 +1042,8 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("log-errors", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
+    } else if (EQUALS("min-packet", name) || EQUALS("min-pkt", name)) {
+        masscan->min_packet_size = (unsigned)parseInt(value);
     } else if (EQUALS("max-retries", name)) {
         masscan_set_parameter(masscan, "retries", value);
     } else if (EQUALS("max-rate", name)) {

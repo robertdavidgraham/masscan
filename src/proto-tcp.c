@@ -570,13 +570,16 @@ tcpcon_send_packet(
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(tcpcon->packet_buffers, (void**)&response);
         if (err != 0) {
-            //LOG(0, "packet buffers empty (should be impossible)\n");
-            printf("+");
+            static int is_warning_printed = 0;
+            if (!is_warning_printed) {
+                LOG(0, "packet buffers empty (should be impossible)\n");
+                is_warning_printed = 1;
+            }
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
         if (wait != 100)
-            printf("\n");
+            ; //printf("\n");FIXME
     }
     if (response == NULL)
         return;
@@ -640,13 +643,16 @@ tcp_send_RST(
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
         if (err != 0) {
-            //LOG(0, "packet buffers empty (should be impossible)\n");
-            printf("+");
+            static int is_warning_printed = 0;
+            if (!is_warning_printed) {
+                LOG(0, "packet buffers empty (should be impossible)\n");
+                is_warning_printed = 1;
+            }
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
         if (wait != 100)
-            printf("\n");
+            ;//printf("\n"); FIXME
     }
     if (response == NULL)
         return;
@@ -714,6 +720,7 @@ parse_banner(
     size_t payload_length)
 {
     assert(tcb->banout.max_length);
+    
     banner1_parse(
                                     tcpcon->banner1,
                                     &tcb->banner1_state,
@@ -940,24 +947,17 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         {
             unsigned err;
 
-            /* If this packet skips over a lost packet on the Internet,
-             * then we need to discard it */
-            if (seqno_them - tcb->seqno_them < 10000
-                && 0 < seqno_them - tcb->seqno_them)
+            if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)
                 return;
 
-            /* If this payload overlaps something we've already seen, then
-             * shrink the payload length */
-            if (tcb->seqno_them - seqno_them < 10000) {
-                unsigned already_received = tcb->seqno_them - seqno_them;
-                if (already_received >= payload_length)
-                    return;
-                else {
-                    payload += already_received;
-                    payload_length -= already_received;
-                }
+            while (seqno_them != tcb->seqno_them && payload_length) {
+                seqno_them++;
+                payload_length--;
             }
 
+            if (payload_length == 0)
+                return;
+            
             /* extract a banner if we can */
             err = parse_banner(
                         tcpcon,
@@ -967,7 +967,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
 
             /* move their sequence number forward */
             tcb->seqno_them += (unsigned)payload_length;
-
+            
             /* acknowledge the bytes sent */
             tcpcon_send_packet(tcpcon, tcb,
                         0x10,
@@ -984,7 +984,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = seqno_them + 1;
+        tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
                     0x11, /*reset */
                     0, 0);
@@ -1060,7 +1060,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
 
 
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = seqno_them + 1;
+        tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
             0x11,
             0, 0);
