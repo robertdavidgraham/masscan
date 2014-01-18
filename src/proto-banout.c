@@ -186,13 +186,9 @@ banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_
      */
     memcpy(p->banner + p->length, px, length);
     p->length = (unsigned)(p->length + length);
-    if (p->length > 18 && memcmp(p->banner, "Invalid URLInvalid", 18) == 0) {
-        printf("asldkufhasdlkfhjasdf             \n");
-        exit(1);
-    }
 }
 
-/**********************************************************************bb*****
+/***************************************************************************
  ***************************************************************************/
 int
 banout_selftest(void)
