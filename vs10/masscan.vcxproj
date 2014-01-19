@@ -40,6 +40,7 @@
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
+    <ClCompile Include="..\src\proto-sctp.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
     <ClCompile Include="..\src\proto-ssl-test.c" />
@@ -112,6 +113,7 @@
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
+    <ClInclude Include="..\src\proto-sctp.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />

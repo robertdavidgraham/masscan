@@ -69,6 +69,10 @@ struct Output
             uint64_t closed;
         } udp;
         struct {
+            uint64_t open;
+            uint64_t closed;
+        } sctp;
+        struct {
             uint64_t echo;
             uint64_t timestamp;
         } icmp;

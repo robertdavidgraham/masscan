@@ -8,6 +8,8 @@ enum PortStatus {
     Port_IcmpEchoResponse,
     Port_UdpOpen,
     Port_UdpClosed,
+    Port_SctpOpen,
+    Port_SctpClosed,
     Port_ArpOpen,
 };
 

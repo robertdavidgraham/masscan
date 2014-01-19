@@ -58,6 +58,8 @@ proto_from_status(unsigned status)
         case Port_UdpOpen: return "udp";
         case Port_UdpClosed: return "udp";
         case Port_ArpOpen: return "arp";
+        case Port_SctpOpen: return "sctp";
+        case Port_SctpClosed: return "sctp";
         default: return "err";
     }
 }
@@ -76,6 +78,8 @@ status_string(int x)
         case Port_Closed: return "closed";
         case Port_UdpOpen: return "open";
         case Port_UdpClosed: return "closed";
+        case Port_SctpOpen: return "open";
+        case Port_SctpClosed: return "closed";
         case Port_IcmpEchoResponse: return "open";
         case Port_ArpOpen: return "open";
         default: return "unknown";
@@ -604,12 +608,14 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     case Port_Open:
     case Port_IcmpEchoResponse:
     case Port_UdpOpen:
+    case Port_SctpOpen:
     case Port_ArpOpen:
     default:
         break;
 
     case Port_Closed:
     case Port_UdpClosed:
+    case Port_SctpClosed:
         return;
     }
 
@@ -674,6 +680,14 @@ output_report_status(struct Output *out, time_t timestamp, int status,
             break;
         case Port_UdpClosed:
             out->counts.udp.closed++;
+            if (out->is_open_only)
+                return;
+            break;
+        case Port_SctpOpen:
+            out->counts.sctp.open++;
+            break;
+        case Port_SctpClosed:
+            out->counts.sctp.closed++;
             if (out->is_open_only)
                 return;
             break;

@@ -49,6 +49,7 @@
 #include "proto-x509.h"
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "pixie-backtrace.h"
+#include "proto-sctp.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -390,8 +391,8 @@ infinite:
                 ip_me = src_ip;
                 port_me = src_port;
             }
-            cookie = syn_cookie(ip_them, port_them, ip_me, port_me);
-
+            cookie = syn_cookie(ip_them, port_them&0xFFFF, ip_me, port_me);
+//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
             /*
              * SEND THE PROBE
              *  This is sorta the entire point of the program, but little
@@ -714,6 +715,7 @@ receive_thread(void *v)
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
             continue;
+//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
 
 
         /*
@@ -766,6 +768,9 @@ receive_thread(void *v)
             case FOUND_ICMP:
                 handle_icmp(out, secs, px, length, &parsed);
                 continue;
+            case FOUND_SCTP:
+                handle_sctp(out, secs, px, length, cookie, &parsed);
+                break;
             case FOUND_TCP:
                 /* fall down to below */
                 break;
@@ -1481,6 +1486,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += sctp_selftest();
             x += base64_selftest();
             x += banner1_selftest();
             x += output_selftest();

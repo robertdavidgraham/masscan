@@ -98,8 +98,14 @@ handle_icmp(struct Output *out, time_t timestamp,
     case 3: /* destination unreachable */
         switch (code) {
         case 0: /* net unreachable */
+            /* We get these a lot while port scanning, often a flood coming
+             * back from broken/misconfigured networks */
+            break;
         case 1: /* host unreachable */
+            /* This means the router doesn't exist */
+            break;
         case 2: /* protocol unreachable */
+            /* The host exists, but it doesn't support SCTP */
             break;
         case 3: /* port unreachable */
             if (length - parsed->transport_offset > 8) {
@@ -135,6 +141,16 @@ handle_icmp(struct Output *out, time_t timestamp,
                                         out,
                                         timestamp,
                                         Port_UdpClosed,
+                                        ip_them2,
+                                        port_them2,
+                                        0,
+                                        px[parsed->ip_offset + 8]);
+                    break;
+                case 132:
+                    output_report_status(
+                                        out,
+                                        timestamp,
+                                        Port_SctpClosed,
                                         ip_them2,
                                         port_them2,
                                         0,

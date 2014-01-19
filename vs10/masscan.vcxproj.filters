@@ -219,6 +219,9 @@
     <ClCompile Include="..\src\proto-tcp-telnet.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-sctp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -378,6 +381,9 @@
       <Filter>Source Files\pixie</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-tcp-telnet.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-sctp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>

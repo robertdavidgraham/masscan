@@ -175,7 +175,12 @@ parse_icmp:
 
 parse_sctp:
     {
-        VERIFY_REMAINING(4, FOUND_SCTP);
+        VERIFY_REMAINING(12, FOUND_SCTP);
+        info->port_src = ex16be(px+offset+0);
+        info->port_dst = ex16be(px+offset+2);
+        info->app_offset = offset + 12;
+        info->app_length = length - info->app_offset;
+        assert(info->app_length < 2000);
         return 1;
     }
 
