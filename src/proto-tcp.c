@@ -578,8 +578,8 @@ tcpcon_send_packet(
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
-        if (wait != 100)
-            ; //printf("\n");FIXME
+        //if (wait != 100)
+        //    ; //printf("\n");FIXME
     }
     if (response == NULL)
         return;
@@ -651,8 +651,8 @@ tcp_send_RST(
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
-        if (wait != 100)
-            ;//printf("\n"); FIXME
+        //if (wait != 100)
+        //    ;//printf("\n"); FIXME
     }
     if (response == NULL)
         return;

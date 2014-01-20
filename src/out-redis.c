@@ -82,7 +82,7 @@ parse_state_machine(struct Output *out, const unsigned char *px, size_t length)
     case PON:
     case PONG_CR:
     case PONG_CR_LF:
-        if ("PONG+"[i-P] == px[i]) {
+        if ("PONG+\r\n"[i-P] == px[i]) {
             state++;
             if (px[i] == '\n') {
                 out->redis.state = 0;

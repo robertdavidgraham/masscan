@@ -55,6 +55,7 @@
 		11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */; };
 		11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D117DBCC7E00DDFD32 /* templ-pkt.c */; };
 		11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D317DBCC7E00DDFD32 /* xring.c */; };
+		11AC2F9B188CE34A008CB623 /* proto-sctp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC2F99188CE34A008CB623 /* proto-sctp.c */; };
 		11AC80ED17E0DAD4001BCE3A /* proto-http.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E717E0DAD4001BCE3A /* proto-http.c */; };
 		11AC80EE17E0DAD4001BCE3A /* proto-icmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E917E0DAD4001BCE3A /* proto-icmp.c */; };
 		11AC80EF17E0DAD4001BCE3A /* proto-ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */; };
@@ -67,6 +68,7 @@
 		11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED218641DCC00DA5438 /* proto-ssl-test.c */; };
 		11B22ED718641DCC00DA5438 /* proto-x509.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED318641DCC00DA5438 /* proto-x509.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
+		11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -176,6 +178,8 @@
 		11A921D317DBCC7E00DDFD32 /* xring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = xring.c; sourceTree = "<group>"; };
 		11A921D417DBCC7E00DDFD32 /* xring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = xring.h; sourceTree = "<group>"; };
 		11A921FB17DBD17600DDFD32 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		11AC2F99188CE34A008CB623 /* proto-sctp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-sctp.c"; sourceTree = "<group>"; };
+		11AC2F9A188CE34A008CB623 /* proto-sctp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-sctp.h"; sourceTree = "<group>"; };
 		11AC80E717E0DAD4001BCE3A /* proto-http.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-http.c"; sourceTree = "<group>"; };
 		11AC80E817E0DAD4001BCE3A /* proto-http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-http.h"; sourceTree = "<group>"; };
 		11AC80E917E0DAD4001BCE3A /* proto-icmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-icmp.c"; sourceTree = "<group>"; };
@@ -198,6 +202,8 @@
 		11B22ED418641DCC00DA5438 /* proto-x509.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-x509.h"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
+		11E76DB21889BC5200061F45 /* pixie-backtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-backtrace.c"; sourceTree = "<group>"; };
+		11E76DB31889BC5200061F45 /* pixie-backtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-backtrace.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -231,6 +237,10 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11AC2F99188CE34A008CB623 /* proto-sctp.c */,
+				11AC2F9A188CE34A008CB623 /* proto-sctp.h */,
+				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
+				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
 				11A773E91881BFC700B135DE /* crypto-base64.c */,
 				11A773EA1881BFC700B135DE /* crypto-base64.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
@@ -460,6 +470,8 @@
 				11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */,
 				11B22ED718641DCC00DA5438 /* proto-x509.c in Sources */,
 				11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */,
+				11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */,
+				11AC2F9B188CE34A008CB623 /* proto-sctp.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

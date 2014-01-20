@@ -507,7 +507,7 @@ template_set_target(
     unsigned ip_id;
     struct TemplatePacket *tmpl = NULL;
     unsigned xsum2;
-    unsigned xsum3;
+    //unsigned xsum3;
 
     /*
      * Find out which packet template to use. This is because we can
@@ -579,14 +579,14 @@ template_set_target(
     px[offset_ip+19] = (unsigned char)((ip_them >>  0) & 0xFF);
 
 
-    xsum = tmpl->checksum_ip;
+    /*xsum = tmpl->checksum_ip;
     xsum += tmpl->length - tmpl->offset_app;
     xsum += (ip_id&0xFFFF);
     xsum += ip_them;
     xsum += ip_me;
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
     xsum = (xsum >> 16) + (xsum & 0xFFFF);
-    xsum = ~xsum;
+    xsum = ~xsum;*/
 
     px[offset_ip+10] = (unsigned char)(0);
     px[offset_ip+11] = (unsigned char)(0);
@@ -594,7 +594,7 @@ template_set_target(
     xsum2 = (unsigned)~ip_header_checksum(px, offset_ip, tmpl->length);
 
 
-    xsum3 = *(unsigned*)&px[offset_ip+0];
+    /*xsum3 = *(unsigned*)&px[offset_ip+0];
     xsum3 += *(unsigned*)&px[offset_ip+4];
     xsum3 += *(unsigned*)&px[offset_ip+8];
     xsum3 += *(unsigned*)&px[offset_ip+12];
@@ -602,7 +602,7 @@ template_set_target(
     xsum3 = (xsum3 >> 16) + (xsum3 & 0xFFFF);
     xsum3 = (xsum3 >> 16) + (xsum3 & 0xFFFF);
     xsum3 = (xsum3 >> 16) + (xsum3 & 0xFFFF);
-    xsum3 = (~xsum3) & 0xFFFF;
+    xsum3 = (~xsum3) & 0xFFFF;*/
 
 
     px[offset_ip+10] = (unsigned char)(xsum2 >> 8);
