@@ -96,6 +96,7 @@ struct Output
     } xml;
 };
 
+const char *proto_from_proto(unsigned ip_proto);
 const char *proto_from_status(unsigned status);
 const char *status_string(int x);
 const char *reason_string(int x, char *buffer, size_t sizeof_buffer);

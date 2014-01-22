@@ -43,6 +43,21 @@
 #include <string.h>
 
 
+/*****************************************************************************
+ * The 'status' variable contains both the open/closed info as well as the
+ * protocol info. This splits it back out into two values.
+ *****************************************************************************/
+const char *
+proto_from_proto(unsigned ip_proto)
+{
+    switch (ip_proto) {
+    case 1: return "icmp";
+    case 6: return "tcp";
+    case 17: return "udp";
+    case 132: return "sctp";
+    default: return "unknown";
+    }
+}
 
 /*****************************************************************************
  * The 'status' variable contains both the open/closed info as well as the
@@ -740,8 +755,9 @@ output_report_banner(struct Output *out, time_t now,
         unsigned count;
         char banner_buffer[4096];
 
-        count = fprintf(stdout, "Banner on port %u/tcp on %u.%u.%u.%u: [%s] %s",
+        count = fprintf(stdout, "Banner on port %u/%s on %u.%u.%u.%u: [%s] %s",
             port,
+            proto_from_proto(ip_proto),
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,

@@ -97,16 +97,8 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
-    char ip_proto_sz[64];
 
     UNUSEDPARM(out);
-
-    switch (ip_proto) {
-    case 1: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "icmp"); break;
-    case 6: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "tcp"); break;
-    case 17: strcpy_s(ip_proto_sz, sizeof(ip_proto_sz), "udp"); break;
-    default: sprintf_s(ip_proto_sz, sizeof(ip_proto_sz), "(%u)", ip_proto); break;
-    }
 
     fprintf(fp, "<host endtime=\"%u\">"
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
@@ -124,7 +116,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
-        ip_proto_sz,
+        proto_from_proto(ip_proto),
         port,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))

@@ -648,7 +648,7 @@ template_set_target(
 
         px[offset_tcp+6] = (unsigned char)(0);
         px[offset_tcp+7] = (unsigned char)(0);
-        xsum = udp_checksum(tmpl);
+        xsum = udp_checksum2(px, offset_ip, offset_tcp, tmpl->length - offset_tcp);
         /*xsum += (uint64_t)tmpl->checksum_tcp
                 + (uint64_t)ip_me
                 + (uint64_t)ip_them

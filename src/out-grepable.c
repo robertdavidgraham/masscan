@@ -174,13 +174,16 @@ grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                     (unsigned char)(ip>> 8),
                     (unsigned char)(ip>> 0)
                     );
-    fprintf(fp, "\tApp: %s", masscan_app_to_string(proto));
+    fprintf(fp, "\tPort: %u", port);
+
+    fprintf(fp, "\tService: %s", masscan_app_to_string(proto));
 
     normalize_string(px, length, banner_buffer, sizeof(banner_buffer));
 
     fprintf(fp, "\tBanner: %s\n", banner_buffer);
 
 }
+
 
 
 /****************************************************************************
