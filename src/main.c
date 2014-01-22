@@ -392,7 +392,7 @@ infinite:
                 ip_me = src_ip;
                 port_me = src_port;
             }
-            cookie = syn_cookie(ip_them, port_them&0xFFFF, ip_me, port_me);
+            cookie = syn_cookie(ip_them, port_them, ip_me, port_me);
 //printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
             /*
              * SEND THE PROBE
@@ -711,7 +711,14 @@ receive_thread(void *v)
         port_them = parsed.port_src;
         seqno_them = TCP_SEQNO(px, parsed.transport_offset);
         seqno_me = TCP_ACKNO(px, parsed.transport_offset);
-        cookie = syn_cookie(ip_them, port_them, ip_me, port_me) & 0xFFFFFFFF;
+
+        switch (parsed.ip_protocol) {
+        case 132: /* SCTP */
+            cookie = syn_cookie(ip_them, port_them | (Proto_SCTP<<16), ip_me, port_me) & 0xFFFFFFFF;
+            break;
+        default:
+            cookie = syn_cookie(ip_them, port_them, ip_me, port_me) & 0xFFFFFFFF;
+        }
 
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
