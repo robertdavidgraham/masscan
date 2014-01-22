@@ -204,6 +204,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_List:       fprintf(fp, "output-format = list\n"); break;
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
+    case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
     case Output_None:       fprintf(fp, "output-format = none\n"); break;
     case Output_Redis:
@@ -1104,6 +1105,8 @@ masscan_set_parameter(struct Masscan *masscan,
         else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
         else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
         else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
+        else if (EQUALS("greppable", value))    masscan->nmap.format = Output_Grepable;
+        else if (EQUALS("grepable", value))     masscan->nmap.format = Output_Grepable;
         else if (EQUALS("json", value))         masscan->nmap.format = Output_JSON;
         else if (EQUALS("none", value))         masscan->nmap.format = Output_None;
         else if (EQUALS("redis", value))        masscan->nmap.format = Output_Redis;
@@ -1539,8 +1542,6 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'G':
                     masscan->nmap.format = Output_Grepable;
-                    fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
-                    exit(1);
                     break;
                 case 'L':
                     masscan_set_parameter(masscan, "output-format", "list");
@@ -1551,7 +1552,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 }
 
                 ++i;
-                if (i >= argc || argv[i][0] == '-') {
+                if (i >= argc || (argv[i][0] == '-' && argv[i][1] != '\0')) {
                     fprintf(stderr, "missing output filename\n");
                     exit(1);
                 }

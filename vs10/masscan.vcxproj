@@ -27,6 +27,7 @@
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
     <ClCompile Include="..\src\out-binary.c" />
+    <ClCompile Include="..\src\out-grepable.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />
@@ -95,6 +96,7 @@
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan-app.h" />
+    <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
     <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\output.h" />

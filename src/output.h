@@ -39,11 +39,14 @@ struct OutputType {
  */
 struct Output
 {
+    const struct Masscan *masscan;
     char *filename;
     struct Source src[8];
     FILE *fp;
     const struct OutputType *funcs;
     unsigned format;
+
+    time_t when_scan_started;
 
     struct {
         time_t next;
@@ -105,6 +108,7 @@ extern const struct OutputType xml_output;
 extern const struct OutputType binary_output;
 extern const struct OutputType null_output;
 extern const struct OutputType redis_output;
+extern const struct OutputType grepable_output;
 
 /**
  * Creates an "output" object. This is called by the receive thread in order

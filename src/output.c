@@ -71,9 +71,9 @@ proto_from_status(unsigned status)
  * string based on the narrow variable.
  *****************************************************************************/
 const char *
-status_string(int x)
+status_string(int status)
 {
-    switch (x) {
+    switch (status) {
         case Port_Open: return "open";
         case Port_Closed: return "closed";
         case Port_UdpOpen: return "open";
@@ -155,7 +155,7 @@ normalize_string(const unsigned char *px, size_t length,
 static FILE *
 open_rotate(struct Output *out, const char *filename)
 {
-    FILE *fp;
+    FILE *fp = 0;
     unsigned is_append = out->is_append;
     int x;
 
@@ -186,16 +186,22 @@ open_rotate(struct Output *out, const char *filename)
         return (FILE*)fd;
     }
 
+    /* Do something special for the "-" filename */
+    if (filename[0] == '-' && filename[1] == '\0')
+        fp = stdout;
+
     /* open a "shareable" file. On Windows, by default files can't be renamed
      * while they are open, so we need a special function that takes care
      * of this. */
-    x = pixie_fopen_shareable(&fp, filename, is_append);
-    if (x != 0 || fp == NULL) {
-        fprintf(stderr, "out: could not open file for %s\n",
-                is_append?"appending":"writing");
-        perror(filename);
-        control_c_pressed = 1;
-        return NULL;
+    if (fp == 0) {
+        x = pixie_fopen_shareable(&fp, filename, is_append);
+        if (x != 0 || fp == NULL) {
+            fprintf(stderr, "out: could not open file for %s\n",
+                    is_append?"appending":"writing");
+            perror(filename);
+            control_c_pressed = 1;
+            return NULL;
+        }
     }
 
     /*
@@ -369,6 +375,8 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     if (out == NULL)
         return NULL;
     memset(out, 0, sizeof(*out));
+    out->masscan = masscan;
+    out->when_scan_started = time(0);
 
     /*
      * Copy the configuration information from the 'masscan' structure.
@@ -407,6 +415,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
         break;
     case Output_Binary:
         out->funcs = &binary_output;
+        break;
+    case Output_Grepable:
+        out->funcs = &grepable_output;
         break;
     case Output_Redis:
         out->funcs = &redis_output;

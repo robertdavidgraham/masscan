@@ -16,6 +16,7 @@
     to make this file relative "flat" this way so that everything is visible.
 */
 #include "masscan.h"
+#include "masscan-version.h"
 #include "masscan-status.h"     /* open or closed */
 #include "rand-blackrock.h"     /* the BlackRock shuffling func */
 #include "rand-lcg.h"           /* the LCG randomization func */
@@ -1180,7 +1181,7 @@ main_scan(struct Masscan *masscan)
         now = time(0);
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
-        LOG(0, "\nStarting masscan 1.0.1 (http://bit.ly/14GZzcT) at %s\n", buffer);
+        LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
         LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
         LOG(0, "Initiating SYN Stealth Scan\n");
         LOG(0, "Scanning %u hosts [%u port%s/host]\n",
