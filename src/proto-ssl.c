@@ -248,17 +248,15 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
     if (px == 0) {
         switch (state) {
         case 0:
-            out_b64(b64x, banout, PROTO_X509_CERT);
             break;
         case 1:
             b64x *= 256;
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>18)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>12)&0x3F]);
+            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>10)&0x3F]);
+            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>4)&0x3F]);
             banout_append_char(banout, PROTO_X509_CERT, '=');
             banout_append_char(banout, PROTO_X509_CERT, '=');
             break;
         case 2:
-            b64x *= 256;
             b64x *= 256;
             banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>18)&0x3F]);
             banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>12)&0x3F]);
