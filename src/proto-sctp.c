@@ -198,7 +198,8 @@ sctp_selftest(void)
 
     xsum = sctp_checksum(testcase, 32);
     
-    printf("0x%08x\n", xsum);
+    if (xsum != 0x58e45d36)
+        return 1;
 
     return 0;
 }
