@@ -122,13 +122,9 @@ one port.
 
   * `--open-only`: report only open ports, not closed ports.
 
-  * `--output-format <fmt>`: indicates the format of the output file, which
-    can be `xml` or `binary`. The option `--output-filename` must be
-	specified.
 
-  * `--output-filename <filename>`: the file which to save results to. If
-    the parameter `--output-format` is not specified, then the default of
-	`xml` will be used.
+
+
 
   * `--pcap <filename>`: saves received packets (but not transmitted
     packets) to the libpcap-format file.
@@ -147,11 +143,11 @@ one port.
 	it among multiple instances, though the `--shards` option might be 
 	better.
 
-  * `--shards <x>/<y>`: splits the scan among instances. `x` is the id
-   for this scan, while `y` is the total number of instances. For example,
-   `--shards 1/2` tells an instance to send every other packet, starting
-   with index 0. Likewise, `--shards 2/2` sends every other packet, but
-   starting with index 1, so that it doesn't overlap with the first example.
+  * `--shards <x>/<y>`: splits the scan among instances. `x` is the id 
+	  for this scan, while `y` is the total number of instances. For example,
+	  `--shards 1/2` tells an instance to send every other packet, starting
+	  with index 0. Likewise, `--shards 2/2` sends every other packet, but
+	  starting with index 1, so that it doesn't overlap with the first example.
 
   * `--rotate <time>`: rotates the output file, renaming it with the 
     current timestamp, moving it to a separate directory. The time is
@@ -194,16 +190,39 @@ one port.
 	`--shard`, `--resume-index`, and `--resume-count` can be useful with
 	this feature.
     
-  * `-oX <filename>`: sets the output format to XML and saves the output in the
-    given filename. This is equivelent to using the `--output-format` and
-    `--output-filename` parameters.
-    
+  * `--interactive`: show the results in realtime on the console. It has 
+    no effect if used with --output-format or --output-filename.		
+  
+  * `--output-format <fmt>`: indicates the format of the output file, which
+    can be `xml`, `binary`, `grepable`, `list`, or `JSON`. The 
+	option `--output-filename` must be specified.
+
+  * `--output-filename <filename>`: the file which to save results to. If
+    the parameter `--output-format` is not specified, then the default of 
+	`xml` will be used.
+		   
   * `-oB <filename>`: sets the output format to binary and saves the output in
     the given filename. This is equivelent to using the `--output-format` and
     `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
     equivelents, but require a separate step to convert back into XML or
     another readable format.
+	
+  * `-oX <filename>`: sets the output format to XML and saves the output in the
+    given filename. This is equivelent to using the `--output-format xml` and
+    `--output-filename` parameters.
+	
+  * `-oG <filename>`: sets the output format to grepable and saves the output 
+	  in the given filename. This is equivelent to using the --output-format grepable 
+	  and --output-filename parameters.
+  
+  * `-oJ <filename>`: sets the output format to JSON and saves the output in 
+	  the given filename. This is equivelent to using the --output-format json 
+	  and --output-filename parameters.
+  
+  * `-oL <filename>`: sets the output format to a simple list format and saves 
+	  the output in the given filename. This is equivelent to using 
+	  the --output-format list and --output-filename parameters.
 
   *  `--readscan <binary-files>`: reads the files created by the `-oB` option
     from a scan, then outputs them in one of the other formats, depending
