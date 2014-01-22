@@ -42,9 +42,10 @@ static unsigned char default_tcp_template[] =
     "\0\0\0\0"      /* ack number */
     "\x50"          /* header length */
     "\x02"          /* SYN */
-    "\x0\x0"        /* window */
+    "\x04\x0"        /* window fixed to 1024 */
     "\xFF\xFF"      /* checksum */
     "\x00\x00"      /* urgent pointer */
+    "\x02\x04\x05\xb4"  /* added options [mss 1460] */
 ;
 
 static unsigned char default_udp_template[] =
