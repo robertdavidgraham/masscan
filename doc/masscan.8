@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "MASSCAN" "8" "September 2013" "" ""
+.TH "MASSCAN" "8" "January 2014" "" ""
 .
 .SH "NAME"
 \fBmasscan\fR \- Fast scan of the Internet
@@ -42,10 +42,10 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-e <ifname>\fR, \fB\-\-adapter <ifname>\fR: use the named raw network interface, such as "eth0" or "dna1"\. If not specified, the first network interface found with a default gateway will be used\.
 .
 .IP "\(bu" 4
-\fB\-\-adapter\-ip <ip\-address>\fR: send packets using this IP address\. If not specified, then the first IP address bound to the network interface will be used\.
+\fB\-\-adapter\-ip <ip\-address>\fR: send packets using this IP address\. If not specified, then the first IP address bound to the network interface will be used\. Instead of a single IP address, a range may be specified\. NOTE: The size of the range must be an even power of 2, such as 1, 2, 4, 8, 16, 1024 etc\. addresses\.
 .
 .IP "\(bu" 4
-\fB\-\-adapter\-port <ip\-address>\fR: send packets using this port number as the source\. If not specified, a random port will be chosen in the range 40000 through 60000\. This port should be filtered by the host firewall (like iptables) to prevent the host network stack from interfering with arriving packets\.
+\fB\-\-adapter\-port <port>\fR: send packets using this port number as the source\. If not specified, a random port will be chosen in the range 40000 through 60000\. This port should be filtered by the host firewall (like iptables) to prevent the host network stack from interfering with arriving packets\. Instead of a single port, a range can be specified, like \fB40000\-40003\fR\. NOTE: The size of the range must be an even power of 2, such as the example above that has a total of 4 addresses\.
 .
 .IP "\(bu" 4
 \fB\-\-adapter\-mac <mac\-address>\fR: send packets using this as the source MAC address\. If not specified, then the first MAC address bound to the network interface will be used\.
@@ -81,13 +81,10 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-\-nmap\-payloads <filename>\fR: read in a file in the same format as the nmap file \fBnmap\-payloads\fR\. This contains UDP payload, so that we can send useful UDP packets instead of empty ones\. Similar to \fB\-\-pcap\-payloads\fR\.
 .
 .IP "\(bu" 4
+\fB\-\-http\-user\-agent <user\-agent>\fR: replaces the existing user\-agent field with the indicated value when doing HTTP requests\.
+.
+.IP "\(bu" 4
 \fB\-\-open\-only\fR: report only open ports, not closed ports\.
-.
-.IP "\(bu" 4
-\fB\-\-output\-format <fmt>\fR: indicates the format of the output file, which can be \fBxml\fR or \fBbinary\fR\. The option \fB\-\-output\-filename\fR must be specified\.
-.
-.IP "\(bu" 4
-\fB\-\-output\-filename <filename>\fR: the file which to save results to\. If the parameter \fB\-\-output\-format\fR is not specified, then the default of \fBxml\fR will be used\.
 .
 .IP "\(bu" 4
 \fB\-\-pcap <filename>\fR: saves received packets (but not transmitted packets) to the libpcap\-format file\.
@@ -117,7 +114,7 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-\-rotate\-dir <directory>\fR: when rotating the file, this specifies which directory to move the file to\. A useful directory is \fB/var/log/masscan\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-seed <integer>\fR: an integer that seeds the random number generator\. Using a different seed will cause packets to be sent in a different random order\. Instead of an integer, the string \fBtime\fR can be specified, which seeds using the local timestamp, automatically generating a differnet random order of scans\.
+\fB\-\-seed <integer>\fR: an integer that seeds the random number generator\. Using a different seed will cause packets to be sent in a different random order\. Instead of an integer, the string \fBtime\fR can be specified, which seeds using the local timestamp, automatically generating a differnet random order of scans\. If no seed specified, \fBtime\fR is the default\.
 .
 .IP "\(bu" 4
 \fB\-\-regress\fR: run a regression test, returns \'0\' on success and \'1\' on failure\.
@@ -135,13 +132,31 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-sL\fR: this doesn\'t do a scan, but instead creates a list of random addresses\. This is useful for importing into other tools\. The options \fB\-\-shard\fR, \fB\-\-resume\-index\fR, and \fB\-\-resume\-count\fR can be useful with this feature\.
 .
 .IP "\(bu" 4
-\fB\-oX <filename>\fR: sets the output format to XML and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\.
+\fB\-\-interactive\fR: show the results in realtime on the console\. It has no effect if used with \-\-output\-format or \-\-output\-filename\.
+.
+.IP "\(bu" 4
+\fB\-\-output\-format <fmt>\fR: indicates the format of the output file, which can be \fBxml\fR, \fBbinary\fR, \fBgrepable\fR, \fBlist\fR, or \fBJSON\fR\. The option \fB\-\-output\-filename\fR must be specified\.
+.
+.IP "\(bu" 4
+\fB\-\-output\-filename <filename>\fR: the file which to save results to\. If the parameter \fB\-\-output\-format\fR is not specified, then the default of \fBxml\fR will be used\.
 .
 .IP "\(bu" 4
 \fB\-oB <filename>\fR: sets the output format to binary and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\. The option \fB\-\-readscan\fR can then be used to read the binary file\. Binary files are mush smaller than their XML equivelents, but require a separate step to convert back into XML or another readable format\.
 .
 .IP "\(bu" 4
-\fB\-\-readscan <filename>\fR: reads the binary scan results and displays to console\. If used with \fB\-oX a XML version of the binary file will be created\.
+\fB\-oX <filename>\fR: sets the output format to XML and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format xml\fR and \fB\-\-output\-filename\fR parameters\.
+.
+.IP "\(bu" 4
+\fB\-oG <filename>\fR: sets the output format to grepable and saves the output in the given filename\. This is equivelent to using the \-\-output\-format grepable and \-\-output\-filename parameters\.
+.
+.IP "\(bu" 4
+\fB\-oJ <filename>\fR: sets the output format to JSON and saves the output in the given filename\. This is equivelent to using the \-\-output\-format json and \-\-output\-filename parameters\.
+.
+.IP "\(bu" 4
+\fB\-oL <filename>\fR: sets the output format to a simple list format and saves the output in the given filename\. This is equivelent to using the \-\-output\-format list and \-\-output\-filename parameters\.
+.
+.IP "\(bu" 4
+\fB\-\-readscan <binary\-files>\fR: reads the files created by the \fB\-oB\fR option from a scan, then outputs them in one of the other formats, depending on command\-line parameters\. In other words, it can take the binary version of the output and convert it to an XML or JSON format\.
 .
 .IP "" 0
 .
@@ -217,6 +232,32 @@ The following example scans the entire Internet for DNS servers, grabbing their 
 .
 .P
 You should be able to import the XML into databases and such\.
+.
+.P
+The following example reads a binary scan results file called bin\-test\.scan and prints results to console\.
+.
+.IP "" 4
+.
+.nf
+
+# masscan \-\-readscan bin\-test\.scan
+.
+.fi
+.
+.IP "" 0
+.
+.P
+The following example reads a binary scan results file called bin\-test\.scan and creates an XML output file called bin\-test\.xml\.
+.
+.IP "" 4
+.
+.nf
+
+# masscan \-\-readscan bin\-test\.scan \-oX bin\-test\.xml
+.
+.fi
+.
+.IP "" 0
 .
 .SH "ADVANCED EXAMPLES"
 Let\'s say that you want to scan the entire Internet and spread the scan across three machines\. Masscan would be launched on all three machines using the following command\-lines:
