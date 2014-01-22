@@ -18,6 +18,12 @@ struct Banner1
     struct ProtocolParserStream *tcp_payloads[65536];
 };
 
+struct BanBase64
+{
+    unsigned state:2;
+    unsigned temp:24;
+};
+
 struct SSL_SERVER_HELLO {
     unsigned state;
     unsigned remaining;
@@ -32,8 +38,7 @@ struct SSL_SERVER_CERT {
     unsigned remaining;
     struct {
         unsigned remaining;
-        unsigned state;
-        unsigned b64x;
+        struct BanBase64 base64;
     } sub;
     struct CertDecode x509;
 };

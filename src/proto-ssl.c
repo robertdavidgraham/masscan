@@ -180,24 +180,6 @@ enum {
 };
 
 
-/***************************************************************************
- ***************************************************************************/
-static const char *b64 =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz"
-    "0123456789"
-    "+/";
-
-/***************************************************************************
- ***************************************************************************/
-static void
-out_b64(unsigned x, struct BannerOutput *banout, unsigned proto)
-{
-    banout_append_char(banout, proto, b64[(x>>18)&0x3F]);
-    banout_append_char(banout, proto, b64[(x>>12)&0x3F]);
-    banout_append_char(banout, proto, b64[(x>> 6)&0x3F]);
-    banout_append_char(banout, proto, b64[(x>> 0)&0x3F]);
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -208,16 +190,13 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
                     struct BannerOutput *banout
                     )
 {
-    unsigned state = data->sub.state;
-    unsigned b64x = data->sub.b64x;
     unsigned i;
 
     /*
      * Initialize
      */
     if (px == 0 && length == CERT_COPY_START) {
-        data->sub.state = 0;
-        data->sub.b64x = 0;
+        banout_init_base64(&data->sub.base64);
         banout_append(  banout, PROTO_X509_CERT,
                         "cert:", 5);
         return;
@@ -227,52 +206,20 @@ server_cert_copy(   struct SSL_SERVER_CERT *data,
      * Convert to base64
      */
     if (px)
-    for (i=0; i<length; i++)
-    switch (state) {
-    case 0:
-        b64x = px[i];
-        DROPDOWN(i,length,state);
-    case 1:
-        b64x = b64x * 256 + px[i];
-        DROPDOWN(i,length,state);
-    case 2:
-        b64x = b64x * 256 + px[i];
-        state = 0;
-        out_b64(b64x, banout, PROTO_X509_CERT);
-    }
+        banout_append_base64(banout, 
+                             PROTO_X509_CERT, 
+                             px, length,
+                             &data->sub.base64);
 
     /*
      * Finalize: we need to put the final touches on the
      * base64 encoding
      */
     if (px == 0) {
-        switch (state) {
-        case 0:
-            out_b64(b64x, banout, PROTO_X509_CERT);
-            break;
-        case 1:
-            b64x *= 256;
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>18)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>12)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, '=');
-            banout_append_char(banout, PROTO_X509_CERT, '=');
-            break;
-        case 2:
-            b64x *= 256;
-            b64x *= 256;
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>18)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>12)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, b64[(b64x>>6)&0x3F]);
-            banout_append_char(banout, PROTO_X509_CERT, '=');
-            break;
-        }
-
+        banout_finalize_base64(banout, PROTO_X509_CERT, &data->sub.base64);        
         banout_end(banout, PROTO_X509_CERT);
 
     }
-
-    data->sub.state = state;
-    data->sub.b64x = b64x;
 }
 
 /***************************************************************************
