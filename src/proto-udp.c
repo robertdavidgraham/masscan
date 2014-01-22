@@ -2,6 +2,7 @@
 #include "proto-dns.h"
 #include "proto-netbios.h"
 #include "proto-snmp.h"
+#include "proto-ntp.h"
 #include "proto-zeroaccess.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
@@ -24,22 +25,25 @@ void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, u
 
 
     switch (port_them) {
-    case 53:
-        status = handle_dns(out, timestamp, px, length, parsed);
-        break;
-    case 137:
-        status = handle_nbtstat(out, timestamp, px, length, parsed);
-        break;
-    case 161:
-        status = handle_snmp(out, timestamp, px, length, parsed);
-        break;
-    case 16464:
-    case 16465:
-    case 16470:
-    case 16471:
-        status = handle_zeroaccess(out, timestamp, px, length, parsed);
-        break;
-
+        case 53:
+            status = handle_dns(out, timestamp, px, length, parsed);
+            break;
+        case 123:
+            status = ntp_handle_response(out, timestamp, px, length, parsed);
+            break;
+        case 137:
+            status = handle_nbtstat(out, timestamp, px, length, parsed);
+            break;
+        case 161:
+            status = handle_snmp(out, timestamp, px, length, parsed);
+            break;
+        case 16464:
+        case 16465:
+        case 16470:
+        case 16471:
+            status = handle_zeroaccess(out, timestamp, px, length, parsed);
+            break;
+            
     }
 
     if (status == 0)

@@ -2,6 +2,7 @@
 #define TCP_PACKET_H
 #include <stdio.h>
 struct NmapPayloads;
+struct MassScript;
 
 /**
  * Does a regression test of this module.
@@ -18,9 +19,10 @@ enum TemplateProtocol {
     Proto_ICMP_ping,
     Proto_ICMP_timestamp,
     Proto_ARP,
+    Proto_Script,
     //Proto_IP,
     //Proto_Custom,
-    //Proto_Count
+    Proto_Count
 };
 
 struct TemplatePayload {
@@ -29,6 +31,15 @@ struct TemplatePayload {
     unsigned char buf[1500];
 };
 
+unsigned
+udp_checksum2(const unsigned char *px, unsigned offset_ip,
+              unsigned offset_tcp, size_t tcp_length);
+
+/**
+ * Describes a packet template. The scan packets we transmit are based on a
+ * a template containing most of the data, and we fill in just the necessary
+ * bits, like the destination IP address and port
+ */
 struct TemplatePacket {
     unsigned length;
     unsigned offset_ip;
@@ -42,10 +53,16 @@ struct TemplatePacket {
     struct NmapPayloads *payloads;
 };
 
+/**
+ * We can run multiple types of scans (TCP, UDP, scripts, etc.) at the same
+ * time. Therefore, instead of one packet prototype for all scans, we have
+ * a set of prototypes/templates.
+ */
 struct TemplateSet
 {
     unsigned count;
-    struct TemplatePacket pkts[8];
+    struct TemplatePacket pkts[Proto_Count];
+    struct MassScript *script;
 };
 
 struct TemplateSet templ_copy(const struct TemplateSet *templ);

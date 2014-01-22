@@ -19,6 +19,7 @@
 #include "templ-payloads.h"
 #include "templ-port.h"
 #include "crypto-base64.h"
+#include "script.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -1207,8 +1208,23 @@ masscan_set_parameter(struct Masscan *masscan,
         while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
             p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
-        fprintf(stderr, "nmap(%s): unsupported, it's too complex for this simple scanner\n", name);
-        exit(1);
+        if (!script_lookup(value)) {
+            fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
+            fprintf(stderr, "  hint: most nmap scripts aren't supported\n");
+            fprintf(stderr, "  hint: use '--script list' to list available scripts\n");
+            exit(1);
+        }
+        if (masscan->script.name != NULL) {
+            if (strcmp(masscan->script.name, value) == 0)
+                return; /* ok */
+            else {
+                fprintf(stderr, "FAIL: only one script supported at a time\n");
+                fprintf(stderr, "  hint: '%s' is existing script, '%s' is new script\n",
+                        masscan->script.name, value);
+                exit(1);
+            }
+            masscan->script.name = script_lookup(value)->name;
+        }
     } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
         exit(1);

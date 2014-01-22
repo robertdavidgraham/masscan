@@ -159,10 +159,14 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
 /***************************************************************************
  ***************************************************************************/
 void
-banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_t length)
+banout_append(struct BannerOutput *banout, unsigned proto, 
+              const void *px, size_t length)
 {
     struct BannerOutput *p;
 
+    if (length == ~0)
+        length = strlen(px);
+    
     /*
      * Get the matching record for the protocol (e.g. HTML, SSL, etc.).
      * If it doesn't already exist, add the protocol object to the linked
