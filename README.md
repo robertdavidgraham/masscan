@@ -163,7 +163,7 @@ parameter, so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
-The are two primary formats for output. The first is XML, which products
+The are three primary formats for output. The first is XML, which products
 fairly large files, but is easy to import into anything. Just use the
 parameter `-oX <filename>`. Or, use the parameters `--output-format xml` and
 `--output-filename <filename>`.
@@ -173,6 +173,11 @@ when I scan the Internet my disk doesn't fill up. They need to be parsed,
 though. The command line option `--readscan` will read binary scan files.
 Using `--readscan` with the `-oX` option will produce a XML version of the 
 results file.
+
+The third is the grepable format. This is an implementation of the Nmap -oG
+output and can be easily parsed by command-line tools. Just use the
+parameter `-oG <filename>`. Or, use the parameters `--output-format grepable` and
+`--output-filename <filename>`.
 
 
 ## Comparison with Nmap
