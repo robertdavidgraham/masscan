@@ -17,6 +17,7 @@
 #include "logger.h"
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
 #include "proto-snmp.h"
+#include "proto-ntp.h"
 #include "proto-dns.h"
 
 #include <stdio.h>
@@ -74,6 +75,11 @@ struct Payload2 hard_coded_payloads[] = {
         /* 1b */"\x00\x10" /* TXT */            /*^^^^^^^_____IDS LULZ HAH HA HAH*/
         /* 1d */"\x00\x03" /* CHAOS */
         /* 1f */
+    },
+    {123, 65536, 48, 0, ntp_set_cookie,
+        "\x17\x00\x03\x2a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
     },
     {137, 65536, 50, 0, dns_set_cookie,
         "\xab\x12" /* transaction id */

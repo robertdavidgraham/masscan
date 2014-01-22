@@ -14,6 +14,7 @@ enum {
     Templ_ICMP_echo = 65536*3+0,
     Templ_ICMP_timestamp = 65536*3+1,
     Templ_ARP = 65536*3+2,
+    Templ_Script = 65536*4,
 };
 
 #endif

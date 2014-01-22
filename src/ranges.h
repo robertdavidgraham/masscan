@@ -101,6 +101,7 @@ uint64_t
 rangelist_exclude(  struct RangeList *targets,
               const struct RangeList *excludes);
 
+
 /**
  * Counts the total number of IP addresses or ports in the target list. This
  * iterates over all the ranges in the table, summing up the count within

@@ -19,6 +19,7 @@
 #include "templ-payloads.h"
 #include "templ-port.h"
 #include "crypto-base64.h"
+#include "script.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -34,6 +35,10 @@ masscan_usage(void)
     printf(" scan some web ports on 10.x.x.x at 10kpps\n");
     printf("masscan --nmap\n");
     printf(" list those options that are compatiable with nmap\n");
+    printf("masscan -p80 10.0.0.0/8 --banners -oB <filename>\n");
+    printf(" save results of scan in binary format to <filename>\n");
+    printf("masscan --open --banners --readscan <filename> -oX <savefile>\n");
+    printf(" read binary scan results in <filename> and save them as xml in <savefile>\n");
     exit(1);
 }
 
@@ -56,11 +61,16 @@ print_nmap_help(void)
 "  -n: Never do DNS resolution (default)\n"
 "SCAN TECHNIQUES:\n"
 "  -sS: TCP SYN (always on, default)\n"
+"SERVICE/VERSION DETECTION:\n"
+"  --banners: get the banners of the listening service if available. The\n"
+"    default timeout for waiting to recieve data is 30 seconds.\n"
 "PORT SPECIFICATION AND SCAN ORDER:\n"
 "  -p <port ranges>: Only scan specified ports\n"
 "    Ex: -p22; -p1-65535; -p 111,137,80,139,8080\n"
 "TIMING AND PERFORMANCE:\n"
 "  --max-rate <number>: Send packets no faster than <number> per second\n"
+"  --connection-timeout <number>: time in seconds a TCP connection will\n"
+"    timeout while waiting for banner data from a port.\n"
 "FIREWALL/IDS EVASION AND SPOOFING:\n"
 "  -S/--source-ip <IP_Address>: Spoof source address\n"
 "  -e <iface>: Use specified interface\n"
@@ -68,8 +78,12 @@ print_nmap_help(void)
 "  --ttl <val>: Set IP time-to-live field\n"
 "  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
 "OUTPUT:\n"
-"  -oL/-oJ <file>: Output scan in List or JSON format, respectively,\n"
-"     to the given filename.\n"
+"  --output-format <format>: Sets output to binary/list/json/grepable/xml\n"
+"  --output-file <file>: Write scan results to file. If --output-format is\n"
+"     not given default is xml\n"
+"  -oL/-oJ/-oG/-oB/-oX <file>: Output scan in List/JSON/Grepable/Binary/XML format,\n"
+"     respectively, to the given filename. Shortcut for\n"
+"     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
 "  -d: Increase debugging level (use -dd or more for greater effect)\n"
 "  --open: Only show open (or possibly open) ports\n"
@@ -83,7 +97,8 @@ print_nmap_help(void)
 "  -h: Print this help summary page.\n"
 "EXAMPLES:\n"
 "  masscan -v -sS 192.168.0.0/16 10.0.0.0/8 -p 80\n"
-"  masscan 23.0.0.0/0 -p80 -output-format binary --output-filename internet.scan\n"
+"  masscan 23.0.0.0/0 -p80 --banners -output-format binary --output-filename internet.scan\n"
+"  masscan --open --banners --readscan internet.scan -oG internet_scan.grepable\n"
 "SEE (https://github.com/robertdavidgraham/masscan) FOR MORE HELP\n"
 "\n");
 }
@@ -1193,8 +1208,23 @@ masscan_set_parameter(struct Masscan *masscan,
         while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
             p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
-        fprintf(stderr, "nmap(%s): unsupported, it's too complex for this simple scanner\n", name);
-        exit(1);
+        if (!script_lookup(value)) {
+            fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
+            fprintf(stderr, "  hint: most nmap scripts aren't supported\n");
+            fprintf(stderr, "  hint: use '--script list' to list available scripts\n");
+            exit(1);
+        }
+        if (masscan->script.name != NULL) {
+            if (strcmp(masscan->script.name, value) == 0)
+                return; /* ok */
+            else {
+                fprintf(stderr, "FAIL: only one script supported at a time\n");
+                fprintf(stderr, "  hint: '%s' is existing script, '%s' is new script\n",
+                        masscan->script.name, value);
+                exit(1);
+            }
+            masscan->script.name = script_lookup(value)->name;
+        }
     } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
         exit(1);

@@ -163,17 +163,35 @@ parameter, so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
-The are two primary formats for output. The first is XML, which products
-fairly large files, but is easy to import into anything. Just use the
-parameter `-oX <filename>`. Or, use the parameters `--output-format xml` and
-`--output-filename <filename>`.
+The are five primary formats for output. 
 
-The second is the binary format. This produces much smaller files, so that
+1. xml: The default option also prodces fairly large files, but is easy 
+	to import into anything. Just use the parameter `-oX <filename>`. 
+	Or, use the parameters `--output-format xml` and `--output-filename <filename>`.
+
+2. binary: This is the masscan builtin format. This produces much smaller files, so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
 though. The command line option `--readscan` will read binary scan files.
 Using `--readscan` with the `-oX` option will produce a XML version of the 
 results file.
 
+3. grepable: This is an implementation of the Nmap -oG
+output and can be easily parsed by command-line tools. Just use the
+parameter `-oG <filename>`. Or, use the parameters `--output-format grepable` and
+`--output-filename <filename>`.
+
+4. json: This saves the results in a json format. Just use the
+parameter `-oJ <filename>`. Or, use the parameters `--output-format json` and
+`--output-filename <filename>`.
+
+5. list: This is a simple list with one host and port pair 
+per line. Just use the parameter `-oL <filename>`. Or, use the parameters 
+`--output-format list` and `--output-filename <filename>`. The format is:
+
+	```
+	<port state> <protocol> <port number> <IP address> <POSIX timestamp>  
+	open tcp 80 XXX.XXX.XXX.XXX 1390380064
+	```	
 
 ## Comparison with Nmap
 

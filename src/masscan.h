@@ -212,6 +212,16 @@ struct Masscan
      * --min-packet
      */
     unsigned min_packet_size;
+    
+    /**
+     * --script <name>
+     * The name of the internal script that we are going to use during the
+     * scan. The script is responsible for crafting packets and parsing
+     * the results
+     */
+    struct {
+        const char *name;
+    } script;
 };
 
 

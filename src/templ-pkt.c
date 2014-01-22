@@ -17,6 +17,7 @@
 #include "templ-payloads.h"
 #include "syn-cookie.h"
 #include "unusedparm.h"
+#include "script.h"
 
 #include <assert.h>
 #include <string.h>
@@ -42,9 +43,10 @@ static unsigned char default_tcp_template[] =
     "\0\0\0\0"      /* ack number */
     "\x50"          /* header length */
     "\x02"          /* SYN */
-    "\x0\x0"        /* window */
+    "\x04\x0"        /* window fixed to 1024 */
     "\xFF\xFF"      /* checksum */
     "\x00\x00"      /* urgent pointer */
+    "\x02\x04\x05\xb4"  /* added options [mss 1460] */
 ;
 
 static unsigned char default_udp_template[] =
@@ -263,7 +265,7 @@ tcp_checksum(struct TemplatePacket *tmpl)
 
 /***************************************************************************
  ***************************************************************************/
-static unsigned
+unsigned
 udp_checksum2(const unsigned char *px, unsigned offset_ip,
               unsigned offset_tcp, size_t tcp_length)
 {
@@ -508,6 +510,8 @@ template_set_target(
     struct TemplatePacket *tmpl = NULL;
     unsigned xsum2;
     //unsigned xsum3;
+    
+    *r_length = sizeof_px;
 
     /*
      * Find out which packet template to use. This is because we can
@@ -530,10 +534,9 @@ template_set_target(
         tmpl = &tmplset->pkts[Proto_ICMP_timestamp];
     } else if (port_them == Templ_ARP) {
         tmpl = &tmplset->pkts[Proto_ARP];
-        
-        if (sizeof_px > tmpl->length)
-            sizeof_px = tmpl->length;
-        memcpy(px, tmpl->packet, sizeof_px);
+        if (*r_length > tmpl->length)
+            *r_length = tmpl->length;
+        memcpy(px, tmpl->packet, *r_length);
         px = px + tmpl->offset_ip;
         px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
         px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
@@ -543,17 +546,18 @@ template_set_target(
         px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
         px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
         px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
-        *r_length = sizeof_px;
         return;
+    } else if (port_them == Templ_Script) {
+        tmpl = &tmplset->pkts[Proto_Script];
+        port_them &= 0xFFFF;
     } else {
         return;
     }
 
     /* Create some shorter local variables to work with */
-    if (sizeof_px > tmpl->length)
-        sizeof_px = tmpl->length;
-    *r_length = sizeof_px;
-    memcpy(px, tmpl->packet, sizeof_px);
+    if (*r_length > tmpl->length)
+        *r_length = tmpl->length;
+    memcpy(px, tmpl->packet, *r_length);
     offset_ip = tmpl->offset_ip;
     offset_tcp = tmpl->offset_tcp;
     ip_id = ip_them ^ port_them ^ seqno;
@@ -696,8 +700,17 @@ template_set_target(
             px[offset_tcp+2] = (unsigned char)(xsum >>  8);
             px[offset_tcp+3] = (unsigned char)(xsum >>  0);
         break;
+    case Proto_Script:
+            tmplset->script->set_target(tmpl,
+                                     ip_them, port_them,
+                                     ip_me, port_me,
+                                     seqno,
+                                     px, sizeof_px, r_length);
+            break;
     case Proto_ARP:
         /* don't do any checksumming */
+        break;
+    case Proto_Count:
         break;
     }
 }
@@ -908,6 +921,16 @@ template_packet_init(
                     sizeof(default_arp_template)-1,
                     data_link);
     templset->count++;
+
+    /* [Script] */
+    if (templset->script) {
+        _template_init( &templset->pkts[Proto_Script],
+                       source_mac, router_mac,
+                       templset->script->packet,
+                       templset->script->packet_length,
+                       data_link);
+        templset->count++;
+    }
 }
 
 /***************************************************************************
@@ -988,6 +1011,7 @@ template_selftest(void)
     struct TemplateSet tmplset[1];
     int failures = 0;
 
+    memset(tmplset, 0, sizeof(tmplset[0]));
     template_packet_init(
             tmplset,
             (const unsigned char*)"\x00\x11\x22\x33\x44\x55",

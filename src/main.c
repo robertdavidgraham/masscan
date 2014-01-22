@@ -42,6 +42,7 @@
 #include "pixie-threads.h"      /* portable threads */
 #include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
+#include "proto-ntp.h"          /* parse NTP responses */
 #include "templ-port.h"
 #include "in-binary.h"          /* covert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
@@ -51,6 +52,7 @@
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "pixie-backtrace.h"
 #include "proto-sctp.h"
+#include "script.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1003,9 +1005,28 @@ main_scan(struct Masscan *masscan)
     time_t now = time(0);
     struct Status status;
     uint64_t min_index = UINT64_MAX;
+    struct MassScript *script = NULL;
 
     memset(parms_array, 0, sizeof(parms_array));
 
+    /*
+     * Script initialization
+     */
+    if (masscan->script.name) {
+        unsigned i;
+        script = script_lookup(masscan->script.name);
+        
+        /* If no ports specified on command-line, grab default ports */
+        if (rangelist_count(&masscan->ports) == 0)
+            rangelist_parse_ports(&masscan->ports, script->ports, 0);
+        
+        /* Kludge: change normal port range to script range */
+        for (i=0; i<masscan->ports.count; i++) {
+            struct Range *r = &masscan->ports.list[i];
+            r->begin = (r->begin&0xFFFF) | Templ_Script;
+        }
+    }
+    
     /*
      * Initialize the task size
      */
@@ -1105,6 +1126,7 @@ main_scan(struct Masscan *masscan)
          * scanning. Then, we adjust the template with additional features,
          * such as the IP address and so on.
          */
+        parms->tmplset->script = script;
         template_packet_init(
                     parms->tmplset,
                     parms->adapter_mac,
@@ -1499,6 +1521,7 @@ int main(int argc, char *argv[])
             x += banner1_selftest();
             x += output_selftest();
             x += siphash24_selftest();
+            x += ntp_selftest();
             x += snmp_selftest();
             x += payloads_selftest();
             x += blackrock_selftest();

@@ -68,6 +68,11 @@
 		11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED218641DCC00DA5438 /* proto-ssl-test.c */; };
 		11B22ED718641DCC00DA5438 /* proto-x509.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED318641DCC00DA5438 /* proto-x509.c */; };
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
+		11BA296218902CEE0064A759 /* out-grepable.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA295F18902CEE0064A759 /* out-grepable.c */; };
+		11BA296318902CEE0064A759 /* proto-tcp-telnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296018902CEE0064A759 /* proto-tcp-telnet.c */; };
+		11BA2967189055CA0064A759 /* script.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA2966189055CA0064A759 /* script.c */; };
+		11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA29681890560C0064A759 /* script-ntp-monlist.c */; };
+		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
 		11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
 /* End PBXBuildFile section */
 
@@ -202,6 +207,15 @@
 		11B22ED418641DCC00DA5438 /* proto-x509.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-x509.h"; sourceTree = "<group>"; };
 		11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-payloads.c"; sourceTree = "<group>"; };
 		11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-payloads.h"; sourceTree = "<group>"; };
+		11BA295E18902CEE0064A759 /* masscan-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "masscan-version.h"; sourceTree = "<group>"; };
+		11BA295F18902CEE0064A759 /* out-grepable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-grepable.c"; sourceTree = "<group>"; };
+		11BA296018902CEE0064A759 /* proto-tcp-telnet.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-tcp-telnet.c"; sourceTree = "<group>"; };
+		11BA296118902CEE0064A759 /* proto-tcp-telnet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-tcp-telnet.h"; sourceTree = "<group>"; };
+		11BA296518904F3A0064A759 /* script.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = script.h; sourceTree = "<group>"; };
+		11BA2966189055CA0064A759 /* script.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = script.c; sourceTree = "<group>"; };
+		11BA29681890560C0064A759 /* script-ntp-monlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "script-ntp-monlist.c"; sourceTree = "<group>"; };
+		11BA296A189060220064A759 /* proto-ntp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntp.c"; sourceTree = "<group>"; };
+		11BA296C189060590064A759 /* proto-ntp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-ntp.h"; sourceTree = "<group>"; };
 		11E76DB21889BC5200061F45 /* pixie-backtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-backtrace.c"; sourceTree = "<group>"; };
 		11E76DB31889BC5200061F45 /* pixie-backtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-backtrace.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -237,6 +251,10 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11BA295E18902CEE0064A759 /* masscan-version.h */,
+				11BA295F18902CEE0064A759 /* out-grepable.c */,
+				11BA296018902CEE0064A759 /* proto-tcp-telnet.c */,
+				11BA296118902CEE0064A759 /* proto-tcp-telnet.h */,
 				11AC2F99188CE34A008CB623 /* proto-sctp.c */,
 				11AC2F9A188CE34A008CB623 /* proto-sctp.h */,
 				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
@@ -355,6 +373,11 @@
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
+				11BA296518904F3A0064A759 /* script.h */,
+				11BA2966189055CA0064A759 /* script.c */,
+				11BA29681890560C0064A759 /* script-ntp-monlist.c */,
+				11BA296A189060220064A759 /* proto-ntp.c */,
+				11BA296C189060590064A759 /* proto-ntp.h */,
 			);
 			name = src;
 			path = ../src;
@@ -472,6 +495,11 @@
 				11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */,
 				11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */,
 				11AC2F9B188CE34A008CB623 /* proto-sctp.c in Sources */,
+				11BA296218902CEE0064A759 /* out-grepable.c in Sources */,
+				11BA296318902CEE0064A759 /* proto-tcp-telnet.c in Sources */,
+				11BA2967189055CA0064A759 /* script.c in Sources */,
+				11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */,
+				11BA296B189060220064A759 /* proto-ntp.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
