@@ -101,11 +101,16 @@ ntp_modlist_parse(const unsigned char *px,
 {
     unsigned offset = 4;
     unsigned errcode;
+    unsigned record_count;
+    unsigned record_size;
     
-    if (offset + 1 >= length)
+    if (offset + 4 >= length)
         return;
     
     errcode = (px[offset]>>4)&0xF;
+    record_count = (px[offset+0]&0xF) << 8 | px[offset+1];
+    record_size = (px[offset+2]&0xF) << 8 | px[offset+3];
+
     if (errcode) {
         char foo[12];
         const char *errmsg = val2string_lookup(error_codes, errcode);
@@ -118,7 +123,27 @@ ntp_modlist_parse(const unsigned char *px,
         banout_append(banout, PROTO_NTP, errmsg, ~0);
         banout_append(banout, PROTO_NTP, "\"", ~0);
         return;
-    }    
+    }
+
+    if (4 + record_count * record_size > length) {
+        banout_append(banout, PROTO_NTP, "response-too-big", ~0);
+        return;
+    }
+    if (record_count * record_size > 500) {
+        banout_append(banout, PROTO_NTP, "response-too-big", ~0);
+        return;
+    }
+
+    offset += 4;
+
+    {
+        char msg[128];
+
+        sprintf_s(msg, sizeof(msg), " response-size=%u-bytes more=%s",
+            record_count * record_size, ((px[0]>>6)&1)?"true":"false");
+
+        banout_append(banout, PROTO_NTP, msg, ~0);
+    }
 }
 
 /*****************************************************************************
@@ -177,11 +202,11 @@ ntp_v2_parse(const unsigned char *px,
     is_more = (px[0]>>6)&1;
     
     /* Validate: this is version 2 */
-    if (((px[0]>>3)&3) != 2)
+    if (((px[0]>>3)&7) != 2)
         return;
     
     /* Extract: mode */
-    mode = px[0] & 3;
+    mode = px[0] & 7;
     switch (mode) {
         case 6: /* control */
             break;
@@ -208,6 +233,7 @@ ntp_handle_response(struct Output *out, time_t timestamp,
     unsigned ip_me;
     unsigned request_id = 0;
     struct BannerOutput banout[1];
+    unsigned offset = parsed->app_offset;
     
     UNUSEDPARM(length);
     
@@ -219,7 +245,7 @@ ntp_handle_response(struct Output *out, time_t timestamp,
     banout_init(banout);
     
     /* Parse the packet */
-    switch ((px[1]&0x38)>>3) {
+    switch ((px[offset]>>3)&7) {
         case 2:
             ntp_v2_parse(
                px + parsed->app_offset,    /* incoming  response */

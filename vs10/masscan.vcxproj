@@ -41,6 +41,7 @@
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
+    <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
@@ -75,6 +76,8 @@
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\rte-ring.c" />
+    <ClCompile Include="..\src\script-ntp-monlist.c" />
+    <ClCompile Include="..\src\script.c" />
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
@@ -114,6 +117,7 @@
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
+    <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-sctp.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
@@ -132,6 +136,7 @@
     <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\rte-ring.h" />
+    <ClInclude Include="..\src\script.h" />
     <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />

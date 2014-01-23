@@ -31,6 +31,9 @@
     <Filter Include="Source Files\pixie">
       <UniqueIdentifier>{cbd42363-ae71-4e2d-9633-0cb518d5e447}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\scripts">
+      <UniqueIdentifier>{ba03c2ec-de65-4581-bef1-8e24f95a8580}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -225,6 +228,15 @@
     <ClCompile Include="..\src\out-grepable.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\script.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\script-ntp-monlist.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ntp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -391,6 +403,12 @@
     </ClInclude>
     <ClInclude Include="..\src\masscan-version.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\script.h">
+      <Filter>Source Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ntp.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
