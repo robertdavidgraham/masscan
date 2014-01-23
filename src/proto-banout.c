@@ -164,8 +164,8 @@ banout_append(struct BannerOutput *banout, unsigned proto,
 {
     struct BannerOutput *p;
 
-    if (length == ~0)
-        length = strlen(px);
+    if (length == AUTO_LEN)
+        length = strlen((const char*)px);
     
     /*
      * Get the matching record for the protocol (e.g. HTML, SSL, etc.).

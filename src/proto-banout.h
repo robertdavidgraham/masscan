@@ -57,6 +57,7 @@ banout_end(struct BannerOutput *banout, unsigned proto);
  */
 void
 banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_t length);
+#define AUTO_LEN ((size_t)~0)
 
 /**
  * Append a single character to the banner.

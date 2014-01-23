@@ -1223,8 +1223,9 @@ masscan_set_parameter(struct Masscan *masscan,
                         masscan->script.name, value);
                 exit(1);
             }
-            masscan->script.name = script_lookup(value)->name;
         }
+        
+        masscan->script.name = script_lookup(value)->name;
     } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
         exit(1);
@@ -1655,10 +1656,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         break;
                     case 'T':
                         fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
-                        exit(1);
+                        break;
                     case 'U':
-                        fprintf(stderr, "nmap(%s): UDP scan not yet supported\n", argv[i]);
-                        exit(1);
+                        break;
                     case 'V':
                         fprintf(stderr, "nmap(%s): unlikely this will be supported\n", argv[i]);
                         exit(1);
@@ -1669,8 +1669,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         fprintf(stderr, "nmap(%s): Xmas scan not yet supported\n", argv[i]);
                         exit(1);
                     case 'Y':
-                        fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
-                        exit(1);
+                        break;
                     case 'Z':
                         fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
                         exit(1);

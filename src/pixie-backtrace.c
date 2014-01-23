@@ -2,6 +2,7 @@
     When program crashes, print backtrace with line numbers
 */
 #include "pixie-backtrace.h"
+#include "unusedparm.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -173,6 +174,7 @@ static void
 handle_segfault(int sig)
 {
 
+    UNUSEDPARM(sig);
     printf("======================================================================");
     printf(" Segmentation fault: please post this backtrace to:\n");
     printf(" https://github.com/robertdavidgraham/masscan/issues\n");

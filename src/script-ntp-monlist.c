@@ -1,5 +1,6 @@
 #include "script.h"
 #include "templ-pkt.h"
+#include "unusedparm.h"
 
 
 /*****************************************************************************
@@ -15,6 +16,12 @@ set_target(struct TemplatePacket *tmpl,
     unsigned offset_tcp = tmpl->offset_tcp;
     unsigned offset_ip = tmpl->offset_ip;
     unsigned xsum;
+
+    UNUSEDPARM(r_length);
+    UNUSEDPARM(sizeof_px);
+    UNUSEDPARM(seqno);
+    UNUSEDPARM(ip_me);
+    UNUSEDPARM(ip_them);
     
     px[offset_tcp+ 0] = (unsigned char)(port_me >> 8);
     px[offset_tcp+ 1] = (unsigned char)(port_me & 0xFF);
@@ -65,5 +72,6 @@ struct MassScript script_ntp_monlist = {
     "U:123",        /* default ports this script should target */
     packet_template,
     sizeof(packet_template)-1,
+    set_target
     
 };

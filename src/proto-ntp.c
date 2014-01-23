@@ -12,6 +12,7 @@
 #include "proto-banner1.h"
 #include "syn-cookie.h"
 #include "templ-port.h"
+#include "unusedparm.h"
 
 
 
@@ -20,6 +21,9 @@
 unsigned
 ntp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
 {
+    UNUSEDPARM(px);
+    UNUSEDPARM(length);
+    UNUSEDPARM(seqno);
     return 0;
 }
 struct Val2String {
@@ -103,7 +107,9 @@ ntp_modlist_parse(const unsigned char *px,
     unsigned errcode;
     unsigned record_count;
     unsigned record_size;
-    
+ 
+    UNUSEDPARM(request_id);
+
     if (offset + 4 >= length)
         return;
     
@@ -117,20 +123,20 @@ ntp_modlist_parse(const unsigned char *px,
         if (errmsg == 0)
             errmsg = "Bogus Error Code";
         sprintf_s(foo, sizeof(foo), "%u", errcode);
-        banout_append(banout, PROTO_NTP, "Response was NTP Error Code ", ~0);
-        banout_append(banout, PROTO_NTP, foo, ~0);
-        banout_append(banout, PROTO_NTP, " - \"", ~0);
-        banout_append(banout, PROTO_NTP, errmsg, ~0);
-        banout_append(banout, PROTO_NTP, "\"", ~0);
+        banout_append(banout, PROTO_NTP, "Response was NTP Error Code ", AUTO_LEN);
+        banout_append(banout, PROTO_NTP, foo, AUTO_LEN);
+        banout_append(banout, PROTO_NTP, " - \"", AUTO_LEN);
+        banout_append(banout, PROTO_NTP, errmsg, AUTO_LEN);
+        banout_append(banout, PROTO_NTP, "\"", AUTO_LEN);
         return;
     }
 
     if (4 + record_count * record_size > length) {
-        banout_append(banout, PROTO_NTP, "response-too-big", ~0);
+        banout_append(banout, PROTO_NTP, "response-too-big", AUTO_LEN);
         return;
     }
     if (record_count * record_size > 500) {
-        banout_append(banout, PROTO_NTP, "response-too-big", ~0);
+        banout_append(banout, PROTO_NTP, "response-too-big", AUTO_LEN);
         return;
     }
 
@@ -142,7 +148,7 @@ ntp_modlist_parse(const unsigned char *px,
         sprintf_s(msg, sizeof(msg), " response-size=%u-bytes more=%s",
             record_count * record_size, ((px[0]>>6)&1)?"true":"false");
 
-        banout_append(banout, PROTO_NTP, msg, ~0);
+        banout_append(banout, PROTO_NTP, msg, AUTO_LEN);
     }
 }
 
@@ -188,7 +194,6 @@ ntp_v2_parse(const unsigned char *px,
            struct BannerOutput *banout,
            unsigned *request_id)
 {
-    unsigned is_more;
     unsigned mode;
     
     if (length < 4)
@@ -197,10 +202,7 @@ ntp_v2_parse(const unsigned char *px,
     /* Validate: response bit is set */
     if ((px[0]>>7) != 1)
         return;
-    
-    /* Extract: more bit */
-    is_more = (px[0]>>6)&1;
-    
+        
     /* Validate: this is version 2 */
     if (((px[0]>>3)&7) != 2)
         return;
@@ -230,7 +232,6 @@ ntp_handle_response(struct Output *out, time_t timestamp,
             )
 {
     unsigned ip_them;
-    unsigned ip_me;
     unsigned request_id = 0;
     struct BannerOutput banout[1];
     unsigned offset = parsed->app_offset;
@@ -260,8 +261,8 @@ ntp_handle_response(struct Output *out, time_t timestamp,
     
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
     | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-    | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
+    /*ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
+    | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;*/
     
     /* Validate the "syn-cookie" style information. */
     //seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
