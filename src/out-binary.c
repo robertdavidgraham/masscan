@@ -48,7 +48,7 @@ binary_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     unsigned char foo[256];
     size_t bytes_written;
@@ -57,24 +57,21 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
 
     /* [TYPE] field */
     switch (status) {
-    case Port_Open:
-    case Port_UdpOpen:
-    case Port_SctpOpen:
-    case Port_IcmpEchoResponse:
-    case Port_ArpOpen:
-        foo[0] = Out_Open;
+    case PortStatus_Open:
+        foo[0] = Out_Open2;
         break;
-    case Port_Closed:
-    case Port_UdpClosed:
-    case Port_SctpClosed:
-        foo[0] = Out_Closed;
+    case PortStatus_Closed:
+        foo[0] = Out_Closed2;
+        break;
+    case PortStatus_Arp:
+        foo[0] = Out_Arp2;
         break;
     default:
         return;
     }
 
     /* [LENGTH] field */
-    foo[1] = 12;
+    foo[1] = 13;
 
     /* [TIMESTAMP] field */
     foo[2] = (unsigned char)(timestamp>>24);
@@ -87,16 +84,18 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
     foo[8] = (unsigned char)(ip>> 8);
     foo[9] = (unsigned char)(ip>> 0);
 
-    foo[10] = (unsigned char)(port>>8);
-    foo[11] = (unsigned char)(port>>0);
+    foo[10] = (unsigned char)(ip_proto);
 
-    foo[12] = (unsigned char)reason;
-    foo[13] = (unsigned char)ttl;
+    foo[11] = (unsigned char)(port>>8);
+    foo[12] = (unsigned char)(port>>0);
+
+    foo[13] = (unsigned char)reason;
+    foo[14] = (unsigned char)ttl;
 
 
 
-    bytes_written = fwrite(&foo, 1, 14, fp);
-    if (bytes_written != 14) {
+    bytes_written = fwrite(&foo, 1, 15, fp);
+    if (bytes_written != 15) {
         perror("output");
         exit(1);
     }

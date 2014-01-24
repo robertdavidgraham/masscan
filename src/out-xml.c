@@ -1,5 +1,6 @@
 #include "output.h"
 #include "masscan-app.h"
+#include "masscan-status.h"
 #include "string_s.h"
 
 
@@ -63,7 +64,7 @@ xml_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-               unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+               unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
     UNUSEDPARM(out);
@@ -81,7 +82,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
-        proto_from_status(status),
+        name_from_ip_proto(ip_proto),
         port,
         status_string(status),
         reason_string(reason, reason_buffer, sizeof(reason_buffer)),
@@ -115,7 +116,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
         (ip>> 0)&0xFF,
-        proto_from_proto(ip_proto),
+        name_from_ip_proto(ip_proto),
         port,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))

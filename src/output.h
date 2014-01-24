@@ -11,6 +11,7 @@
 struct Masscan;
 struct Output;
 enum ApplicationProtocol;
+enum PortStatus;
 
 /**
  * Output plugins
@@ -27,7 +28,7 @@ struct OutputType {
     void (*close)(struct Output *out, FILE *fp);
     void (*status)(struct Output *out, FILE *fp,
                    time_t timestamp, int status,
-                   unsigned ip, unsigned port, unsigned reason, unsigned ttl);
+                   unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl);
     void (*banner)(struct Output *out, FILE *fp,
                    time_t timestamp, unsigned ip, unsigned ip_proto,
                    unsigned port, enum ApplicationProtocol proto,
@@ -96,9 +97,8 @@ struct Output
     } xml;
 };
 
-const char *proto_from_proto(unsigned ip_proto);
-const char *proto_from_status(unsigned status);
-const char *status_string(int x);
+const char *name_from_ip_proto(unsigned ip_proto);
+const char *status_string(enum PortStatus x);
 const char *reason_string(int x, char *buffer, size_t sizeof_buffer);
 const char *normalize_string(const unsigned char *px, size_t length,
                              char *buf, size_t buf_len);
@@ -129,7 +129,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index);
 void output_destroy(struct Output *output);
 
 void output_report_status(struct Output *output, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl);
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl);
 
 
 typedef void (*OUTPUT_REPORT_BANNER)(

@@ -89,8 +89,9 @@ handle_icmp(struct Output *out, time_t timestamp,
         output_report_status(
                             out,
                             timestamp,
-                            Port_IcmpEchoResponse,
+                            PortStatus_Open,
                             ip_them,
+                            1, /* ip proto */
                             0,
                             0,
                             0);
@@ -130,8 +131,9 @@ handle_icmp(struct Output *out, time_t timestamp,
                     output_report_status(
                                         out,
                                         timestamp,
-                                        Port_Closed,
+                                        PortStatus_Closed,
                                         ip_them2,
+                                        ip_proto,
                                         port_them2,
                                         0,
                                         px[parsed->ip_offset + 8]);
@@ -140,8 +142,9 @@ handle_icmp(struct Output *out, time_t timestamp,
                     output_report_status(
                                         out,
                                         timestamp,
-                                        Port_UdpClosed,
+                                        PortStatus_Closed,
                                         ip_them2,
+                                        ip_proto,
                                         port_them2,
                                         0,
                                         px[parsed->ip_offset + 8]);
@@ -150,8 +153,9 @@ handle_icmp(struct Output *out, time_t timestamp,
                     output_report_status(
                                         out,
                                         timestamp,
-                                        Port_SctpClosed,
+                                        PortStatus_Closed,
                                         ip_them2,
+                                        ip_proto,
                                         port_them2,
                                         0,
                                         px[parsed->ip_offset + 8]);

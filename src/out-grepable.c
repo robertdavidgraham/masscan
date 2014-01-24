@@ -1,6 +1,7 @@
 #include "output.h"
 #include "masscan.h"
 #include "masscan-version.h"
+#include "masscan-status.h"
 #include "templ-port.h"
 #include "string_s.h"
 
@@ -127,7 +128,7 @@ grepable_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
@@ -143,7 +144,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"
-                proto_from_status(status),  //"tcp", "udp", "sctp"
+                name_from_ip_proto(ip_proto),  //"tcp", "udp", "sctp"
                 "", //owner
                 "", //service
                 "", //SunRPC info

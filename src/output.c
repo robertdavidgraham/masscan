@@ -48,33 +48,14 @@
  * protocol info. This splits it back out into two values.
  *****************************************************************************/
 const char *
-proto_from_proto(unsigned ip_proto)
+name_from_ip_proto(unsigned ip_proto)
 {
     switch (ip_proto) {
-    case 1: return "icmp";
-    case 6: return "tcp";
-    case 17: return "udp";
-    case 132: return "sctp";
-    default: return "unknown";
-    }
-}
-
-/*****************************************************************************
- * The 'status' variable contains both the open/closed info as well as the
- * protocol info. This splits it back out into two values.
- *****************************************************************************/
-const char *
-proto_from_status(unsigned status)
-{
-    switch (status) {
-        case Port_Open: return "tcp";
-        case Port_Closed: return "tcp";
-        case Port_IcmpEchoResponse: return "icmp";
-        case Port_UdpOpen: return "udp";
-        case Port_UdpClosed: return "udp";
-        case Port_ArpOpen: return "arp";
-        case Port_SctpOpen: return "sctp";
-        case Port_SctpClosed: return "sctp";
+        case 0: return "arp";
+        case 1: return "icmp";
+        case 6: return "tcp";
+        case 17: return "udp";
+        case 132: return "sctp";
         default: return "err";
     }
 }
@@ -86,17 +67,12 @@ proto_from_status(unsigned status)
  * string based on the narrow variable.
  *****************************************************************************/
 const char *
-status_string(int status)
+status_string(enum PortStatus status)
 {
     switch (status) {
-        case Port_Open: return "open";
-        case Port_Closed: return "closed";
-        case Port_UdpOpen: return "open";
-        case Port_UdpClosed: return "closed";
-        case Port_SctpOpen: return "open";
-        case Port_SctpClosed: return "closed";
-        case Port_IcmpEchoResponse: return "open";
-        case Port_ArpOpen: return "open";
+        case PortStatus_Open: return "open";
+        case PortStatus_Closed: return "closed";
+        case PortStatus_Arp: return "up";
         default: return "unknown";
     }
 }
@@ -620,7 +596,7 @@ again:
  ***************************************************************************/
 void
 output_report_status(struct Output *out, time_t timestamp, int status,
-        unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+        unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     FILE *fp = out->fp;
     time_t now = time(0);
@@ -629,21 +605,8 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
     /* if "--open"/"--open-only" parameter specified on command-line, then
      * don't report the status of closed-ports */
-    if (out->is_open_only)
-    switch (status) {
-    case Port_Open:
-    case Port_IcmpEchoResponse:
-    case Port_UdpOpen:
-    case Port_SctpOpen:
-    case Port_ArpOpen:
-    default:
-        break;
-
-    case Port_Closed:
-    case Port_UdpClosed:
-    case Port_SctpClosed:
+    if (out->is_open_only && status == PortStatus_Closed)
         return;
-    }
 
     /* If in "--interactive" mode, then print the banner to the command
      * line screen */
@@ -653,7 +616,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
         count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
                     status_string(status),
                     port,
-                    proto_from_status(status),
+                    name_from_ip_proto(ip_proto),
                     (ip>>24)&0xFF,
                     (ip>>16)&0xFF,
                     (ip>> 8)&0xFF,
@@ -690,34 +653,38 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     /* Keep some statistics so that the user can monitor how much stuff is
      * being found. */
     switch (status) {
-        case Port_Open:
-            out->counts.tcp.open++;
+        case PortStatus_Open:
+            switch (ip_proto) {
+            case 1:
+                out->counts.icmp.echo++;
+                break;
+            case 6:
+                out->counts.tcp.open++;
+                break;
+            case 17:
+                out->counts.udp.open++;
+                break;
+            case 132:
+                out->counts.sctp.open++;
+                break;
+            }
             break;
-        case Port_Closed:
-            out->counts.tcp.closed++;
+        case PortStatus_Closed:
+            switch (ip_proto) {
+            case 6:
+                out->counts.tcp.closed++;
+                break;
+            case 17:
+                out->counts.udp.closed++;
+                break;
+            case 132:
+                out->counts.sctp.closed++;
+                break;
+            }
             if (out->is_open_only)
                 return;
             break;
-        case Port_IcmpEchoResponse:
-            out->counts.icmp.echo++;
-            break;
-        case Port_UdpOpen:
-            out->counts.udp.open++;
-            break;
-        case Port_UdpClosed:
-            out->counts.udp.closed++;
-            if (out->is_open_only)
-                return;
-            break;
-        case Port_SctpOpen:
-            out->counts.sctp.open++;
-            break;
-        case Port_SctpClosed:
-            out->counts.sctp.closed++;
-            if (out->is_open_only)
-                return;
-            break;
-        case Port_ArpOpen:
+        case PortStatus_Arp:
             out->counts.arp.open++;
             break;
         default:
@@ -730,7 +697,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * Now do the actual output, whether it be XML, binary, JSON, Redis,
      * and so on.
      */
-    out->funcs->status(out, fp, timestamp, status, ip, port, reason, ttl);
+    out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
 }
 
 
@@ -757,7 +724,7 @@ output_report_banner(struct Output *out, time_t now,
 
         count = fprintf(stdout, "Banner on port %u/%s on %u.%u.%u.%u: [%s] %s",
             port,
-            proto_from_proto(ip_proto),
+            name_from_ip_proto(ip_proto),
             (ip>>24)&0xFF,
             (ip>>16)&0xFF,
             (ip>> 8)&0xFF,

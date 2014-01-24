@@ -149,7 +149,7 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed)
     while (br->a * br->b <= range)
         br->b++;
 
-    br->rounds = 4;
+    br->rounds = 6;
     br->seed = seed;
     br->range = range;
 }

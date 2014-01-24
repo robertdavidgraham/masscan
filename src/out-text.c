@@ -1,6 +1,7 @@
 #include "output.h"
 #include "masscan.h"
 #include "masscan-app.h"
+#include "masscan-status.h"
 #include "unusedparm.h"
 
 #include <ctype.h>
@@ -27,15 +28,16 @@ text_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 text_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     UNUSEDPARM(ttl);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
 
 
-    fprintf(fp, "%s tcp %u %u.%u.%u.%u %u\n",
+    fprintf(fp, "%s %s %u %u.%u.%u.%u %u\n",
         status_string(status),
+        name_from_ip_proto(ip_proto),
         port,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
@@ -60,7 +62,7 @@ text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
 
     fprintf(fp, "%s %s %u %u.%u.%u.%u %u %s %s\n",
         "banner",
-        proto_from_proto(ip_proto),
+        name_from_ip_proto(ip_proto),
         port,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,

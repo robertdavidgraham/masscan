@@ -132,9 +132,6 @@
     <ClCompile Include="..\src\main-ptrace.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\main-status.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\main-throttle.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
@@ -237,6 +234,9 @@
     <ClCompile Include="..\src\proto-ntp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-status.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -309,9 +309,6 @@
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-ptrace.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\main-status.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-throttle.h">
@@ -409,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-ntp.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-status.h">
+      <Filter>Source Files\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

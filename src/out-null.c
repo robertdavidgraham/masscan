@@ -31,12 +31,13 @@ null_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 null_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(fp);
     UNUSEDPARM(status);
+    UNUSEDPARM(ip_proto);
     UNUSEDPARM(ip);
     UNUSEDPARM(port);
     UNUSEDPARM(reason);

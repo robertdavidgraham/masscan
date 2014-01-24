@@ -42,6 +42,23 @@ parse_status(struct Output *out,
     record.reason    = buf[10];
     record.ttl       = buf[11];
 
+    switch (record.port) {
+    case 53:
+    case 123:
+    case 137:
+    case 161: 
+        record.ip_proto = 17;
+        break;
+    case 36422:
+    case 36412:
+    case 2905:
+        record.ip_proto = 132;
+        break;
+    default:
+        record.ip_proto = 6;
+        break;
+    }
+
     /*
      * Now report the result
      */
@@ -49,11 +66,47 @@ parse_status(struct Output *out,
                     record.timestamp,
                     status,
                     record.ip,
+                    record.ip_proto,
                     record.port,
                     record.reason,
                     record.ttl);
 
 }
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+parse_status2(struct Output *out,
+        enum PortStatus status, /* open/closed */
+        const unsigned char *buf, size_t buf_length)
+{
+    struct MasscanRecord record;
+
+    if (buf_length < 13)
+        return;
+
+    /* parse record */
+    record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
+    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip_proto  = buf[8];
+    record.port      = buf[9]<<8 | buf[10];
+    record.reason    = buf[11];
+    record.ttl       = buf[12];
+
+    /*
+     * Now report the result
+     */
+    output_report_status(out,
+                    record.timestamp,
+                    status,
+                    record.ip,
+                    record.ip_proto,
+                    record.port,
+                    record.reason,
+                    record.ttl);
+
+}
+
 
 /***************************************************************************
  * [OBSOLETE]
@@ -211,10 +264,10 @@ parse_file(struct Output *out, const char *filename)
         /* Depending on record type, do something different */
         switch (type) {
             case 1: /* STATUS: open */
-                parse_status(out, Port_Open, buf, bytes_read);
+                parse_status(out, PortStatus_Open, buf, bytes_read);
                 break;
             case 2: /* STATUS: closed */
-                parse_status(out, Port_Closed, buf, bytes_read);
+                parse_status(out, PortStatus_Closed, buf, bytes_read);
                 break;
             case 3: /* BANNER */
                 parse_banner3(out, buf, bytes_read);
@@ -229,6 +282,12 @@ parse_file(struct Output *out, const char *filename)
                 break;
             case 5:
                 parse_banner4(out, buf, bytes_read);
+                break;
+            case 6: /* STATUS: open */
+                parse_status2(out, PortStatus_Open, buf, bytes_read);
+                break;
+            case 7: /* STATUS: closed */
+                parse_status2(out, PortStatus_Closed, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;

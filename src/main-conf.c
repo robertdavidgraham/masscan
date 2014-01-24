@@ -24,6 +24,19 @@
 #include <ctype.h>
 #include <limits.h>
 
+/***************************************************************************
+ ***************************************************************************/
+/*static struct Range top_ports_tcp[] = {
+    {80, 80},{23, 23}, {443,443},{21,22},{25,25},{3389,3389},{110,110},
+    {445,445},
+};
+static struct Range top_ports_udp[] = {
+    {161, 161}, {631, 631}, {137,138},{123,123},{1434},{445,445},{135,135},
+    {67,67},
+};
+static struct Range top_ports_sctp[] = {
+    {7, 7},{9, 9},{20,22},{80,80},{179,179},{443,443},{1167,1167},
+};*/
 
 /***************************************************************************
  ***************************************************************************/
@@ -923,6 +936,8 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("banners", name) || EQUALS("banner", name)) {
         masscan->is_banners = 1;
+    } else if (EQUALS("nobanners", name) || EQUALS("nobanner", name)) {
+        masscan->is_banners = 0;
     } else if (EQUALS("connection-timeout", name)) {
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
@@ -1342,7 +1357,8 @@ is_singleton(const char *name)
         "no-stylesheet",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
-        "banners", "banner", "offline", "ping", "ping-sweep",
+        "banners", "banner", "nobanners", "nobanner",
+        "offline", "ping", "ping-sweep",
         "arp",  "infinite", "interactive",
         0};
     size_t i;
@@ -1411,6 +1427,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
+                
+                /* Default to reading banners */
+                masscan->is_banners = 1;
 
                 /* This option may be followed by many filenames, therefore,
                  * skip forward in the argument list until the next
@@ -1621,10 +1640,12 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 fprintf(stderr, "nmap(%s): unsupported. This code will never do DNS lookups.\n", argv[i]);
                 exit(1);
                 break;
-            case 's':
+            case 's': /* NMAP: scan type */
                 if (argv[i][3] == '\0' && !isdigit(argv[i][2]&0xFF)) {
-                    /* This looks like an nmap option*/
-                    switch (argv[i][2]) {
+                    unsigned j;
+
+                    for (j=2; argv[i][j]; j++)
+                    switch (argv[i][j]) {
                     case 'A':
                         fprintf(stderr, "nmap(%s): ACK scan not yet supported\n", argv[i]);
                         exit(1);
@@ -1652,12 +1673,13 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     case 'O':
                         fprintf(stderr, "nmap(%s): IP proto scan not yet supported\n", argv[i]);
                         exit(1);
-                    case 'S': /* SYN scan - THIS IS WHAT WE DO! */
+                    case 'S': /* TCP SYN scan - THIS IS WHAT WE DO! */
                         break;
-                    case 'T':
+                    case 'T': /* TCP connect scan */
                         fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
+                        fprintf(stderr, "WARNING: doing SYN scan anyway\n");
                         break;
-                    case 'U':
+                    case 'U': /* UDP scan */
                         break;
                     case 'V':
                         fprintf(stderr, "nmap(%s): unlikely this will be supported\n", argv[i]);

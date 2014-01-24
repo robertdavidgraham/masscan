@@ -50,8 +50,9 @@ void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, u
         output_report_status(
                         out,
                         timestamp,
-                        Port_UdpOpen,
+                        PortStatus_Open,
                         ip_them,
+                        17, /* ip proto = udp */
                         port_them,
                         0,
                         0);

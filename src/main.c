@@ -887,11 +887,11 @@ receive_thread(void *v)
 
         if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
             /* figure out the status */
-            status = Port_Unknown;
+            status = PortStatus_Unknown;
             if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
-                status = Port_Open;
+                status = PortStatus_Open;
             if ((px[parsed.transport_offset+13] & 0x4) == 0x4) {
-                status = Port_Closed;
+                status = PortStatus_Closed;
             }
 
             /* verify: syn-cookies */
@@ -916,6 +916,7 @@ receive_thread(void *v)
                         global_now,
                         status,
                         ip_them,
+                        6, /* ip proto = tcp */
                         port_them,
                         px[parsed.transport_offset + 13], /* tcp flags */
                         px[parsed.ip_offset + 8] /* ttl */

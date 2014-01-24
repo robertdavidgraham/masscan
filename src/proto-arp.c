@@ -25,8 +25,9 @@ handle_arp(struct Output *out, time_t timestamp, const unsigned char *px,
     output_report_status(
                     out,
                     timestamp,
-                    Port_ArpOpen,
+                    PortStatus_Arp,
                     ip_them,
+                    0, /* ip proto */
                     0,
                     0,
                     0);

@@ -196,7 +196,7 @@ redis_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 redis_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     ptrdiff_t fd = (ptrdiff_t)fp;
     char line[1024];
@@ -210,7 +210,7 @@ redis_out_status(struct Output *out, FILE *fp, time_t timestamp,
         (unsigned char)(ip>>16),
         (unsigned char)(ip>> 8),
         (unsigned char)(ip>> 0));
-    sprintf_s(port_string, sizeof(port_string), "%u", port);
+    sprintf_s(port_string, sizeof(port_string), "%u/%s", port, name_from_ip_proto(ip_proto));
 
 /**3
 $3

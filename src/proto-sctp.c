@@ -160,8 +160,9 @@ handle_sctp(struct Output *out, time_t timestamp,
         output_report_status(
                         out,
                         timestamp,
-                        Port_SctpOpen,
+                        PortStatus_Open,
                         ip_them,
+                        132, /* ip proto = sctp */
                         port_them,
                         0,
                         0);
@@ -170,8 +171,9 @@ handle_sctp(struct Output *out, time_t timestamp,
         output_report_status(
                         out,
                         timestamp,
-                        Port_SctpClosed,
+                        PortStatus_Closed,
                         ip_them,
+                        132, /* ip proto = sctp */
                         port_them,
                         0,
                         px[offset + 12]);
