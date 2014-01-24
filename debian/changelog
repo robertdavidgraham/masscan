@@ -1,0 +1,11 @@
+masscan (1.0.1+git20140124-1) unstable; urgency=low
+
+  * Rebuild from current git
+
+ -- Vladimir Vitkov <vvitkov@sdl.com>  Fri, 24 Jan 2014 14:37:30 +0200
+
+masscan (1.0.1+git20140106-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Vladimir Vitkov <vvitkov@sdl.com>  Fri, 24 Jan 2014 11:03:38 +0200

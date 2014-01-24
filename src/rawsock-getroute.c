@@ -241,7 +241,7 @@ read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
         /* Check if the header is valid */
         if ((NLMSG_OK(nlHdr, readLen) == 0)
             || (nlHdr->nlmsg_type == NLMSG_ERROR)) {
-            perror("Error in recieved packet");
+            perror("Error in received packet");
             return -1;
         }
 
