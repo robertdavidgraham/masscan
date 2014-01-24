@@ -719,7 +719,7 @@ rawsock_init_adapter(const char *adapter_name,
                 adapter->ring = 0;
                 return 0;
         } else
-            LOG(1, "pfring:'%s': successfully eenabled\n", adapter_name);
+            LOG(1, "pfring:'%s': successfully enabled\n", adapter_name);
 
         return adapter;
     }
