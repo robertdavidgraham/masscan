@@ -81,8 +81,8 @@ bin/masscan: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LDFLAGS) $(LIBS)
 
 clean:
-	rm tmp/*.o
-	rm bin/masscan
+	rm -f tmp/*.o
+	rm -f bin/masscan
 
 regress: bin/masscan
 	bin/masscan --selftest
