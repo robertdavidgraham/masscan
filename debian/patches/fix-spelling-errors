@@ -1,0 +1,44 @@
+--- a/doc/masscan.8
++++ b/doc/masscan.8
+@@ -111,7 +111,7 @@
+ \fB\-\-rotate <time>\fR: rotates the output file, renaming it with the current timestamp, moving it to a separate directory\. The time is specified in number of seconds, like "3600" for an hour\. Or, units of time can be specified, such as "hourly", or "6hours", or "10min"\. Times are aligned on an even boundary, so if "daily" is specified, then the file will be rotated every day at midnight\.
+ .
+ .IP "\(bu" 4
+-\fB\-\-rotate\-offset <time>\fR: an offset in the time\. This is to accomodate timezones\.
++\fB\-\-rotate\-offset <time>\fR: an offset in the time\. This is to accommodate timezones\.
+ .
+ .IP "\(bu" 4
+ \fB\-\-rotate\-dir <directory>\fR: when rotating the file, this specifies which directory to move the file to\. A useful directory is \fB/var/log/masscan\fR\.
+--- a/src/rawsock.c
++++ b/src/rawsock.c
+@@ -712,7 +712,7 @@
+                 adapter->ring = 0;
+                 return 0;
+         } else
+-            LOG(1, "pfring:'%s': succesfully eenabled\n", adapter_name);
++            LOG(1, "pfring:'%s': successfully eenabled\n", adapter_name);
+ 
+         return adapter;
+     }
+--- a/src/rawsock-getif.c
++++ b/src/rawsock-getif.c
+@@ -185,7 +185,7 @@
+         /* Check if the header is valid */
+         if ((NLMSG_OK(nlHdr, readLen) == 0)
+             || (nlHdr->nlmsg_type == NLMSG_ERROR)) {
+-            perror("Error in recieved packet");
++            perror("Error in receeved packet");
+             return -1;
+         }
+ 
+--- a/src/rawsock-getroute.c
++++ b/src/rawsock-getroute.c
+@@ -238,7 +238,7 @@
+         /* Check if the header is valid */
+         if ((NLMSG_OK(nlHdr, readLen) == 0)
+             || (nlHdr->nlmsg_type == NLMSG_ERROR)) {
+-            perror("Error in recieved packet");
++            perror("Error in received packet");
+             return -1;
+         }
+ 

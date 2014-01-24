@@ -1,0 +1,24 @@
+Source: masscan
+Section: net
+Priority: extra
+Maintainer: Vladimir Vitkov <vvitkov@sdl.com>
+Build-Depends: debhelper (>= 8.0.0), libpcap-dev
+Standards-Version: 3.9.3
+Homepage: https://github.com/robertdavidgraham/masscan
+#Vcs-Git: https://github.com/robertdavidgraham/masscan.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/masscan.git;a=summary
+
+Package: masscan
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Mass IP port scanner
+ This is the fastest Internet port scanner. It can scan the
+ entire Internet in under 6 minutes, transmitting 10 million
+ packets per second.
+ .
+ It produces results similar to nmap, the most famous port
+ scanner. Internally, it operates more like scanrand,
+ unicornscan, and ZMap, using asynchronous transmission.
+ The major difference is that it's faster than these other
+ scanners. In addition, it's more flexible, allowing
+ arbitrary address ranges and port ranges.

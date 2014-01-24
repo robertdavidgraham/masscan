@@ -1,0 +1,5 @@
+masscan (1.0.1+git20140106-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Vladimir Vitkov <vvitkov@sdl.com>  Fri, 24 Jan 2014 11:03:38 +0200

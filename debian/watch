@@ -1,0 +1,4 @@
+version=3
+
+# use the github release pages
+https://github.com/robertdavidgraham/masscan/releases .*/(\d\S*)\.(?:tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
