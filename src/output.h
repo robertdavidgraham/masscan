@@ -48,6 +48,7 @@ struct Output
     unsigned format;
 
     time_t when_scan_started;
+    unsigned is_virgin_file:1;
 
     struct {
         time_t next;

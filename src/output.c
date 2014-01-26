@@ -196,9 +196,10 @@ open_rotate(struct Output *out, const char *filename)
     }
 
     /*
-     * Write the format-specific headers, like <xml>
+     * Mark the file as newly opened. That way, before writing any data
+     * to it, we'll first have to write headers
      */
-    out->funcs->open(out, fp);
+    out->is_virgin_file = 1;
 
     return fp;
 }
@@ -220,7 +221,8 @@ close_rotate(struct Output *out, FILE *fp)
     /*
      * Write the format-specific trailers, like </xml>
      */
-    out->funcs->close(out, fp);
+    if (!out->is_virgin_file)
+        out->funcs->close(out, fp);
 
     memset(&out->counts, 0, sizeof(out->counts));
 
@@ -368,6 +370,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     memset(out, 0, sizeof(*out));
     out->masscan = masscan;
     out->when_scan_started = time(0);
+    out->is_virgin_file = 1;
 
     /*
      * Copy the configuration information from the 'masscan' structure.
@@ -644,7 +647,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (now >= out->rotate.next) {
+    if (now >= out->rotate.next && !out->is_virgin_file) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
@@ -692,6 +695,14 @@ output_report_status(struct Output *out, time_t timestamp, int status,
             LOG(0, "unknown status type: %u\n", status);
             if (out->is_open_only)
                 return;
+    }
+
+    /*
+     * If this is a newly opened file, then write file headers
+     */
+    if (out->is_virgin_file) {
+        out->funcs->open(out, fp);
+        out->is_virgin_file = 0;
     }
 
     /*
@@ -753,10 +764,18 @@ output_report_banner(struct Output *out, time_t now,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (now >= out->rotate.next) {
+    if (now >= out->rotate.next && !out->is_virgin_file) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
+    }
+
+    /*
+     * If this is a newly opened file, then write file headers
+     */
+    if (out->is_virgin_file) {
+        out->funcs->open(out, fp);
+        out->is_virgin_file = 0;
     }
 
     /*

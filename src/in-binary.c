@@ -42,6 +42,9 @@ parse_status(struct Output *out,
     record.reason    = buf[10];
     record.ttl       = buf[11];
 
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
+
     switch (record.port) {
     case 53:
     case 123:
@@ -93,6 +96,9 @@ parse_status2(struct Output *out,
     record.reason    = buf[11];
     record.ttl       = buf[12];
 
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
+
     /*
      * Now report the result
      */
@@ -127,6 +133,8 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
     record.port      = buf[8]<<8 | buf[9];
     record.app_proto = buf[10]<<8 | buf[11];
 
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
 
     /*
      * Now print the output
@@ -159,6 +167,9 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.app_proto = buf[11]<<8 | buf[12];
+
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
 
     /*
      * Now print the output
@@ -324,6 +335,12 @@ convert_binary_files(struct Masscan *masscan,
     int i;
 
     out = output_create(masscan, 0);
+    
+    /*
+     * Set the start time to zero. We'll read it from the first file
+     * that we parse
+     */
+    out->when_scan_started = 0;
 
     /*
      * We don't parse the entire argument list, just a subrange
