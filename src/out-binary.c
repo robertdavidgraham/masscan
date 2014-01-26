@@ -23,6 +23,8 @@ binary_out_open(struct Output *out, FILE *fp)
         perror("output");
         exit(1);
     }
+
+    out->rotate.bytes_written += bytes_written;
 }
 
 
@@ -43,6 +45,7 @@ binary_out_close(struct Output *out, FILE *fp)
         perror("output");
         exit(1);
     }
+    out->rotate.bytes_written += bytes_written;
 }
 
 /****************************************************************************
@@ -100,6 +103,7 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
         perror("output");
         exit(1);
     }
+    out->rotate.bytes_written += bytes_written;
 }
 
 
@@ -159,6 +163,7 @@ binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         perror("output");
         exit(1);
     }
+    out->rotate.bytes_written += bytes_written;
 }
 
 

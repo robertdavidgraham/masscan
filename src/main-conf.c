@@ -257,6 +257,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "rotate = %u\n", masscan->output.rotate.timeout);
     fprintf(fp, "rotate-dir = %s\n", masscan->output.rotate.directory);
     fprintf(fp, "rotate-offset = %u\n", masscan->output.rotate.offset);
+    fprintf(fp, "rotate-filesize = %" PRIu64 "\n", masscan->output.rotate.filesize);
     fprintf(fp, "pcap = %s\n", masscan->pcap_filename);
 
     /*
@@ -592,6 +593,55 @@ parseTime(const char *value)
 
     return num;
 }
+
+/***************************************************************************
+ * Parses a size integer, which can be suffixed with "tera", "giga", 
+ * "mega", and "kilo". These numbers are in units of 1024 so suck it.
+ ***************************************************************************/
+static uint64_t
+parseSize(const char *value)
+{
+    uint64_t num = 0;
+
+    while (isdigit(value[0]&0xFF)) {
+        num = num*10 + (value[0] - '0');
+        value++;
+    }
+    while (ispunct(value[0]) || isspace(value[0]))
+        value++;
+
+    if (isalpha(value[0]) && num == 0)
+        num = 1;
+
+    if (value[0] == '\0')
+        return num;
+
+    switch (tolower(value[0])) {
+    case 'k': /* kilobyte */
+        num *= 1024ULL;
+        break;
+    case 'm': /* megabyte */
+        num *= 1024ULL * 1024ULL;
+        break;
+    case 'g': /* gigabyte */
+        num *= 1024ULL * 1024ULL * 1024ULL;
+        break;
+    case 't': /* terabyte, 'cause we roll that way */
+        num *=  1024ULL * 1024ULL * 1024ULL * 1024ULL;
+        break;
+    case 'p': /* petabyte, 'cause we are awesome */
+        num *=  1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+        break;
+    case 'e': /* exabyte, now that's just silly */
+        num *=  1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+        break;
+    default:
+        fprintf(stderr, "--rotate-size: unknown character\n");
+        exit(1);
+    }
+    return num;
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -1217,10 +1267,13 @@ masscan_set_parameter(struct Masscan *masscan,
         } else {
             masscan->retries = x;
         }
-    } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) || EQUALS("ouput-rotate", name)) {
+    } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) 
+        || EQUALS("ouput-rotate", name) || EQUALS("rotate-time", name) ) {
         masscan->output.rotate.timeout = (unsigned)parseTime(value);
     } else if (EQUALS("rotate-offset", name) || EQUALS("ouput-rotate-offset", name)) {
         masscan->output.rotate.offset = (unsigned)parseTime(value);
+    } else if (EQUALS("rotate-size", name) || EQUALS("rotate-filesize", name)) {
+        masscan->output.rotate.filesize = parseSize(value);
     } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
         char *p;
         strcpy_s(   masscan->output.rotate.directory,

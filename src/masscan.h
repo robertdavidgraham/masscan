@@ -278,7 +278,7 @@ struct Masscan
             /**
              * Instead of rotating by timeout, we can rotate by filesize 
              */
-            size_t filesize;
+            uint64_t filesize;
             
             /**
              * The directory to which we store rotated files

@@ -565,8 +565,12 @@ again:
      * Set the next rotate time, which is the current time plus the period
      * length
      */
-    out->rotate.next = next_rotate_time(time(0),
+    out->rotate.bytes_written = 0;
+
+    if (out->rotate.period) {
+        out->rotate.next = next_rotate_time(time(0),
                                         out->rotate.period, out->rotate.offset);
+    }
 
     LOG(1, "rotated: %s\n", new_filename);
     free(new_filename);
@@ -590,6 +594,21 @@ again:
         }
     }
     return out->fp;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static int
+is_rotate_time(const struct Output *out, time_t now)
+{
+    if (out->is_virgin_file)
+        return 0;
+    if (now >= out->rotate.next)
+        return 1;
+    if (out->rotate.filesize != 0 &&
+        out->rotate.bytes_written >= out->rotate.filesize)
+        return 1;
+    return 0;
 }
 
 
@@ -647,7 +666,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (now >= out->rotate.next && !out->is_virgin_file) {
+    if (is_rotate_time(out, now)) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
@@ -764,7 +783,7 @@ output_report_banner(struct Output *out, time_t now,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (now >= out->rotate.next && !out->is_virgin_file) {
+    if (is_rotate_time(out, now)) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;

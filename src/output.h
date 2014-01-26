@@ -47,7 +47,16 @@ struct Output
     const struct OutputType *funcs;
     unsigned format;
 
+    /**
+     * The timestamp when this scan started. This is preserved in output files
+     * because that's what nmap does, and a lot of tools parse this.
+     */
     time_t when_scan_started;
+
+    /**
+     * Whether we've started writing to a file yet. We are lazy writing the
+     * the file header until we've actually go something to write
+     */
     unsigned is_virgin_file:1;
 
     struct {
@@ -55,7 +64,8 @@ struct Output
         time_t last;
         unsigned period;
         unsigned offset;
-        size_t filesize;
+        uint64_t filesize;
+        uint64_t bytes_written;
         char *directory;
     } rotate;
 
