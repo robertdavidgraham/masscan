@@ -159,6 +159,9 @@ one port.
   * `--rotate-offset <time>`: an offset in the time. This is to accomodate
     timezones.
 
+  * `--rotate-size <size>`: rotates the output file when it exceeds the
+    given size.
+
   * `--rotate-dir <directory>`: when rotating the file, this specifies which
     directory to move the file to. A useful directory is `/var/log/masscan`.
 
