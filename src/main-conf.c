@@ -227,7 +227,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
      * Output information
      */
     fprintf(fp, "# OUTPUT/REPORTING SETTINGS\n");
-    switch (masscan->nmap.format) {
+    switch (masscan->output.format) {
     case Output_Interactive:fprintf(fp, "output-format = interactive\n"); break;
     case Output_List:       fprintf(fp, "output-format = list\n"); break;
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
@@ -246,17 +246,17 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         break;
 
     default:
-        fprintf(fp, "output-format = unknown(%u)\n", masscan->nmap.format);
+        fprintf(fp, "output-format = unknown(%u)\n", masscan->output.format);
         break;
     }
     fprintf(fp, "output-status = %s\n",
-            masscan->nmap.open_only?"open":"all");
-    fprintf(fp, "output-filename = %s\n", masscan->nmap.filename);
-    if (masscan->nmap.append)
+            masscan->output.is_open_only?"open":"all");
+    fprintf(fp, "output-filename = %s\n", masscan->output.filename);
+    if (masscan->output.is_append)
         fprintf(fp, "output-append = true\n");
-    fprintf(fp, "rotate = %u\n", masscan->rotate_output);
-    fprintf(fp, "rotate-dir = %s\n", masscan->rotate_directory);
-    fprintf(fp, "rotate-offset = %u\n", masscan->rotate_offset);
+    fprintf(fp, "rotate = %u\n", masscan->output.rotate.timeout);
+    fprintf(fp, "rotate-dir = %s\n", masscan->output.rotate.directory);
+    fprintf(fp, "rotate-offset = %u\n", masscan->output.rotate.offset);
     fprintf(fp, "pcap = %s\n", masscan->pcap_filename);
 
     /*
@@ -926,9 +926,9 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->op = Operation_Scan;
     } else if (EQUALS("append-output", name) || EQUALS("output-append", name)) {
         if (EQUALS("overwrite", name))
-            masscan->nmap.append = 0;
+            masscan->output.is_append = 0;
         else
-            masscan->nmap.append = 1;
+            masscan->output.is_append = 1;
     } else if (EQUALS("badsum", name)) {
         masscan->nmap.badsum = 1;
     } else if (EQUALS("banner1", name)) {
@@ -1066,7 +1066,9 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("infinite", name)) {
         masscan->is_infinite = 1;
     } else if (EQUALS("interactive", name)) {
-        masscan->is_interactive = 1;
+        masscan->output.is_interactive = 1;
+    } else if (EQUALS("nointeractive", name)) {
+        masscan->output.is_interactive = 0;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1118,10 +1120,10 @@ masscan_set_parameter(struct Masscan *masscan,
          * it's not */
         masscan->is_offline = 1;
     } else if (EQUALS("open", name) || EQUALS("open-only", name)) {
-        masscan->nmap.open_only = 1;
+        masscan->output.is_open_only = 1;
     } else if (EQUALS("output-status", name)) {
         if (EQUALS("open", value))
-            masscan->nmap.open_only = 1;
+            masscan->output.is_open_only = 1;
 
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
@@ -1130,24 +1132,29 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
     } else if (EQUALS("output-format", name)) {
-        masscan->is_interactive = 0;
-        if (EQUALS("list", value))              masscan->nmap.format = Output_List;
-        else if (EQUALS("interactive", value))  masscan->nmap.format = Output_Interactive;
-        else if (EQUALS("xml", value))          masscan->nmap.format = Output_XML;
-        else if (EQUALS("binary", value))       masscan->nmap.format = Output_Binary;
-        else if (EQUALS("greppable", value))    masscan->nmap.format = Output_Grepable;
-        else if (EQUALS("grepable", value))     masscan->nmap.format = Output_Grepable;
-        else if (EQUALS("json", value))         masscan->nmap.format = Output_JSON;
-        else if (EQUALS("none", value))         masscan->nmap.format = Output_None;
-        else if (EQUALS("redis", value))        masscan->nmap.format = Output_Redis;
+        enum OutputFormat x = 0;
+        if (EQUALS("interactive", value))
+            masscan->output.format = Output_Interactive;
+        else if (EQUALS("list", value))         x = Output_List;
+        else if (EQUALS("xml", value))          x = Output_XML;
+        else if (EQUALS("binary", value))       x = Output_Binary;
+        else if (EQUALS("greppable", value))    x = Output_Grepable;
+        else if (EQUALS("grepable", value))     x = Output_Grepable;
+        else if (EQUALS("json", value))         x = Output_JSON;
+        else if (EQUALS("none", value))         x = Output_None;
+        else if (EQUALS("redis", value))        x = Output_Redis;
         else {
-            fprintf(stderr, "error: %s=%s\n", name, value);
+            LOG(0, "FAIL: unknown output-format: %s\n", value);
+            LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
+            exit(1);
         }
+        masscan->output.format = x;
     } else if (EQUALS("output-filename", name) || EQUALS("output-file", name)) {
-        if (masscan->nmap.format == 0)
-            masscan->nmap.format = Output_XML;
-        masscan->is_interactive = 0;
-        strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), value);
+        if (masscan->output.format == 0)
+            masscan->output.format = Output_XML;
+        strcpy_s(masscan->output.filename,
+                 sizeof(masscan->output.filename), 
+                 value);
     } else if (EQUALS("pcap", name)) {
         strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
     } else if (EQUALS("packet-trace", name) || EQUALS("trace-packet", name)) {
@@ -1164,7 +1171,7 @@ masscan_set_parameter(struct Masscan *masscan,
         /* already do that */
         ;
     } else if (EQUALS("reason", name)) {
-        masscan->nmap.reason = 1;
+        masscan->output.is_reason = 1;
     } else if (EQUALS("redis", name)) {
         struct Range range;
         unsigned offset = 0;
@@ -1190,8 +1197,10 @@ masscan_set_parameter(struct Masscan *masscan,
 
         masscan->redis.ip = range.begin;
         masscan->redis.port = port;
-        masscan->nmap.format = Output_Redis;
-        strcpy_s(masscan->nmap.filename, sizeof(masscan->nmap.filename), "<redis>");
+        masscan->output.format = Output_Redis;
+        strcpy_s(masscan->output.filename, 
+                 sizeof(masscan->output.filename), 
+                 "<redis>");
     } else if (EQUALS("release-memory", name)) {
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
@@ -1209,17 +1218,17 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->retries = x;
         }
     } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) || EQUALS("ouput-rotate", name)) {
-        masscan->rotate_output = (unsigned)parseTime(value);
+        masscan->output.rotate.timeout = (unsigned)parseTime(value);
     } else if (EQUALS("rotate-offset", name) || EQUALS("ouput-rotate-offset", name)) {
-        masscan->rotate_offset = (unsigned)parseTime(value);
+        masscan->output.rotate.offset = (unsigned)parseTime(value);
     } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
         char *p;
-        strcpy_s(   masscan->rotate_directory,
-                    sizeof(masscan->rotate_directory),
+        strcpy_s(   masscan->output.rotate.directory,
+                    sizeof(masscan->output.rotate.directory),
                     value);
 
         /* strip trailing slashes */
-        p = masscan->rotate_directory;
+        p = masscan->output.rotate.directory;
         while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
             p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
@@ -1290,9 +1299,11 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->shard.of = of;
 
     } else if (EQUALS("no-stylesheet", name)) {
-        masscan->nmap.stylesheet[0] = '\0';
+        masscan->output.stylesheet[0] = '\0';
     } else if (EQUALS("stylesheet", name)) {
-        strcpy_s(masscan->nmap.stylesheet, sizeof(masscan->nmap.stylesheet), value);
+        strcpy_s(masscan->output.stylesheet, 
+                 sizeof(masscan->output.stylesheet), 
+                 value);
     } else if (EQUALS("system-dns", name)) {
         fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
         exit(1);
@@ -1559,39 +1570,38 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 /* Do nothing: this code never does DNS lookups anyway */
                 break;
             case 'o': /* nmap output format */
-                masscan->is_interactive = 0;
                 switch (argv[i][2]) {
                 case 'A':
-                    masscan->nmap.format = Output_All;
+                    masscan->output.format = Output_All;
                     fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
                     exit(1);
                     break;
                 case 'B':
-                    masscan->nmap.format = Output_Binary;
+                    masscan->output.format = Output_Binary;
                     break;
                 case 'J':
-                    masscan->nmap.format = Output_JSON;
+                    masscan->output.format = Output_JSON;
                     break;
                 case 'N':
-                    masscan->nmap.format = Output_Nmap;
+                    masscan->output.format = Output_Nmap;
                     fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
                     exit(1);
                     break;
                 case 'X':
-                    masscan->nmap.format = Output_XML;
+                    masscan->output.format = Output_XML;
                     break;
                 case 'R':
-                    masscan->nmap.format = Output_Redis;
+                    masscan->output.format = Output_Redis;
                     if (i+1 < argc && argv[i+1][0] != '-')
                         masscan_set_parameter(masscan, "redis", argv[i+1]);
                     break;
                 case 'S':
-                    masscan->nmap.format = Output_ScriptKiddie;
+                    masscan->output.format = Output_ScriptKiddie;
                     fprintf(stderr, "nmap(%s): unsupported output format\n", argv[i]);
                     exit(1);
                     break;
                 case 'G':
-                    masscan->nmap.format = Output_Grepable;
+                    masscan->output.format = Output_Grepable;
                     break;
                 case 'L':
                     masscan_set_parameter(masscan, "output-format", "list");

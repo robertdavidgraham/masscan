@@ -54,6 +54,7 @@ struct Output
         time_t last;
         unsigned period;
         unsigned offset;
+        size_t filesize;
         char *directory;
     } rotate;
 

@@ -372,21 +372,22 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     /*
      * Copy the configuration information from the 'masscan' structure.
      */
-    out->rotate.period = masscan->rotate_output;
-    out->rotate.offset = masscan->rotate_offset;
+    out->rotate.period = masscan->output.rotate.timeout;
+    out->rotate.offset = masscan->output.rotate.offset;
+    out->rotate.filesize = masscan->output.rotate.filesize;
     out->redis.port = masscan->redis.port;
     out->redis.ip = masscan->redis.ip;
     out->is_banner = masscan->is_banners;
     out->is_gmt = masscan->is_gmt;
-    out->is_interactive = masscan->is_interactive;
-    out->is_open_only = masscan->nmap.open_only;
-    out->is_append = masscan->nmap.append;
-    out->xml.stylesheet = duplicate_string(masscan->nmap.stylesheet);
-    out->rotate.directory = duplicate_string(masscan->rotate_directory);
+    out->is_interactive = masscan->output.is_interactive;
+    out->is_open_only = masscan->output.is_open_only;
+    out->is_append = masscan->output.is_append;
+    out->xml.stylesheet = duplicate_string(masscan->output.stylesheet);
+    out->rotate.directory = duplicate_string(masscan->output.rotate.directory);
     if (masscan->nic_count <= 1)
-        out->filename = duplicate_string(masscan->nmap.filename);
+        out->filename = duplicate_string(masscan->output.filename);
     else
-        out->filename = indexed_filename(masscan->nmap.filename, thread_index);
+        out->filename = indexed_filename(masscan->output.filename, thread_index);
 
     for (i=0; i<8; i++) {
         out->src[i] = masscan->nic[i].src;
@@ -396,7 +397,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
      * Link the appropriate output module.
      * TODO: support multiple output modules
      */
-    out->format = masscan->nmap.format;
+    out->format = masscan->output.format;
     switch (out->format) {
     case Output_List:
         out->funcs = &text_output;
@@ -426,12 +427,12 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
      * so that we can immediately notify the user of an error, rather than
      * waiting midway through a long scan and have it fail.
      */
-    if (masscan->nmap.filename[0] && out->funcs != &null_output) {
+    if (masscan->output.filename[0] && out->funcs != &null_output) {
         FILE *fp;
 
-        fp = open_rotate(out, masscan->nmap.filename);
+        fp = open_rotate(out, masscan->output.filename);
         if (fp == NULL) {
-            perror(masscan->nmap.filename);
+            perror(masscan->output.filename);
             exit(1);
         }
 
@@ -444,7 +445,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
      * this time will be set at "infinity" in the future.
      * TODO: this code isn't Y2036 compliant.
      */
-    if (masscan->rotate_output == 0) {
+    if (masscan->output.rotate.timeout == 0) {
         /* TODO: how does one find the max time_t value??*/
         out->rotate.next = (time_t)LONG_MAX;
     } else {

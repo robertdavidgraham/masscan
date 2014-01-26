@@ -1372,7 +1372,6 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
-    masscan->is_interactive = 1;
     masscan->seed = time(0); /* a predictable, but 'random' seed */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
@@ -1381,8 +1380,8 @@ int main(int argc, char *argv[])
     masscan->shard.of = 1;
     masscan->min_packet_size = 60;
     masscan->payloads = payloads_create();
-    strcpy_s(   masscan->rotate_directory,
-                sizeof(masscan->rotate_directory),
+    strcpy_s(   masscan->output.rotate.directory,
+                sizeof(masscan->output.rotate.directory),
                 ".");
     masscan->is_capture_cert = 1;
 

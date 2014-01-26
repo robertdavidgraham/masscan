@@ -14,44 +14,88 @@ struct Adapter;
 struct TemplateSet;
 struct Banner1;
 
-enum {
-    Operation_Default = 0,      /* nothing specified, so print usage */
-    Operation_List_Adapters = 1,
-    Operation_Selftest = 2,
+/**
+ * This is the "operationg" to be performed by masscan, which is almost always
+ * to "scan" the network. However, there are some lesser operations to do
+ * instead, like run a "regression self test", or "debug", or something else
+ * instead of scanning. We parse the command-line in order to figure out the
+ * proper operation
+ */
+enum Operation {
+    Operation_Default = 0,          /* nothing specified, so print usage */
+    Operation_List_Adapters = 1,    /* --listif */
+    Operation_Selftest = 2,         /* --selftest or --regress */
     Operation_Scan = 3,         /* this is what you expect */
-    Operation_DebugIF = 4,
-    Operation_ListScan = 5,
-    Operation_ReadScan = 6,     /* re-interpret output files in different format */
+    Operation_DebugIF = 4,          /* --debug if */
+    Operation_ListScan = 5,         /* -sL */
+    Operation_ReadScan = 6,         /* --readscan <binary-output> */
 };
 
-enum OutpuFormat {
-    Output_Interactive  = 0x0001,
+/**
+ * The format of the output. If nothing is specified, then the default will
+ * be "--interactive", meaning that we'll print to the command-line live as
+ * results come in. Only one output format can be specified, except that
+ * "--interactive" can be specified alongside any of the other ones.
+ * FIXME: eventually we'll support multiple file formats and "all"
+ * outputing simultaneously.
+ */
+enum OutputFormat {
+    Output_Interactive  = 0x0001,   /* --interactive, print to cmdline */
     Output_List         = 0x0002,
-    Output_Binary       = 0x0004,
-    Output_XML          = 0x0008,
-    Output_JSON         = 0x0010,
+    Output_Binary       = 0x0004,   /* -oB, "binary", the primary format */
+    Output_XML          = 0x0008,   /* -oX, "xml" */
+    Output_JSON         = 0x0010,   /* -oJ, "json" */
     Output_Nmap         = 0x0020,
     Output_ScriptKiddie = 0x0040,
-    Output_Grepable     = 0x0080,
-    Output_Redis        = 0x0100,
+    Output_Grepable     = 0x0080,   /* -oG, "grepable" */
+    Output_Redis        = 0x0100, 
     Output_None         = 0x0200,
-    Output_All          = 0xFFBF,
+    Output_All          = 0xFFBF,   /* not supported */
 };
 
 
+/**
+ * Holds the list of TCP "hello" payloads, specified with the "--hello-file"
+ * or "--hello-string" options
+ */
 struct TcpCfgPayloads
 {
+    /** The "hello" data in base64 format. This is either the base64 string
+     * specified in the cmdline/cfgfile with "--hello-string", or the 
+     * contents of a file specified with "--hello-file" that we've converted
+     * into base64 */
     char *payload_base64;
+    
+    /** The TCP port that this hello belongs to */
     unsigned port;
+    
+    /** These configuration options are stored as a linked-list */
     struct TcpCfgPayloads *next;
 };
 
+
+
+
+/**
+ * This is the master MASSCAN configuration structure. It is created on startup
+ * by reading the command-line and parsing configuration files.
+ *
+ * Once read in at the start, this structure doesn't change. The transmit
+ * and receive threads have only a "const" pointer to this structure.
+ */
 struct Masscan
 {
-    int op;
+    /**
+     * What this progrma is doing, which is normally "Operation_Scan", but
+     * which can be other things, like "Operation_SelfTest"
+     */
+    enum Operation op;
 
     /**
-     * One or more network adapters that we'll use for scanning.
+     * One or more network adapters that we'll use for scanning. Each adapter
+     * should have a separate set of IP source addresses, except in the case
+     * of PF_RING dnaX:Y adapters.
+     * FIXME: add support for link aggregation across adapters
      */
     struct {
         char ifname[256];
@@ -67,109 +111,193 @@ struct Masscan
 
     /**
      * The target ranges of IPv4 addresses that are included in the scan.
+     * The user can specify anything here, and we'll resolve all overlaps
+     * and such, and sort the target ranges.
      */
     struct RangeList targets;
 
     /**
-     * The ports we are scanning for
+     * The ports we are scanning for. The user can specify repeated ports
+     * and overlapping ranges, but we'll deduplicate them, scanning ports
+     * only once.
+     * NOTE: TCP ports are stored 0-64k, but UDP ports are stored in the
+     * range 64k-128k, thus, allowing us to scan both at the same time.
      */
     struct RangeList ports;
 
     /**
      * IPv4 addresses/ranges that are to be exluded from the scan. This takes
-     * precedence over any 'include' statement
+     * precedence over any 'include' statement. What happens is this: after
+     * all the configuration has been read, we then apply the exclude/blacklist
+     * on top of the target/whitelist, leaving only a target/whitelist left.
+     * Thus, during the scan, we only choose from the target/whitelist and
+     * don't consult the exclude/blacklist.
      */
     struct RangeList exclude_ip;
     struct RangeList exclude_port;
 
 
-
     /**
-     * Maximum rate, in packets-per-second (--rate parameter)
+     * Maximum rate, in packets-per-second (--rate parameter). This can be
+     * a fraction of a packet-per-second, or be as high as 30000000.0 (or
+     * more actually, but I've only tested to 30megapps).
      */
     double max_rate;
 
     /**
-     * Number of retries (--retries or --max-retries parameter)
+     * Number of retries (--retries or --max-retries parameter). Retries
+     * happen a few seconds apart.
      */
     unsigned retries;
 
+    
     unsigned is_pfring:1;       /* --pfring */
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
-    unsigned is_interactive:1;  /* --interactive */
-    unsigned is_arp:1;           /* --arp */
+    unsigned is_arp:1;          /* --arp */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
     unsigned is_test_csv:1;     /* (temporary testing feature) */
+    unsigned is_infinite:1;     /* -infinite */
+    unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds
      */
     unsigned wait;
 
-
+    /**
+     * --resume
+     * This structure contains options for pausing the scan (by exiting the
+     * program) and restarting it later.
+     */
     struct {
+        /** --resume-index */
         uint64_t index;
+        
+        /** --resume-count */
         uint64_t count;
+        
+        /** Derives the --resume-index from the target ip:port */
         struct {
             unsigned ip;
             unsigned port;
         } target;
     } resume;
 
+    /**
+     * --shard n/m
+     * This is used for distributin a scan acros multiple "shards". Every
+     * shard in the scan must know the total number of shards, and must also
+     * know which of those shards is it's identity. Thus, shard 1/5 scans
+     * a different range than 2/5. These numbers start at 1, so it's
+     * 1/3 (#1 out of three), 2/3, and 3/3 (but not 0/3).
+     */
     struct {
         unsigned one;
         unsigned of;
     } shard;
 
     /**
-     * The packet template we are current using
+     * The packet template set we are current using. We store a binary template
+     * for TCP, UDP, SCTP, ICMP, and so on. All the scans using that protocol
+     * are then scanned using that basic template. IP and TCP options can be
+     * added to the basic template without affecting any other component
+     * of the system.
      */
     struct TemplateSet *pkt_template;
-
-    /**
-     * When we should rotate output into the target directory
-     */
-    unsigned rotate_output;
 
     /**
      * A random seed for randomization if zero, otherwise we'll use
      * the configured seed for repeatable tests.
      */
     uint64_t seed;
-
+    
     /**
-     * When doing "--rotate daily", the rotation is done at GMT. In order
-     * to fix this, add an offset.
+     * This block configures what we do for the output files
      */
-    unsigned rotate_offset;
+    struct OutputStuff {
+        
+        /**
+         * --output-format
+         * Examples are "xml", "binary", "json", "grepable", and so on.
+         */
+        enum OutputFormat format;
+        
+        /**
+         * --output-filename
+         * The name of the file where we are storing scan results.
+         * Note: the filename "-" means that we should send the file to
+         * <stdout> rather than to a file.
+         */
+        char filename[256];
+        
+        /**
+         * A feature of the XML output where we can insert an optional 
+         * stylesheet into the file for better rendering on web browsers
+         */
+        char stylesheet[256];
+
+        /**
+         * --append
+         * We should append to the output file rather than overwriting it.
+         */
+        unsigned is_append:1;
+        
+        /**
+         * --open
+         * Whether to show only open ports (not closed ports)
+         */
+        unsigned is_open_only:1;
+        
+        /**
+         * print reason port is open, which is redundant for us 
+         */
+        unsigned is_reason:1;
+    
+        /**
+         * --interactive
+         * Print to command-line while also writing to output file
+         */
+        unsigned is_interactive:1;
+        
+        struct {
+            /**
+             * When we should rotate output into the target directory
+             */
+            unsigned timeout;
+            
+            /**
+             * When doing "--rotate daily", the rotation is done at GMT. In 
+             * orderto fix this, add an offset.
+             */
+            unsigned offset;
+            
+            /**
+             * Instead of rotating by timeout, we can rotate by filesize 
+             */
+            size_t filesize;
+            
+            /**
+             * The directory to which we store rotated files
+             */
+            char directory[256];
+        } rotate;
+    } output;
 
     struct {
         unsigned data_length; /* number of bytes to randomly append */
         unsigned ttl; /* starting IP TTL field */
         unsigned badsum; /* bad TCP/UDP/SCTP checksum */
 
-        /* output options */
         unsigned packet_trace:1; /* print transmit messages */
-        unsigned open_only:1; /* show only open ports */
-        unsigned reason; /* print reason port is open, which is redundant for us */
-        unsigned format; /* see enum OutputFormat */
-        unsigned append; /* append instead of clobber file */
-
+        
         char datadir[256];
-        char filename[256];
-        char stylesheet[256];
-
     } nmap;
 
-    char rotate_directory[256];
     char pcap_filename[256];
-
-    //PACKET_QUEUE *packet_buffers;
-    //PACKET_QUEUE *transmit_queue;
 
     struct {
         unsigned timeout;
@@ -195,17 +323,6 @@ struct Masscan
         unsigned port;
     } redis;
 
-    /**
-     * --infinite
-     * Restarts the scan from the beginning, for load testing, but
-     * by incrementing the seed
-     */
-    unsigned is_infinite:1;
-
-    /**
-     * --readscan
-     */
-    unsigned is_readscan:1;
 
 
     /**
