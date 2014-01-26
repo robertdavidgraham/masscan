@@ -160,7 +160,8 @@ one port.
     timezones.
 
   * `--rotate-size <size>`: rotates the output file when it exceeds the
-    given size.
+    given size. Typical suffixes can be applied (k,m,g,t) for kilo, mega,
+	giga, tera.
 
   * `--rotate-dir <directory>`: when rotating the file, this specifies which
     directory to move the file to. A useful directory is `/var/log/masscan`.
