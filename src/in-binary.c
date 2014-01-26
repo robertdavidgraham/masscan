@@ -226,6 +226,27 @@ parse_file(struct Output *out, const char *filename)
         goto end;
     }
 
+    /*
+     * Look for start time
+     */
+    if (buf[11] == '.' && strtoul((char*)buf+12,0,0) >= 2) {
+        unsigned i;
+
+        /* move to next field */
+        for (i=0; i<'a' && buf[i] && buf[i] != '\n'; i++)
+            ;
+        i++;
+
+        if (buf[i] == 's')
+            i++;
+        if (buf[i] == ':')
+            i++;
+
+        /* extract timestamp */
+        if (i < 'a')
+            out->when_scan_started = strtoul((char*)buf+i,0,0);
+    }
+
     /* Now read all records */
     for (;;) {
         unsigned type;
