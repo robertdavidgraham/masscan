@@ -15,7 +15,7 @@ syn_cookie( unsigned ip_dst, unsigned port_dst,
 /**
  * Called on startup to set a secret key
  */
-uint64_t syn_get_entropy(uint64_t seed);
+uint64_t get_entropy(void);
 
 
 #endif
