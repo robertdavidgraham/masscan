@@ -9,19 +9,15 @@
 #include <intrin.h>
 #endif
 
-/* [GLOBAL]
- * Set once at startup, and read from then on
- */
-static uint64_t entropy[2];
-
 /***************************************************************************
  * Go gather some entropy (aka. randmoness) to seed hashing with.
  *
  * NOTE: Mostly it's here to amuse cryptographers with its lulz.
  ***************************************************************************/
-void
-syn_set_entropy(uint64_t seed)
+uint64_t
+syn_get_entropy(uint64_t seed)
 {
+    uint64_t entropy[2] = {0,0};
     unsigned i;
 
     /*
@@ -29,7 +25,7 @@ syn_set_entropy(uint64_t seed)
      */
     if (seed) {
         entropy[0] = seed;
-        return;
+        return seed;
     }
 
     /*
@@ -70,6 +66,8 @@ syn_set_entropy(uint64_t seed)
         entropy[0] ^= pixie_nanotime();
     }
 #endif
+
+    return entropy[0] ^ entropy[1];
 }
 
 #if 0
@@ -122,12 +120,18 @@ murmur(uint64_t entropy, ...)
  ***************************************************************************/
 uint64_t
 syn_cookie( unsigned ip_them, unsigned port_them,
-            unsigned ip_me, unsigned port_me)
+            unsigned ip_me, unsigned port_me,
+            uint64_t entropy)
 {
     unsigned data[4];
+    uint64_t x[2];
+
+    x[0] = entropy;
+    x[1] = entropy;
+
     data[0] = ip_them;
     data[1] = port_them;
     data[2] = ip_me;
     data[3] = port_me;
-    return siphash24(data, sizeof(data), entropy);
+    return siphash24(data, sizeof(data), x);
 }

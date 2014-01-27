@@ -55,7 +55,8 @@ parse_port_unreachable(const unsigned char *px, unsigned length,
 void
 handle_icmp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
-            struct PreprocessedInfo *parsed)
+            struct PreprocessedInfo *parsed,
+            uint64_t entropy)
 {
     unsigned type = parsed->port_src;
     unsigned code = parsed->port_dst;
@@ -76,7 +77,7 @@ handle_icmp(struct Output *out, time_t timestamp,
 
     switch (type) {
     case 0: /* ICMP echo reply */
-        cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0);
+        cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0, entropy);
         if ((cookie & 0xFFFFFFFF) != seqno_me)
             return; /* not my response */
 

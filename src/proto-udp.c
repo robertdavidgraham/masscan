@@ -13,7 +13,12 @@
 
 
 
-void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed)
+/****************************************************************************
+ ****************************************************************************/
+void 
+handle_udp(struct Output *out, time_t timestamp, 
+        const unsigned char *px, unsigned length, 
+        struct PreprocessedInfo *parsed, uint64_t entropy)
 {
     unsigned ip_them;
     unsigned port_them = parsed->port_src;
@@ -26,22 +31,22 @@ void handle_udp(struct Output *out, time_t timestamp, const unsigned char *px, u
 
     switch (port_them) {
         case 53:
-            status = handle_dns(out, timestamp, px, length, parsed);
+            status = handle_dns(out, timestamp, px, length, parsed, entropy);
             break;
         case 123:
-            status = ntp_handle_response(out, timestamp, px, length, parsed);
+            status = ntp_handle_response(out, timestamp, px, length, parsed, entropy);
             break;
         case 137:
-            status = handle_nbtstat(out, timestamp, px, length, parsed);
+            status = handle_nbtstat(out, timestamp, px, length, parsed, entropy);
             break;
         case 161:
-            status = handle_snmp(out, timestamp, px, length, parsed);
+            status = handle_snmp(out, timestamp, px, length, parsed, entropy);
             break;
         case 16464:
         case 16465:
         case 16470:
         case 16471:
-            status = handle_zeroaccess(out, timestamp, px, length, parsed);
+            status = handle_zeroaccess(out, timestamp, px, length, parsed, entropy);
             break;
             
     }

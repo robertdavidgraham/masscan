@@ -228,7 +228,8 @@ ntp_v2_parse(const unsigned char *px,
 unsigned
 ntp_handle_response(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
-            struct PreprocessedInfo *parsed
+            struct PreprocessedInfo *parsed,
+            uint64_t entropy
             )
 {
     unsigned ip_them;
@@ -237,6 +238,7 @@ ntp_handle_response(struct Output *out, time_t timestamp,
     unsigned offset = parsed->app_offset;
     
     UNUSEDPARM(length);
+    UNUSEDPARM(entropy);
     
     if (parsed->app_length < 4)
         return 0;

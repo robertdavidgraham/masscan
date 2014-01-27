@@ -40,6 +40,8 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
  *      outstanding connections you'll have). This function will automatically
  *      round this number up to the nearest power of 2, or round it down
  *      if it causes malloc() to not be able to allocate enoug memory.
+ * @param entropy
+ *      Seed for syn-cookie randomization
  */
 struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
@@ -48,7 +50,8 @@ tcpcon_create_table(    size_t entry_count,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
-                        unsigned timeout
+                        unsigned timeout,
+                        uint64_t entropy
                         );
 
 void tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,

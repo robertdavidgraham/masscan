@@ -8,13 +8,14 @@
  */
 uint64_t
 syn_cookie( unsigned ip_dst, unsigned port_dst,
-            unsigned ip_src, unsigned port_src);
+            unsigned ip_src, unsigned port_src,
+            uint64_t entropy);
 
 
 /**
  * Called on startup to set a secret key
  */
-void syn_set_entropy(uint64_t seed);
+uint64_t syn_get_entropy(uint64_t seed);
 
 
 #endif

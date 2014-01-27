@@ -277,6 +277,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t seed = masscan->seed;
     uint64_t repeats = 0; /* --infinite repeats */
     uint64_t *status_syn_count;
+    uint64_t entropy = masscan->seed;
 
     LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
 
@@ -387,14 +388,15 @@ infinite:
             if (src_ip_mask > 1 || src_port_mask > 1) {
                 uint64_t ck = syn_cookie((unsigned)(i+repeats),
                                         (unsigned)((i+repeats)>>32),
-                                        (unsigned)xXx, (unsigned)(xXx>>32));
+                                        (unsigned)xXx, (unsigned)(xXx>>32),
+                                        entropy);
                 port_me = src_port + (ck & src_port_mask);
                 ip_me = src_ip + ((ck>>16) & src_ip_mask);
             } else {
                 ip_me = src_ip;
                 port_me = src_port;
             }
-            cookie = syn_cookie(ip_them, port_them, ip_me, port_me);
+            cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy);
 //printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
             /*
              * SEND THE PROBE
@@ -542,6 +544,7 @@ receive_thread(void *v)
     struct TCP_ConnectionTable *tcpcon = 0;
     uint64_t *status_synack_count;
     uint64_t *status_tcb_count;
+    uint64_t entropy = masscan->seed;
 
     /* some status variables */
     status_synack_count = (uint64_t*)malloc(sizeof(uint64_t));
@@ -603,7 +606,8 @@ receive_thread(void *v)
             &parms->tmplset->pkts[Proto_TCP],
             output_report_banner,
             out,
-            masscan->tcb.timeout
+            masscan->tcb.timeout,
+            masscan->seed
             );
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
@@ -716,10 +720,10 @@ receive_thread(void *v)
 
         switch (parsed.ip_protocol) {
         case 132: /* SCTP */
-            cookie = syn_cookie(ip_them, port_them | (Proto_SCTP<<16), ip_me, port_me) & 0xFFFFFFFF;
+            cookie = syn_cookie(ip_them, port_them | (Proto_SCTP<<16), ip_me, port_me, entropy) & 0xFFFFFFFF;
             break;
         default:
-            cookie = syn_cookie(ip_them, port_them, ip_me, port_me) & 0xFFFFFFFF;
+            cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy) & 0xFFFFFFFF;
         }
 
         /* verify: my IP address */
@@ -773,13 +777,13 @@ receive_thread(void *v)
                     continue;
                 if (parms->masscan->nmap.packet_trace)
                     packet_trace(stdout, parms->pt_start, px, length, 0);
-                handle_udp(out, secs, px, length, &parsed);
+                handle_udp(out, secs, px, length, &parsed, entropy);
                 continue;
             case FOUND_ICMP:
-                handle_icmp(out, secs, px, length, &parsed);
+                handle_icmp(out, secs, px, length, &parsed, entropy);
                 continue;
             case FOUND_SCTP:
-                handle_sctp(out, secs, px, length, cookie, &parsed);
+                handle_sctp(out, secs, px, length, cookie, &parsed, entropy);
                 break;
             case FOUND_TCP:
                 /* fall down to below */
@@ -1133,7 +1137,8 @@ main_scan(struct Masscan *masscan)
                     parms->adapter_mac,
                     parms->router_mac,
                     masscan->payloads,
-                    rawsock_datalink(masscan->nic[index].adapter));
+                    rawsock_datalink(masscan->nic[index].adapter),
+                    masscan->seed);
 
         /*
          * Set the "source port" of everything we transmit.
@@ -1422,10 +1427,6 @@ int main(int argc, char *argv[])
     /* Init some protocol parser data structures */
     snmp_init();
     x509_init();
-
-    /* Set randomization seed for SYN-cookies */
-    syn_set_entropy(masscan->seed);
-
 
 
     /*

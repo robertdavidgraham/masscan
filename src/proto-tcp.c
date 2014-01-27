@@ -70,6 +70,7 @@ struct TCP_ConnectionTable {
     unsigned timeout;
 
     uint64_t active_count;
+    uint64_t entropy;
 
     struct Timeouts *timeouts;
     struct TemplatePacket *pkt_template;
@@ -261,7 +262,8 @@ tcpcon_create_table(    size_t entry_count,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
-                        unsigned timeout
+                        unsigned timeout,
+                        uint64_t entropy
                         )
 {
     struct TCP_ConnectionTable *tcpcon;
@@ -273,6 +275,7 @@ tcpcon_create_table(    size_t entry_count,
     tcpcon->timeout = timeout;
     if (tcpcon->timeout == 0)
         tcpcon->timeout = 30; /* half a minute before destroying tcb */
+    tcpcon->entropy = entropy;
 
     /* Find nearest power of 2 to the tcb count, but don't go
      * over the number 16-million */
@@ -331,7 +334,9 @@ tcpcon_create_table(    size_t entry_count,
 /***************************************************************************
  ***************************************************************************/
 static unsigned
-tcb_hash(unsigned ip_me, unsigned port_me, unsigned ip_them, unsigned port_them)
+tcb_hash(   unsigned ip_me, unsigned port_me, 
+            unsigned ip_them, unsigned port_them,
+            uint64_t entropy)
 {
     unsigned index;
 
@@ -340,7 +345,8 @@ tcb_hash(unsigned ip_me, unsigned port_me, unsigned ip_them, unsigned port_them)
     index = (unsigned)syn_cookie(   ip_me   ^ ip_them,
                                     port_me ^ port_them,
                                     ip_me   ^ ip_them,
-                                    port_me ^ port_them
+                                    port_me ^ port_them,
+                                    entropy
                                     );
     return index;
 }
@@ -362,7 +368,9 @@ tcpcon_destroy_tcb(
      * The TCB doesn't point to it's location in the table. Therefore, we
      * have to do a lookup to find the head pointer in the table.
      */
-    index = tcb_hash(tcb->ip_me, tcb->port_me, tcb->ip_them, tcb->port_them);
+    index = tcb_hash(   tcb->ip_me, tcb->port_me, 
+                        tcb->ip_them, tcb->port_them, 
+                        tcpcon->entropy);
 
     /*
      * At this point, we have the head of a linked list of TCBs. Now,
@@ -484,7 +492,7 @@ tcpcon_create_tcb(
     tmp.port_me = (unsigned short)port_me;
     tmp.port_them = (unsigned short)port_them;
 
-    index = tcb_hash(ip_me, port_me, ip_them, port_them);
+    index = tcb_hash(ip_me, port_me, ip_them, port_them, tcpcon->entropy);
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {
         tcb = tcb->next;
@@ -539,7 +547,7 @@ tcpcon_lookup_tcb(
     tmp.port_me = (unsigned short)port_me;
     tmp.port_them = (unsigned short)port_them;
 
-    index = tcb_hash(ip_me, port_me, ip_them, port_them);
+    index = tcb_hash(ip_me, port_me, ip_them, port_them, tcpcon->entropy);
 
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {

@@ -1,6 +1,7 @@
 #ifndef TCP_PACKET_H
 #define TCP_PACKET_H
 #include <stdio.h>
+#include <stdint.h>
 struct NmapPayloads;
 struct MassScript;
 
@@ -63,6 +64,7 @@ struct TemplateSet
     unsigned count;
     struct TemplatePacket pkts[Proto_Count];
     struct MassScript *script;
+    uint64_t entropy;
 };
 
 struct TemplateSet templ_copy(const struct TemplateSet *templ);
@@ -96,7 +98,8 @@ template_packet_init(
     const unsigned char *source_mac,
     const unsigned char *router_mac,
     struct NmapPayloads *payloads,
-    int data_link);
+    int data_link,
+    uint64_t entropy);
 
 /**
  * Sets the target/destination IP address of the packet, the destination port

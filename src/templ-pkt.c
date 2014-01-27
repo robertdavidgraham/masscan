@@ -501,7 +501,8 @@ template_set_target(
     unsigned ip_them, unsigned port_them,
     unsigned ip_me, unsigned port_me,
     unsigned seqno,
-    unsigned char *px, size_t sizeof_px, size_t *r_length)
+    unsigned char *px, size_t sizeof_px, size_t *r_length
+    )
 {
     unsigned offset_ip;
     unsigned offset_tcp;
@@ -509,6 +510,7 @@ template_set_target(
     unsigned ip_id;
     struct TemplatePacket *tmpl = NULL;
     unsigned xsum2;
+    uint64_t entropy = tmplset->entropy;
     //unsigned xsum3;
     
     *r_length = sizeof_px;
@@ -686,7 +688,7 @@ template_set_target(
         break;
     case Proto_ICMP_ping:
     case Proto_ICMP_timestamp:
-            seqno = (unsigned)syn_cookie(ip_them, port_them, ip_me, 0);
+            seqno = (unsigned)syn_cookie(ip_them, port_them, ip_me, 0, entropy);
             px[offset_tcp+ 4] = (unsigned char)(seqno >> 24);
             px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
             px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
@@ -869,9 +871,11 @@ template_packet_init(
     const unsigned char *source_mac,
     const unsigned char *router_mac,
     struct NmapPayloads *payloads,
-    int data_link)
+    int data_link,
+    uint64_t entropy)
 {
     templset->count = 0;
+    templset->entropy = entropy;
 
     /* [TCP] */
     _template_init(&templset->pkts[Proto_TCP],
@@ -1017,7 +1021,8 @@ template_selftest(void)
             (const unsigned char*)"\x00\x11\x22\x33\x44\x55",
             (const unsigned char*)"\x66\x55\x44\x33\x22\x11",
             0,
-            1 /*Ethernet*/
+            1,  /* Ethernet */
+            0   /* no entropy */
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;

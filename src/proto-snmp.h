@@ -22,5 +22,6 @@ unsigned snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
 unsigned
 handle_snmp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
-            struct PreprocessedInfo *parsed);
+            struct PreprocessedInfo *parsed,
+            uint64_t entropy);
 #endif

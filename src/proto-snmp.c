@@ -536,7 +536,8 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 unsigned
 handle_snmp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
-            struct PreprocessedInfo *parsed
+            struct PreprocessedInfo *parsed,
+            uint64_t entropy
             )
 {
     unsigned ip_them;
@@ -569,7 +570,7 @@ handle_snmp(struct Output *out, time_t timestamp,
     /* Validate the "syn-cookie" style information. In the case of SNMP,
      * this will be held in the "request-id" field. If the cookie isn't
      * a good one, then we'll ignore the response */
-    seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);
+    seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me, entropy);
     if ((seqno&0x7FFFffff) != request_id)
         return 1;
 
