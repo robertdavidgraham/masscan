@@ -4,7 +4,7 @@
     (h/t Marsh Ray @marshray for this idea)
 
     This is a randomization/reshuffling function based on a crypto
-    "Feistal network" as describ ed in the paper:
+    "Feistel network" as describ ed in the paper:
 
     'Ciphers with Arbitrary Finite Domains' 
         by John Black and Phillip Rogaway 
@@ -38,7 +38,7 @@
 
     The cryptographic strength of this construction depends upon the 
     number of rounds, and the exact nature of the inner "F()" function.
-    Because it's a Feistal network, that "F()" function can be almost
+    Because it's a Feistel network, that "F()" function can be almost
     anything.
 
     We don't care about cryptographic strength, just speed, so we are
