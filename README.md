@@ -25,6 +25,11 @@ This puts the program in the `masscan/bin` subdirectory. You'll have to
 manually copy it to something like `/usr/local/bin` if you want to
 install it elsewhere on the system.
 
+The source consists of a lot of small files, so building goes a lot faster
+by using the multi-threaded build:
+
+	$ make -j
+
 While Linux is the primary target platform, the code runs well on many other
 systems. Here's some additional build info:
 * Windows w/ Visual Studio: use the VS10 project
