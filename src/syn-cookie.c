@@ -15,18 +15,10 @@
  * NOTE: Mostly it's here to amuse cryptographers with its lulz.
  ***************************************************************************/
 uint64_t
-syn_get_entropy(uint64_t seed)
+get_entropy(void)
 {
     uint64_t entropy[2] = {0,0};
     unsigned i;
-
-    /*
-     * If we have a manual seed, use that instead
-     */
-    if (seed) {
-        entropy[0] = seed;
-        return seed;
-    }
 
     /*
      * Gather some random bits

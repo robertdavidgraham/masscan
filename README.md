@@ -9,6 +9,8 @@ asynchronous transmission. The major difference is that it's faster than these
 other scanners. In addition, it's more flexible, allowing arbitrary address
 ranges and port ranges.
 
+This tool is free, but consider funding it here:
+1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 # Building
 
