@@ -71,7 +71,7 @@ all: bin/masscan
 # means that include file dependencies are broken, so sometimes when
 # the program crashes unexpectedly, 'make clean' then 'make' fixes the
 # problem that a .h file was out of date
-tmp/%.o: src/%.c
+tmp/%.o: src/%.c src/*.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 SRC = $(wildcard src/*.c)
