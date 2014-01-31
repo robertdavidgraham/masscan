@@ -79,7 +79,6 @@
 unsigned control_c_pressed = 0;
 static unsigned control_c_pressed_again = 0;
 time_t global_now;
-static unsigned global_wait = 10;
 
 
 
@@ -500,7 +499,7 @@ infinite:
              * transmit */
             rawsock_flush(adapter);
 
-            pixie_usleep(1000);
+            pixie_usleep(100);
         }
     }
 
@@ -982,9 +981,9 @@ static void control_c_handler(int x)
 {
     if (control_c_pressed == 0) {
         fprintf(stderr,
-                "waiting %u seconds to exit..."
-                "                                            \n",
-                global_wait);
+                "waiting several seconds to exit..."
+                "                                            \n"
+                );
         fflush(stderr);
         control_c_pressed = 1+x;
     } else
@@ -1320,7 +1319,7 @@ main_scan(struct Masscan *masscan)
 
         status_print(&status, min_index, range, rate,
             total_tcbs, total_synacks, total_syns,
-            masscan->wait + 1 - (time(0) - now));
+            masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
             control_c_pressed_again = 1;
@@ -1333,7 +1332,7 @@ main_scan(struct Masscan *masscan)
 
         }
 
-        pixie_mssleep(750);
+        pixie_mssleep(100);
 
         if (transmit_count < masscan->nic_count)
             continue;
