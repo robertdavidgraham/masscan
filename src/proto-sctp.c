@@ -134,7 +134,7 @@ sctp_checksum(const void *vbuffer, size_t length)
 /*****************************************************************************
  *****************************************************************************/
 void
-handle_sctp(struct Output *out, time_t timestamp, 
+handle_sctp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length, 
             unsigned cookie,
             struct PreprocessedInfo *parsed,
@@ -168,7 +168,7 @@ handle_sctp(struct Output *out, time_t timestamp,
                         132, /* ip proto = sctp */
                         port_them,
                         0,
-                        0);
+                        parsed->ip_ttl);
         break;
     case 6: /* abort */
         output_report_status(
@@ -179,7 +179,7 @@ handle_sctp(struct Output *out, time_t timestamp,
                         132, /* ip proto = sctp */
                         port_them,
                         0,
-                        px[offset + 12]);
+                        parsed->ip_ttl);
         break;
     default:
         ;

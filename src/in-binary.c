@@ -146,6 +146,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
                 6, /* this is always TCP */
                 record.port,
                 record.app_proto,
+                0, /* ttl */
                 buf+12, (unsigned)buf_length-12
                 );
 }
@@ -158,6 +159,9 @@ static void
 parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
 {
     struct MasscanRecord record;
+
+    if (buf_length < 13)
+        return;
 
     /*
      * Parse the parts that are common to most records
@@ -181,7 +185,46 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
                 record.ip_proto,    /* TCP=6, UDP=17 */
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
+                0, /* ttl */
                 buf+13, (unsigned)buf_length-13
+                );
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length)
+{
+    struct MasscanRecord record;
+
+    if (buf_length < 14)
+        return;
+
+    /*
+     * Parse the parts that are common to most records
+     */
+    record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
+    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip_proto  = buf[8];
+    record.port      = buf[9]<<8 | buf[10];
+    record.app_proto = buf[11]<<8 | buf[12];
+    record.ttl       = buf[13];
+
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
+
+    /*
+     * Now print the output
+     */
+    output_report_banner(
+                out,
+                record.timestamp,
+                record.ip,
+                record.ip_proto,    /* TCP=6, UDP=17 */
+                record.port,
+                record.app_proto,   /* HTTP, SSL, SNMP, etc. */
+                record.ttl, /* ttl */
+                buf+13, (unsigned)buf_length-14
                 );
 }
 
@@ -320,6 +363,9 @@ parse_file(struct Output *out, const char *filename)
                 break;
             case 7: /* STATUS: closed */
                 parse_status2(out, PortStatus_Closed, buf, bytes_read);
+                break;
+            case 9:
+                parse_banner9(out, buf, bytes_read);
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;

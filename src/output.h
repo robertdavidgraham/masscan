@@ -28,10 +28,12 @@ struct OutputType {
     void (*close)(struct Output *out, FILE *fp);
     void (*status)(struct Output *out, FILE *fp,
                    time_t timestamp, int status,
-                   unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl);
+                   unsigned ip, unsigned ip_proto, unsigned port, 
+                   unsigned reason, unsigned ttl);
     void (*banner)(struct Output *out, FILE *fp,
                    time_t timestamp, unsigned ip, unsigned ip_proto,
                    unsigned port, enum ApplicationProtocol proto,
+                   unsigned ttl,
                    const unsigned char *px, unsigned length);
 };
 
@@ -149,7 +151,7 @@ void output_report_status(struct Output *output, time_t timestamp,
 typedef void (*OUTPUT_REPORT_BANNER)(
                 struct Output *output, time_t timestamp,
                 unsigned ip, unsigned ip_proto, unsigned port,
-                unsigned proto,
+                unsigned proto, unsigned ttl,
                 const unsigned char *px, unsigned length);
 
 void output_report_banner(
@@ -157,6 +159,7 @@ void output_report_banner(
                 time_t timestamp,
                 unsigned ip, unsigned ip_proto, unsigned port,
                 unsigned proto,
+                unsigned ttl,
                 const unsigned char *px, unsigned length);
 
 /**

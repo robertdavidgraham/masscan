@@ -579,6 +579,7 @@ handle_snmp(struct Output *out, time_t timestamp,
         out, timestamp,
         ip_them, 17, parsed->port_src,
         PROTO_SNMP,
+        parsed->ip_ttl,
         banout_string(banout, PROTO_SNMP),
         banout_string_length(banout, PROTO_SNMP));
 

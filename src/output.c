@@ -742,7 +742,9 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 void
 output_report_banner(struct Output *out, time_t now,
                 unsigned ip, unsigned ip_proto, unsigned port,
-                unsigned proto, const unsigned char *px, unsigned length)
+                unsigned proto, 
+                unsigned ttl, 
+                const unsigned char *px, unsigned length)
 {
     FILE *fp = out->fp;
 
@@ -806,7 +808,7 @@ output_report_banner(struct Output *out, time_t now,
      * Now do the actual output, whether it be XML, binary, JSON, Redis,
      * and so on.
      */
-    out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, px, length);
+    out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, ttl, px, length);
 
 }
 

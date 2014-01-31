@@ -95,9 +95,17 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
 static void
 xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         unsigned ip, unsigned ip_proto, unsigned port,
-        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, 
+        unsigned ttl,
+        const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
+    const char *reason;
+
+    switch (proto) {
+    case 6: reason = "syn-ack"; break;
+    default: reason = "response"; break;
+    }
 
     UNUSEDPARM(out);
 
@@ -105,8 +113,8 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
-                    "<service name=\"%s\" banner=\"%s\">"
-                    "</service>"
+                      "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
+                      "<service name=\"%s\" banner=\"%s\"></service>"
                     "</port>"
                     "</ports>"
                 "</host>"
@@ -118,6 +126,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         (ip>> 0)&0xFF,
         name_from_ip_proto(ip_proto),
         port,
+        reason, ttl,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
         );

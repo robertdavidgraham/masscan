@@ -17,7 +17,7 @@ sctp_checksum(const void *vbuffer, size_t length);
  * Handle incoming SCTP response
  */
 void
-handle_sctp(struct Output *out, time_t timestamp, 
+handle_sctp(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
             unsigned cookie,
             struct PreprocessedInfo *parsed,

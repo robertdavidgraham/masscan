@@ -112,26 +112,28 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
 static void
 binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         unsigned ip, unsigned ip_proto, unsigned port,
-        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *px, unsigned length)
 {
     unsigned char foo[32768];
     unsigned i;
     size_t bytes_written;
+    static const unsigned HeaderLength = 14;
 
     UNUSEDPARM(out);
 
     /* [TYPE] field */
-    foo[0] = Out_Banner; /*banner*/
+    foo[0] = Out_Banner9; /*banner*/
 
     /* [LENGTH] field*/
-    if (length >= 128 * 128 - 13)
+    if (length >= 128 * 128 - HeaderLength)
         return;
-    if (length < 128 - 13) {
-        foo[1] = (unsigned char)(length + 13);
+    if (length < 128 - HeaderLength) {
+        foo[1] = (unsigned char)(length + HeaderLength);
         i = 2;
     } else {
-        foo[1] = (unsigned char)((length + 13)>>7) | 0x80;
-        foo[2] = (unsigned char)((length + 13) & 0x7F);
+        foo[1] = (unsigned char)((length + HeaderLength)>>7) | 0x80;
+        foo[2] = (unsigned char)((length + HeaderLength) & 0x7F);
         i = 3;
     }
 
@@ -154,12 +156,14 @@ binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     foo[i+11] = (unsigned char)(proto>>8);
     foo[i+12] = (unsigned char)(proto>>0);
 
+    foo[i+13] = (unsigned char)(ttl);
+
     /* Banner */
-    memcpy(foo+i+13, px, length);
+    memcpy(foo+i+14, px, length);
 
 
-    bytes_written = fwrite(&foo, 1, length+i+13, fp);
-    if (bytes_written != length+i+13) {
+    bytes_written = fwrite(&foo, 1, length+i+HeaderLength, fp);
+    if (bytes_written != length+i+HeaderLength) {
         perror("output");
         exit(1);
     }
