@@ -248,9 +248,23 @@ struct Masscan
         
         /**
          * --open
-         * Whether to show only open ports (not closed ports)
+         * --open-only
+         * --show open
+         * Whether to show open ports
          */
-        unsigned is_open_only:1;
+        unsigned is_show_open:1;
+        
+        /**
+         * --show closed
+         * Whether to show closed ports (i.e. RSTs)
+         */
+        unsigned is_show_closed:1;
+        
+        /**
+         * --show host
+         * Whether to show host messages other than closed ports
+         */
+        unsigned is_show_host:1;
         
         /**
          * print reason port is open, which is redundant for us 

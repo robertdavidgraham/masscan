@@ -120,11 +120,13 @@ one port.
   * `--http-user-agent <user-agent>`: replaces the existing user-agent field
     with the indicated value when doing HTTP requests.
 
-  * `--open-only`: report only open ports, not closed ports.
+  * `--show [open,closed]`: tells which port status to display, such
+    as 'open' for those ports that respond with a SYN-ACK on TCP, or
+	'closed' for those ports that repsond with RST. The default is
+	only to display 'open' ports.
 
-
-
-
+  * `--noshow [open,closed]`: disables a port status to display, such
+    as to no longer display 'open' ports.
 
   * `--pcap <filename>`: saves received packets (but not transmitted
     packets) to the libpcap-format file.

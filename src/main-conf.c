@@ -249,8 +249,13 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         fprintf(fp, "output-format = unknown(%u)\n", masscan->output.format);
         break;
     }
-    fprintf(fp, "output-status = %s\n",
-            masscan->output.is_open_only?"open":"all");
+    fprintf(fp, "show = %s,%s,%s\n",
+            masscan->output.is_show_open?"open":"",
+            masscan->output.is_show_closed?"closed":"",
+            masscan->output.is_show_host?"host":""
+            );
+    if (!masscan->output.is_show_open)
+        fprintf(fp, "noshow = open\n");
     fprintf(fp, "output-filename = %s\n", masscan->output.filename);
     if (masscan->output.is_append)
         fprintf(fp, "output-append = true\n");
@@ -678,6 +683,36 @@ EQUALS(const char *lhs, const char *rhs)
         lhs++;
         rhs++;
     }
+}
+
+static int
+EQUALSx(const char *lhs, const char *rhs, size_t rhs_length)
+{
+    for (;;) {
+        while (*lhs == '-' || *lhs == '.' || *lhs == '_')
+            lhs++;
+        while (*rhs == '-' || *rhs == '.' || *rhs == '_')
+            rhs++;
+        if (*lhs == '\0' && *rhs == '[')
+            return 1; /*arrays*/
+        if (tolower(*lhs & 0xFF) != tolower(*rhs & 0xFF))
+            return 0;
+        if (*lhs == '\0')
+            return 1;
+        lhs++;
+        rhs++;
+        if (--rhs_length == 0)
+            return 1;
+    }
+}
+
+static unsigned
+INDEX_OF(const char *str, char c)
+{
+    unsigned i;
+    for (i=0; str[i] && str[i] != c; i++)
+        ;
+    return i;
 }
 
 static unsigned
@@ -1170,11 +1205,49 @@ masscan_set_parameter(struct Masscan *masscan,
          * it's not */
         masscan->is_offline = 1;
     } else if (EQUALS("open", name) || EQUALS("open-only", name)) {
-        masscan->output.is_open_only = 1;
-    } else if (EQUALS("output-status", name)) {
-        if (EQUALS("open", value))
-            masscan->output.is_open_only = 1;
-
+        masscan->output.is_show_open = 1;
+        masscan->output.is_show_closed = 0;
+        masscan->output.is_show_host = 0;
+    } else if (EQUALS("output-status", name) || EQUALS("show", name)) {
+        for (;;) {
+            const char *val2 = value;
+            unsigned val2_len = INDEX_OF(val2, ',');
+            if (val2_len == 0)
+                break;
+            if (EQUALSx("open", val2, val2_len))
+                masscan->output.is_show_open = 1;
+            else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
+                masscan->output.is_show_closed = 1;
+            else if (EQUALSx("open", val2, val2_len))
+                masscan->output.is_show_host = 1;
+            else {
+                LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
+                exit(1);
+            }
+            value += val2_len;
+            while (*value == ',')
+                value++;
+        }
+    } else if (EQUALS("noshow", name)) {
+        for (;;) {
+            const char *val2 = value;
+            unsigned val2_len = INDEX_OF(val2, ',');
+            if (val2_len == 0)
+                break;
+            if (EQUALSx("open", val2, val2_len))
+                masscan->output.is_show_open = 0;
+            else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
+                masscan->output.is_show_closed = 0;
+            else if (EQUALSx("open", val2, val2_len))
+                masscan->output.is_show_host = 0;
+            else {
+                LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
+                exit(1);
+            }
+            value += val2_len;
+            while (*value == ',')
+                value++;
+        }
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
@@ -1415,7 +1488,7 @@ is_singleton(const char *name)
         "system-dns", "traceroute", "version-light",
         "version-all", "version-trace",
         "osscan-limit", "osscan-guess",
-        "badsum", "reason", "open",
+        "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
         "log-errors", "append-output", "webxml", "no-stylesheet",
         "no-stylesheet",

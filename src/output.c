@@ -383,7 +383,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     out->is_banner = masscan->is_banners;
     out->is_gmt = masscan->is_gmt;
     out->is_interactive = masscan->output.is_interactive;
-    out->is_open_only = masscan->output.is_open_only;
+    out->is_show_open = masscan->output.is_show_open;
+    out->is_show_closed = masscan->output.is_show_closed;
+    out->is_show_host = masscan->output.is_show_host;
     out->is_append = masscan->output.is_append;
     out->xml.stylesheet = duplicate_string(masscan->output.stylesheet);
     out->rotate.directory = duplicate_string(masscan->output.rotate.directory);
@@ -628,7 +630,9 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
     /* if "--open"/"--open-only" parameter specified on command-line, then
      * don't report the status of closed-ports */
-    if (out->is_open_only && status == PortStatus_Closed)
+    if (!out->is_show_closed && status == PortStatus_Closed)
+        return;
+    if (!out->is_show_open && status == PortStatus_Open)
         return;
 
     /* If in "--interactive" mode, then print the banner to the command
@@ -691,6 +695,8 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                 out->counts.sctp.open++;
                 break;
             }
+            if (!out->is_show_open)
+                return;
             break;
         case PortStatus_Closed:
             switch (ip_proto) {
@@ -704,7 +710,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                 out->counts.sctp.closed++;
                 break;
             }
-            if (out->is_open_only)
+            if (!out->is_show_closed)
                 return;
             break;
         case PortStatus_Arp:
@@ -712,8 +718,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
             break;
         default:
             LOG(0, "unknown status type: %u\n", status);
-            if (out->is_open_only)
-                return;
+            return;
     }
 
     /*

@@ -72,7 +72,9 @@ struct Output
     unsigned is_banner:1;
     unsigned is_gmt:1; /* --gmt */
     unsigned is_interactive:1; /* echo to command line */
-    unsigned is_open_only:1; /*only open ports, not closed ones */
+    unsigned is_show_open:1; /* show open ports (default) */
+    unsigned is_show_closed:1; /* show closed ports */
+    unsigned is_show_host:1; /* show host status info, like up/down */
     unsigned is_append:1; /* append to file */
     struct {
         struct {

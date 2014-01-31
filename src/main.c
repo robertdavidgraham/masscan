@@ -889,12 +889,13 @@ receive_thread(void *v)
 
         }
 
-        if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
+        if (TCP_IS_SYNACK(px, parsed.transport_offset)
+            || TCP_IS_RST(px, parsed.transport_offset)) {
             /* figure out the status */
             status = PortStatus_Unknown;
-            if ((px[parsed.transport_offset+13] & 0x2) == 0x2)
+            if (TCP_IS_SYNACK(px, parsed.transport_offset))
                 status = PortStatus_Open;
-            if ((px[parsed.transport_offset+13] & 0x4) == 0x4) {
+            if (TCP_IS_RST(px, parsed.transport_offset)) {
                 status = PortStatus_Closed;
             }
 
@@ -1377,6 +1378,7 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
+    masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
