@@ -910,7 +910,9 @@ receive_thread(void *v)
             /* verify: ignore duplicates */
             if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me))
                 continue;
-            (*status_synack_count)++;
+
+            if (TCP_IS_SYNACK(px, parsed.transport_offset))
+                (*status_synack_count)++;
 
             /*
              * This is where we do the output
