@@ -25,14 +25,14 @@
     <Filter Include="Source Files\misc">
       <UniqueIdentifier>{d429351b-2aea-4e6c-a887-c7fb9d6c38b5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\rand">
-      <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\pixie">
       <UniqueIdentifier>{cbd42363-ae71-4e2d-9633-0cb518d5e447}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\scripts">
       <UniqueIdentifier>{ba03c2ec-de65-4581-bef1-8e24f95a8580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crypto">
+      <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -154,16 +154,16 @@
       <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-blackrock.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-lcg.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-primegen.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\ranges.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\smack1.c">
       <Filter>Source Files\proto</Filter>
@@ -172,10 +172,10 @@
       <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\syn-cookie.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\siphash24.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\in-binary.c">
       <Filter>Source Files\output</Filter>
@@ -202,7 +202,7 @@
       <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\crypto-base64.c">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pixie-backtrace.c">
       <Filter>Source Files\pixie</Filter>
@@ -333,16 +333,16 @@
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-primegen.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-blackrock.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-lcg.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ranges.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\smack.h">
       <Filter>Source Files\proto</Filter>
@@ -351,10 +351,10 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\syn-cookie.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\siphash24.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\in-binary.h">
       <Filter>Source Files\output</Filter>
@@ -375,7 +375,7 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\crypto-base64.h">
-      <Filter>Source Files\rand</Filter>
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\pixie-timer.h">
       <Filter>Source Files\pixie</Filter>

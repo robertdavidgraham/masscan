@@ -360,8 +360,9 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet)
 {
-        
+    
     if (adapter->ring) {
+        /* This is for doing libpfring instead of libpcap */
         struct pfring_pkthdr hdr;
         int err;
 
