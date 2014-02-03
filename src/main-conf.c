@@ -1376,6 +1376,8 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("randomize-hosts", name)) {
         /* already do that */
         ;
+    } else if (EQUALS("readrange", name) || EQUALS("readranges", name)) {
+        masscan->op = Operation_ReadRange;
     } else if (EQUALS("reason", name)) {
         masscan->output.is_reason = 1;
     } else if (EQUALS("redis", name)) {
@@ -1584,6 +1586,7 @@ is_singleton(const char *name)
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
         "arp",  "infinite", "interactive",
+        "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;
 
@@ -1646,9 +1649,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          * -- name value
          */
         if (argv[i][0] == '-' && argv[i][1] == '-') {
-            if (strcmp(argv[i], "--help") == 0)
+            if (strcmp(argv[i], "--help") == 0) {
                 masscan_help();
-            else if (EQUALS("readscan", argv[i]+2)) {
+            } else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
                 

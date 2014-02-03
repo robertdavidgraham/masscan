@@ -53,6 +53,7 @@
 #include "pixie-backtrace.h"
 #include "proto-sctp.h"
 #include "script.h"
+#include "main-readrange.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1492,6 +1493,10 @@ int main(int argc, char *argv[])
     case Operation_DebugIF:
         for (i=0; i<masscan->nic_count; i++)
             rawsock_selftest_if(masscan->nic[i].ifname);
+        return 0;
+
+    case Operation_ReadRange:
+        main_readrange(masscan);
         return 0;
 
     case Operation_ReadScan:

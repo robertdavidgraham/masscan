@@ -237,6 +237,9 @@
     <ClCompile Include="..\src\main-status.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\main-readrange.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -409,6 +412,9 @@
     </ClInclude>
     <ClInclude Include="..\src\main-status.h">
       <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-readrange.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
