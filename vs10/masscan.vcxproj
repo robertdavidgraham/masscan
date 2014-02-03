@@ -23,6 +23,7 @@
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
+    <ClCompile Include="..\src\main-readrange.c" />
     <ClCompile Include="..\src\main-src.c" />
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
@@ -95,6 +96,7 @@
     <ClInclude Include="..\src\logger.h" />
     <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-ptrace.h" />
+    <ClInclude Include="..\src\main-readrange.h" />
     <ClInclude Include="..\src\main-src.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />

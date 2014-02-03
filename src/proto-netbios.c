@@ -58,7 +58,7 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
  * Process one of them many "resource-records" within the NBTSTAT response
  *****************************************************************************/
 static unsigned
-handle_nbtstat_rr(struct Output *out, time_t timestamp,
+handle_nbtstat_rr(struct Output *out, time_t timestamp, unsigned ttl,
                   const unsigned char *px, unsigned length,
                   unsigned ip_them, unsigned port_them)
 {
@@ -98,6 +98,7 @@ handle_nbtstat_rr(struct Output *out, time_t timestamp,
             out, timestamp,
             ip_them, 17, port_them,
             PROTO_NBTSTAT,
+            ttl,
             banner, banner_length);
     return 0;
 }
@@ -107,7 +108,7 @@ handle_nbtstat_rr(struct Output *out, time_t timestamp,
 /***************************************************************************
  ***************************************************************************/
 unsigned
-handle_nbtstat(struct Output *out, time_t timestamp, 
+handle_nbtstat(struct Output *out, time_t timestamp,
     const unsigned char *px, unsigned length, 
     struct PreprocessedInfo *parsed,
     uint64_t entropy)
@@ -162,7 +163,7 @@ handle_nbtstat(struct Output *out, time_t timestamp,
 
         offset += 10;
 
-        return handle_nbtstat_rr(out, timestamp,
+        return handle_nbtstat_rr(out, timestamp, parsed->ip_ttl,
                                     px + offset,
                                     length - offset,
                                     ip_them,

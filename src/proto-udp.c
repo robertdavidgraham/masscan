@@ -16,7 +16,7 @@
 /****************************************************************************
  ****************************************************************************/
 void 
-handle_udp(struct Output *out, time_t timestamp, 
+handle_udp(struct Output *out, time_t timestamp,
         const unsigned char *px, unsigned length, 
         struct PreprocessedInfo *parsed, uint64_t entropy)
 {

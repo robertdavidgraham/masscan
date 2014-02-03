@@ -351,7 +351,7 @@ dns_set_cookie(unsigned char *px, size_t length, uint64_t cookie)
  *    string for the banner.
  ***************************************************************************/
 unsigned
-handle_dns(struct Output *out, time_t timestamp, 
+handle_dns(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length, 
             struct PreprocessedInfo *parsed,
             uint64_t entropy)
@@ -410,6 +410,7 @@ handle_dns(struct Output *out, time_t timestamp,
                 out, timestamp,
                 ip_them, 17, port_them,
                 PROTO_DNS_VERSIONBIND,
+                parsed->ip_ttl,
                 px + offset, txtlen);
     }
 

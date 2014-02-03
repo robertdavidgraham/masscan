@@ -276,6 +276,7 @@ ntp_handle_response(struct Output *out, time_t timestamp,
                          out, timestamp,
                          ip_them, 17, parsed->port_src,
                          PROTO_NTP,
+                         parsed->ip_ttl,
                          banout_string(banout, PROTO_NTP),
                          banout_string_length(banout, PROTO_NTP));
     

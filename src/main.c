@@ -53,6 +53,7 @@
 #include "pixie-backtrace.h"
 #include "proto-sctp.h"
 #include "script.h"
+#include "main-readrange.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -668,7 +669,7 @@ receive_thread(void *v)
         unsigned seqno_me;
         unsigned seqno_them;
         unsigned cookie;
-
+        
         /*
          * RECEIVE
          *
@@ -716,6 +717,7 @@ receive_thread(void *v)
         port_them = parsed.port_src;
         seqno_them = TCP_SEQNO(px, parsed.transport_offset);
         seqno_me = TCP_ACKNO(px, parsed.transport_offset);
+        
 
         switch (parsed.ip_protocol) {
         case 132: /* SCTP */
@@ -838,7 +840,8 @@ receive_thread(void *v)
                     tcb = tcpcon_create_tcb(tcpcon,
                                     ip_me, ip_them,
                                     port_me, port_them,
-                                    seqno_me, seqno_them+1);
+                                    seqno_me, seqno_them+1,
+                                    parsed.ip_ttl);
                     (*status_tcb_count)++;
                 }
 
@@ -925,7 +928,7 @@ receive_thread(void *v)
                         6, /* ip proto = tcp */
                         port_them,
                         px[parsed.transport_offset + 13], /* tcp flags */
-                        px[parsed.ip_offset + 8] /* ttl */
+                        parsed.ip_ttl
                         );
 
             /*
@@ -1490,6 +1493,10 @@ int main(int argc, char *argv[])
     case Operation_DebugIF:
         for (i=0; i<masscan->nic_count; i++)
             rawsock_selftest_if(masscan->nic[i].ifname);
+        return 0;
+
+    case Operation_ReadRange:
+        main_readrange(masscan);
         return 0;
 
     case Operation_ReadScan:

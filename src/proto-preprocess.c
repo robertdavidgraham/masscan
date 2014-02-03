@@ -116,6 +116,7 @@ parse_ipv4:
         info->ip_version = (px[offset]>>4)&0xF;
         info->ip_src = px+offset+12;
         info->ip_dst = px+offset+16;
+        info->ip_ttl = px[offset+8];
         info->ip_protocol = px[offset+9];
         info->ip_length = total_length;
         if (info->ip_version != 4)

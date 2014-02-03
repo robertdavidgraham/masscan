@@ -108,7 +108,8 @@ tcpcon_create_tcb(
     struct TCP_ConnectionTable *tcpcon,
     unsigned ip_src, unsigned ip_dst,
     unsigned port_src, unsigned port_dst,
-    unsigned my_seqno, unsigned their_seqno);
+    unsigned my_seqno, unsigned their_seqno,
+    unsigned ttl);
 
 
 /**

@@ -12,6 +12,7 @@
 
 */
 #include "masscan.h"
+#include "masscan-version.h"
 #include "ranges.h"
 #include "string_s.h"
 #include "logger.h"
@@ -53,6 +54,88 @@ masscan_usage(void)
     printf("masscan --open --banners --readscan <filename> -oX <savefile>\n");
     printf(" read binary scan results in <filename> and save them as xml in <savefile>\n");
     exit(1);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+print_version()
+{
+    const char *cpu = "unknown";
+    const char *compiler = "unknown";
+    const char *compiler_version = "unknown";
+    const char *os = "unknown";
+    printf("\n");
+    printf("Masscan version %s ( %s )\n", 
+        MASSCAN_VERSION,
+        "https://github.com/robertdavidgraham/masscan"
+        );
+    printf("Compiled on: %s %s\n", __DATE__, __TIME__);
+
+#if defined(_MSC_VER)
+    #if defined(_M_AMD64) || defined(_M_X64)
+        cpu = "x86";
+    #elif defined(_M_IX86)
+        cpu = "x86";
+    #elif defined (_M_ARM_FP)
+        cpu = "arm";
+    #endif
+
+    {
+        int msc_ver = _MSC_VER;
+
+        compiler = "VisualStudio";
+
+        if (msc_ver < 1500)
+            compiler_version = "pre2008";
+        else if (msc_ver == 1500)
+            compiler_version = "2008";
+        else if (msc_ver == 1600)
+            compiler_version = "2010";
+        else if (msc_ver == 1700)
+            compiler_version = "2012";
+        else if (msc_ver == 1800)
+            compiler_version = "2013";
+        else
+            compiler_version = "post-2013";
+    }
+
+
+#elif defined(__GNUC__)
+    compiler = "gcc";
+    compiler_version = __VERSION__;
+
+#if defined(i386) || defined(__i386) || defined(__i386__)
+    cpu = "x86";
+#endif
+
+#if defined(__corei7) || defined(__corei7__)
+    cpu = "x86-Corei7";
+#endif
+
+#endif
+
+#if defined(WIN32)
+    os = "Windows";
+#elif defined(__linux__)
+    os = "Linux";
+#elif defined(__APPLE__)
+    os = "Apple";
+#elif defined(__MACH__)
+    os = "MACH";
+#elif defined(__FreeBSD__)
+    os = "FreeBSD";
+#elif defined(unix) || defined(__unix) || defined(__unix__)
+    os = "Unix";
+#endif
+
+    printf("Compiler: %s %s\n", compiler, compiler_version);
+    printf("OS: %s\n", os);
+    printf("CPU: %s (%u bits)\n", cpu, (unsigned)(sizeof(void*))*8);
+
+#if defined(GIT)
+    printf("GIT version: %s\n", GIT);
+#endif
 }
 
 /***************************************************************************
@@ -1293,6 +1376,8 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("randomize-hosts", name)) {
         /* already do that */
         ;
+    } else if (EQUALS("readrange", name) || EQUALS("readranges", name)) {
+        masscan->op = Operation_ReadRange;
     } else if (EQUALS("reason", name)) {
         masscan->output.is_reason = 1;
     } else if (EQUALS("redis", name)) {
@@ -1452,6 +1537,9 @@ masscan_set_parameter(struct Masscan *masscan,
         } else {
             masscan->nmap.ttl = x;
         }
+    } else if (EQUALS("version", name)) {
+        print_version();
+        exit(1);
     } else if (EQUALS("version-intensity", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -1485,7 +1573,8 @@ is_singleton(const char *name)
 {
     static const char *singletons[] = {
         "echo", "selftest", "self-test", "regress",
-        "system-dns", "traceroute", "version-light",
+        "system-dns", "traceroute", "version",
+        "version-light",
         "version-all", "version-trace",
         "osscan-limit", "osscan-guess",
         "badsum", "reason", "open", "open-only",
@@ -1497,6 +1586,7 @@ is_singleton(const char *name)
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
         "arp",  "infinite", "interactive",
+        "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;
 
@@ -1559,9 +1649,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          * -- name value
          */
         if (argv[i][0] == '-' && argv[i][1] == '-') {
-            if (strcmp(argv[i], "--help") == 0)
+            if (strcmp(argv[i], "--help") == 0) {
                 masscan_help();
-            else if (EQUALS("readscan", argv[i]+2)) {
+            } else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
                 
@@ -1856,7 +1946,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 }
                 break;
             case 'V': /* print version and exit */
-                exit(1);
+                masscan_set_parameter(masscan, "version", "");
                 break;
             case 'W':
                 masscan->op = Operation_List_Adapters;

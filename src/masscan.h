@@ -29,6 +29,7 @@ enum Operation {
     Operation_DebugIF = 4,          /* --debug if */
     Operation_ListScan = 5,         /* -sL */
     Operation_ReadScan = 6,         /* --readscan <binary-output> */
+    Operation_ReadRange = 7,        /* --readrange */
 };
 
 /**

@@ -50,6 +50,7 @@ struct TCP_Control_Block
     struct TCP_Control_Block *next;
     struct TimeoutEntry timeout[1];
 
+    unsigned char ttl;
     unsigned tcpstate:4;
 
 
@@ -408,6 +409,7 @@ tcpcon_destroy_tcb(
                 6, /*TCP protocol*/
                 tcb->port_them,
                 banout->protocol & 0x0FFFFFFF,
+                tcb->ttl,
                 banout->banner,
                 banout->length);
         }
@@ -481,7 +483,8 @@ tcpcon_create_tcb(
     struct TCP_ConnectionTable *tcpcon,
     unsigned ip_me, unsigned ip_them,
     unsigned port_me, unsigned port_them,
-    unsigned seqno_me, unsigned seqno_them)
+    unsigned seqno_me, unsigned seqno_them,
+    unsigned ttl)
 {
     unsigned index;
     struct TCP_Control_Block tmp;
@@ -518,6 +521,7 @@ tcpcon_create_tcb(
         tcb->ackno_them = seqno_me;
         tcb->when_created = global_now;
         tcb->banner1_state.port = tmp.port_them;
+        tcb->ttl = (unsigned char)ttl;
 
         timeout_init(tcb->timeout);
         banout_init(&tcb->banout);

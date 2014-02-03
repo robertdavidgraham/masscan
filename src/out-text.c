@@ -53,12 +53,14 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
 static void
 text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         unsigned ip, unsigned ip_proto, unsigned port,
-        enum ApplicationProtocol proto, const unsigned char *px, unsigned length)
+        enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
 
 
     UNUSEDPARM(out);
+    UNUSEDPARM(ttl);
 
     fprintf(fp, "%s %s %u %u.%u.%u.%u %u %s %s\n",
         "banner",
