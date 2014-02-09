@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\crypto-base64.c" />
+    <ClCompile Include="..\src\crypto-blackrock2.c" />
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />

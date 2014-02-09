@@ -12,7 +12,6 @@ main_listscan(struct Masscan *masscan)
     uint64_t start;
     uint64_t end;
     struct BlackRock blackrock;
-    unsigned r = masscan->retries + 1;
     unsigned increment = masscan->shard.of;
     uint64_t seed = masscan->seed;
 
@@ -32,7 +31,7 @@ main_listscan(struct Masscan *masscan)
     range = count_ips * count_ports;
 
 infinite:
-    blackrock_init(&blackrock, range, seed);
+    blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     start = masscan->resume.index + (masscan->shard.one-1);
     end = range;
@@ -40,17 +39,14 @@ infinite:
         end = start + masscan->resume.count;
     end += (uint64_t)(masscan->retries * masscan->max_rate);
 
-
+//printf("start=%llu, end=%llu\n", start, end);
     for (i=start; i<end; ) {
         uint64_t xXx;
         unsigned ip;
         unsigned port;
 
+        xXx = blackrock_shuffle(&blackrock,  i);
 
-        xXx = (i + (uint64_t)((r--) * masscan->max_rate));
-        while (xXx >= range)
-            xXx -= range;
-        xXx = blackrock_shuffle(&blackrock,  xXx);
         ip = rangelist_pick(&masscan->targets, xXx % count_ips);
         port = rangelist_pick(&masscan->ports, xXx / count_ips);
 
@@ -74,10 +70,7 @@ infinite:
                    port
                    );
 
-        if (r == 0) {
-            i += increment; /* <------ increment by 1 normally, more with shards/nics */
-            r = masscan->retries + 1;
-        }
+        i += increment; /* <------ increment by 1 normally, more with shards/nics */
     }
 
     if (masscan->is_infinite) {

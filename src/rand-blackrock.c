@@ -48,6 +48,7 @@
     probably better constructions than what I'm using.
 */
 #include "rand-blackrock.h"
+#include "pixie-timer.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -104,7 +105,7 @@ const unsigned char sbox[256] = {
 /***************************************************************************
  ***************************************************************************/
 void
-blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed)
+blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed, unsigned rounds)
 {
     double foo = sqrt(range * 1.0);
 
@@ -149,7 +150,7 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed)
     while (br->a * br->b <= range)
         br->b++;
 
-    br->rounds = 6;
+    br->rounds = rounds;
     br->seed = seed;
     br->range = range;
 }
@@ -325,6 +326,47 @@ blackrock_verify(struct BlackRock *br, uint64_t max)
 
 /***************************************************************************
  ***************************************************************************/
+void
+blackrock_benchmark(unsigned rounds)
+{
+    struct BlackRock br;
+    uint64_t range = 0x012356789123UL;
+    uint64_t i;
+    uint64_t result = 0;
+    uint64_t start, stop;
+    static const uint64_t ITERATIONS = 5000000UL;
+
+    printf("Benchmarking: blackrock-1\n");
+    blackrock_init(&br, range, 1, rounds);
+
+    /*
+     * Time the the algorithm
+     */
+    start = pixie_nanotime();
+    for (i=0; i<ITERATIONS; i++) {
+        result += blackrock_shuffle(&br, i);
+    }
+    stop = pixie_nanotime();
+
+    /*
+     * Print the results
+     */
+    if (result) {
+        double elapsed = ((double)(stop - start))/(1000000000.0);
+        double rate = ITERATIONS/elapsed;
+
+        rate /= 1000000.0;
+
+        printf("iterations/second = %5.3f-million\n", rate);
+
+    }
+
+    printf("\n");
+
+}
+
+/***************************************************************************
+ ***************************************************************************/
 int
 blackrock_selftest(void)
 {
@@ -339,10 +381,10 @@ blackrock_selftest(void)
      * just not seeing it though. The error is probably in the 'unfe()'
      * function above.
      */
-    {
+    if (0) {
         struct BlackRock br;
         uint64_t result, result2;
-        blackrock_init(&br, 1000, 0);
+        blackrock_init(&br, 1000, 0, 4);
 
         for (i=0; i<10; i++) {
             result = blackrock_shuffle(&br, i);
@@ -362,7 +404,7 @@ blackrock_selftest(void)
         range += 10 + i;
         range *= 2;
 
-        blackrock_init(&br, range, time(0));
+        blackrock_init(&br, range, time(0), 4);
 
         is_success = blackrock_verify(&br, range);
 

@@ -307,7 +307,7 @@ infinite:
      * ports */
     range = rangelist_count(&masscan->targets)
             * rangelist_count(&masscan->ports);
-    blackrock_init(&blackrock, range, seed);
+    blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
      * to support --shard, so that multiple machines can co-operate on
@@ -1382,6 +1382,7 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
+    masscan->blackrock_rounds = 4;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
@@ -1519,6 +1520,12 @@ int main(int argc, char *argv[])
             convert_binary_files(masscan, start, stop, argv);
 
         }
+        break;
+
+    case Operation_Benchmark:
+        blackrock_benchmark(masscan->blackrock_rounds);
+        blackrock2_benchmark(masscan->blackrock_rounds);
+        exit(1);
         break;
 
     case Operation_Selftest:

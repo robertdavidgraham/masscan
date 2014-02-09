@@ -1106,6 +1106,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->is_banners = 1;
     } else if (EQUALS("nobanners", name) || EQUALS("nobanner", name)) {
         masscan->is_banners = 0;
+    } else if (EQUALS("blackrock-rounds", name)) {
+        masscan->blackrock_rounds = (unsigned)parseInt(value);
     } else if (EQUALS("connection-timeout", name)) {
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
@@ -1482,6 +1484,9 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("selftest", name) || EQUALS("self-test", name) || EQUALS("regress", name)) {
         masscan->op = Operation_Selftest;
         return;
+    } else if (EQUALS("benchmark", name)) {
+        masscan->op = Operation_Benchmark;
+        return;
     } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
         masscan_set_parameter(masscan, "adapter-port", value);
     } else if (EQUALS("shard", name) || EQUALS("shards", name)) {
@@ -1573,6 +1578,7 @@ is_singleton(const char *name)
 {
     static const char *singletons[] = {
         "echo", "selftest", "self-test", "regress",
+        "benchmark",
         "system-dns", "traceroute", "version",
         "version-light",
         "version-all", "version-trace",

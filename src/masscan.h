@@ -30,6 +30,7 @@ enum Operation {
     Operation_ListScan = 5,         /* -sL */
     Operation_ReadScan = 6,         /* --readscan <binary-output> */
     Operation_ReadRange = 7,        /* --readrange */
+    Operation_Benchmark = 8,        /* --benchmark */
 };
 
 /**
@@ -344,6 +345,12 @@ struct Masscan
      * --min-packet
      */
     unsigned min_packet_size;
+
+    /**
+     * Number of rounds for randomization
+     * --blackrock-rounds
+     */
+    unsigned blackrock_rounds;
     
     /**
      * --script <name>
