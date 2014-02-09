@@ -1,6 +1,7 @@
 #include "rand-blackrock.h"
 #include "pixie-timer.h"
 #include "unusedparm.h"
+#include "string_s.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -489,10 +490,10 @@ blackrock2_benchmark(unsigned rounds)
 
     printf("Benchmarking: blackrock-2\n");
     blackrock2_init(&br, range, 1, rounds);
-printf("range = 0x%10llx\n", range);
-printf("rangex= 0x%10llx\n", br.a*br.b);
-printf("    a = 0x%10llx\n", br.a);
-printf("    b = 0x%10llx\n", br.b);
+printf("range = 0x%10" PRIx64 "llx\n", range);
+printf("rangex= 0x%10" PRIx64 "\n", br.a*br.b);
+printf("    a = 0x%10" PRIx64 "\n", br.a);
+printf("    b = 0x%10" PRIx64 "\n", br.b);
 
     /*
      * Time the the algorithm
