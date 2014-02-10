@@ -490,7 +490,7 @@ blackrock2_benchmark(unsigned rounds)
 
     printf("Benchmarking: blackrock-2\n");
     blackrock2_init(&br, range, 1, rounds);
-printf("range = 0x%10" PRIx64 "llx\n", range);
+printf("range = 0x%10" PRIx64 "\n", range);
 printf("rangex= 0x%10" PRIx64 "\n", br.a*br.b);
 printf("    a = 0x%10" PRIx64 "\n", br.a);
 printf("    b = 0x%10" PRIx64 "\n", br.b);

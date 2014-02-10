@@ -37,12 +37,12 @@
     within the range.
 
     The cryptographic strength of this construction depends upon the
-    number of rounds, and the exact nature of the inner "F()" function.
-    Because it's a Feistel network, that "F()" function can be almost
+    number of rounds, and the exact nature of the inner "READ()" function.
+    Because it's a Feistel network, that "READ()" function can be almost
     anything.
 
     We don't care about cryptographic strength, just speed, so we are
-    using a trivial F() function.
+    using a trivial READ() function.
 
     This is a class of "format-preserving encryption". There are
     probably better constructions than what I'm using.
@@ -142,8 +142,8 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed, unsigned rou
             break;
         default:
             br->range = range;
-            br->a = (uint64_t)(foo - 1);
-            br->b = (uint64_t)(foo + 1);
+            br->a = (uint64_t)(foo - 2);
+            br->b = (uint64_t)(foo + 3);
             break;
     }
 
@@ -161,13 +161,13 @@ blackrock_init(struct BlackRock *br, uint64_t range, uint64_t seed, unsigned rou
  * which 
  ***************************************************************************/
 static inline uint64_t
-F(uint64_t r, uint64_t R, uint64_t seed)
+READ(uint64_t r, uint64_t R, uint64_t seed)
 {
     uint64_t r0, r1, r2, r3;
 
 #define GETBYTE(R,n) ((((R)>>(n*8))^seed^r)&0xFF)
 
-    R ^= seed;
+    R ^= (seed << r) ^ (seed >> (64 - r));
 
     r0 = sbox[GETBYTE(R,0)]<< 0 | sbox[GETBYTE(R,1)]<< 8;
     r1 = (sbox[GETBYTE(R,2)]<<16UL | sbox[GETBYTE(R,3)]<<24UL)&0x0ffffFFFFUL;
@@ -189,7 +189,7 @@ F(uint64_t r, uint64_t R, uint64_t seed)
  * Read that paper in order to understand this code.
  ***************************************************************************/
 static inline uint64_t
-fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
+ENCRYPT(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 {
     uint64_t L, R;
     unsigned j;
@@ -200,9 +200,9 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 
     for (j=1; j<=r; j++) {
         if (j & 1) {
-            tmp = (L + F(j, R, seed)) % a;
+            tmp = (L + READ(j, R, seed)) % a;
         } else {
-            tmp = (L + F(j, R, seed)) % b;
+            tmp = (L + READ(j, R, seed)) % b;
         }
         L = R;
         R = tmp;
@@ -213,8 +213,11 @@ fe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
         return a * R + L;
     }
 }
+
+/***************************************************************************
+ ***************************************************************************/
 static inline uint64_t
-unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
+UNENCRYPT(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 {
     uint64_t L, R;
     unsigned j;
@@ -230,7 +233,7 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
 
     for (j=r; j>=1; j--) {
         if (j & 1) {
-            tmp = F(j, L, seed);
+            tmp = READ(j, L, seed);
             if (tmp > R) {
                 tmp = (tmp - R);
                 tmp = a - (tmp%a);
@@ -241,7 +244,7 @@ unfe(unsigned r, uint64_t a, uint64_t b, uint64_t m, uint64_t seed)
                 tmp %= a;
             }
         } else {
-            tmp = F(j, L, seed);
+            tmp = READ(j, L, seed);
             if (tmp > R) {
                 tmp = (tmp - R);
                 tmp = b - (tmp%b);
@@ -265,9 +268,9 @@ blackrock_shuffle(const struct BlackRock *br, uint64_t m)
 {
     uint64_t c;
 
-    c = fe(br->rounds, br->a, br->b, m, br->seed);
+    c = ENCRYPT(br->rounds, br->a, br->b, m, br->seed);
     while (c >= br->range)
-        c = fe(br->rounds, br->a, br->b,  c, br->seed);
+        c = ENCRYPT(br->rounds, br->a, br->b,  c, br->seed);
 
     return c;
 }
@@ -279,9 +282,9 @@ blackrock_unshuffle(const struct BlackRock *br, uint64_t m)
 {
     uint64_t c;
 
-    c = unfe(br->rounds, br->a, br->b, m, br->seed);
+    c = UNENCRYPT(br->rounds, br->a, br->b, m, br->seed);
     while (c >= br->range)
-        c = unfe(br->rounds, br->a, br->b,  c, br->seed);
+        c = UNENCRYPT(br->rounds, br->a, br->b,  c, br->seed);
 
     return c;
 }
@@ -378,10 +381,10 @@ blackrock_selftest(void)
      * Basic test of decryption. I take the index, encrypt it, then decrypt it,
      * which means I should get the original index back again. Only, it's not
      * working. The decryption fails. The reason it's failing is obvious -- I'm
-     * just not seeing it though. The error is probably in the 'unfe()'
+     * just not seeing it though. The error is probably in the 'UNENCRYPT()'
      * function above.
      */
-    if (0) {
+    {
         struct BlackRock br;
         uint64_t result, result2;
         blackrock_init(&br, 1000, 0, 4);
