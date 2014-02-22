@@ -64,6 +64,8 @@
 		11B039C717E7834000925E7E /* proto-dns.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C317E7834000925E7E /* proto-dns.c */; };
 		11B039C817E7834000925E7E /* proto-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C517E7834000925E7E /* proto-udp.c */; };
 		11B039CB17EA092B00925E7E /* proto-snmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C917EA092B00925E7E /* proto-snmp.c */; };
+		11B05EA618B9649F009C935E /* crypto-blackrock2.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B05EA418B9649F009C935E /* crypto-blackrock2.c */; };
+		11B05EA718B9649F009C935E /* main-readrange.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B05EA518B9649F009C935E /* main-readrange.c */; };
 		11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED018641DCC00DA5438 /* proto-banout.c */; };
 		11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED218641DCC00DA5438 /* proto-ssl-test.c */; };
 		11B22ED718641DCC00DA5438 /* proto-x509.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED318641DCC00DA5438 /* proto-x509.c */; };
@@ -200,6 +202,9 @@
 		11B039C617E7834000925E7E /* proto-udp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-udp.h"; sourceTree = "<group>"; };
 		11B039C917EA092B00925E7E /* proto-snmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-snmp.c"; sourceTree = "<group>"; };
 		11B039CA17EA092B00925E7E /* proto-snmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-snmp.h"; sourceTree = "<group>"; };
+		11B05EA418B9649F009C935E /* crypto-blackrock2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-blackrock2.c"; sourceTree = "<group>"; };
+		11B05EA518B9649F009C935E /* main-readrange.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-readrange.c"; sourceTree = "<group>"; };
+		11B05EA918B964A9009C935E /* main-readrange.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "main-readrange.h"; sourceTree = "<group>"; };
 		11B22ED018641DCC00DA5438 /* proto-banout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-banout.c"; sourceTree = "<group>"; };
 		11B22ED118641DCC00DA5438 /* proto-banout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-banout.h"; sourceTree = "<group>"; };
 		11B22ED218641DCC00DA5438 /* proto-ssl-test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ssl-test.c"; sourceTree = "<group>"; };
@@ -251,6 +256,9 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11B05EA918B964A9009C935E /* main-readrange.h */,
+				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
+				11B05EA518B9649F009C935E /* main-readrange.c */,
 				11BA295E18902CEE0064A759 /* masscan-version.h */,
 				11BA295F18902CEE0064A759 /* out-grepable.c */,
 				11BA296018902CEE0064A759 /* proto-tcp-telnet.c */,
@@ -500,6 +508,8 @@
 				11BA2967189055CA0064A759 /* script.c in Sources */,
 				11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */,
 				11BA296B189060220064A759 /* proto-ntp.c in Sources */,
+				11B05EA618B9649F009C935E /* crypto-blackrock2.c in Sources */,
+				11B05EA718B9649F009C935E /* main-readrange.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -554,35 +564,47 @@
 		11A9219017DBCB3200DDFD32 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CONFIGURATION_BUILD_DIR = ../bin;
 				CONFIGURATION_TEMP_DIR = ../tmp;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
+				"OTHER_TEST_FLAGS[sdk=*]" = "--selftest";
 				PRODUCT_NAME = masscan;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SYMROOT = ../bin;
-				TEST_AFTER_BUILD = NO;
+				TEST_AFTER_BUILD = YES;
 			};
 			name = Debug;
 		};
 		11A9219117DBCB3200DDFD32 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
 				CONFIGURATION_BUILD_DIR = ../bin;
 				CONFIGURATION_TEMP_DIR = ../tmp;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
+				OTHER_TEST_FLAGS = "--selftest";
 				PRODUCT_NAME = masscan;
 				SYMROOT = ../bin;
-				TEST_AFTER_BUILD = NO;
+				TEST_AFTER_BUILD = YES;
 			};
 			name = Release;
 		};
