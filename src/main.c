@@ -1525,6 +1525,7 @@ int main(int argc, char *argv[])
     case Operation_Benchmark:
         blackrock_benchmark(masscan->blackrock_rounds);
         blackrock2_benchmark(masscan->blackrock_rounds);
+        smack_benchmark();
         exit(1);
         break;
 

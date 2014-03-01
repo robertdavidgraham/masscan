@@ -111,6 +111,18 @@
 #include <time.h>
 #include <assert.h>
 
+#ifndef NOBENCHMARK
+#include "pixie-timer.h"
+#if defined(_MSC_VER)
+#include <intrin.h>
+#elif defined(__GNUC__)
+static inline volatile long long __rdtsc() {
+   register long long TSC asm("eax");
+   asm volatile (".byte 15, 49" : : : "eax", "edx");
+   return TSC;
+}
+#endif
+#endif
 
 /**
  * By default, the table holds only 64k states using 2-byte
@@ -269,6 +281,7 @@ struct SMACK {
     unsigned            m_state_count;
     unsigned            m_state_max;
     struct SmackMatches *m_match;
+    unsigned            m_match_limit;
 
 
     /**
@@ -830,6 +843,7 @@ smack_stage0_compile_prefixes(struct SMACK *smack)
     }
 }
 
+
 /****************************************************************************
  ****************************************************************************/
 static void
@@ -974,6 +988,63 @@ smack_stage4_make_final_table(struct SMACK *smack)
 
 /****************************************************************************
  ****************************************************************************/
+static void
+swap_rows(struct SMACK *smack, unsigned row0, unsigned row1)
+{
+    struct SmackRow swap;
+    struct SmackMatches swapm;
+    unsigned s;
+
+    /* Swap the first two states */
+    memcpy(&swap,                       &smack->m_state_table[row0],   sizeof(swap));
+    memcpy(&smack->m_state_table[row0], &smack->m_state_table[row1],   sizeof(swap));
+    memcpy(&smack->m_state_table[row1], &swap,                         sizeof(swap));
+
+    /* Swap the 'match' info */
+    memcpy(&swapm,                      &smack->m_match[row0],         sizeof(swapm));
+    memcpy(&smack->m_match[row0],       &smack->m_match[row1],         sizeof(swapm));
+    memcpy(&smack->m_match[row1],       &swapm,                        sizeof(swapm));
+
+
+    /* Now reset any pointers to the swapped states in exisitng states */
+    for (s=0; s<smack->m_state_count; s++) {
+        unsigned a;
+        for (a=0; a<ALPHABET_SIZE; a++) {
+            if (GOTO(s,a) == row0)
+                GOTO(s,a) = row1;
+            else if (GOTO(s,a) == row1)
+                GOTO(s,a) = row0;
+        }
+    }
+}
+
+/****************************************************************************
+ * Sort the states so that all MATCHES are at the end
+ ****************************************************************************/
+static void
+smack_stage3_sort(struct SMACK *smack)
+{
+    unsigned start = 0;
+    unsigned end = smack->m_state_count;
+
+    for (;;) {
+
+        while (start < end && smack->m_match[start].m_count == 0)
+            start++;
+        while (start < end && smack->m_match[end-1].m_count != 0)
+            end--;
+
+        if (start >= end)
+            break;
+
+        swap_rows(smack, start, end-1);
+    }
+
+    smack->m_match_limit = start;
+}
+
+/****************************************************************************
+ ****************************************************************************/
 void
 smack_compile(struct SMACK *smack)
 {
@@ -1025,34 +1096,10 @@ smack_compile(struct SMACK *smack)
     /* If we have an anchor pattern, then swap
      * the first two states. */
     if (smack->is_anchor_begin) {
-        struct SmackRow swap;
-        unsigned s;
-
-        /* Swap the first two states */
-        memcpy(&swap,                       &smack->m_state_table[0],   sizeof(swap));
-        memcpy(&smack->m_state_table[0],    &smack->m_state_table[1],   sizeof(swap));
-        memcpy(&smack->m_state_table[1],    &swap,                      sizeof(swap));
-
-#ifdef DEBUG
-        {
-            char *zz;
-            zz = smack->m_match[0].DEBUG_name;
-            smack->m_match[0].DEBUG_name = smack->m_match[1].DEBUG_name;
-            smack->m_match[1].DEBUG_name = zz;
-        }
-#endif
-
-        /* Now set everything pointing to the BASE_STATE to point
-         * to the UNANCHORED_STATE */
-        for (s=0; s<smack->m_state_max; s++) {
-            unsigned a;
-            for (a=0; a<ALPHABET_SIZE; a++) {
-                if (GOTO(s,a) == BASE_STATE)
-                    GOTO(s,a) = UNANCHORED_STATE;
-            }
-        }
-
+        swap_rows(smack, BASE_STATE, UNANCHORED_STATE);
     }
+
+    smack_stage3_sort(smack);
 
     /*
      * Build the final table we use for evaluation
@@ -1191,13 +1238,14 @@ smack_search_next(      struct SMACK *  smack,
 {
     const unsigned char *px = (const unsigned char*)v_px;
     unsigned row;
-    unsigned i = *offset;
+    register unsigned i = *offset;
     const unsigned char *char_to_symbol = smack->char_to_symbol;
     transition_t *table = smack->table;
-    unsigned row_shift = smack->row_shift;
+    register unsigned row_shift = smack->row_shift;
     const struct SmackMatches *match = smack->m_match;
     unsigned current_matches = 0;
     size_t id = (size_t)-1;
+    register unsigned match_limit = smack->m_match_limit;
 
     /* Get the row. This is encoded as the lower 24-bits of the state
      * variable */
@@ -1207,54 +1255,59 @@ smack_search_next(      struct SMACK *  smack,
     current_matches = (*current_state)>>24;
 
     /* 'for all bytes in this block' */
-    if (!current_matches)
-    for (i=*offset; i<length; i++) {
-        unsigned char column;
-        unsigned char c;
+    if (!current_matches) {
+        //i = inner_match(px, *offset, length, table, 
+        for (i=*offset; i<length; i++) {
+            unsigned char column;
+            unsigned char c;
 
-        /* Get the next character of input */
-        c = px[i];
+            /* Get the next character of input */
+            c = px[i];
 
-        /* Convert that character into a symbol. This compresses the table.
-         * Even though there are 256 possible combinations for a byte, we
-         * are probably using fewer than 32 individual characters in the
-         * patterns we are looking for. This step allows us to create tables
-         * that are only 32 elements wide, instead of 256 elements wide */
-        column = char_to_symbol[c];
+            /* Convert that character into a symbol. This compresses the table.
+             * Even though there are 256 possible combinations for a byte, we
+             * are probably using fewer than 32 individual characters in the
+             * patterns we are looking for. This step allows us to create tables
+             * that are only 32 elements wide, instead of 256 elements wide */
+            column = char_to_symbol[c];
 
-        /*
-         * If debugging, and the variable is set, then print out the
-         * transition to the command line. This is a good way of visualizing
-         * how they work.
-         */
-#if defined DEBUG && defined TRANSITIONS
-        if (print_transitions) {
-            printf("%s+%c = %s%s\n",
-                    smack->m_match[row].DEBUG_name,
-                    c,
-                    smack->m_match[*(table + (row<<row_shift) + column)].DEBUG_name,
-                    smack->m_match[*(table + (row<<row_shift) + column)].m_count?"$$":"");
-            print_transitions--;
+            /*
+             * If debugging, and the variable is set, then print out the
+             * transition to the command line. This is a good way of visualizing
+             * how they work.
+             */
+    #if defined DEBUG && defined TRANSITIONS
+            if (print_transitions) {
+                printf("%s+%c = %s%s\n",
+                        smack->m_match[row].DEBUG_name,
+                        c,
+                        smack->m_match[*(table + (row<<row_shift) + column)].DEBUG_name,
+                        smack->m_match[*(table + (row<<row_shift) + column)].m_count?"$$":"");
+                print_transitions--;
+            }
+    #endif
+
+            /*
+             * STATE TRANSITION
+             * Given the current row, lookup the symbol, and find the next row.
+             * Logically, this is the following  calculation:
+             *    row = table[row][column]
+             * However, since row can have a variable width (depending on the
+             * number of characters in a pattern), we have to do the calculation
+             * manually.
+             */
+            row = *(table + (row<<row_shift) + column);
+
+            if (row >= match_limit)
+                break;
+
         }
-#endif
-
-        /*
-         * STATE TRANSITION
-         * Given the current row, lookup the symbol, and find the next row.
-         * Logically, this is the following  calculation:
-         *    row = table[row][column]
-         * However, since row can have a variable width (depending on the
-         * number of characters in a pattern), we have to do the calculation
-         * manually.
-         */
-        row = *(table + (row<<row_shift) + column);
 
         /* Test to see if we have one (or more) matches, and if so, call
          * the callback function */
         if (match[row].m_count) {
             i++; /* points to first byte after match */
             current_matches = match[row].m_count;
-            break;
         }
     }
 
@@ -1325,6 +1378,89 @@ smack_search_end(       struct SMACK *  smack,
     return found_count;
 }
 
+/*****************************************************************************
+ * Provide my own rand() simply to avoid static-analysis warning me that
+ * 'rand()' is unrandom, when in fact we want the non-random properties of
+ * rand() for regression testing.
+ *****************************************************************************/
+static unsigned
+r_rand(unsigned *seed)
+{
+    static const unsigned a = 214013;
+    static const unsigned c = 2531011;
+    
+    *seed = (*seed) * a + c;
+    return (*seed)>>16 & 0x7fff;
+}
+
+/*****************************************************************************
+
+/****************************************************************************
+ ****************************************************************************/
+int
+smack_benchmark(void)
+{
+    char *buf;
+    unsigned seed = 0;
+    static unsigned BUF_SIZE = 1024*1024;
+    static uint64_t ITERATIONS = 30;
+    unsigned i;
+    struct SMACK *s;
+    uint64_t start, stop;
+    uint64_t result = 0;
+    uint64_t cycle1, cycle2;
+
+    s = smack_create("benchmark1", 1);
+
+    /* Fill a buffer full of junk */
+    buf = (char*)malloc(BUF_SIZE);
+    for (i=0; i<BUF_SIZE; i++)
+        buf[i] = (char)r_rand(&seed)&0x7F;
+
+
+    /* Create 20 patterns */
+    for (i=0; i<20; i++) {
+        unsigned pattern_length = r_rand(&seed)%3 + r_rand(&seed)%4 + 4;
+        char pattern[20];
+        unsigned j;
+
+        for (j=0; j<pattern_length; j++)
+            pattern[j] = (char)r_rand(&seed)&0x7F | 0x80;
+        
+        smack_add_pattern(s, pattern, pattern_length, i, 0);
+    }
+
+    smack_compile(s);
+
+    start = pixie_nanotime();
+    cycle1 = __rdtsc();
+    for (i=0; i<ITERATIONS; i++) {
+        unsigned state = 0;
+        unsigned offset = 0;
+
+        while (offset < BUF_SIZE)
+            result += smack_search_next(s, &state, buf, &offset, BUF_SIZE);
+    }
+    cycle2 = __rdtsc();
+    stop = pixie_nanotime();
+
+    if (result) {
+        double elapsed = ((double)(stop - start))/(1000000000.0);
+        double rate = (BUF_SIZE*ITERATIONS*8ULL)/elapsed;
+        double cycles = (BUF_SIZE*ITERATIONS*1.0)/(1.0*(cycle2-cycle1));
+
+        rate /= 1000000.0;
+
+        printf("bits/second = %5.3f-million\n", rate);
+        printf("clocks/byte = %5.3f\n", (1.0/cycles));
+        printf("clockrate = %5.3f-GHz\n", ((cycle2-cycle1)*1.0/elapsed)/1000000000.0);
+
+        
+    }
+
+    return 0;
+}
+
 /****************************************************************************
  ****************************************************************************/
 int
@@ -1380,6 +1516,16 @@ smack_selftest(void)
         id = smack_search_next(s,&state,text, &i,text_length);
         TEST( 13,  51, "LOCK");
 
+        /*{
+            unsigned i;
+            for (i=0; i<s->m_state_count; i++) {
+                if (s->m_match[i].m_count)
+                    printf("*");
+                else
+                    printf(".");
+            }
+            printf("\n");
+        }*/
         smack_destroy(s);
 
     }
