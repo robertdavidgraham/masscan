@@ -339,7 +339,8 @@ blackrock_benchmark(unsigned rounds)
     uint64_t start, stop;
     static const uint64_t ITERATIONS = 5000000UL;
 
-    printf("Benchmarking: blackrock-1\n");
+    printf("-- blackrock-1 -- \n");
+    printf("rounds = %u\n", rounds);
     blackrock_init(&br, range, 1, rounds);
 
     /*

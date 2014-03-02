@@ -488,12 +488,13 @@ blackrock2_benchmark(unsigned rounds)
     uint64_t start, stop;
     static const uint64_t ITERATIONS = 5000000UL;
 
-    printf("Benchmarking: blackrock-2\n");
+    printf("-- blackrock-2 -- \n");
+    printf("rounds = %u\n", rounds);
     blackrock2_init(&br, range, 1, rounds);
-printf("range = 0x%10" PRIx64 "\n", range);
+/*printf("range = 0x%10" PRIx64 "\n", range);
 printf("rangex= 0x%10" PRIx64 "\n", br.a*br.b);
 printf("    a = 0x%10" PRIx64 "\n", br.a);
-printf("    b = 0x%10" PRIx64 "\n", br.b);
+printf("    b = 0x%10" PRIx64 "\n", br.b);*/
 
     /*
      * Time the the algorithm

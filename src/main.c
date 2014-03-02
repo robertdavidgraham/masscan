@@ -1523,6 +1523,7 @@ int main(int argc, char *argv[])
         break;
 
     case Operation_Benchmark:
+        printf("=== benchmarking (%u-bits) ===\n\n", (unsigned)sizeof(void*)*8);
         blackrock_benchmark(masscan->blackrock_rounds);
         blackrock2_benchmark(masscan->blackrock_rounds);
         smack_benchmark();
@@ -1535,6 +1536,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += smack_selftest();
             x += sctp_selftest();
             x += base64_selftest();
             x += banner1_selftest();
@@ -1550,7 +1552,6 @@ int main(int argc, char *argv[])
             x += ranges_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();
-            x += smack_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
 

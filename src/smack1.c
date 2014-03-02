@@ -116,10 +116,11 @@
 #if defined(_MSC_VER)
 #include <intrin.h>
 #elif defined(__GNUC__)
-static inline volatile long long __rdtsc() {
-   register long long TSC asm("eax");
-   asm volatile (".byte 15, 49" : : : "eax", "edx");
-   return TSC;
+static __inline__ unsigned long long __rdtsc(void)
+{
+    unsigned long hi = 0, lo = 0;
+    __asm__ __volatile__ ("lfence\n\trdtsc" : "=a"(lo), "=d"(hi));
+    return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
 }
 #endif
 #endif
@@ -1225,9 +1226,78 @@ smack_search(    struct SMACK * smack,
     return found_count;
 }
 
+/*****************************************************************************
+ *****************************************************************************/
+static size_t
+inner_match(    const unsigned char *px, 
+                size_t length,
+                const unsigned char *char_to_symbol,
+                const transition_t *table, 
+                unsigned *state, 
+                unsigned match_limit,
+                unsigned row_shift) 
+{
+    const unsigned char *px_start = px;
+    const unsigned char *px_end = px + length;
+    unsigned row = *state;
+    
+    for ( ; px<px_end; px++) {
+        unsigned char column;
+        
+        /* Convert that character into a symbol. This compresses the table.
+         * Even though there are 256 possible combinations for a byte, we
+         * are probably using fewer than 32 individual characters in the
+         * patterns we are looking for. This step allows us to create tables
+         * that are only 32 elements wide, instead of 256 elements wide */
+        column = char_to_symbol[*px];
+        
+        /*
+         * STATE TRANSITION
+         * Given the current row, lookup the symbol, and find the next row.
+         * Logically, this is the following  calculation:
+         *    row = table[row][column]
+         * However, since row can have a variable width (depending on the
+         * number of characters in a pattern), we have to do the calculation
+         * manually.
+         */
+        row = *(table + (row<<row_shift) + column);
+        
+        if (row >= match_limit)
+            break;
+        
+    }
 
-/****************************************************************************
- ****************************************************************************/
+    *state = row;
+    return px - px_start;
+}
+/*****************************************************************************
+ *****************************************************************************/
+static size_t
+inner_match_shift7(    const unsigned char *px, 
+            size_t length,
+            const unsigned char *char_to_symbol,
+            const transition_t *table, 
+            unsigned *state, 
+            unsigned match_limit) 
+{
+    const unsigned char *px_start = px;
+    const unsigned char *px_end = px + length;
+    unsigned row = *state;
+    
+    for ( ; px<px_end; px++) {
+        unsigned char column;
+        column = char_to_symbol[*px];
+        row = *(table + (row<<7) + column);
+        if (row >= match_limit)
+            break;
+    }
+    
+    *state = row;
+    return px - px_start;
+}
+
+/*****************************************************************************
+ *****************************************************************************/
 size_t
 smack_search_next(      struct SMACK *  smack,
                         unsigned *      current_state,
@@ -1240,7 +1310,7 @@ smack_search_next(      struct SMACK *  smack,
     unsigned row;
     register unsigned i = *offset;
     const unsigned char *char_to_symbol = smack->char_to_symbol;
-    transition_t *table = smack->table;
+    const transition_t *table = smack->table;
     register unsigned row_shift = smack->row_shift;
     const struct SmackMatches *match = smack->m_match;
     unsigned current_matches = 0;
@@ -1253,55 +1323,40 @@ smack_search_next(      struct SMACK *  smack,
 
     /* See if there are current matches we are processing */
     current_matches = (*current_state)>>24;
-
+ 
     /* 'for all bytes in this block' */
     if (!current_matches) {
-        //i = inner_match(px, *offset, length, table, 
-        for (i=*offset; i<length; i++) {
-            unsigned char column;
-            unsigned char c;
-
-            /* Get the next character of input */
-            c = px[i];
-
-            /* Convert that character into a symbol. This compresses the table.
-             * Even though there are 256 possible combinations for a byte, we
-             * are probably using fewer than 32 individual characters in the
-             * patterns we are looking for. This step allows us to create tables
-             * that are only 32 elements wide, instead of 256 elements wide */
-            column = char_to_symbol[c];
-
-            /*
-             * If debugging, and the variable is set, then print out the
-             * transition to the command line. This is a good way of visualizing
-             * how they work.
-             */
-    #if defined DEBUG && defined TRANSITIONS
-            if (print_transitions) {
-                printf("%s+%c = %s%s\n",
-                        smack->m_match[row].DEBUG_name,
-                        c,
-                        smack->m_match[*(table + (row<<row_shift) + column)].DEBUG_name,
-                        smack->m_match[*(table + (row<<row_shift) + column)].m_count?"$$":"");
-                print_transitions--;
-            }
-    #endif
-
-            /*
-             * STATE TRANSITION
-             * Given the current row, lookup the symbol, and find the next row.
-             * Logically, this is the following  calculation:
-             *    row = table[row][column]
-             * However, since row can have a variable width (depending on the
-             * number of characters in a pattern), we have to do the calculation
-             * manually.
-             */
-            row = *(table + (row<<row_shift) + column);
-
-            if (row >= match_limit)
+        /*if ((length-i) & 1)
+            i += inner_match(px + i, 
+                             length - i,
+                             char_to_symbol,
+                             table, 
+                             &row, 
+                             match_limit,
+                             row_shift);
+        if (row < match_limit && i < length)*/
+        switch (row_shift) {
+            case 7:
+                i += inner_match_shift7(px + i, 
+                                 length - i,
+                                 char_to_symbol,
+                                 table, 
+                                 &row, 
+                                 match_limit);
+                break;
+            default:
+                i += inner_match(px + i, 
+                                 length - i,
+                                 char_to_symbol,
+                                 table, 
+                                 &row, 
+                                 match_limit,
+                                 row_shift);
                 break;
 
         }
+
+        //printf("*** row=%u, i=%u, limit=%u\n", row, i, match_limit);
 
         /* Test to see if we have one (or more) matches, and if so, call
          * the callback function */
@@ -1393,8 +1448,6 @@ r_rand(unsigned *seed)
     return (*seed)>>16 & 0x7fff;
 }
 
-/*****************************************************************************
-
 /****************************************************************************
  ****************************************************************************/
 int
@@ -1410,6 +1463,8 @@ smack_benchmark(void)
     uint64_t result = 0;
     uint64_t cycle1, cycle2;
 
+    printf("-- smack-1 -- \n");
+    
     s = smack_create("benchmark1", 1);
 
     /* Fill a buffer full of junk */
@@ -1425,7 +1480,7 @@ smack_benchmark(void)
         unsigned j;
 
         for (j=0; j<pattern_length; j++)
-            pattern[j] = (char)r_rand(&seed)&0x7F | 0x80;
+            pattern[j] = (char)(r_rand(&seed)&0x7F) | 0x80;
         
         smack_add_pattern(s, pattern, pattern_length, i, 0);
     }
