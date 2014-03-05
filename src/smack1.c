@@ -118,9 +118,13 @@
 #elif defined(__GNUC__)
 static __inline__ unsigned long long __rdtsc(void)
 {
+#if defined(i386) || defined(__i386__)
     unsigned long hi = 0, lo = 0;
     __asm__ __volatile__ ("lfence\n\trdtsc" : "=a"(lo), "=d"(hi));
     return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
+#else
+    return 0;
+#endif
 }
 #endif
 #endif
