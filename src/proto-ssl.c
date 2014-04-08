@@ -512,7 +512,7 @@ nothandshake_parse(
 
             if (banner1->is_capture_heartbleed) {
                 banout_init_base64(&pstate->sub.ssl.x.server_cert.sub.base64);
-                banout_append(banout, PROTO_HEARTBLEED, "heartbleed:", 11);
+                banout_append(banout, PROTO_HEARTBLEED, "", 0);
             }
             break;
         }
