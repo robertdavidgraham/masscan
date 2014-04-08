@@ -1312,7 +1312,7 @@ smack_search_next(      struct SMACK *  smack,
 {
     const unsigned char *px = (const unsigned char*)v_px;
     unsigned row;
-    register unsigned i = *offset;
+    register size_t i = *offset;
     const unsigned char *char_to_symbol = smack->char_to_symbol;
     const transition_t *table = smack->table;
     register unsigned row_shift = smack->row_shift;
@@ -1370,7 +1370,7 @@ smack_search_next(      struct SMACK *  smack,
         }
     }
 
-    *offset = i;
+    *offset = (unsigned)i;
 
     /* If we broke early because we found a match, return that match */
     if (current_matches) {

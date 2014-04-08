@@ -617,6 +617,11 @@ receive_thread(void *v)
                                     "http-user-agent",
                                     masscan->http_user_agent_length,
                                     masscan->http_user_agent);
+        if (masscan->is_heartbleed)
+            tcpcon_set_parameter(   tcpcon,
+                                    "heartbleed",
+                                    1,
+                                    "1");
         if (masscan->tcp_connection_timeout) {
             char foo[64];
             sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);

@@ -29,6 +29,8 @@ struct SSL_SERVER_HELLO {
     unsigned remaining;
     unsigned timestamp;
     unsigned short cipher_suite;
+    unsigned short ext_tag;
+    unsigned short ext_remaining;
     unsigned char compression_method;
     unsigned char version_major;
     unsigned char version_minor;

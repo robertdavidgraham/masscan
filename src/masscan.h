@@ -164,6 +164,7 @@ struct Masscan
     unsigned is_test_csv:1;     /* (temporary testing feature) */
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
+    unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

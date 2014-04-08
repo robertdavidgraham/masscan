@@ -212,6 +212,10 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
+    if (name_equals(name, "heartbleed")) {
+        banner_ssl.hello = ssl_hello_heartbeat;
+        banner_ssl.hello_length = ssl_hello_heartbeat_size;
+    }
     if (name_equals(name, "hello-string")) {
         struct ProtocolParserStream *x;
         const char *p = strchr(name, '[');

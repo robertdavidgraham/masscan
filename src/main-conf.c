@@ -1139,6 +1139,10 @@ masscan_set_parameter(struct Masscan *masscan,
         if (count2 - count1)
         fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
+    } else if (EQUALS("heartbleed", name)) {
+        masscan->is_heartbleed = 1;
+        masscan_set_parameter(masscan, "no-capture", "cert");
+        masscan_set_parameter(masscan, "banners", "true");
     } else if (EQUALS("hello-file", name)) {
         /* When connecting via TCP, send this file */
         FILE *fp;
@@ -1586,7 +1590,7 @@ is_singleton(const char *name)
         "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
         "log-errors", "append-output", "webxml", "no-stylesheet",
-        "no-stylesheet",
+        "no-stylesheet", "heartbleed",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
