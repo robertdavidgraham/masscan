@@ -611,7 +611,8 @@ receive_thread(void *v)
             );
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
-                masscan->is_capture_html);
+                masscan->is_capture_html,
+                masscan->is_capture_heartbleed);
         if (masscan->http_user_agent_length)
             tcpcon_set_parameter(   tcpcon,
                                     "http-user-agent",

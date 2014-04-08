@@ -6,6 +6,8 @@
 #include "proto-banout.h"
 #include "proto-x509.h"
 
+struct InteractiveData;
+
 struct Banner1
 {
     struct SMACK *smack;
@@ -14,6 +16,7 @@ struct Banner1
 
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
+    unsigned is_capture_heartbleed:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];
 };
@@ -96,7 +99,8 @@ struct ProtocolParserStream {
         void *banner1_private,
         struct ProtocolState *stream_state,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout);
+        struct BannerOutput *banout,
+        struct InteractiveData *more);
 };
 
 
@@ -118,7 +122,8 @@ banner1_parse(
         const struct Banner1 *banner1,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout);
+        struct BannerOutput *banout,
+        struct InteractiveData *more);
 
 
 

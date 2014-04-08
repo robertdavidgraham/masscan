@@ -419,6 +419,9 @@
     <ClInclude Include="..\src\main-readrange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\proto-interactive.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

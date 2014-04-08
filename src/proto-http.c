@@ -219,7 +219,8 @@ http_parse(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -238,6 +239,7 @@ http_parse(
     };
 
     UNUSEDPARM(banner1_private);
+    UNUSEDPARM(more);
 
     state2 = (state>>16) & 0xFFFF;
     id = (state>>8) & 0xFF;

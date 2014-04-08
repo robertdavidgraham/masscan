@@ -161,6 +161,7 @@ struct Masscan
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
+    unsigned is_capture_heartbleed:1; /* --capture heartbleed */
     unsigned is_test_csv:1;     /* (temporary testing feature) */
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */

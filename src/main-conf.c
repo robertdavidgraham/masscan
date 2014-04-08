@@ -408,6 +408,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
+    fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
 
     /*
      *  TCP payloads
@@ -1015,6 +1016,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_cert = 1;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 1;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 1;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1024,6 +1027,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_cert = 0;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 0;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 0;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1108,7 +1113,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->is_banners = 0;
     } else if (EQUALS("blackrock-rounds", name)) {
         masscan->blackrock_rounds = (unsigned)parseInt(value);
-    } else if (EQUALS("connection-timeout", name)) {
+    } else if (EQUALS("connection-timeout", name) || EQUALS("tcp-timeout", name)) {
+        /* The timeout for "banners" TCP connections */
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
@@ -1142,6 +1148,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("heartbleed", name)) {
         masscan->is_heartbleed = 1;
         masscan_set_parameter(masscan, "no-capture", "cert");
+        masscan_set_parameter(masscan, "no-capture", "heartbleed");
         masscan_set_parameter(masscan, "banners", "true");
     } else if (EQUALS("hello-file", name)) {
         /* When connecting via TCP, send this file */

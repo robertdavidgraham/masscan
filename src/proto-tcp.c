@@ -24,6 +24,7 @@
 #include "string_s.h"
 #include "main-globals.h"
 #include "crypto-base64.h"
+#include "proto-interactive.h"
 
 
 
@@ -69,6 +70,7 @@ struct TCP_ConnectionTable {
     unsigned count;
     unsigned mask;
     unsigned timeout;
+    unsigned is_heartbleed:1;
 
     uint64_t active_count;
     uint64_t entropy;
@@ -168,6 +170,8 @@ name_equals(const char *lhs, const char *rhs)
 }
 
 /***************************************************************************
+ * When setting parameters, this will parse integers from the config
+ * parameter strings.
  ***************************************************************************/
 static uint64_t
 parseInt(const void *vstr, size_t length)
@@ -195,6 +199,12 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 {
     struct Banner1 *banner1 = tcpcon->banner1;
 
+    /*
+     * You can reset your user-agent here. Whenever I do a scan, I always
+     * reset my user-agent. That's now you know it's not me scanning
+     * you on the open Internet -- I would never use the default user-agent
+     * string built into masscan
+     */
     if (name_equals(name, "http-user-agent")) {
         banner_http.hello_length = http_change_field(
                                 (unsigned char**)&banner_http.hello,
@@ -212,10 +222,22 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
+    /*
+     * 2014-04-08: scan for Neel Mehta's "heartbleed" bug
+     */
     if (name_equals(name, "heartbleed")) {
+        /* Change the hello message to including negotiating the use of 
+         * the "heartbeat" extension */
         banner_ssl.hello = ssl_hello_heartbeat;
         banner_ssl.hello_length = ssl_hello_heartbeat_size;
+        tcpcon->is_heartbleed = 1;
+        return;
     }
+
+    /*
+     * You can reconfigure the "hello" message to be anything
+     * you want.
+     */
     if (name_equals(name, "hello-string")) {
         struct ProtocolParserStream *x;
         const char *p = strchr(name, '[');
@@ -250,10 +272,12 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 void
 tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
-    unsigned is_capture_html)
+    unsigned is_capture_html,
+    unsigned is_capture_heartbleed)
 {
     tcpcon->banner1->is_capture_cert = is_capture_cert;
     tcpcon->banner1->is_capture_html = is_capture_html;
+    tcpcon->banner1->is_capture_heartbleed = is_capture_heartbleed;
 }
 
 /***************************************************************************
@@ -733,7 +757,8 @@ parse_banner(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,
     const unsigned char *payload,
-    size_t payload_length)
+    size_t payload_length,
+    struct InteractiveData *more)
 {
     assert(tcb->banout.max_length);
     
@@ -742,8 +767,8 @@ parse_banner(
                                     &tcb->banner1_state,
                                     payload,
                                     payload_length,
-                                    &tcb->banout);
-
+                                    &tcb->banout,
+                                    more);
 
     return tcb->banner1_state.state;
 }
@@ -962,32 +987,53 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_DATA:
         {
             unsigned err;
+            struct InteractiveData more;
+            more.payload = 0;
+            more.length =0;
 
-            if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)
+            if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
+                tcpcon_send_packet(tcpcon, tcb,
+                        0x10,
+                        0, 0);
                 return;
+            }
 
             while (seqno_them != tcb->seqno_them && payload_length) {
                 seqno_them++;
                 payload_length--;
+                payload++;
             }
 
-            if (payload_length == 0)
+            if (payload_length == 0) {
+                tcpcon_send_packet(tcpcon, tcb,
+                        0x10,
+                        0, 0);
                 return;
+            }
             
+
             /* extract a banner if we can */
+            //printf("[0x%08x] 0x%02x bytes\n", seqno_them, payload_length);
             err = parse_banner(
                         tcpcon,
                         tcb,
                         payload,
-                        payload_length);
+                        payload_length,
+                        &more);
 
             /* move their sequence number forward */
             tcb->seqno_them += (unsigned)payload_length;
             
             /* acknowledge the bytes sent */
-            tcpcon_send_packet(tcpcon, tcb,
+            if (more.length) {
+                //printf("." "sending more data %u bytes\n", more.length);
+                tcpcon_send_packet(tcpcon, tcb, 0x18, more.payload, more.length);
+                tcb->seqno_me += (uint32_t)more.length;
+            } else {
+                tcpcon_send_packet(tcpcon, tcb,
                         0x10,
                         0, 0);
+            }
 
             if (err == STATE_DONE) {
                 tcpcon_send_packet(tcpcon, tcb,

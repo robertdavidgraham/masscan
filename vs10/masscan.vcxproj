@@ -119,6 +119,7 @@
     <ClInclude Include="..\src\proto-dns.h" />
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
+    <ClInclude Include="..\src\proto-interactive.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />

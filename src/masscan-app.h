@@ -26,6 +26,7 @@ enum ApplicationProtocol {
     PROTO_HTML_FULL,
     PROTO_NTP,              /* network time protocol, udp/123 */
     PROTO_VULN,
+    PROTO_HEARTBLEED
 };
 
 const char *

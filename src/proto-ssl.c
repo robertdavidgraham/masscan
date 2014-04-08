@@ -13,6 +13,7 @@
     it.
 */
 #include "proto-ssl.h"
+#include "proto-interactive.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "string_s.h"
@@ -37,7 +38,8 @@ server_hello(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
@@ -150,7 +152,7 @@ server_hello(
         hello->cipher_suite |= px[i]; /* cipher-suite recorded here */
         {
             char foo[64];
-            sprintf_s(foo, sizeof(foo), "cipher:0x%x", hello->cipher_suite);
+            sprintf_s(foo, sizeof(foo), "cipher:0x%x ", hello->cipher_suite);
             banout_append(banout, PROTO_SSL3, foo, strlen(foo));
         }
         DROPDOWN(i,length,state);
@@ -222,7 +224,11 @@ server_hello(
         remaining--;
         hello->ext_remaining--;
         if (px[i]) {
-            banout_append(  banout, PROTO_VULN, "SSL-HEARTBEAT ", 14);
+            static const char heartbleed_request[] = "\x18\x03\x02\x00\x03\x01\x40\x00";
+
+            banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
+            more->payload = heartbleed_request;
+            more->length = sizeof(heartbleed_request)-1;
         }
         state = EXT_DATA;
         continue;
@@ -237,6 +243,7 @@ server_hello(
     hello->state = state;
     hello->remaining = remaining;
 }
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -349,12 +356,13 @@ server_cert(
 /***************************************************************************
  ***************************************************************************/
 static void
-content_parse(
+handshake_parse(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->record.state;
@@ -386,6 +394,7 @@ content_parse(
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
+        //printf("." "  SSL handshake: type=%u length=%u\n", ssl->record.type, remaining);
         DROPDOWN(i,length,state);
 
     case LENGTH2:
@@ -399,6 +408,7 @@ content_parse(
             if (len > remaining)
                 len = remaining;
 
+            //printf("." "---------ssl-record: 0x%02x\n", ssl->record.type);
             switch (ssl->record.type) {
             case 0x02: /* server hello */
                 //printf("server hello\n", ssl->record.type);
@@ -406,7 +416,8 @@ content_parse(
                                     banner1_private,
                                     pstate,
                                     px+i, len,
-                                    banout);
+                                    banout,
+                                    more);
                 break;
             case 0x0b: /* server certificate */
                 //printf("server cert\n");
@@ -422,6 +433,109 @@ content_parse(
             case 0x0e: /* hello done */
                 //printf("hello done\n");
                 break;
+            default:
+                //printf("unknown SSL record: 0x%02x\n", ssl->record.type);
+                ;
+            }
+
+            remaining -= len;
+            i += len-1;
+
+            if (remaining == 0)
+                state = START;
+        }
+
+        break;
+    case UNKNOWN:
+    default:
+        i = (unsigned)length;
+    }
+
+    ssl->record.state = state;
+    ssl->record.remaining = remaining;
+}
+
+static void
+nothandshake_parse(
+        const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *pstate,
+        const unsigned char *px, size_t length,
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
+{
+    struct SSLRECORD *ssl = &pstate->sub.ssl;
+    unsigned state = ssl->record.state;
+    unsigned remaining = ssl->record.remaining;
+    unsigned i;
+    enum {
+        START,
+        LENGTH0, LENGTH1, LENGTH2,
+        CONTENTS,
+        UNKNOWN,
+    };
+
+    UNUSEDPARM(more);
+    UNUSEDPARM(banner1_private);
+
+    for (i=0; i<length; i++)
+    switch (state) {
+    case START:
+        if (px[i] & 0x80) {
+            state = UNKNOWN;
+            break;
+        }
+        remaining = 0;
+        ssl->record.type = px[i];
+        ssl->x.all.state = 0;
+        DROPDOWN(i,length,state);
+
+    case LENGTH0:
+        remaining = px[i];
+        DROPDOWN(i,length,state);
+
+    case LENGTH1:
+        remaining <<= 8;
+        remaining |= px[i];
+        //printf("." "  SSL else: type=%u length=%u\n", ssl->record.type, remaining);
+        DROPDOWN(i,length,state);
+
+    case LENGTH2:
+        remaining <<= 8;
+        remaining |= px[i];
+
+        switch (ssl->record.type) {
+        case 0x02: /* heartbeat */
+            if (remaining > 1) {
+                banout_append(  banout, PROTO_VULN, "SSL[HEARTBLEED] ", 16);
+            }
+
+            if (banner1->is_capture_heartbleed) {
+                banout_init_base64(&pstate->sub.ssl.x.server_cert.sub.base64);
+                banout_append(banout, PROTO_HEARTBLEED, "heartbleed:", 11);
+            }
+            break;
+        }
+        DROPDOWN(i,length,state);
+
+    case CONTENTS:
+        {
+            unsigned len = (unsigned)length-i;
+            if (len > remaining)
+                len = remaining;
+
+            switch (ssl->record.type) {
+            case 0x02: /* heartbeat */
+                if (banner1->is_capture_heartbleed) {
+                    banout_append_base64(banout, 
+                                 PROTO_HEARTBLEED, 
+                                 px+i, len,
+                                 &pstate->sub.ssl.x.server_cert.sub.base64);
+                }
+                break;
+            default:
+                //printf("unknown SSL record: 0x%02x\n", ssl->record.type);
+                ;
             }
 
             remaining -= len;
@@ -443,7 +557,7 @@ content_parse(
 
 /***************************************************************************
  * Parse just the outer record, then hands down the contents to the
- * sub parser at "content_parse()"
+ * sub parser at "handshake_parse()"
  ***************************************************************************/
 static void
 ssl_parse(
@@ -451,7 +565,8 @@ ssl_parse(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
@@ -496,6 +611,7 @@ ssl_parse(
         remaining |= px[i];
         DROPDOWN(i,length,state);
         ssl->record.state = 0;
+        //printf("." "SSL record: content=%u length=%u\n", ssl->content_type, remaining);
 
     case CONTENTS:
         {
@@ -506,11 +622,24 @@ ssl_parse(
             /*
              * Parse the contents of a record
              */
-            content_parse(      banner1,
+            switch (ssl->content_type) {
+            case 22: /* Handshake protocol */
+                handshake_parse(banner1,
                                 banner1_private,
                                 pstate,
                                 px+i, len,
-                                banout);
+                                banout,
+                                more);
+                break;
+            case 24:
+                nothandshake_parse(banner1,
+                                banner1_private,
+                                pstate,
+                                px+i, len,
+                                banout,
+                                more);
+                break;
+            }
 
             remaining -= len;
             i += len-1;
@@ -616,8 +745,8 @@ ssl_hello_heartbeat_data[] =
 /*00b0*/ "\x00\x18\x00\x09\x00\x0a\x00\x16\x00\x17\x00\x08\x00\x06\x00\x07"
 /*00c0*/ "\x00\x14\x00\x15\x00\x04\x00\x05\x00\x12\x00\x13\x00\x01\x00\x02"
 /*00d0*/ "\x00\x03\x00\x0f\x00\x10\x00\x11\x00\x23\x00\x00\x00\x0f\x00\x01"
-/*00e0*/ "\x01"
-/*0000*/ "\x18\x03\x02\x00\x03\x01\x40\x00";
+/*00e0*/ "\x01";
+
 
 unsigned ssl_hello_heartbeat_size = sizeof(ssl_hello_heartbeat_data)-1;
 const char *ssl_hello_heartbeat = ssl_hello_heartbeat_data;
@@ -654,7 +783,8 @@ ssl_selftest(void)
                 state,
                 ssl_test_case_3,
                 ssl_test_case_3_size,
-                banout1
+                banout1,
+                0
                 );
     banner1_destroy(banner1);
     banout_release(banout1);
@@ -672,7 +802,8 @@ ssl_selftest(void)
                 state,
                 (const unsigned char *)ssl_test_case_3+ii,
                 1,
-                banout2
+                banout2,
+                0
                 );
     banner1_destroy(banner1);
     banout_release(banout2);
