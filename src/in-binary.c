@@ -224,7 +224,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length)
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 record.ttl, /* ttl */
-                buf+13, (unsigned)buf_length-14
+                buf+14, (unsigned)buf_length-14
                 );
 }
 
