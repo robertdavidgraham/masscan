@@ -22,7 +22,8 @@
 #include <assert.h>
 
 /**
- * Fugly macro for doing state-machine parsing
+ * Fugly macro for doing state-machine parsing. I know it's bad, but
+ * it makes stepping through the code in a debugger so much easier.
  */
 #define DROPDOWN(i,length,state) (state)++;if (++(i)>=(length)) break
 
@@ -305,7 +306,7 @@ server_cert(
         }
 
         memset(&data->x509, 0, sizeof(data->x509));
-        x509_init_state(&data->x509, cert_remaining);
+        x509_decode_init(&data->x509, cert_remaining);
         DROPDOWN(i,length,state);
 
     case CERT:
