@@ -422,7 +422,7 @@ http_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 struct ProtocolParserStream banner_http = {
-    "http", 80, http_hello, sizeof(http_hello)-1,
+    "http", 80, http_hello, sizeof(http_hello)-1, 0,
     http_selftest,
     http_init,
     http_parse,

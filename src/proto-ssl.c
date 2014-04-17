@@ -225,13 +225,7 @@ server_hello(
         remaining--;
         hello->ext_remaining--;
         if (px[i]) {
-            static const char heartbleed_request[] = 
-                "\x15\x03\x02\x00\x02\x01\x80"
-                "\x18\x03\x02\x00\x14\x01" "\x0f\xe9" " "
-                "[masscan/1.0]   ";
             banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
-            more->payload = heartbleed_request;
-            more->length = sizeof(heartbleed_request)-1;
         }
         state = EXT_DATA;
         continue;
@@ -397,12 +391,26 @@ handshake_parse(
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
-        //printf("." "  SSL handshake: type=%u length=%u\n", ssl->record.type, remaining);
         DROPDOWN(i,length,state);
 
     case LENGTH2:
         remaining <<= 8;
         remaining |= px[i];
+
+        /* Process the start of some fields. In particular, the "hello done"
+         * packet has a zero length, so we never drop down in the CONTENTS
+         * state, so we have to process it here */
+        switch (ssl->record.type) {
+        case 0x02: /* hello done */
+             {
+                    static const char heartbleed_request[] = 
+                    "\x15\x03\x02\x00\x02\x01\x80"
+                    "\x18\x03\x02\x00\x03\x01" "\x40\x00";
+                more->payload = heartbleed_request;
+                more->length = sizeof(heartbleed_request)-1;
+             }
+             break;
+        }
         DROPDOWN(i,length,state);
 
     case CONTENTS:
@@ -411,10 +419,10 @@ handshake_parse(
             if (len > remaining)
                 len = remaining;
 
-            //printf("." "---------ssl-record: 0x%02x\n", ssl->record.type);
+
+            
             switch (ssl->record.type) {
             case 0x02: /* server hello */
-                //printf("server hello\n", ssl->record.type);
                 server_hello(      banner1,
                                     banner1_private,
                                     pstate,
@@ -423,7 +431,6 @@ handshake_parse(
                                     more);
                 break;
             case 0x0b: /* server certificate */
-                //printf("server cert\n");
                 server_cert(        banner1,
                                     banner1_private,
                                     pstate,
@@ -431,13 +438,10 @@ handshake_parse(
                                     banout);
                 break;
             case 0x0c: /* key exchange */
-                //printf("key exchange\n");
                 break;
             case 0x0e: /* hello done */
-                //printf("hello done\n");
                 break;
             default:
-                //printf("unknown SSL record: 0x%02x\n", ssl->record.type);
                 ;
             }
 
@@ -500,7 +504,7 @@ nothandshake_parse(
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
-        //printf("." "  SSL else: type=%u length=%u\n", ssl->record.type, remaining);
+        
         switch (ssl->record.type) {
         case 0x02:
             if (remaining >= 1) {
@@ -577,6 +581,13 @@ ssl_parse(
         UNKNOWN,
     };
 
+    /*
+    for (i=0; i<length && i<8; i++) {
+        printf("%02x ", px[i]);
+    }
+    printf("                                \n");
+    */
+
     for (i=0; i<length; i++)
     switch (state) {
     case START:
@@ -607,7 +618,7 @@ ssl_parse(
         remaining |= px[i];
         DROPDOWN(i,length,state);
         ssl->record.state = 0;
-        //printf("." "SSL record: content=%u length=%u\n", ssl->content_type, remaining);
+        
 
     case CONTENTS:
         {
@@ -846,7 +857,7 @@ ssl_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello, sizeof(ssl_hello)-1,
+    "ssl", 443, ssl_hello, sizeof(ssl_hello)-1, 0,
     ssl_selftest,
     ssl_init,
     ssl_parse,

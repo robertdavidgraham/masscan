@@ -61,7 +61,7 @@ telnet_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_telnet = {
-    "telnet", 22, 0, 0,
+    "telnet", 22, 0, 0, 0,
     telnet_selftest,
     telnet_init,
     telnet_parse,

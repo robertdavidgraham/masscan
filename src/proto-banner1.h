@@ -83,6 +83,10 @@ struct ProtocolState {
     } sub;
 };
 
+enum {
+    CTRL_SMALL_WINDOW = 1,
+};
+
 /**
  * A registration structure for various TCP stream protocols
  * like HTTP, SSL, and SSH
@@ -92,6 +96,7 @@ struct ProtocolParserStream {
     unsigned port;
     const void *hello;
     size_t hello_length;
+    unsigned ctrl_flags;
     int (*selftest)(void);
     void *(*init)(struct Banner1 *b);
     void (*parse)(

@@ -153,6 +153,13 @@ tcp_create_packet(
         const unsigned char *payload, size_t payload_length,
         unsigned char *px, size_t px_length);
 
+/**
+ * Set's the TCP "window" field. The purpose is to cause the recipient
+ * to fragment data on the response, thus evading IDS that triggers on
+ * out going packets
+ */
+void
+tcp_set_window(unsigned char *px, size_t px_length, unsigned window);
 
 unsigned template_get_source_port(struct TemplateSet *tmplset);
 unsigned template_get_source_ip(struct TemplateSet *tmplset);

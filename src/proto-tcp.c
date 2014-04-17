@@ -596,8 +596,9 @@ static void
 tcpcon_send_packet(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,
-    unsigned flags,
-    const unsigned char *payload, size_t payload_length)
+    unsigned tcp_flags,
+    const unsigned char *payload, size_t payload_length,
+    unsigned ctrl)
 {
     struct PacketBuffer *response = 0;
     int err = 0;
@@ -636,10 +637,18 @@ tcpcon_send_packet(
         tcb->ip_them, tcb->port_them,
         tcb->ip_me, tcb->port_me,
         tcb->seqno_me, tcb->seqno_them,
-        flags,
+        tcp_flags,
         payload, payload_length,
         response->px, sizeof(response->px)
         );
+
+    /*
+     * KLUDGE:
+     */
+    if (ctrl & CTRL_SMALL_WINDOW) {
+        printf("=======\n");
+        tcp_set_window(response->px, response->length, 1);
+    }
 
     /* If we have payload, then:
      * 1. remember the payload so we can resend it
@@ -743,7 +752,7 @@ tcpcon_send_FIN(
     tcb.seqno_them = seqno_them + 1;
     tcb.ackno_them = ackno_them;
 
-    tcpcon_send_packet(tcpcon, &tcb, 0x11, 0, 0);
+    tcpcon_send_packet(tcpcon, &tcb, 0x11, 0, 0, 0);
 }
 
 
@@ -912,7 +921,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         /* Send "ACK" to acknowlege their "SYN-ACK" */
         tcpcon_send_packet(tcpcon, tcb,
                     0x10,
-                    0, 0);
+                    0, 0, 0);
 
         /* Change ourselves to the "ready" state.*/
         tcb->tcpstate = STATE_READY_TO_SEND;
@@ -940,48 +949,52 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_TIMEOUT:
-        {
+        /* if we have a "hello" message to send to the server,
+         * then send it */
+        if (banner1->tcp_payloads[tcb->port_them]) {
             size_t x_len = 0;
             const unsigned char *x;
+            unsigned ctrl = 0;
 
-            /* if we have a "hello" message to send to the server,
-             * then send it */
-            if (banner1->tcp_payloads[tcb->port_them]) {
-                x_len = banner1->tcp_payloads[tcb->port_them]->hello_length;
-                x = banner1->tcp_payloads[tcb->port_them]->hello;
-                if (banner1->tcp_payloads[tcb->port_them] == &banner_ssl)
-                    tcb->banner1_state.is_sent_sslhello = 1;
+            x_len = banner1->tcp_payloads[tcb->port_them]->hello_length;
+            x = banner1->tcp_payloads[tcb->port_them]->hello;
+            if (banner1->tcp_payloads[tcb->port_them] == &banner_ssl)
+                tcb->banner1_state.is_sent_sslhello = 1;
 
-                /* Send request. This actually doens't send the packet right
-                 * now, but instead queues up a packet that the transmit
-                 * thread will send soon. */
-                tcpcon_send_packet(tcpcon, tcb,
-                    0x18,
-                    x, x_len);
-                LOGip(4, tcb->ip_them, tcb->port_them,
-                    "sending payload %u bytes\n",
-                    x_len);
-
-                /* Increment our sequence number */
-                tcb->seqno_me += (uint32_t)x_len;
-
-                /* change our state to reflect that we are now waiting for
-                 * acknowledgement of the data we've sent */
-                tcb->tcpstate = STATE_PAYLOAD_SENT;
+            /*
+             * KLUDGE
+             */
+            if (tcpcon->is_heartbleed) {
+                ctrl = CTRL_SMALL_WINDOW;
             }
 
-            /* Add a timeout so that we can resend the data in case it
-             * goes missing. Note that we put this back in the timeout
-             * system regardless if we've sent data. */
-            timeouts_add(   tcpcon->timeouts,
-                            tcb->timeout,
-                            offsetof(struct TCP_Control_Block, timeout),
-                            TICKS_FROM_TV(secs+1,usecs)
-                         );
+            /* Send request. This actually doens't send the packet right
+             * now, but instead queues up a packet that the transmit
+             * thread will send soon. */
+            tcpcon_send_packet(tcpcon, tcb,
+                0x18,
+                x, x_len, ctrl);
+            LOGip(4, tcb->ip_them, tcb->port_them,
+                "sending payload %u bytes\n",
+                x_len);
 
+            /* Increment our sequence number */
+            tcb->seqno_me += (uint32_t)x_len;
+
+            /* change our state to reflect that we are now waiting for
+             * acknowledgement of the data we've sent */
+            tcb->tcpstate = STATE_PAYLOAD_SENT;
         }
-        break;
 
+        /* Add a timeout so that we can resend the data in case it
+            * goes missing. Note that we put this back in the timeout
+            * system regardless if we've sent data. */
+        timeouts_add(   tcpcon->timeouts,
+                        tcb->timeout,
+                        offsetof(struct TCP_Control_Block, timeout),
+                        TICKS_FROM_TV(secs+1,usecs)
+                        );
+        break;
 
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_DATA:
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_DATA:
@@ -994,7 +1007,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
                 tcpcon_send_packet(tcpcon, tcb,
                         0x10,
-                        0, 0);
+                        0, 0, 0);
                 return;
             }
 
@@ -1007,7 +1020,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             if (payload_length == 0) {
                 tcpcon_send_packet(tcpcon, tcb,
                         0x10,
-                        0, 0);
+                        0, 0, 0);
                 return;
             }
             
@@ -1027,18 +1040,18 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             /* acknowledge the bytes sent */
             if (more.length) {
                 //printf("." "sending more data %u bytes\n", more.length);
-                tcpcon_send_packet(tcpcon, tcb, 0x18, more.payload, more.length);
+                tcpcon_send_packet(tcpcon, tcb, 0x18, more.payload, more.length, 0);
                 tcb->seqno_me += (uint32_t)more.length;
             } else {
                 tcpcon_send_packet(tcpcon, tcb,
                         0x10,
-                        0, 0);
+                        0, 0, 0);
             }
 
             if (err == STATE_DONE) {
                 tcpcon_send_packet(tcpcon, tcb,
                     0x11,
-                    0, 0);
+                    0, 0, 0);
                 tcb->seqno_me++;
                 tcpcon_destroy_tcb(tcpcon, tcb);
             }
@@ -1049,7 +1062,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
                     0x11, /*reset */
-                    0, 0);
+                    0, 0, 0);
         tcpcon_destroy_tcb(tcpcon, tcb);
         break;
 
@@ -1097,7 +1110,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             tcpcon_send_packet(tcpcon, tcb,
                 0x18,
                 tcb->payload + tcb->payload_length - len,
-                len);
+                len, 0);
             LOGip(4, tcb->ip_them, tcb->port_them,
                 "- re-sending payload %u bytes\n",
                 len);
@@ -1125,13 +1138,13 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
         tcpcon_send_packet(tcpcon, tcb,
             0x11,
-            0, 0);
+            0, 0, 0);
         tcb->seqno_me++;
         break;
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:
         tcpcon_send_packet(tcpcon, tcb,
             0x04,
-            0, 0);
+            0, 0, 0);
         tcpcon_destroy_tcb(tcpcon, tcb);
         break;
 
