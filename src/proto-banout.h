@@ -1,6 +1,6 @@
 #ifndef PROTO_BANOUT_H
 #define PROTO_BANOUT_H
-struct BanBase64;
+struct BannerBase64;
 
 /**
  * A structure for tracking one or more banners from a target.
@@ -82,7 +82,7 @@ banout_string_length(const struct BannerOutput *banout, unsigned proto);
  * Prepare to start calling banout_append_base64()
  */
 void
-banout_init_base64(struct BanBase64 *base64);
+banout_init_base64(struct BannerBase64 *base64);
 
 /**
  * Converts the string to BASE64 and appends it to the banner.
@@ -94,7 +94,7 @@ banout_init_base64(struct BanBase64 *base64);
 void
 banout_append_base64(struct BannerOutput *banout, unsigned proto,
                      const void *px, size_t length,
-                     struct BanBase64 *base64);
+                     struct BannerBase64 *base64);
 
 /**
  * Finish encoding the BASE64 string, appending the '==' things on the
@@ -102,7 +102,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
  */
 void
 banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
-                       struct BanBase64 *base64);
+                       struct BannerBase64 *base64);
 
 /**
  * Do the typical unit/regression test, for this module.

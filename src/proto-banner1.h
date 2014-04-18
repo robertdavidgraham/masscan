@@ -21,7 +21,7 @@ struct Banner1
     struct ProtocolParserStream *tcp_payloads[65536];
 };
 
-struct BanBase64
+struct BannerBase64
 {
     unsigned state:2;
     unsigned temp:24;
@@ -43,13 +43,12 @@ struct SSL_SERVER_CERT {
     unsigned remaining;
     struct {
         unsigned remaining;
-        struct BanBase64 base64;
     } sub;
     struct CertDecode x509;
 };
 
 struct SSLRECORD {
-    unsigned char content_type;
+    unsigned char type;
     unsigned char version_major;
     unsigned char version_minor;
 
@@ -57,7 +56,7 @@ struct SSLRECORD {
         unsigned state;
         unsigned char type;
         unsigned remaining;
-    } record;
+    } handshake;
 
     union {
         struct {
@@ -78,6 +77,8 @@ struct ProtocolState {
     unsigned short port;
     unsigned short app_proto;
     unsigned is_sent_sslhello:1;
+    struct BannerBase64 base64;
+
     union {
         struct SSLRECORD ssl;
     } sub;

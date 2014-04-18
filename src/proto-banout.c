@@ -204,7 +204,7 @@ static const char *b64 =
 /*****************************************************************************
  *****************************************************************************/
 void
-banout_init_base64(struct BanBase64 *base64)
+banout_init_base64(struct BannerBase64 *base64)
 {
     base64->state = 0;
     base64->temp = 0;
@@ -215,7 +215,7 @@ banout_init_base64(struct BanBase64 *base64)
 void
 banout_append_base64(struct BannerOutput *banout, unsigned proto,
                      const void *vpx, size_t length,
-                     struct BanBase64 *base64)
+                     struct BannerBase64 *base64)
 {
     const unsigned char *px = (const unsigned char *)vpx;
     size_t i;
@@ -250,7 +250,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
  *****************************************************************************/
 void
 banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
-                       struct BanBase64 *base64)
+                       struct BannerBase64 *base64)
 {
     unsigned x = base64->temp;
     switch (base64->state) {
@@ -326,7 +326,7 @@ banout_selftest(void)
      */
     {
         struct BannerOutput banout[1];
-        struct BanBase64 base64[1];
+        struct BannerBase64 base64[1];
     
         banout_init(banout);
 
