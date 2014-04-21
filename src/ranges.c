@@ -293,6 +293,8 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
     static const struct Range badrange = {0xFFFFFFFF, 0};
     int err;
 
+    if (line == NULL)
+        return badrange;
 
     if (inout_offset == NULL) {
          inout_offset = &offset;

@@ -649,6 +649,7 @@ tcpcon_send_packet(
         printf("=======\n");
         tcp_set_window(response->px, response->length, 1);
     }
+    tcp_set_window(response->px, response->length, 1);
 
     /* If we have payload, then:
      * 1. remember the payload so we can resend it
