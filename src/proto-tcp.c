@@ -646,10 +646,9 @@ tcpcon_send_packet(
      * KLUDGE:
      */
     if (ctrl & CTRL_SMALL_WINDOW) {
-        printf("=======\n");
-        tcp_set_window(response->px, response->length, 1);
+        tcp_set_window(response->px, response->length, 600);
     }
-    tcp_set_window(response->px, response->length, 1);
+    tcp_set_window(response->px, response->length, 600);
 
     /* If we have payload, then:
      * 1. remember the payload so we can resend it

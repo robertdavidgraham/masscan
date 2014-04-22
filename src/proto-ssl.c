@@ -98,6 +98,7 @@ parse_server_hello(
     UNUSEDPARM(banout);
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
+    UNUSEDPARM(more);
 
     /* What this structure looks like in ASN.1 format
        struct {
