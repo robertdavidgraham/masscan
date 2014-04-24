@@ -3,7 +3,7 @@
  
     This parses SSL packets from the server. It is built in multiple levels:
  
-    RECORDS
+    RECORDS - ssl_parse_record()
       |
       +---> heartbeat
       |        |
@@ -25,8 +25,8 @@
  
 
     For "heartbeat", we grab the so-called "heartbleed" exploit info.
-    For "server hello", we grab the "subject name" of the server.
-    For "certificate", we grab the certificate
+    For "server hello", we grab which cipher is used
+    For "certificate", we grab the szubjectName of the server
  
  
     !!!!!!!!!!!!  BIZARRE CODE ALERT !!!!!!!!!!!!!!!
