@@ -377,7 +377,9 @@ tcp_set_window(unsigned char *px, size_t px_length, unsigned window)
     if (offset + 20 > px_length)
         return;
 
+
     /* set the new window */
+#if 0
     xsum = px[offset + 16] << 8 | px[offset + 17];
     xsum = (~xsum)&0xFFFF;
     xsum += window & 0xFFFF;
@@ -386,9 +388,17 @@ tcp_set_window(unsigned char *px, size_t px_length, unsigned window)
     xsum = ((xsum)&0xFFFF) + (xsum >> 16);
     xsum = ((xsum)&0xFFFF) + (xsum >> 16);
     xsum = (~xsum)&0xFFFF;
+#endif
 
     px[offset + 14] = (unsigned char)(window>>8);
     px[offset + 15] = (unsigned char)(window>>0);
+    px[offset + 16] = (unsigned char)(0);
+    px[offset + 17] = (unsigned char)(0);
+
+
+    xsum = ~tcp_checksum2(px, parsed.ip_offset, parsed.transport_offset,
+                            parsed.transport_length);
+
     px[offset + 16] = (unsigned char)(xsum>>8);
     px[offset + 17] = (unsigned char)(xsum>>0);
 }

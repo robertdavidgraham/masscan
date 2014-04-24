@@ -144,6 +144,7 @@ parse_tcp:
         info->port_dst = ex16be(px+offset+2);
         info->app_offset = offset + tcp_length;
         info->app_length = length - info->app_offset;
+        info->transport_length = length - info->transport_offset;
         assert(info->app_length < 2000);
 
         return 1;
