@@ -226,11 +226,18 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
      * 2014-04-08: scan for Neel Mehta's "heartbleed" bug
      */
     if (name_equals(name, "heartbleed")) {
+        unsigned i;
+
         /* Change the hello message to including negotiating the use of 
          * the "heartbeat" extension */
         banner_ssl.hello = ssl_hello_heartbeat;
         banner_ssl.hello_length = ssl_hello_heartbeat_size;
         tcpcon->is_heartbleed = 1;
+
+        for (i=0; i<65535; i++) {
+            banner1->tcp_payloads[i] = &banner_ssl;
+        }
+
         return;
     }
 
