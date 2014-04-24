@@ -101,6 +101,8 @@ clean:
 regress: bin/masscan
 	bin/masscan --selftest
 
+test: regress
+
 install: bin/masscan
 	install $(INSTALL_DATA) bin/masscan $(DESTDIR)$(BINDIR)/masscan
 	
