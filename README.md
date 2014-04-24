@@ -140,7 +140,7 @@ local stack. For Linux, this would look like:
 
 On Mac OS X and BSD, it might look like this:
 
-	sudo ipfw add 1 deny tcp from any to any 60000 in
+	# sudo ipfw add 1 deny tcp from any to any 60000 in
 	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
 	
 Windows doesn't respond with RST packets, so neither of these techniques
