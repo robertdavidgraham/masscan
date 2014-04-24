@@ -9,8 +9,14 @@ asynchronous transmission. The major difference is that it's faster than these
 other scanners. In addition, it's more flexible, allowing arbitrary address
 ranges and port ranges.
 
+NOTE: masscan uses a **custom TCP/IP stack**. Anything other than simple port
+scans will cause conflict with the local TCP/IP stack. This means you need to
+either use the `-S` option to use a separate IP address, or configure your
+operating system to firewall the ports that masscan uses.
+
 This tool is free, but consider funding it here:
 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
+
 
 # Building
 
@@ -103,6 +109,47 @@ into the program:
 
 	# masscan -p80,8000-8100 10.0.0.0/8 --echo > xxx.conf
 	# masscan -c xxx.conf --rate 1000
+
+
+## Banner checking
+
+Masscan can do more than just detect whether ports are open. It can also
+complete the TCP connection and interaction with the application at that
+port in order to grab simple "banner" information.
+
+The problem with this is that masscan contains its own TCP/IP stack
+separate from the system you run it on. When the local system receives
+a SYN-ACK from the probed target, it responds with a RST packet that kills
+the connection before masscan can grab the banner.
+
+The easiest way to prevent this is to assign masscan a separate IP
+address. This would look like the following:
+
+	# masscan 10.0.0.0/8 -p80 --banners --source-ip 192.168.1.200
+
+The address you choose has to be on the local subnet and not otherwise
+be used by another system.
+
+In some cases, such as WiFi, this isn't possible. In those cases, you can
+firewall the port that masscan uses. This prevents the local TCP/IP stack
+from seeing the packet, but masscan still sees it since it bypasses the
+local stack. For Linux, this would look like:
+
+	# iptables -A INPUT -p tcp --dport 60000 -j DROP
+	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
+
+On Mac OS X and BSD, it might look like this:
+
+	sudo ipfw add 1 deny tcp from any to any 60000 in
+	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
+	
+Windows doesn't respond with RST packets, so neither of these techniques
+are necessary. However, masscan is still desigend to work best using its
+own IP address, so you should run that way when possible, even when its
+not strictly necessary.
+
+The same thing is needed for other checks, such as the `--heartbleed` check,
+which is just a form of banner checking.
 
 
 ## How to scan the entire Internet
