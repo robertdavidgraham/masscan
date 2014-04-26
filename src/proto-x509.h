@@ -18,14 +18,17 @@ struct CertDecode {
      * for the length/state, instead of a an array of objects containing
      * both. */
     struct {
-        unsigned short remainings[7];
-        unsigned char states[7];
+        unsigned short remainings[9];
+        unsigned char states[9];
         unsigned char depth;
     } stack;
     
     /** We catch some DER non-canonical encoding errors, but not all. Someday
      * we'll improve the parser to catch all of them */
     unsigned is_der_failure:1;
+
+    /** Number of certificates we've processed */
+    unsigned char count;
     
     /** ??? */
     time_t prev;

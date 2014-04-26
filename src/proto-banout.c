@@ -1,3 +1,16 @@
+/*
+    Banner Output
+
+    This module remembers "banners" from a connection. These are often
+    simple strings, like the FTP hello string. The can also be more
+    complex strings, parsed from binary protocols. They also may
+    contain bulk data, such as BASE64 encoded X.509 certificates from
+    SSL.
+
+    One complication is that since we can extract multiple types of 
+    information from the same connection, we can have more than one
+    banner for the same connection.
+*/
 #include "proto-banner1.h"
 #include <stddef.h>
 #include <string.h>
@@ -49,6 +62,69 @@ banout_string(const struct BannerOutput *banout, unsigned proto)
         return banout->banner;
     else
         return NULL;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+banout_is_equal(const struct BannerOutput *banout, unsigned proto,
+                const char *string)
+{
+    const unsigned char *string2;
+    size_t string_length;
+    size_t string2_length;
+
+    /*
+     * Grab the string
+     */
+    string2 = banout_string(banout, proto);
+    if (string2 == NULL)
+        return string == NULL;
+
+    if (string == NULL)
+        return 0;
+    
+    string_length = strlen(string);
+    string2_length = banout_string_length(banout, proto);
+
+    if (string_length != string2_length)
+        return 0;
+    
+    return memcmp(string, string2, string2_length) == 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+banout_is_contains(const struct BannerOutput *banout, unsigned proto,
+                const char *string)
+{
+    const unsigned char *string2;
+    size_t string_length;
+    size_t string2_length;
+    size_t i;
+
+    /*
+     * Grab the string
+     */
+    string2 = banout_string(banout, proto);
+    if (string2 == NULL)
+        return string == NULL;
+
+    if (string == NULL)
+        return 0;
+    
+    string_length = strlen(string);
+    string2_length = banout_string_length(banout, proto);
+
+    if (string_length > string2_length)
+        return 0;
+    
+    for (i=0; i<string2_length-string_length; i++) {
+        if (memcmp(string, string2+i, string_length) == 0)
+            return 1;
+    }
+    return 0;
 }
 
 /***************************************************************************

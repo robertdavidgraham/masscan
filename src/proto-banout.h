@@ -105,6 +105,19 @@ banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
                        struct BannerBase64 *base64);
 
 /**
+ * Compares a banner string to a fixed string. This is primarily used
+ * in the "self-test" feature in order to compare parsed banners from
+ * expected banners.
+ */
+unsigned
+banout_is_equal(const struct BannerOutput *banout, unsigned proto,
+                const char *string);
+
+unsigned
+banout_is_contains(const struct BannerOutput *banout, unsigned proto,
+                const char *string);
+
+/**
  * Do the typical unit/regression test, for this module.
  */
 int

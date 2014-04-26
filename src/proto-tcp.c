@@ -387,18 +387,32 @@ tcb_hash(   unsigned ip_me, unsigned port_me,
     return index;
 }
 
+enum DestroyReason {
+    Reason_Timeout = 1,
+    Reason_FIN = 2,
+    Reason_RST = 3,
+    Reason_Foo = 4,
+    Reason_Shutdown = 5,
+    Reason_StateDone = 6,
+
+};
+
 /***************************************************************************
  * Destroy a TCP connection entry. We have to unlink both from the
  * TCB-table as well as the timeout-table.
+ * Called from 
  ***************************************************************************/
 static void
 tcpcon_destroy_tcb(
     struct TCP_ConnectionTable *tcpcon,
-    struct TCP_Control_Block *tcb)
+    struct TCP_Control_Block *tcb,
+    enum DestroyReason reason)
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
     struct BannerOutput *banout;
+
+printf("." "tcb age = %u-sec, reason=%u                                   \n", time(0) - tcb->when_created, reason);
 
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
@@ -490,7 +504,7 @@ tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon)
      */
     for (i=0; i<=tcpcon->mask; i++) {
         while (tcpcon->entries[i])
-            tcpcon_destroy_tcb(tcpcon, tcpcon->entries[i]);
+            tcpcon_destroy_tcb(tcpcon, tcpcon->entries[i], Reason_Shutdown);
     }
 
     /*
@@ -786,7 +800,12 @@ parse_banner(
                                     &tcb->banout,
                                     more);
 
-    return tcb->banner1_state.state;
+    if (tcb->banner1_state.state == STATE_DONE)
+        return STATE_DONE;
+    else if (tcb->banner1_state.is_done)
+        return STATE_DONE;
+    else
+        return 0;
 }
 
 
@@ -905,7 +924,10 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             LOGip(8, tcb->ip_them, tcb->port_them,
                 "%s                \n",
                 "CONNECTION TIMEOUT---");
-            tcpcon_destroy_tcb(tcpcon, tcb);
+            tcpcon_send_packet(tcpcon, tcb,
+                0x04,
+                0, 0, 0);
+            tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
             return;
         }
     }
@@ -1032,8 +1054,12 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             }
             
 
-            /* extract a banner if we can */
-            //printf("[0x%08x] 0x%02x bytes\n", seqno_them, payload_length);
+            /* [--banners]
+             * This is an important part of the system, where the TCP
+             * stack passes incoming packet payloads off to the application
+             * layer protocol parsers. This is where, in Sockets API, you
+             * might call the 'recv()' function.
+             */
             err = parse_banner(
                         tcpcon,
                         tcb,
@@ -1060,7 +1086,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     0x11,
                     0, 0, 0);
                 tcb->seqno_me++;
-                tcpcon_destroy_tcb(tcpcon, tcb);
+                tcpcon_destroy_tcb(tcpcon, tcb, Reason_StateDone);
             }
         }
         break;
@@ -1070,7 +1096,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         tcpcon_send_packet(tcpcon, tcb,
                     0x11, /*reset */
                     0, 0, 0);
-        tcpcon_destroy_tcb(tcpcon, tcb);
+        tcpcon_destroy_tcb(tcpcon, tcb, Reason_FIN);
         break;
 
    case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_SYNACK:
@@ -1148,17 +1174,20 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             0, 0, 0);
         tcb->seqno_me++;
         break;
+    
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:
-        tcpcon_send_packet(tcpcon, tcb,
-            0x04,
-            0, 0, 0);
-        tcpcon_destroy_tcb(tcpcon, tcb);
+        if (tcb->when_created + tcpcon->timeout < secs) {
+            tcpcon_send_packet(tcpcon, tcb,
+                0x04,
+                0, 0, 0);
+            tcpcon_destroy_tcb(tcpcon, tcb, Reason_Foo);
+        }
         break;
 
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_RST:
     case STATE_READY_TO_SEND<<8 | TCP_WHAT_RST:
     case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_RST:
-        tcpcon_destroy_tcb(tcpcon, tcb);
+        tcpcon_destroy_tcb(tcpcon, tcb, Reason_RST);
         break;
 
     default:

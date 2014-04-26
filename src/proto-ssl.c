@@ -362,8 +362,12 @@ parse_server_cert(
             banout_append(  banout, PROTO_X509_CERT, "cert:", 5);
         }
 
-        memset(&data->x509, 0, sizeof(data->x509));
-        x509_decode_init(&data->x509, cert_remaining);
+        {
+            unsigned count = data->x509.count;
+            memset(&data->x509, 0, sizeof(data->x509));
+            x509_decode_init(&data->x509, cert_remaining);
+            data->x509.count = (unsigned char)count + 1;
+        }
         DROPDOWN(i,length,state);
 
     case CERT:
@@ -383,7 +387,6 @@ parse_server_cert(
             }
 
             x509_decode(&data->x509, px+i, len, banout);
-            //assert(((size_t)banout->next>>32) == 0);
 
 
             remaining -= len;
@@ -400,6 +403,10 @@ parse_server_cert(
                     banout_end(banout, PROTO_X509_CERT);
                 }
                 state = CLEN0;
+                if (remaining == 0) {
+                    if (!banner1->is_capture_heartbleed)
+                        pstate->is_done = 1;
+                }
             }
         }
         break;
@@ -981,6 +988,10 @@ extern unsigned char ssl_test_case_1[];
 extern size_t ssl_test_case_1_size;
 extern unsigned char ssl_test_case_3[];
 extern size_t ssl_test_case_3_size;
+extern unsigned char google_cert[];
+extern size_t google_cert_size;
+extern unsigned char yahoo_cert[];
+extern size_t yahoo_cert_size;
 
 
 /*****************************************************************************
@@ -994,6 +1005,61 @@ ssl_selftest(void)
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];
     struct InteractiveData more;
+    unsigned x;
+
+    /*
+     * Yahoo cert
+     */
+    {
+        struct CertDecode state[1];
+
+        memset(state, 0, sizeof(state));
+        x509_decode_init(state, yahoo_cert_size);
+
+        banner1 = banner1_create();
+        banner1->is_capture_cert = 1;
+        banout_init(banout1);
+        x509_decode(state, 
+                    yahoo_cert,
+                    yahoo_cert_size,
+                    banout1);
+        x = banout_is_contains(banout1, PROTO_SSL3,
+                            ", fr.yahoo.com, ");
+        if (!x) {
+            printf("x.509 parser failure: google.com\n");
+            return 1;
+        }
+        banner1_destroy(banner1);
+        banout_release(banout1);
+    }
+
+
+    /*
+     * Google cert
+     */
+    {
+        struct CertDecode state[1];
+
+        memset(state, 0, sizeof(state));
+        x509_decode_init(state, google_cert_size);
+
+        banner1 = banner1_create();
+        banner1->is_capture_cert = 1;
+        banout_init(banout1);
+        x509_decode(state, 
+                    google_cert,
+                    google_cert_size,
+                    banout1);
+        x = banout_is_equal(banout1, PROTO_SSL3,
+                            ", www.google.com, www.google.com");
+        if (!x) {
+            printf("x.509 parser failure: google.com\n");
+            return 1;
+        }
+        banner1_destroy(banner1);
+        banout_release(banout1);
+    }
+
 
     /*
      * Do the normal parse

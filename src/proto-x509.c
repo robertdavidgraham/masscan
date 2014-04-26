@@ -41,6 +41,49 @@
         We explicitly deal with the opposite issue, allowing zeroes to be
         inserted. We should probably chainge that, and detect it as a DER
         error.
+
+    CERTIFICATE FORMAT
+
+    Certificate  ::=  SEQUENCE  {
+        tbsCertificate       TBSCertificate,
+        signatureAlgorithm   AlgorithmIdentifier,
+        signatureValue       BIT STRING  }
+TBSCertificate  ::=  SEQUENCE  {
+        version         [0]  EXPLICIT Version DEFAULT v1,
+        serialNumber         CertificateSerialNumber,
+        signature            AlgorithmIdentifier,
+        issuer               Name,
+        validity             Validity,
+        subject              Name,
+        subjectPublicKeyInfo SubjectPublicKeyInfo,
+        issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        subjectUniqueID [2]  IMPLICIT UniqueIdentifier OPTIONAL,
+                             -- If present, version MUST be v2 or v3
+        extensions      [3]  EXPLICIT Extensions OPTIONAL
+                             -- If present, version MUST be v3
+        }
+   Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
+   CertificateSerialNumber  ::=  INTEGER
+   Validity ::= SEQUENCE {
+        notBefore      Time,
+        notAfter       Time }
+   Time ::= CHOICE {
+        utcTime        UTCTime,
+        generalTime    GeneralizedTime }
+   UniqueIdentifier  ::=  BIT STRING
+   SubjectPublicKeyInfo  ::=  SEQUENCE  {
+        algorithm            AlgorithmIdentifier,
+        subjectPublicKey     BIT STRING  }
+   Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
+   Extension  ::=  SEQUENCE  {
+        extnID      OBJECT IDENTIFIER,
+        critical    BOOLEAN DEFAULT FALSE,
+        extnValue   OCTET STRING
+                    -- contains the DER encoding of an ASN.1 value
+                    -- corresponding to the extension type identified
+                    -- by extnID
+        }
  */
 #include "proto-x509.h"
 #include "proto-banout.h"
@@ -298,7 +341,8 @@ ASN1_push(struct CertDecode *x, unsigned next_state, uint64_t remaining)
      */
     if (x->stack.depth) {
         if (remaining > x->stack.remainings[0]) {
-            fprintf(stderr, "ASN.1 inner object bigger than container\n");
+            fprintf(stderr, "ASN.1 inner object bigger than container [%u, %u]\n",
+                next_state, x->stack.states[0]);
             x->state = 0xFFFFFFFF;
             return;
         }
@@ -349,6 +393,38 @@ ASN1_pop(struct CertDecode *x)
 
 
 /****************************************************************************
+ * Called to skip the remainder of the ASN.1 field
+ * @return
+ *      1 if we've reached the end of the field
+ *      0 otherwise
+ ****************************************************************************/
+static unsigned
+ASN1_skip(struct CertDecode *x, unsigned *i, size_t length)
+{
+    unsigned len;
+
+    if (x->stack.remainings[0] == 0)
+        return 1;
+    
+    /* bytes remaining in packet */
+    len = (unsigned)(length - (*i) - 1);
+
+    /* bytes remaining in field */
+    if (len > x->stack.remainings[0])
+        len = x->stack.remainings[0];
+
+    /* increment 'offset' by this length */
+    (*i) += len;
+
+    /* decrement 'remaining' by this length */
+    x->stack.remainings[0] = (unsigned short)(x->stack.remainings[0] - len);
+
+    return x->stack.remainings[0] == 0;
+    
+}
+
+
+/****************************************************************************
  * The X.509 ASN.1 parser is done with a state-machine, where each byte of
  * the certificate has a corresponding state value. This massive enum
  * is for all those states.
@@ -379,11 +455,14 @@ enum X509state {
     SUBJECTID_TAG,  SUBJECTID_LEN,  SUBJECTID_LENLEN,   SUBJECTID_CONTENTS0, SUBJECTID_CONTENTS1,
     SUBJECTNAME_TAG,SUBJECTNAME_LEN,SUBJECTNAME_LENLEN, SUBJECTNAME_CONTENTS,
     PUBKEY0_TAG,    PUBKEY0_LEN,    PUBKEY0_LENLEN,     PUBKEY0_CONTENTS,
-    EXT0_TAG, EXT0_LEN, EXT0_LENLEN,
-    EXT1_TAG, EXT1_LEN, EXT1_LENLEN,
-    EXT2_TAG, EXT2_LEN, EXT2_LENLEN,
-    EXTID_TAG, EXTID_LEN, EXTID_LENLEN, EXTID_CONTENTS0, EXTID_CONTENTS1,
-    EXT_TAG, EXT_LEN, EXT_LENLEN, EXT_CONTENTS,
+    EXTENSIONS_A_TAG, EXTENSIONS_A_LEN, EXTENSIONS_A_LENLEN,
+    EXTENSIONS_S_TAG, EXTENSIONS_S_LEN, EXTENSIONS_S_LENLEN,
+    EXTENSION_TAG,    EXTENSION_LEN,    EXTENSION_LENLEN,
+    EXTENSION_ID_TAG, EXTENSION_ID_LEN, EXTENSION_ID_LENLEN, EXTENSION_ID_CONTENTS0, EXTENSION_ID_CONTENTS1,
+    EXTVALUE_TAG,   EXTVALUE_LEN,   EXTVALUE_LENLEN, 
+    EXTVALUE2_TAG,  EXTVALUE2_LEN,  EXTVALUE2_LENLEN, 
+    EXTVALUE3_TAG,  EXTVALUE3_LEN,  EXTVALUE3_LENLEN, 
+        EXT_DNSNAME_TAG, EXT_DNSNAME_LEN, EXT_DNSNAME_LENLEN, EXT_DNSNAME_CONTENTS,
     ALGOID0_TAG,    ALGOID0_LEN,    ALGOID0_LENLEN,
     ALGOID1_TAG,    ALGOID1_LEN,    ALGOID1_LENLEN,     ALGOID1_CONTENTS0, ALGOID1_CONTENTS1,
     ENC_TAG,        ENC_LEN,        ENC_LENLEN,         ENC_CONTENTS,
@@ -422,8 +501,12 @@ kludge_next(unsigned state)
         return SUBJECT1_TAG;
     case ISSUERID_LEN:
         return ISSUERNAME_TAG;
-    case EXTID_LEN:
-        return EXT_TAG;
+    case EXTENSION_LEN:
+        return EXTENSION_TAG;
+    case EXTENSION_ID_LEN:
+        return EXTVALUE_TAG;
+    case EXT_DNSNAME_LEN:
+        return EXTVALUE3_TAG;
     case SUBJECTID_LEN:
         return SUBJECTNAME_TAG;
     case VALIDITY_LEN:
@@ -431,7 +514,7 @@ kludge_next(unsigned state)
     case VNBEFORE_LEN:
         return VNAFTER_TAG;
     case PUBKEY0_LEN:
-        return EXT0_TAG;
+        return EXTENSIONS_A_TAG;
     default:
         return PADDING;
     }
@@ -541,7 +624,7 @@ x509_decode(struct CertDecode *x,
         case SIG1_TAG:
         case ISSUERID_TAG:
         case SUBJECTID_TAG:
-        case EXTID_TAG:
+        case EXTENSION_ID_TAG:
         case ALGOID1_TAG:
             if (px[i] != 0x06) {
                 state = ERROR;
@@ -564,7 +647,7 @@ x509_decode(struct CertDecode *x,
             //    printf("\n");
             break;
         case SUBJECTNAME_CONTENTS:
-        case EXT_CONTENTS:
+        case EXT_DNSNAME_CONTENTS:
             //printf("%c", px[i]);
             if (x->subject.type == Subject_Common)
                 banout_append(banout, PROTO_SSL3, px+i, 1);
@@ -579,27 +662,28 @@ x509_decode(struct CertDecode *x,
             break;
         case ISSUERID_CONTENTS0:
         case SUBJECTID_CONTENTS0:
-        case EXTID_CONTENTS0:
+        case EXTENSION_ID_CONTENTS0:
         case ALGOID1_CONTENTS0:
         case SIG1_CONTENTS0:
             memset(&x->u.oid, 0, sizeof(x->u.oid));
             state++;
         case ISSUERID_CONTENTS1:
         case SUBJECTID_CONTENTS1:
-        case EXTID_CONTENTS1:
+        case EXTENSION_ID_CONTENTS1:
         case ALGOID1_CONTENTS1:
         case SIG1_CONTENTS1:
             {
                 size_t id;
                 unsigned offset = i;
                 unsigned oid_state = x->u.oid.state;
+                
 
                 /* First, look it up */
                 id = smack_search_next( global_mib,
                                         &oid_state,
                                         px,
                                         &offset,
-                                        offset+1);
+                                        offset + 1);
                 x->u.oid.state = (unsigned short)oid_state;
 
                 /* Do the multibyte numbers */
@@ -621,11 +705,19 @@ x509_decode(struct CertDecode *x,
                         //printf("%s [%u]\n", mib[x->u.oid.last_id].name, mib[x->u.oid.last_id].id);
                         x->subject.type = mib[id].id;
                         if (x->subject.type == Subject_Common 
-                                            && state == SUBJECTID_CONTENTS1)
-                            banout_append(banout, PROTO_SSL3, ", ", 2);
+                                            && state == SUBJECTID_CONTENTS1) {
+                            if (x->count <= 1) {
+                                /* only handle first certificate in the chain */
+                                banout_append(banout, PROTO_SSL3, ", ", 2);
+                            } else {
+                                x->subject.type = 0;
+                            }
+
+                            
+                        }
                         if (x->subject.type == Subject_Common 
-                                            && state == EXTID_CONTENTS1)
-                            banout_append(banout, PROTO_SSL3, ", ", 2);
+                                            && state == EXTENSION_ID_CONTENTS1)
+                            ; //banout_append(banout, PROTO_SSL3, ", ", 2);
                         x->u.oid.last_id = (unsigned char)id;
                     }
                     x->u.oid.num = 0;
@@ -657,8 +749,9 @@ x509_decode(struct CertDecode *x,
         case SUBJECT2_TAG:
         case VALIDITY_TAG:
         case PUBKEY0_TAG:
-        case EXT1_TAG:
-        case EXT2_TAG:
+        case EXTENSIONS_S_TAG:
+        case EXTENSION_TAG:
+        case EXTVALUE2_TAG:
         case ALGOID0_TAG:
             if (px[i] != 0x30) {
                 state = ERROR;
@@ -666,7 +759,7 @@ x509_decode(struct CertDecode *x,
             }
             state++;
             break;
-        case EXT0_TAG:
+        case EXTENSIONS_A_TAG:
             if (px[i] != 0xa3) {
                 state = ERROR;
                 continue;
@@ -674,9 +767,46 @@ x509_decode(struct CertDecode *x,
             state++;
             break;
 
-        case EXT_TAG:
+        /*
+        GeneralName ::= CHOICE {
+            otherName                       [0]     OtherName,
+            rfc822Name                      [1]     IA5String,
+            dNSName                         [2]     IA5String,
+            x400Address                     [3]     ORAddress,
+            directoryName                   [4]     Name,
+            ediPartyName                    [5]     EDIPartyName,
+            uniformResourceIdentifier       [6]     IA5String,
+            iPAddress                       [7]     OCTET STRING,
+            registeredID                    [8]     OBJECT IDENTIFIER }
+        */
+      
+        case EXTVALUE3_TAG:
+            if (x->subject.type == Subject_Common) {
+                switch (px[i]) {
+                case 0x82: /* dNSName */
+                    banout_append(banout, PROTO_SSL3, ", ", 2);
+                    state = EXT_DNSNAME_LEN;
+                    break;
+                default:
+                    state = PADDING;
+                    break;
+                }
+            } else {
+                state = PADDING;
+            }
+            break;
+
+        case EXTVALUE_TAG:
             /* can be anything */
-            state++;
+            switch (px[i]) {
+            default:
+            case 2:
+                state = PADDING;
+                break;
+            case 4:
+                state++;
+                break;
+            }
             break;
 
 
@@ -700,11 +830,14 @@ x509_decode(struct CertDecode *x,
         case SUBJECT2_LEN:
         case SUBJECTID_LEN:
         case SUBJECTNAME_LEN:
-        case EXT0_LEN:
-        case EXT1_LEN:
-        case EXT2_LEN:
-        case EXTID_LEN:
-        case EXT_LEN:
+        case EXTENSIONS_A_LEN:
+        case EXTENSIONS_S_LEN:
+        case EXTENSION_LEN:
+        case EXTENSION_ID_LEN:
+        case EXTVALUE_LEN:
+        case EXTVALUE2_LEN:
+        case EXTVALUE3_LEN:
+        case EXT_DNSNAME_LEN:
         case PUBKEY0_LEN:
         case ALGOID0_LEN:
         case ALGOID1_LEN:
@@ -751,11 +884,14 @@ x509_decode(struct CertDecode *x,
         case SUBJECTID_LENLEN:
         case SUBJECTNAME_LENLEN:
         case PUBKEY0_LENLEN:
-        case EXT0_LENLEN:
-        case EXT1_LENLEN:
-        case EXT2_LENLEN:
-        case EXTID_LENLEN:
-        case EXT_LENLEN:
+        case EXTENSIONS_A_LENLEN:
+        case EXTENSIONS_S_LENLEN:
+        case EXTENSION_LENLEN:
+        case EXTENSION_ID_LENLEN:
+        case EXTVALUE_LENLEN:
+        case EXTVALUE2_LENLEN:
+        case EXTVALUE3_LENLEN:
+        case EXT_DNSNAME_LENLEN:
         case ALGOID0_LENLEN:
         case ALGOID1_LENLEN:
         case ENC_LENLEN:
@@ -894,30 +1030,12 @@ x509_decode(struct CertDecode *x,
 
         case PUBKEY0_CONTENTS:
         case ENC_CONTENTS:
-            if (x->stack.remainings[0]) {
-                unsigned len = (unsigned)(length-i);
-
-                if (len > x->stack.remainings[0])
-                    len = x->stack.remainings[0];
-
-                i += len;
-                x->stack.remainings[0] 
-                            = (unsigned short)(x->stack.remainings[0] - len);
-            }
+            ASN1_skip(x, &i, length);
             break;
 
         case ERROR:
         default:
-            if (x->stack.remainings[0]) {
-                unsigned len = (unsigned)(length-i);
-
-                if (len > x->stack.remainings[0])
-                    len = x->stack.remainings[0];
-
-                i += len;
-                x->stack.remainings[0] 
-                            = (unsigned short)(x->stack.remainings[0] - len);
-            }
+            ASN1_skip(x, &i, length);
             break;
         }
     }

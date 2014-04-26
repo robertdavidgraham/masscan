@@ -77,6 +77,7 @@ struct ProtocolState {
     unsigned short port;
     unsigned short app_proto;
     unsigned is_sent_sslhello:1;
+    unsigned is_done:1;
     struct BannerBase64 base64;
 
     union {
