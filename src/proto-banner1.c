@@ -186,7 +186,10 @@ banner1_create(void)
     b->tcp_payloads[443] = (void*)&banner_ssl;   /* HTTP/s */
     b->tcp_payloads[465] = (void*)&banner_ssl;   /* SMTP/s */
     b->tcp_payloads[990] = (void*)&banner_ssl;   /* FTP/s */
+    b->tcp_payloads[991] = (void*)&banner_ssl;  
+    b->tcp_payloads[992] = (void*)&banner_ssl;   /* Telnet/s */
     b->tcp_payloads[993] = (void*)&banner_ssl;   /* IMAP4/s */
+    b->tcp_payloads[994] = (void*)&banner_ssl;  
     b->tcp_payloads[995] = (void*)&banner_ssl;   /* POP3/s */
     b->tcp_payloads[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
     b->tcp_payloads[2087] = (void*)&banner_ssl;  /* WHM - SSL */
