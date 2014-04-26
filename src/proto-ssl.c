@@ -404,7 +404,7 @@ parse_server_cert(
                 }
                 state = CLEN0;
                 if (remaining == 0) {
-                    if (!banner1->is_capture_heartbleed)
+                    if (!banner1->is_heartbleed)
                         pstate->is_done = 1;
                 }
             }

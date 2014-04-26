@@ -233,6 +233,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         banner_ssl.hello = ssl_hello_heartbeat;
         banner_ssl.hello_length = ssl_hello_heartbeat_size;
         tcpcon->is_heartbleed = 1;
+        tcpcon->banner1->is_heartbleed = 1;
 
         for (i=0; i<65535; i++) {
             banner1->tcp_payloads[i] = &banner_ssl;
