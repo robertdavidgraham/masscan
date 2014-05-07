@@ -6,6 +6,8 @@
 #include "proto-banout.h"
 #include "proto-x509.h"
 
+struct InteractiveData;
+
 struct Banner1
 {
     struct SMACK *smack;
@@ -14,11 +16,13 @@ struct Banner1
 
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
+    unsigned is_capture_heartbleed:1;
+    unsigned is_heartbleed:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];
 };
 
-struct BanBase64
+struct BannerBase64
 {
     unsigned state:2;
     unsigned temp:24;
@@ -29,6 +33,8 @@ struct SSL_SERVER_HELLO {
     unsigned remaining;
     unsigned timestamp;
     unsigned short cipher_suite;
+    unsigned short ext_tag;
+    unsigned short ext_remaining;
     unsigned char compression_method;
     unsigned char version_major;
     unsigned char version_minor;
@@ -38,13 +44,12 @@ struct SSL_SERVER_CERT {
     unsigned remaining;
     struct {
         unsigned remaining;
-        struct BanBase64 base64;
     } sub;
     struct CertDecode x509;
 };
 
 struct SSLRECORD {
-    unsigned char content_type;
+    unsigned char type;
     unsigned char version_major;
     unsigned char version_minor;
 
@@ -52,7 +57,7 @@ struct SSLRECORD {
         unsigned state;
         unsigned char type;
         unsigned remaining;
-    } record;
+    } handshake;
 
     union {
         struct {
@@ -73,9 +78,16 @@ struct ProtocolState {
     unsigned short port;
     unsigned short app_proto;
     unsigned is_sent_sslhello:1;
+    unsigned is_done:1;
+    struct BannerBase64 base64;
+
     union {
         struct SSLRECORD ssl;
     } sub;
+};
+
+enum {
+    CTRL_SMALL_WINDOW = 1,
 };
 
 /**
@@ -87,6 +99,7 @@ struct ProtocolParserStream {
     unsigned port;
     const void *hello;
     size_t hello_length;
+    unsigned ctrl_flags;
     int (*selftest)(void);
     void *(*init)(struct Banner1 *b);
     void (*parse)(
@@ -94,7 +107,8 @@ struct ProtocolParserStream {
         void *banner1_private,
         struct ProtocolState *stream_state,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout);
+        struct BannerOutput *banout,
+        struct InteractiveData *more);
 };
 
 
@@ -116,7 +130,8 @@ banner1_parse(
         const struct Banner1 *banner1,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout);
+        struct BannerOutput *banout,
+        struct InteractiveData *more);
 
 
 

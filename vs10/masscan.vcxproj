@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\crypto-base64.c" />
+    <ClCompile Include="..\src\crypto-blackrock2.c" />
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
@@ -118,6 +119,7 @@
     <ClInclude Include="..\src\proto-dns.h" />
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
+    <ClInclude Include="..\src\proto-interactive.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />

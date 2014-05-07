@@ -240,6 +240,9 @@
     <ClCompile Include="..\src\main-readrange.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\crypto-blackrock2.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -415,6 +418,9 @@
     </ClInclude>
     <ClInclude Include="..\src\main-readrange.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-interactive.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

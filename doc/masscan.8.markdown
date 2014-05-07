@@ -254,6 +254,13 @@ one port.
   * `--hello-string[<port>] <base64>`: same as `--hello-file` except that the
     contents of the BASE64 encoded string are decoded, then used as the hello
     string that greets the server.
+
+  * `--capture <type>` or `--nocapture <type>`: when doing banners (`--banner`), this
+    determines what to capture from the banners. By default, only the TITLE field from
+	HTML documents is captured, to get the entire document, use `--capture html`.
+	By default, the entire certificate from SSL is captured, to disable this, use
+	`--nocapture cert`. Currently, only the values `html` and `cert` are currently
+	supported for this option, but many more will be added in the future.
     
 
 ## CONFIGURATION FILE FORMAT

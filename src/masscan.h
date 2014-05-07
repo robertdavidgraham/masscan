@@ -30,6 +30,7 @@ enum Operation {
     Operation_ListScan = 5,         /* -sL */
     Operation_ReadScan = 6,         /* --readscan <binary-output> */
     Operation_ReadRange = 7,        /* --readrange */
+    Operation_Benchmark = 8,        /* --benchmark */
 };
 
 /**
@@ -160,9 +161,11 @@ struct Masscan
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
+    unsigned is_capture_heartbleed:1; /* --capture heartbleed */
     unsigned is_test_csv:1;     /* (temporary testing feature) */
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
+    unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds
@@ -344,6 +347,12 @@ struct Masscan
      * --min-packet
      */
     unsigned min_packet_size;
+
+    /**
+     * Number of rounds for randomization
+     * --blackrock-rounds
+     */
+    unsigned blackrock_rounds;
     
     /**
      * --script <name>

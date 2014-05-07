@@ -132,5 +132,7 @@ smack_search_end(       struct SMACK *  smack,
 int
 smack_selftest(void);
 
+int
+smack_benchmark(void);
 
 #endif /*_SMACK_H*/

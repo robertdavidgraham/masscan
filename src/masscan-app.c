@@ -28,6 +28,8 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_HTML_TITLE: return "title";
     case PROTO_HTML_FULL: return "html";
     case PROTO_NTP:     return "ntp";
+    case PROTO_VULN:    return "vuln";
+    case PROTO_HEARTBLEED:    return "heartbleed";
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;

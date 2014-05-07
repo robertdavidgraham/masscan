@@ -2,6 +2,7 @@ PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
 SYS := $(shell gcc -dumpmachine)
 GITVER := $(shell git describe --tags)
+INSTALL_DATA := -pDm755
 
 ifeq ($(GITVER),)
 GITVER = "unknown"
@@ -25,6 +26,7 @@ ifneq (, $(findstring darwin, $(SYS)))
 LIBS = -lpcap -lm -rdynamic
 INCLUDES = -I.
 FLAGS2 = 
+INSTALL_DATA = -pm755
 endif
 
 # MinGW on Windows
@@ -99,7 +101,9 @@ clean:
 regress: bin/masscan
 	bin/masscan --selftest
 
+test: regress
+
 install: bin/masscan
-	install -pDm755 bin/masscan $(DESTDIR)$(BINDIR)/masscan
+	install $(INSTALL_DATA) bin/masscan $(DESTDIR)$(BINDIR)/masscan
 	
 default: bin/masscan

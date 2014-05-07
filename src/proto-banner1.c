@@ -4,6 +4,7 @@
 #include "smack.h"
 #include "rawsock-pcapfile.h"
 #include "proto-preprocess.h"
+#include "proto-interactive.h"
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
@@ -45,7 +46,8 @@ banner1_parse(
         const struct Banner1 *banner1,
         struct ProtocolState *tcb_state,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     size_t x;
     unsigned offset = 0;
@@ -90,13 +92,15 @@ banner1_parse(
                                 banner1,
                                 tcb_state,
                                 s, s_len,
-                                banout);
+                                banout,
+                                more);
             }
             banner1_parse(
                             banner1,
                             tcb_state,
                             px, length,
-                            banout);
+                            banout,
+                            more);
         } else {
             banout_append(banout, PROTO_HEUR, px, length);
         }
@@ -115,7 +119,8 @@ banner1_parse(
                             banner1->http_fields,
                             tcb_state,
                             px, length,
-                            banout);
+                            banout,
+                            more);
         break;
     case PROTO_HTTP:
         banner_http.parse(
@@ -123,7 +128,8 @@ banner1_parse(
                         banner1->http_fields,
                         tcb_state,
                         px, length,
-                        banout);
+                        banout,
+                        more);
         break;
     case PROTO_SSL3:
         banner_ssl.parse(
@@ -131,7 +137,8 @@ banner1_parse(
                         banner1->http_fields,
                         tcb_state,
                         px, length,
-                        banout);
+                        banout,
+                        more);
         break;
     default:
         fprintf(stderr, "banner1: internal error\n");
@@ -179,7 +186,10 @@ banner1_create(void)
     b->tcp_payloads[443] = (void*)&banner_ssl;   /* HTTP/s */
     b->tcp_payloads[465] = (void*)&banner_ssl;   /* SMTP/s */
     b->tcp_payloads[990] = (void*)&banner_ssl;   /* FTP/s */
+    b->tcp_payloads[991] = (void*)&banner_ssl;  
+    b->tcp_payloads[992] = (void*)&banner_ssl;   /* Telnet/s */
     b->tcp_payloads[993] = (void*)&banner_ssl;   /* IMAP4/s */
+    b->tcp_payloads[994] = (void*)&banner_ssl;  
     b->tcp_payloads[995] = (void*)&banner_ssl;   /* POP3/s */
     b->tcp_payloads[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
     b->tcp_payloads[2087] = (void*)&banner_ssl;  /* WHM - SSL */
@@ -301,12 +311,18 @@ banner1_selftest()
 
     memset(tcb_state, 0, sizeof(tcb_state[0]));
 
-    for (i=0; i<length; i++)
+    for (i=0; i<length; i++) {
+        struct InteractiveData more = {0,0};
+
         banner1_parse(
                     b,
                     tcb_state,
                     px+i, 1,
-                    banout);
+                    banout,
+                    &more);
+    }
+
+
     {
         const unsigned char *s = banout_string(banout, PROTO_HTTP);
         if (memcmp(s, "HTTP/1.0 302", 11) != 0) {
@@ -328,7 +344,8 @@ banner1_selftest()
                     b,
                     tcb_state,
                     px, length,
-                    banout);
+                    banout,
+                    0);
     banner1_destroy(b);
     /*if (memcmp(banner, "Via:HTTP/1.1", 11) != 0) {
         printf("banner1: test failed\n");

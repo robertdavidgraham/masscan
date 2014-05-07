@@ -359,6 +359,52 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
 
 /***************************************************************************
  ***************************************************************************/
+void
+tcp_set_window(unsigned char *px, size_t px_length, unsigned window)
+{
+    struct PreprocessedInfo parsed;
+    unsigned x;
+    size_t offset;
+    unsigned xsum;
+
+    /* Parse the frame looking for hte TCP header */
+    x = preprocess_frame(px, (unsigned)px_length, 1 /*enet*/, &parsed);
+    if (!x || parsed.found == FOUND_NOTHING)
+        return;
+    if (parsed.ip_protocol != 6)
+        return;
+    offset = parsed.transport_offset;
+    if (offset + 20 > px_length)
+        return;
+
+
+    /* set the new window */
+#if 0
+    xsum = px[offset + 16] << 8 | px[offset + 17];
+    xsum = (~xsum)&0xFFFF;
+    xsum += window & 0xFFFF;
+    xsum -= px[offset + 14] << 8 | px[offset + 15];
+    xsum = ((xsum)&0xFFFF) + (xsum >> 16);
+    xsum = ((xsum)&0xFFFF) + (xsum >> 16);
+    xsum = ((xsum)&0xFFFF) + (xsum >> 16);
+    xsum = (~xsum)&0xFFFF;
+#endif
+
+    px[offset + 14] = (unsigned char)(window>>8);
+    px[offset + 15] = (unsigned char)(window>>0);
+    px[offset + 16] = (unsigned char)(0);
+    px[offset + 17] = (unsigned char)(0);
+
+
+    xsum = ~tcp_checksum2(px, parsed.ip_offset, parsed.transport_offset,
+                            parsed.transport_length);
+
+    px[offset + 16] = (unsigned char)(xsum>>8);
+    px[offset + 17] = (unsigned char)(xsum>>0);
+}
+
+/***************************************************************************
+ ***************************************************************************/
 size_t
 tcp_create_packet(
         struct TemplatePacket *tmpl,

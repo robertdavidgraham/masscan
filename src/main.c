@@ -307,7 +307,7 @@ infinite:
      * ports */
     range = rangelist_count(&masscan->targets)
             * rangelist_count(&masscan->ports);
-    blackrock_init(&blackrock, range, seed);
+    blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
      * to support --shard, so that multiple machines can co-operate on
@@ -611,12 +611,18 @@ receive_thread(void *v)
             );
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
-                masscan->is_capture_html);
+                masscan->is_capture_html,
+                masscan->is_capture_heartbleed);
         if (masscan->http_user_agent_length)
             tcpcon_set_parameter(   tcpcon,
                                     "http-user-agent",
                                     masscan->http_user_agent_length,
                                     masscan->http_user_agent);
+        if (masscan->is_heartbleed)
+            tcpcon_set_parameter(   tcpcon,
+                                    "heartbleed",
+                                    1,
+                                    "1");
         if (masscan->tcp_connection_timeout) {
             char foo[64];
             sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
@@ -1382,6 +1388,7 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
+    masscan->blackrock_rounds = 4;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
@@ -1521,12 +1528,21 @@ int main(int argc, char *argv[])
         }
         break;
 
+    case Operation_Benchmark:
+        printf("=== benchmarking (%u-bits) ===\n\n", (unsigned)sizeof(void*)*8);
+        blackrock_benchmark(masscan->blackrock_rounds);
+        blackrock2_benchmark(masscan->blackrock_rounds);
+        smack_benchmark();
+        exit(1);
+        break;
+
     case Operation_Selftest:
         /*
          * Do a regression test of all the significant units
          */
         {
             int x = 0;
+            x += smack_selftest();
             x += sctp_selftest();
             x += base64_selftest();
             x += banner1_selftest();
@@ -1542,7 +1558,6 @@ int main(int argc, char *argv[])
             x += ranges_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();
-            x += smack_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
 

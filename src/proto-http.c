@@ -219,7 +219,8 @@ http_parse(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -238,6 +239,7 @@ http_parse(
     };
 
     UNUSEDPARM(banner1_private);
+    UNUSEDPARM(more);
 
     state2 = (state>>16) & 0xFFFF;
     id = (state>>8) & 0xFF;
@@ -346,19 +348,31 @@ http_parse(
         }
         break;
     case CONTENT:
+        {
+            unsigned next = i;
+
             id = smack_search_next(
                                    banner1->html_fields,
                                    &state2,
-                                   px, &i, (unsigned)length);
-            i--;
+                                   px, &next, (unsigned)length);
+
+            if (banner1->is_capture_html) {
+                banout_append(banout, PROTO_HTML_FULL, &px[i], next-i);
+            }
+
             if (id != SMACK_NOT_FOUND) {
-                //field_name(banout, id, html_fields);
-                //banout_append_char(banout, PROTO_HTML_TITLE, ':');
                 state = CONTENT_TAG;
             }
-            break;
+
+            i = next - 1;
+        }
+        break;
     case CONTENT_TAG:
         for (; i<length; i++) {
+            if (banner1->is_capture_html) {
+                banout_append_char(banout, PROTO_HTML_FULL, px[i]);
+            }
+
             if (px[i] == '>') {
                 state = CONTENT_FIELD;
                 break;
@@ -366,6 +380,9 @@ http_parse(
         }
         break;
     case CONTENT_FIELD:
+        if (banner1->is_capture_html) {
+            banout_append_char(banout, PROTO_HTML_FULL, px[i]);
+        }
         if (px[i] == '<')
             state = CONTENT;
         else {
@@ -405,7 +422,7 @@ http_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 struct ProtocolParserStream banner_http = {
-    "http", 80, http_hello, sizeof(http_hello)-1,
+    "http", 80, http_hello, sizeof(http_hello)-1, 0,
     http_selftest,
     http_init,
     http_parse,

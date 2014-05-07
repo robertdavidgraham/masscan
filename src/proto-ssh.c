@@ -12,13 +12,15 @@ ssh_parse(  const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     unsigned state = pstate->state;
     unsigned i;
 
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
+    UNUSEDPARM(more);
 
     for (i=0; i<length; i++)
     switch (state) {
@@ -59,7 +61,7 @@ ssh_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_ssh = {
-    "ssh", 22, 0, 0,
+    "ssh", 22, 0, 0, 0,
     ssh_selftest,
     ssh_init,
     ssh_parse,

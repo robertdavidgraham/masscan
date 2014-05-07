@@ -2,6 +2,10 @@
 #define PROTO_SSL_H
 #include "proto-banner1.h"
 
-extern const struct ProtocolParserStream banner_ssl;
+extern struct ProtocolParserStream banner_ssl;
+
+const char *ssl_hello_heartbeat;
+
+unsigned ssl_hello_heartbeat_size;
 
 #endif

@@ -48,7 +48,7 @@ masscan_usage(void)
     printf("masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
     printf(" scan some web ports on 10.x.x.x at 10kpps\n");
     printf("masscan --nmap\n");
-    printf(" list those options that are compatiable with nmap\n");
+    printf(" list those options that are compatible with nmap\n");
     printf("masscan -p80 10.0.0.0/8 --banners -oB <filename>\n");
     printf(" save results of scan in binary format to <filename>\n");
     printf("masscan --open --banners --readscan <filename> -oX <savefile>\n");
@@ -408,6 +408,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
 
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
+    fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
 
     /*
      *  TCP payloads
@@ -1015,6 +1016,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_cert = 1;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 1;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 1;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1024,6 +1027,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_cert = 0;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 0;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 0;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1106,7 +1111,10 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->is_banners = 1;
     } else if (EQUALS("nobanners", name) || EQUALS("nobanner", name)) {
         masscan->is_banners = 0;
-    } else if (EQUALS("connection-timeout", name)) {
+    } else if (EQUALS("blackrock-rounds", name)) {
+        masscan->blackrock_rounds = (unsigned)parseInt(value);
+    } else if (EQUALS("connection-timeout", name) || EQUALS("tcp-timeout", name)) {
+        /* The timeout for "banners" TCP connections */
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
@@ -1137,6 +1145,11 @@ masscan_set_parameter(struct Masscan *masscan,
         if (count2 - count1)
         fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
+    } else if (EQUALS("heartbleed", name)) {
+        masscan->is_heartbleed = 1;
+        masscan_set_parameter(masscan, "no-capture", "cert");
+        masscan_set_parameter(masscan, "no-capture", "heartbleed");
+        masscan_set_parameter(masscan, "banners", "true");
     } else if (EQUALS("hello-file", name)) {
         /* When connecting via TCP, send this file */
         FILE *fp;
@@ -1482,6 +1495,9 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("selftest", name) || EQUALS("self-test", name) || EQUALS("regress", name)) {
         masscan->op = Operation_Selftest;
         return;
+    } else if (EQUALS("benchmark", name)) {
+        masscan->op = Operation_Benchmark;
+        return;
     } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
         masscan_set_parameter(masscan, "adapter-port", value);
     } else if (EQUALS("shard", name) || EQUALS("shards", name)) {
@@ -1573,6 +1589,7 @@ is_singleton(const char *name)
 {
     static const char *singletons[] = {
         "echo", "selftest", "self-test", "regress",
+        "benchmark",
         "system-dns", "traceroute", "version",
         "version-light",
         "version-all", "version-trace",
@@ -1580,7 +1597,7 @@ is_singleton(const char *name)
         "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
         "log-errors", "append-output", "webxml", "no-stylesheet",
-        "no-stylesheet",
+        "no-stylesheet", "heartbleed",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
