@@ -410,6 +410,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_XML:
         out->funcs = &xml_output;
         break;
+    case Output_JSON:
+        out->funcs = &json_output;
+        break;
     case Output_Binary:
         out->funcs = &binary_output;
         break;
