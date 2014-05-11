@@ -1523,7 +1523,11 @@ int main(int argc, char *argv[])
             for (stop=start+1; stop<(unsigned)argc && argv[stop][0] != '-'; stop++)
                 ;
 
-            convert_binary_files(masscan, start, stop, argv);
+            /*
+             * read the binary files, and output them again depending upon
+             * the output parameters
+             */
+            read_binary_scanfile(masscan, start, stop, argv);
 
         }
         break;

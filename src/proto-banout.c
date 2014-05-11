@@ -55,7 +55,7 @@ banout_find_proto(struct BannerOutput *banout, unsigned proto)
 const unsigned char *
 banout_string(const struct BannerOutput *banout, unsigned proto)
 {
-    while (banout && banout->protocol != proto)
+    while (banout && (banout->protocol&0xFFFF) != proto)
         banout = banout->next;
 
     if (banout)
@@ -261,11 +261,15 @@ banout_append(struct BannerOutput *banout, unsigned proto,
         p = banout_expand(banout, p);
     }
 
+    
+    
     /*
      * Now that we are assured there is enough space, do the copy
      */
     memcpy(p->banner + p->length, px, length);
     p->length = (unsigned)(p->length + length);
+
+    
 }
 
 /*****************************************************************************

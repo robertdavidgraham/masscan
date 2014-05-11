@@ -52,6 +52,7 @@ enum OutputFormat {
     Output_Grepable     = 0x0080,   /* -oG, "grepable" */
     Output_Redis        = 0x0100, 
     Output_None         = 0x0200,
+    Output_Certs        = 0x0400,
     Output_All          = 0xFFBF,   /* not supported */
 };
 
@@ -126,6 +127,11 @@ struct Masscan
      * range 64k-128k, thus, allowing us to scan both at the same time.
      */
     struct RangeList ports;
+    
+    /**
+     * Only output these types of banners
+     */
+    struct RangeList banner_types;
 
     /**
      * IPv4 addresses/ranges that are to be exluded from the scan. This takes

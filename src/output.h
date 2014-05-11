@@ -123,6 +123,7 @@ const char *normalize_string(const unsigned char *px, size_t length,
 extern const struct OutputType text_output;
 extern const struct OutputType xml_output;
 extern const struct OutputType json_output;
+extern const struct OutputType certs_output;
 extern const struct OutputType binary_output;
 extern const struct OutputType null_output;
 extern const struct OutputType redis_output;
