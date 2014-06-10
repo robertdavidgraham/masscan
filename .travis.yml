@@ -1,0 +1,13 @@
+# This is a build/test script for "travis-ci", a continuous
+# integration website that will build and test this project
+# every time something is submitted, and send me email if
+# the test breaks
+language: c
+compiler:
+  - gcc
+  - clang
+before_install:
+  - sudo apt-get install -y libpcap-dev
+script: make && make test
+
+

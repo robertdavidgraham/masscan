@@ -21,6 +21,7 @@
 #include "templ-port.h"
 #include "crypto-base64.h"
 #include "script.h"
+#include "masscan-app.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -317,6 +318,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
+    case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
     case Output_None:       fprintf(fp, "output-format = none\n"); break;
     case Output_Redis:
         fprintf(fp, "output-format = redis\n");
@@ -989,6 +991,21 @@ masscan_set_parameter(struct Masscan *masscan,
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
+    else if (EQUALS("banner-types", name) || EQUALS("banner-type", name)
+             || EQUALS("banner-apps", name) || EQUALS("banner-app", name)
+           ) {
+        enum ApplicationProtocol app;
+        
+        app = masscan_string_to_app(value);
+        
+        if (app)
+            rangelist_add_range(&masscan->banner_types, app, app);
+        else {
+            LOG(0, "FAIL: bad banner app: %s\n", value);
+            fprintf(stderr, "err\n");
+            exit(1);
+        }
+    }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         unsigned is_error = 0;
         rangelist_parse_ports(&masscan->exclude_port, value, &is_error);
@@ -1360,6 +1377,7 @@ masscan_set_parameter(struct Masscan *masscan,
         else if (EQUALS("greppable", value))    x = Output_Grepable;
         else if (EQUALS("grepable", value))     x = Output_Grepable;
         else if (EQUALS("json", value))         x = Output_JSON;
+        else if (EQUALS("certs", value))        x = Output_Certs;
         else if (EQUALS("none", value))         x = Output_None;
         else if (EQUALS("redis", value))        x = Output_Redis;
         else {

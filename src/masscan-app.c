@@ -1,8 +1,10 @@
 #include "masscan-app.h"
 #include "string_s.h"
 
-/***************************************************************************
- ***************************************************************************/
+/******************************************************************************
+ * When outputing results, we call this function to print out the type of 
+ * banner that we've collected
+ ******************************************************************************/
 const char *
 masscan_app_to_string(enum ApplicationProtocol proto)
 {
@@ -34,4 +36,44 @@ masscan_app_to_string(enum ApplicationProtocol proto)
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;
     }
+}
+
+/******************************************************************************
+ ******************************************************************************/
+enum ApplicationProtocol
+masscan_string_to_app(const char *str)
+{
+    const static struct {
+        const char *name;
+        enum ApplicationProtocol value;
+    } list[] = {
+        {"ssh1",    PROTO_SSH1},
+        {"ssh2",    PROTO_SSH2},
+        {"ssh",     PROTO_SSH2},
+        {"http",    PROTO_HTTP},
+        {"ftp",     PROTO_FTP1},
+        {"dns-ver", PROTO_DNS_VERSIONBIND},
+        {"snmp",    PROTO_SNMP},
+        {"ssh2",    PROTO_SSH2},
+        {"nbtstat", PROTO_NBTSTAT},
+        {"ssl",     PROTO_SSL3},
+        {"pop",     PROTO_POP3},
+        {"imap",    PROTO_IMAP4},
+        {"x509",    PROTO_X509_CERT},
+        {"zeroaccess", PROTO_UDP_ZEROACCESS},
+        {"title", PROTO_HTML_TITLE},
+        {"html", PROTO_HTML_FULL},
+        {"ntp", PROTO_NTP},
+        {"vuln", PROTO_VULN},
+        {"heartbleed", PROTO_HEARTBLEED},
+        
+        {0,0}
+    };
+    size_t i;
+    
+    for (i=0; list[i].name; i++) {
+        if (strcmp(str, list[i].name) == 0)
+            return list[i].value;
+    }
+    return 0;
 }

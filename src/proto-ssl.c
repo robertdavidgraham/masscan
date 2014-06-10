@@ -359,7 +359,7 @@ parse_server_cert(
         remaining--;
         if (banner1->is_capture_cert) {
             banout_init_base64(&pstate->base64);
-            banout_append(  banout, PROTO_X509_CERT, "cert:", 5);
+            //banout_append(  banout, PROTO_X509_CERT, "cert:", 5);
         }
 
         {
@@ -1011,15 +1011,15 @@ ssl_selftest(void)
      * Yahoo cert
      */
     {
-        struct CertDecode state[1];
+        struct CertDecode certstate[1];
 
-        memset(state, 0, sizeof(state));
-        x509_decode_init(state, yahoo_cert_size);
+        memset(certstate, 0, sizeof(certstate));
+        x509_decode_init(certstate, yahoo_cert_size);
 
         banner1 = banner1_create();
         banner1->is_capture_cert = 1;
         banout_init(banout1);
-        x509_decode(state, 
+        x509_decode(certstate, 
                     yahoo_cert,
                     yahoo_cert_size,
                     banout1);
@@ -1029,6 +1029,8 @@ ssl_selftest(void)
             printf("x.509 parser failure: google.com\n");
             return 1;
         }
+        
+        
         banner1_destroy(banner1);
         banout_release(banout1);
     }
@@ -1038,15 +1040,15 @@ ssl_selftest(void)
      * Google cert
      */
     {
-        struct CertDecode state[1];
+        struct CertDecode certstate[1];
 
-        memset(state, 0, sizeof(state));
-        x509_decode_init(state, google_cert_size);
+        memset(certstate, 0, sizeof(certstate));
+        x509_decode_init(certstate, google_cert_size);
 
         banner1 = banner1_create();
         banner1->is_capture_cert = 1;
         banout_init(banout1);
-        x509_decode(state, 
+        x509_decode(certstate, 
                     google_cert,
                     google_cert_size,
                     banout1);
@@ -1068,14 +1070,33 @@ ssl_selftest(void)
     banner1->is_capture_cert = 1;
     memset(state, 0, sizeof(state));
     banout_init(banout1);
-    ssl_parse_record(  banner1,
-                0,
-                state,
-                ssl_test_case_3,
-                ssl_test_case_3_size,
-                banout1,
-                &more
-                );
+    {
+        size_t i;
+        for (i=0; i<ssl_test_case_3_size; i++)
+        ssl_parse_record(  banner1,
+                         0,
+                         state,
+                         ssl_test_case_3+i,
+                         1,
+                         banout1,
+                         &more
+                         );
+    }
+    if (0) {
+        const char *foo = (char*)banout_string(banout1, PROTO_X509_CERT);
+        printf("-----BEGIN CERTIFICATE-----\n");
+        for (;;) {
+            if (strlen(foo) > 72) {
+                printf("%.*s\n", 72, foo);
+                foo += 72;
+            } else {
+                printf("%s\n", foo);
+                break;
+            }
+
+        }
+        printf("-----END CERTIFICATE-----\n");
+    }
     banner1_destroy(banner1);
     banout_release(banout1);
 

@@ -81,7 +81,9 @@ parse_status(struct Output *out,
 static void
 parse_status2(struct Output *out,
         enum PortStatus status, /* open/closed */
-        const unsigned char *buf, size_t buf_length)
+        const unsigned char *buf, size_t buf_length,
+        const struct RangeList *ips,
+        const struct RangeList *ports)
 {
     struct MasscanRecord record;
 
@@ -98,6 +100,18 @@ parse_status2(struct Output *out,
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
+
+    /*
+     * Filter
+     */
+    if (ips && ips->count) {
+        if (!rangelist_is_contains(ips, record.ip))
+            return;
+    }
+    if (ports && ports->count) {
+        if (!rangelist_is_contains(ports, record.port))
+            return;
+    }
 
     /*
      * Now report the result
@@ -193,7 +207,10 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
 /***************************************************************************
  ***************************************************************************/
 static void
-parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length)
+parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
+              const struct RangeList *ips,
+              const struct RangeList *ports,
+              const struct RangeList *btypes)
 {
     struct MasscanRecord record;
 
@@ -214,6 +231,22 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length)
         out->when_scan_started = record.timestamp;
 
     /*
+     * Filter
+     */
+    if (ips && ips->count) {
+        if (!rangelist_is_contains(ips, record.ip))
+            return;
+    }
+    if (ports && ports->count) {
+        if (!rangelist_is_contains(ports, record.port))
+            return;
+    }
+    if (btypes && btypes->count) {
+        if (!rangelist_is_contains(btypes, record.app_proto))
+            return;
+    }
+    
+    /*
      * Now print the output
      */
     output_report_banner(
@@ -232,7 +265,10 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length)
  * Read in the file, one record at a time.
  ***************************************************************************/
 static uint64_t
-parse_file(struct Output *out, const char *filename)
+parse_file(struct Output *out, const char *filename,
+           const struct RangeList *ips,
+           const struct RangeList *ports,
+           const struct RangeList *btypes)
 {
     FILE *fp = 0;
     unsigned char *buf = 0;
@@ -339,10 +375,12 @@ parse_file(struct Output *out, const char *filename)
         /* Depending on record type, do something different */
         switch (type) {
             case 1: /* STATUS: open */
-                parse_status(out, PortStatus_Open, buf, bytes_read);
+                if (!btypes->count)
+                    parse_status(out, PortStatus_Open, buf, bytes_read);
                 break;
             case 2: /* STATUS: closed */
-                parse_status(out, PortStatus_Closed, buf, bytes_read);
+                if (!btypes->count)
+                    parse_status(out, PortStatus_Closed, buf, bytes_read);
                 break;
             case 3: /* BANNER */
                 parse_banner3(out, buf, bytes_read);
@@ -359,13 +397,15 @@ parse_file(struct Output *out, const char *filename)
                 parse_banner4(out, buf, bytes_read);
                 break;
             case 6: /* STATUS: open */
-                parse_status2(out, PortStatus_Open, buf, bytes_read);
+                if (!btypes->count)
+                    parse_status2(out, PortStatus_Open, buf, bytes_read, ips, ports);
                 break;
             case 7: /* STATUS: closed */
-                parse_status2(out, PortStatus_Closed, buf, bytes_read);
+                if (!btypes->count)
+                    parse_status2(out, PortStatus_Closed, buf, bytes_read, ips, ports);
                 break;
             case 9:
-                parse_banner9(out, buf, bytes_read);
+                parse_banner9(out, buf, bytes_read, ips, ports, btypes);
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;
@@ -395,7 +435,7 @@ end:
  * other formats. This preserves the original timestamps.
  *****************************************************************************/
 void
-convert_binary_files(struct Masscan *masscan,
+read_binary_scanfile(struct Masscan *masscan,
                      int arg_first, int arg_max, char *argv[])
 {
     struct Output *out;
@@ -420,7 +460,8 @@ convert_binary_files(struct Masscan *masscan,
      * Then arg_first=3 and arg_max=5.
      */
     for (i=arg_first; i<arg_max; i++) {
-        parse_file(out, argv[i]);
+        parse_file(out, argv[i], &masscan->targets, &masscan->ports,
+                   &masscan->banner_types);
     }
 
     output_destroy(out);

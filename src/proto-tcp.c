@@ -304,7 +304,7 @@ tcpcon_create_table(    size_t entry_count,
                         )
 {
     struct TCP_ConnectionTable *tcpcon;
-
+    printf("\nsizeof(TCB) = %u\n\n", (unsigned)sizeof(struct TCP_Control_Block));
     tcpcon = (struct TCP_ConnectionTable *)malloc(sizeof(*tcpcon));
     if (tcpcon == NULL)
         exit(1);

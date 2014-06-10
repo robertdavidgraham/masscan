@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
+		11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
+		11A50CAE191C128F006D5802 /* out-json.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A50CAD191C128F006D5802 /* out-json.c */; };
 		11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A773E91881BFC700B135DE /* crypto-base64.c */; };
 		11A868151816F3A7008E00B8 /* in-binary.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868081816F3A7008E00B8 /* in-binary.c */; };
 		11A868161816F3A7008E00B8 /* main-src.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680B1816F3A7008E00B8 /* main-src.c */; };
@@ -100,6 +102,8 @@
 		115C0CA818035BC5004E6CD7 /* proto-ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssl.h"; sourceTree = "<group>"; };
 		115C0CA918035BC5004E6CD7 /* templ-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-port.h"; sourceTree = "<group>"; };
 		115C0CAA18035BC5004E6CD7 /* unusedparm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unusedparm.h; sourceTree = "<group>"; };
+		11623F69191E0DB00075EEE6 /* out-certs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-certs.c"; sourceTree = "<group>"; };
+		11A50CAD191C128F006D5802 /* out-json.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-json.c"; sourceTree = "<group>"; };
 		11A773E91881BFC700B135DE /* crypto-base64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-base64.c"; sourceTree = "<group>"; };
 		11A773EA1881BFC700B135DE /* crypto-base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-base64.h"; sourceTree = "<group>"; };
 		11A868081816F3A7008E00B8 /* in-binary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-binary.c"; sourceTree = "<group>"; };
@@ -256,19 +260,9 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				11B05EA918B964A9009C935E /* main-readrange.h */,
-				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
-				11B05EA518B9649F009C935E /* main-readrange.c */,
-				11BA295E18902CEE0064A759 /* masscan-version.h */,
-				11BA295F18902CEE0064A759 /* out-grepable.c */,
-				11BA296018902CEE0064A759 /* proto-tcp-telnet.c */,
-				11BA296118902CEE0064A759 /* proto-tcp-telnet.h */,
-				11AC2F99188CE34A008CB623 /* proto-sctp.c */,
-				11AC2F9A188CE34A008CB623 /* proto-sctp.h */,
-				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
-				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
 				11A773E91881BFC700B135DE /* crypto-base64.c */,
 				11A773EA1881BFC700B135DE /* crypto-base64.h */,
+				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
 				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
 				11A868081816F3A7008E00B8 /* in-binary.c */,
@@ -283,6 +277,8 @@
 				11B039C017E506B400925E7E /* main-listscan.c */,
 				11AC80F517E0ED47001BCE3A /* main-ptrace.c */,
 				11AC80F817E0EDA7001BCE3A /* main-ptrace.h */,
+				11B05EA518B9649F009C935E /* main-readrange.c */,
+				11B05EA918B964A9009C935E /* main-readrange.h */,
 				11A8680B1816F3A7008E00B8 /* main-src.c */,
 				11A8680C1816F3A7008E00B8 /* main-src.h */,
 				11A9219B17DBCC7E00DDFD32 /* main-status.c */,
@@ -293,8 +289,11 @@
 				11A8680D1816F3A7008E00B8 /* masscan-app.c */,
 				11A8680E1816F3A7008E00B8 /* masscan-app.h */,
 				113AD3B818208A1900D5E067 /* masscan-status.h */,
+				11BA295E18902CEE0064A759 /* masscan-version.h */,
 				11A921A017DBCC7E00DDFD32 /* masscan.h */,
 				11A921A117DBCC7E00DDFD32 /* out-binary.c */,
+				11BA295F18902CEE0064A759 /* out-grepable.c */,
+				11A50CAD191C128F006D5802 /* out-json.c */,
 				11A921A217DBCC7E00DDFD32 /* out-null.c */,
 				115C0CA318035BC5004E6CD7 /* out-record.h */,
 				11A8680F1816F3A7008E00B8 /* out-redis.c */,
@@ -303,6 +302,8 @@
 				11A921A517DBCC7E00DDFD32 /* output.c */,
 				11A921A617DBCC7E00DDFD32 /* output.h */,
 				11A921A717DBCC7E00DDFD32 /* packet-queue.h */,
+				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
+				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
 				11A868101816F3A7008E00B8 /* pixie-file.c */,
 				11A868111816F3A7008E00B8 /* pixie-file.h */,
 				11A868121816F3A7008E00B8 /* pixie-sockets.h */,
@@ -325,8 +326,12 @@
 				11AC80EA17E0DAD4001BCE3A /* proto-icmp.h */,
 				115C0CA518035BC5004E6CD7 /* proto-netbios.c */,
 				115C0CA618035BC5004E6CD7 /* proto-netbios.h */,
+				11BA296A189060220064A759 /* proto-ntp.c */,
+				11BA296C189060590064A759 /* proto-ntp.h */,
 				11A921B017DBCC7E00DDFD32 /* proto-preprocess.c */,
 				11A921B117DBCC7E00DDFD32 /* proto-preprocess.h */,
+				11AC2F99188CE34A008CB623 /* proto-sctp.c */,
+				11AC2F9A188CE34A008CB623 /* proto-sctp.h */,
 				11B039C917EA092B00925E7E /* proto-snmp.c */,
 				11B039CA17EA092B00925E7E /* proto-snmp.h */,
 				11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */,
@@ -334,6 +339,8 @@
 				11B22ED218641DCC00DA5438 /* proto-ssl-test.c */,
 				115C0CA718035BC5004E6CD7 /* proto-ssl.c */,
 				115C0CA818035BC5004E6CD7 /* proto-ssl.h */,
+				11BA296018902CEE0064A759 /* proto-tcp-telnet.c */,
+				11BA296118902CEE0064A759 /* proto-tcp-telnet.h */,
 				11A921B217DBCC7E00DDFD32 /* proto-tcp.c */,
 				11A921B317DBCC7E00DDFD32 /* proto-tcp.h */,
 				11B039C517E7834000925E7E /* proto-udp.c */,
@@ -363,6 +370,9 @@
 				11A921C617DBCC7E00DDFD32 /* rawsock.h */,
 				11A921C717DBCC7E00DDFD32 /* rte-ring.c */,
 				11A921C817DBCC7E00DDFD32 /* rte-ring.h */,
+				11BA29681890560C0064A759 /* script-ntp-monlist.c */,
+				11BA2966189055CA0064A759 /* script.c */,
+				11BA296518904F3A0064A759 /* script.h */,
 				11A868131816F3A7008E00B8 /* siphash24.c */,
 				11A868141816F3A7008E00B8 /* siphash24.h */,
 				11A921C917DBCC7E00DDFD32 /* smack.h */,
@@ -381,11 +391,7 @@
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
-				11BA296518904F3A0064A759 /* script.h */,
-				11BA2966189055CA0064A759 /* script.c */,
-				11BA29681890560C0064A759 /* script-ntp-monlist.c */,
-				11BA296A189060220064A759 /* proto-ntp.c */,
-				11BA296C189060590064A759 /* proto-ntp.h */,
+				11623F69191E0DB00075EEE6 /* out-certs.c */,
 			);
 			name = src;
 			path = ../src;
@@ -510,6 +516,8 @@
 				11BA296B189060220064A759 /* proto-ntp.c in Sources */,
 				11B05EA618B9649F009C935E /* crypto-blackrock2.c in Sources */,
 				11B05EA718B9649F009C935E /* main-readrange.c in Sources */,
+				11A50CAE191C128F006D5802 /* out-json.c in Sources */,
+				11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
