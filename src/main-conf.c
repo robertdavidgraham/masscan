@@ -2023,7 +2023,7 @@ trim(char *line, size_t sizeof_line)
 
     while (isspace(*line & 0xFF))
         memmove(line, line+1, sizeof_line--);
-    while (isspace(line[sizeof_line-1] & 0xFF))
+    while (*line && isspace(line[sizeof_line-1] & 0xFF))
         line[--sizeof_line] = '\0';
 }
 

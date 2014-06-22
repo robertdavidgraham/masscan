@@ -66,7 +66,7 @@ struct Payload2 hard_coded_payloads[] = {
          "\x30\x0d"
            "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
            "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
-    {53, 65536, 0x1f+8, 0, dns_set_cookie,
+    {53, 65536, 0x1f, 0, dns_set_cookie,
         /* 00 */"\x50\xb6"  /* transaction id */
         /* 02 */"\x01\x20"  /* quer y*/
         /* 04 */"\x00\x01"  /* query = 1 */
