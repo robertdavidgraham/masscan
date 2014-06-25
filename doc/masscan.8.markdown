@@ -94,6 +94,12 @@ one port.
     target format described above. These ranges override any targets,
 	preventing them from being scanned.
 
+  * `--includefile <filename>`: reads in a list of ranges to scan, in the same
+    target format described above. Each line is a range by itself, so that
+    you don't need to prefix them all with `range =`.
+
+  * `-iL <filename>`: same as `--includefile`
+
   * `--append-output`: causes output to append to file, rather than
     overwriting the file.
 
