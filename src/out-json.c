@@ -10,6 +10,8 @@
 static void
 json_out_open(struct Output *out, FILE *fp)
 {
+    UNUSEDPARM(out);
+    UNUSEDPARM(fp);
 }
 
 
@@ -18,6 +20,7 @@ json_out_open(struct Output *out, FILE *fp)
 static void
 json_out_close(struct Output *out, FILE *fp)
 {    
+    UNUSEDPARM(out);
     fprintf(fp, "{finished: 1}\n");
 }
 
@@ -30,6 +33,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
 {
     char reason_buffer[128];
     UNUSEDPARM(out);
+    UNUSEDPARM(timestamp);
     
     fprintf(fp, "{ ");
     fprintf(fp, "  ip: \"%u.%u.%u.%u\", ", 
@@ -93,6 +97,8 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
 {
     char banner_buffer[65536];
 
+    UNUSEDPARM(ttl);
+    UNUSEDPARM(timestamp);
     
     fprintf(fp, "{ ");
     fprintf(fp, "  ip: \"%u.%u.%u.%u\", ", 

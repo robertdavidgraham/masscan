@@ -29,7 +29,9 @@
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
     <ClCompile Include="..\src\out-binary.c" />
+    <ClCompile Include="..\src\out-certs.c" />
     <ClCompile Include="..\src\out-grepable.c" />
+    <ClCompile Include="..\src\out-json.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />

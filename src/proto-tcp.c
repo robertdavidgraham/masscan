@@ -413,6 +413,8 @@ tcpcon_destroy_tcb(
     struct TCP_Control_Block **r_entry;
     struct BannerOutput *banout;
 
+    UNUSEDPARM(reason);
+
 //printf("." "tcb age = %u-sec, reason=%u                                   \n", time(0) - tcb->when_created, reason);
 
     /*

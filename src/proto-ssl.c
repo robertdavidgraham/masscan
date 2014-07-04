@@ -1082,7 +1082,7 @@ ssl_selftest(void)
                          &more
                          );
     }
-    if (0) {
+    /*if (0) {
         const char *foo = (char*)banout_string(banout1, PROTO_X509_CERT);
         printf("-----BEGIN CERTIFICATE-----\n");
         for (;;) {
@@ -1096,7 +1096,7 @@ ssl_selftest(void)
 
         }
         printf("-----END CERTIFICATE-----\n");
-    }
+    }*/
     banner1_destroy(banner1);
     banout_release(banout1);
 
