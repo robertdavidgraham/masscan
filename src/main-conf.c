@@ -357,7 +357,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     for (i=0; i<masscan->ports.count; i++) {
 	struct Range range = masscan->ports.list[i];
 	if ( (range.begin == range.end) && (range.begin == Templ_ICMP_echo) )
+		{
 		fprintf(fp,"ping = true\n");
+		break;
+		}
     }
 
     fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
