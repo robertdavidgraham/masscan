@@ -407,6 +407,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_List:
         out->funcs = &text_output;
         break;
+    case Output_Unicornscan:
+        out->funcs = &unicornscan_output;
+        break;
     case Output_XML:
         out->funcs = &xml_output;
         break;
