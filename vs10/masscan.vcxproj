@@ -35,6 +35,7 @@
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />
+    <ClCompile Include="..\src\out-unicornscan.c" />
     <ClCompile Include="..\src\out-xml.c" />
     <ClCompile Include="..\src\pixie-backtrace.c" />
     <ClCompile Include="..\src\pixie-file.c" />

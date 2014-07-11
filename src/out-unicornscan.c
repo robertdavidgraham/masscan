@@ -4,7 +4,12 @@
 #include "masscan-status.h"
 #include "unusedparm.h"
 
+
+#ifndef WIN32
 #include <netdb.h>
+#else
+#include <WinSock2.h>
+#endif
 #include <ctype.h>
 
 static char * tcp_services[65536];
@@ -21,6 +26,7 @@ static void init_tcp_services()
 
 static char *tcp_service_name(int port)
 {
+#ifndef WIN32
     int r;
     struct servent result_buf;
     struct servent *result;
@@ -33,6 +39,16 @@ static char *tcp_service_name(int port)
         return "unknown";
 
     return strdup(result_buf.s_name);
+#else
+    struct servent *result;
+
+    result = getservbyport(htons((unsigned short)port), "tcp");
+
+    if (result == NULL)
+        return "unknown";
+
+    return _strdup(result->s_name);
+#endif
 }
 
 static void
@@ -57,6 +73,7 @@ unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
 {
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
+    UNUSEDPARM(timestamp);
 
     if (ip_proto == 6) {
       fprintf(fp,"TCP open\t%16s[%5d]\t\tfrom %u.%u.%u.%u  ttl %-3d\n",
