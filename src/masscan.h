@@ -51,8 +51,9 @@ enum OutputFormat {
     Output_ScriptKiddie = 0x0040,
     Output_Grepable     = 0x0080,   /* -oG, "grepable" */
     Output_Redis        = 0x0100, 
-    Output_None         = 0x0200,
-    Output_Certs        = 0x0400,
+    Output_Unicornscan  = 0x0200,   /* -oU, "unicornscan" */
+    Output_None         = 0x0400,
+    Output_Certs        = 0x0800,
     Output_All          = 0xFFBF,   /* not supported */
 };
 

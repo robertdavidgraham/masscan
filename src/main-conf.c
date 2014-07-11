@@ -175,10 +175,10 @@ print_nmap_help(void)
 "  --ttl <val>: Set IP time-to-live field\n"
 "  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
 "OUTPUT:\n"
-"  --output-format <format>: Sets output to binary/list/json/grepable/xml\n"
+"  --output-format <format>: Sets output to binary/list/unicornscan/json/grepable/xml\n"
 "  --output-file <file>: Write scan results to file. If --output-format is\n"
 "     not given default is xml\n"
-"  -oL/-oJ/-oG/-oB/-oX <file>: Output scan in List/JSON/Grepable/Binary/XML format,\n"
+"  -oL/-oJ/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/Grepable/Binary/XML/Unicornscan format,\n"
 "     respectively, to the given filename. Shortcut for\n"
 "     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
@@ -314,6 +314,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     switch (masscan->output.format) {
     case Output_Interactive:fprintf(fp, "output-format = interactive\n"); break;
     case Output_List:       fprintf(fp, "output-format = list\n"); break;
+    case Output_Unicornscan:fprintf(fp, "output-format = unicornscan\n"); break;
     case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
@@ -1382,6 +1383,7 @@ masscan_set_parameter(struct Masscan *masscan,
         if (EQUALS("interactive", value))
             masscan->output.format = Output_Interactive;
         else if (EQUALS("list", value))         x = Output_List;
+        else if (EQUALS("unicornscan", value))         x = Output_Unicornscan;
         else if (EQUALS("xml", value))          x = Output_XML;
         else if (EQUALS("binary", value))       x = Output_Binary;
         else if (EQUALS("greppable", value))    x = Output_Grepable;
@@ -1866,6 +1868,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'L':
                     masscan_set_parameter(masscan, "output-format", "list");
+                    break;
+                case 'U':
+                    masscan_set_parameter(masscan, "output-format", "unicornscan");
                     break;
                 default:
                     fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);
