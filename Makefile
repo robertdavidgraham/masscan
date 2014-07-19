@@ -15,7 +15,7 @@ endif
 ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt -ldl -lpthread
 INCLUDES =
-FLAGS2 = -rdynamic -fsanitize=address
+FLAGS2 = 
 endif
 
 # MAC OS X
