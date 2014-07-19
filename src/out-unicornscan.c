@@ -26,7 +26,7 @@ static void init_tcp_services()
 
 static char *tcp_service_name(int port)
 {
-#ifndef WIN32
+#ifdef __linux__
     int r;
     struct servent result_buf;
     struct servent *result;
@@ -47,7 +47,7 @@ static char *tcp_service_name(int port)
     if (result == NULL)
         return "unknown";
 
-    return _strdup(result->s_name);
+    return strdup(result->s_name);
 #endif
 }
 

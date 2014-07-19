@@ -15,7 +15,7 @@ endif
 ifneq (, $(findstring linux, $(SYS)))
 LIBS = -lpcap -lm -lrt -ldl -lpthread
 INCLUDES =
-FLAGS2 = -rdynamic
+FLAGS2 = -rdynamic -fsanitize=address
 endif
 
 # MAC OS X
@@ -25,7 +25,7 @@ endif
 ifneq (, $(findstring darwin, $(SYS)))
 LIBS = -lpcap -lm -rdynamic
 INCLUDES = -I.
-FLAGS2 = 
+FLAGS2 = -fsanitize=address
 INSTALL_DATA = -pm755
 endif
 
@@ -66,7 +66,7 @@ FLAGS2 =
 endif
 
 # this works on llvm or real gcc
-CC = gcc
+CC = clang
 
 DEFINES = 
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
