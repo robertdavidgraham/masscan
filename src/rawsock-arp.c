@@ -201,7 +201,9 @@ arp_resolve_sync(struct Adapter *adapter,
         if (err != 0)
             continue;
 
-        if (px[13] != 6)
+        if (adapter->is_vlan && px[17] != 6)
+            continue;
+        if (!adapter->is_vlan && px[13] != 6)
             continue;
 
 
@@ -209,7 +211,7 @@ arp_resolve_sync(struct Adapter *adapter,
          * Parse the response as an ARP packet
          */
         if (adapter->is_vlan)
-            proto_arp_parse(&response, px, 16, length);
+            proto_arp_parse(&response, px, 18, length);
         else
             proto_arp_parse(&response, px, 14, length);
 
