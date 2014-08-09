@@ -1170,6 +1170,8 @@ main_scan(struct Masscan *masscan)
         if (masscan->nmap.ttl)
             template_set_ttl(parms->tmplset, masscan->nmap.ttl);
 
+        if (masscan->nic[0].is_vlan)
+            template_set_vlan(parms->tmplset, masscan->nic[0].vlan_id);
 
 
         /*

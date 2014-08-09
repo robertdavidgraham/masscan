@@ -166,5 +166,6 @@ unsigned template_get_source_ip(struct TemplateSet *tmplset);
 
 void template_set_source_port(struct TemplateSet *tmplset, unsigned port);
 void template_set_ttl(struct TemplateSet *tmplset, unsigned ttl);
+void template_set_vlan(struct TemplateSet *tmplset, unsigned vlan);
 
 #endif
