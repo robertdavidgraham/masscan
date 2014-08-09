@@ -208,7 +208,10 @@ arp_resolve_sync(struct Adapter *adapter,
         /*
          * Parse the response as an ARP packet
          */
-        proto_arp_parse(&response, px, 14, length);
+        if (adapter->is_vlan)
+            proto_arp_parse(&response, px, 16, length);
+        else
+            proto_arp_parse(&response, px, 14, length);
 
         /* Is this an ARP packet? */
         if (!response.is_valid) {
