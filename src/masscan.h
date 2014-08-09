@@ -110,6 +110,8 @@ struct Masscan
         unsigned router_ip;
         int link_type; /* libpcap definitions */
         unsigned char my_mac_count;
+        unsigned vlan_id;
+        unsigned is_vlan:1;
     } nic[8];
     unsigned nic_count;
 
@@ -173,6 +175,7 @@ struct Masscan
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
+        
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

@@ -82,6 +82,7 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
     arp->is_valid = 1;
 }
 
+#include "rawsock-adapter.h"
 
 /****************************************************************************
  * Resolve the IP address into a MAC address. Do this synchronously, meaning,
@@ -93,7 +94,8 @@ arp_resolve_sync(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address)
 {
-    unsigned char arp_packet[64];
+    unsigned char xarp_packet[64];
+    unsigned char *arp_packet = &xarp_packet[0];
     unsigned i;
     time_t start;
     unsigned is_arp_notice_given = 0;
@@ -114,15 +116,24 @@ arp_resolve_sync(struct Adapter *adapter,
 
     /* zero out bytes in packet to avoid leaking stuff in the padding
      * (ARP is 42 byte packet, Ethernet is 60 byte minimum) */
-    memset(arp_packet, 0, sizeof(arp_packet));
+    memset(arp_packet, 0, sizeof(xarp_packet));
 
     /*
      * Create the request packet
      */
     memcpy(arp_packet +  0, "\xFF\xFF\xFF\xFF\xFF\xFF", 6);
     memcpy(arp_packet +  6, my_mac_address, 6);
+    
+    if (adapter->is_vlan) {
+        memcpy(arp_packet + 12, "\x81\x00", 2);
+        arp_packet[14] = (unsigned char)(adapter->vlan_id>>8);
+        arp_packet[15] = (unsigned char)(adapter->vlan_id&0xFF);
+        arp_packet += 4;
+    }
+    
     memcpy(arp_packet + 12, "\x08\x06", 2);
 
+    
     memcpy(arp_packet + 14,
             "\x00\x01" /* hardware = Ethernet */
             "\x08\x00" /* protocol = IPv4 */
@@ -143,6 +154,11 @@ arp_resolve_sync(struct Adapter *adapter,
     arp_packet[41] = (unsigned char)(your_ipv4 >>  0);
 
 
+    /* kludge me: this is the wrong thing to do
+     * FIXME: */
+    if (adapter->is_vlan)
+        arp_packet -= 4;
+    
     /*
      * Now loop for a few seconds looking for the response
      */

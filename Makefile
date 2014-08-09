@@ -25,7 +25,7 @@ endif
 ifneq (, $(findstring darwin, $(SYS)))
 LIBS = -lpcap -lm -rdynamic
 INCLUDES = -I.
-FLAGS2 = -fsanitize=address
+FLAGS2 = 
 INSTALL_DATA = -pm755
 endif
 

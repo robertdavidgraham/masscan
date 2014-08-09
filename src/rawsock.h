@@ -46,7 +46,9 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_sendq,
                      unsigned is_packet_trace,
                      unsigned is_offline,
-                     const char *bpf_filter);
+                     const char *bpf_filter,
+                     unsigned is_vlan,
+                     unsigned vlan_id);
 
 /**
  * Retrieve the datalink type of the adapter

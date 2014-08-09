@@ -105,6 +105,7 @@
 		115C0CA918035BC5004E6CD7 /* templ-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-port.h"; sourceTree = "<group>"; };
 		115C0CAA18035BC5004E6CD7 /* unusedparm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unusedparm.h; sourceTree = "<group>"; };
 		11623F69191E0DB00075EEE6 /* out-certs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-certs.c"; sourceTree = "<group>"; };
+		116806EA1995D421005B0980 /* rawsock-adapter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-adapter.h"; sourceTree = "<group>"; };
 		11A50CAD191C128F006D5802 /* out-json.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-json.c"; sourceTree = "<group>"; };
 		11A773E91881BFC700B135DE /* crypto-base64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-base64.c"; sourceTree = "<group>"; };
 		11A773EA1881BFC700B135DE /* crypto-base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-base64.h"; sourceTree = "<group>"; };
@@ -395,6 +396,7 @@
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
 				11623F69191E0DB00075EEE6 /* out-certs.c */,
+				116806EA1995D421005B0980 /* rawsock-adapter.h */,
 			);
 			name = src;
 			path = ../src;

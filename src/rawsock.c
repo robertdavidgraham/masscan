@@ -54,15 +54,7 @@ static int pcap_sendqueue_queue(pcap_send_queue *queue,
 #else
 #endif
 
-struct Adapter
-{
-    pcap_t *pcap;
-    pcap_send_queue *sendq;
-    pfring *ring;
-    unsigned is_packet_trace:1; /* is --packet-trace option set? */
-    double pt_start;
-    int link_type;
-};
+#include "rawsock-adapter.h"
 
 #define SENDQ_SIZE 65536 * 8
 
@@ -625,7 +617,9 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_sendq,
                      unsigned is_packet_trace,
                      unsigned is_offline,
-                     const char *bpf_filter)
+                     const char *bpf_filter,
+                     unsigned is_vlan,
+                     unsigned vlan_id)
 {
     struct Adapter *adapter;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -637,6 +631,9 @@ rawsock_init_adapter(const char *adapter_name,
     adapter->is_packet_trace = is_packet_trace;
     adapter->pt_start = 1.0 * pixie_gettime() / 1000000.0;
 
+    adapter->is_vlan = is_vlan;
+    adapter->vlan_id = vlan_id;
+    
     if (is_offline)
         return adapter;
 
@@ -903,7 +900,7 @@ rawsock_selftest_if(const char *ifname)
             (unsigned char)(router_ipv4>>0));
 
 
-        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0);
+        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
         if (adapter == 0) {
             printf("adapter[%s]: failed\n", ifname);
             return -1;

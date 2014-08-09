@@ -125,7 +125,9 @@ masscan_initialize_adapter(
                                             masscan->is_sendq,
                                             masscan->nmap.packet_trace,
                                             masscan->is_offline,
-                                            masscan->bpf_filter);
+                                            (void*)masscan->bpf_filter,
+                                            masscan->nic[index].is_vlan,
+                                            masscan->nic[index].vlan_id);
     if (masscan->nic[index].adapter == 0) {
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;
@@ -133,6 +135,7 @@ masscan_initialize_adapter(
     LOG(3, "rawsock: ignoring transmits\n");
     rawsock_ignore_transmits(masscan->nic[index].adapter, adapter_mac);
     LOG(3, "rawsock: initialization done\n");
+
 
 
     /*
