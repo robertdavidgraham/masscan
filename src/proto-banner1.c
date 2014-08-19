@@ -9,6 +9,7 @@
 #include "proto-http.h"
 #include "proto-ssl.h"
 #include "proto-ssh.h"
+#include "proto-vnc.h"
 #include "masscan-app.h"
 #include <ctype.h>
 #include <stdlib.h>
@@ -33,6 +34,11 @@ struct Patterns patterns[] = {
     {"\x15\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x15\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x15\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
+    {"RFB 003.003\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
+    {"RFB 003.005\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
+    {"RFB 003.007\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
+    {"RFB 003.008\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
+    {"RFB 003.009\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
     {0,0}
 };
 
@@ -139,6 +145,14 @@ banner1_parse(
                         px, length,
                         banout,
                         more);
+        break;
+    case PROTO_VNC_RFB:
+        banner_vnc.parse(    banner1,
+                             banner1->http_fields,
+                             tcb_state,
+                             px, length,
+                             banout,
+                             more);
         break;
     default:
         fprintf(stderr, "banner1: internal error\n");

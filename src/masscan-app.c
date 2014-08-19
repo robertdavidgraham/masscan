@@ -32,6 +32,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_NTP:     return "ntp";
     case PROTO_VULN:    return "vuln";
     case PROTO_HEARTBLEED:    return "heartbleed";
+    case PROTO_VNC_RFB: return "vnc";
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;
@@ -66,7 +67,7 @@ masscan_string_to_app(const char *str)
         {"ntp", PROTO_NTP},
         {"vuln", PROTO_VULN},
         {"heartbleed", PROTO_HEARTBLEED},
-        
+        {"vnc", PROTO_VNC_RFB},
         {0,0}
     };
     size_t i;

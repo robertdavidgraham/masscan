@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
+		11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD219A2D47A00DB5BFE /* proto-vnc.c */; };
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
 		11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
@@ -96,6 +97,8 @@
 /* Begin PBXFileReference section */
 		11126596197A086B00DC5987 /* out-unicornscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-unicornscan.c"; sourceTree = "<group>"; };
 		113AD3B818208A1900D5E067 /* masscan-status.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "masscan-status.h"; sourceTree = "<group>"; };
+		11420DD219A2D47A00DB5BFE /* proto-vnc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-vnc.c"; sourceTree = "<group>"; };
+		11420DD519A2D48C00DB5BFE /* proto-vnc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-vnc.h"; sourceTree = "<group>"; };
 		115C0CA318035BC5004E6CD7 /* out-record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-record.h"; sourceTree = "<group>"; };
 		115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns-parse.h"; sourceTree = "<group>"; };
 		115C0CA518035BC5004E6CD7 /* proto-netbios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-netbios.c"; sourceTree = "<group>"; };
@@ -397,6 +400,8 @@
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
 				11623F69191E0DB00075EEE6 /* out-certs.c */,
 				116806EA1995D421005B0980 /* rawsock-adapter.h */,
+				11420DD219A2D47A00DB5BFE /* proto-vnc.c */,
+				11420DD519A2D48C00DB5BFE /* proto-vnc.h */,
 			);
 			name = src;
 			path = ../src;
@@ -524,6 +529,7 @@
 				11A50CAE191C128F006D5802 /* out-json.c in Sources */,
 				11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */,
 				11126597197A086B00DC5987 /* out-unicornscan.c in Sources */,
+				11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
