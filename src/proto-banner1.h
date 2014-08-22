@@ -70,7 +70,28 @@ struct SSLRECORD {
 
 };
 
-
+struct PIXEL_FORMAT {
+    unsigned short red_max;
+    unsigned short green_max;
+    unsigned short blue_max;
+    unsigned char red_shift;
+    unsigned char green_shift;
+    unsigned char blue_shift;
+    unsigned char bits_per_pixel;
+    unsigned char depth;
+    unsigned char big_endian_flag:1;
+    unsigned char true_colour_flag:1;
+};
+struct VNCSTUFF {
+    unsigned sectype;
+    unsigned char version;
+    unsigned char len;
+    
+    unsigned short width;
+    unsigned short height;
+    
+    struct PIXEL_FORMAT pixel;    
+};
 
 struct ProtocolState {
     unsigned state;
@@ -83,6 +104,7 @@ struct ProtocolState {
 
     union {
         struct SSLRECORD ssl;
+        struct VNCSTUFF vnc;
     } sub;
 };
 
@@ -117,6 +139,7 @@ struct Patterns {
     unsigned pattern_length;
     unsigned id;
     unsigned is_anchored;
+    unsigned extra;
 };
 
 struct Banner1 *

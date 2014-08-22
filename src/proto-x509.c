@@ -715,9 +715,9 @@ x509_decode(struct CertDecode *x,
 
                             
                         }
-                        if (x->subject.type == Subject_Common 
-                                            && state == EXTENSION_ID_CONTENTS1)
-                            ; //banout_append(banout, PROTO_SSL3, ", ", 2);
+                        //if (x->subject.type == Subject_Common 
+                        //                    && state == EXTENSION_ID_CONTENTS1)
+                        //    ; //banout_append(banout, PROTO_SSL3, ", ", 2);
                         x->u.oid.last_id = (unsigned char)id;
                     }
                     x->u.oid.num = 0;

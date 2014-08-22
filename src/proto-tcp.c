@@ -69,7 +69,8 @@ struct TCP_ConnectionTable {
     struct TCP_Control_Block *freed_list;
     unsigned count;
     unsigned mask;
-    unsigned timeout;
+    unsigned timeout_connection;
+    unsigned timeout_hello;
     unsigned is_heartbleed:1;
 
     uint64_t active_count;
@@ -182,7 +183,6 @@ parseInt(const void *vstr, size_t length)
 
     for (i=0; i<length; i++) {
         result = result * 10 + (str[i] - '0');
-        str++;
     }
     return result;
 }
@@ -215,10 +215,17 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
-    if (name_equals(name, "timeout")) {
+    if (name_equals(name, "timeout") || name_equals(name, "connection-timeout")) {
         uint64_t n = parseInt(value, value_length);
-        tcpcon->timeout = (unsigned)n;
-        LOG(1, "TCP connection-timeout = %u\n", tcpcon->timeout);
+        tcpcon->timeout_connection = (unsigned)n;
+        LOG(1, "TCP connection-timeout = %u\n", tcpcon->timeout_connection);
+        return;
+    }
+    if (name_equals(name, "hello-timeout")) {
+        uint64_t n = parseInt(value, value_length);
+        tcpcon->timeout_hello = (unsigned)n;
+        LOG(1, "TCP hello-timeout = \"%.*s\"\n", value_length, value);
+        LOG(1, "TCP hello-timeout = %u\n", (unsigned)tcpcon->timeout_hello);
         return;
     }
 
@@ -299,19 +306,22 @@ tcpcon_create_table(    size_t entry_count,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
-                        unsigned timeout,
+                        unsigned connection_timeout,
                         uint64_t entropy
                         )
 {
     struct TCP_ConnectionTable *tcpcon;
-    printf("\nsizeof(TCB) = %u\n\n", (unsigned)sizeof(struct TCP_Control_Block));
+    //printf("\nsizeof(TCB) = %u\n\n", (unsigned)sizeof(struct TCP_Control_Block));
+    
+    
     tcpcon = (struct TCP_ConnectionTable *)malloc(sizeof(*tcpcon));
     if (tcpcon == NULL)
         exit(1);
     memset(tcpcon, 0, sizeof(*tcpcon));
-    tcpcon->timeout = timeout;
-    if (tcpcon->timeout == 0)
-        tcpcon->timeout = 30; /* half a minute before destroying tcb */
+    tcpcon->timeout_connection = connection_timeout;
+    if (tcpcon->timeout_connection == 0)
+        tcpcon->timeout_connection = 30; /* half a minute before destroying tcb */
+    tcpcon->timeout_hello = 2;
     tcpcon->entropy = entropy;
 
     /* Find nearest power of 2 to the tcb count, but don't go
@@ -923,7 +933,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
 
     /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
-        if (tcb->when_created + tcpcon->timeout < secs) {
+        if (tcb->when_created + tcpcon->timeout_connection < secs) {
             LOGip(8, tcb->ip_them, tcb->port_them,
                 "%s                \n",
                 "CONNECTION TIMEOUT---");
@@ -965,7 +975,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         timeouts_add(   tcpcon->timeouts,
                         tcb->timeout,
                         offsetof(struct TCP_Control_Block, timeout),
-                        TICKS_FROM_TV(secs+2,usecs)
+                        TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
                         );
         break;
 
@@ -1179,7 +1189,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         break;
     
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:
-        if (tcb->when_created + tcpcon->timeout < secs) {
+        if (tcb->when_created + tcpcon->timeout_connection < secs) {
             tcpcon_send_packet(tcpcon, tcb,
                 0x04,
                 0, 0, 0);

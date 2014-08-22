@@ -1,5 +1,5 @@
 /*
-7    state machine for receiving banners
+     state machine for receiving banners
 */
 #include "smack.h"
 #include "rawsock-pcapfile.h"
@@ -34,11 +34,17 @@ struct Patterns patterns[] = {
     {"\x15\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x15\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x15\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"RFB 003.003\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
-    {"RFB 003.005\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
-    {"RFB 003.007\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
-    {"RFB 003.008\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
-    {"RFB 003.009\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN}, 
+    {"RFB 000.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 1}, /* UltraVNC repeater mode */
+    {"RFB 003.003\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* default version for everything */
+    {"RFB 003.005\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* broken, same as 003.003 */
+    {"RFB 003.006\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* broken, same as 003.003 */
+    {"RFB 003.007\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 7}, 
+    {"RFB 003.008\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, 
+    {"RFB 003.889\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Apple's remote desktop, 003.007 */
+    {"RFB 003.009\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, 
+    {"RFB 004.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Intel AMT KVM */
+    {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
+    {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
     {0,0}
 };
 
@@ -57,6 +63,7 @@ banner1_parse(
 {
     size_t x;
     unsigned offset = 0;
+    unsigned proto;
 
 
     switch (tcb_state->app_proto) {
@@ -66,8 +73,12 @@ banner1_parse(
                         banner1->smack,
                         &tcb_state->state,
                         px, &offset, (unsigned)length);
-        if (x != SMACK_NOT_FOUND
-            && !(x == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
+        if (x != SMACK_NOT_FOUND)
+            proto = patterns[x].id;
+        else
+            proto = 0xFFFFFFFF;
+        if (proto != 0xFFFFFFFF
+            && !(proto == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
             unsigned i;
 
             /* re-read the stuff that we missed */
@@ -76,14 +87,17 @@ banner1_parse(
 
             /* Kludge: patterns look confusing, so add port info to the
              * pattern */
-            switch (x) {
+            switch (proto) {
             case PROTO_FTP2:
                 if (tcb_state->port == 25 || tcb_state->port == 587)
-                    x = PROTO_SMTP;
+                    proto = PROTO_SMTP;
+                break;
+            case PROTO_VNC_RFB:
+                tcb_state->sub.vnc.version = patterns[x].extra;
                 break;
             }
 
-            tcb_state->app_proto = (unsigned short)x;
+            tcb_state->app_proto = (unsigned short)proto;
 
             /* reset the state back again */
             tcb_state->state = 0;
@@ -187,7 +201,7 @@ banner1_create(void)
                     b->smack,
                     patterns[i].pattern,
                     patterns[i].pattern_length,
-                    patterns[i].id,
+                    i,
                     patterns[i].is_anchored);
     smack_compile(b->smack);
 

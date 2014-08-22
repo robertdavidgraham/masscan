@@ -627,9 +627,17 @@ receive_thread(void *v)
             char foo[64];
             sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
             tcpcon_set_parameter(   tcpcon,
-                                    "timeout",
-                                    strlen(foo),
-                                    foo);
+                                 "timeout",
+                                 strlen(foo),
+                                 foo);
+        }
+        if (masscan->tcp_hello_timeout) {
+            char foo[64];
+            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
+            tcpcon_set_parameter(   tcpcon,
+                                 "hello-timeout",
+                                 strlen(foo),
+                                 foo);
         }
         
         for (pay = masscan->tcp_payloads; pay; pay = pay->next) {

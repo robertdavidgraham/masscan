@@ -1144,6 +1144,8 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("connection-timeout", name) || EQUALS("tcp-timeout", name)) {
         /* The timeout for "banners" TCP connections */
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
+    } else if (EQUALS("hello-timeout", name)) {
+        masscan->tcp_hello_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
