@@ -16,8 +16,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_SSH1: return "ssh";
     case PROTO_SSH2: return "ssh";
     case PROTO_HTTP: return "http";
-    case PROTO_FTP1: return "ftp";
-    case PROTO_FTP2: return "ftp";
+    case PROTO_FTP: return "ftp";
     case PROTO_DNS_VERSIONBIND: return "dns-ver";
     case PROTO_SNMP: return "snmp";
     case PROTO_NBTSTAT: return "nbtstat";
@@ -52,7 +51,7 @@ masscan_string_to_app(const char *str)
         {"ssh2",    PROTO_SSH2},
         {"ssh",     PROTO_SSH2},
         {"http",    PROTO_HTTP},
-        {"ftp",     PROTO_FTP1},
+        {"ftp",     PROTO_FTP},
         {"dns-ver", PROTO_DNS_VERSIONBIND},
         {"snmp",    PROTO_SNMP},
         {"ssh2",    PROTO_SSH2},

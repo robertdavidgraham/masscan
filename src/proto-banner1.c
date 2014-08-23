@@ -9,6 +9,7 @@
 #include "proto-http.h"
 #include "proto-ssl.h"
 #include "proto-ssh.h"
+#include "proto-ftp.h"
 #include "proto-vnc.h"
 #include "masscan-app.h"
 #include <ctype.h>
@@ -22,8 +23,8 @@ struct Patterns patterns[] = {
     {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN},
     {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN},
     {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN},
-    {"220-",        4, PROTO_FTP1, SMACK_ANCHOR_BEGIN},
-    {"220 ",        4, PROTO_FTP2, SMACK_ANCHOR_BEGIN},
+    {"220-",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 0},
+    {"220 ",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 1},
     {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN},
     {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
@@ -88,9 +89,11 @@ banner1_parse(
             /* Kludge: patterns look confusing, so add port info to the
              * pattern */
             switch (proto) {
-            case PROTO_FTP2:
-                if (tcb_state->port == 25 || tcb_state->port == 587)
-                    proto = PROTO_SMTP;
+            case PROTO_FTP:
+                if (patterns[x].extra == 0) {
+                    if (tcb_state->port == 25 || tcb_state->port == 587)
+                        proto = PROTO_SMTP;
+                }
                 break;
             case PROTO_VNC_RFB:
                 tcb_state->sub.vnc.version = patterns[x].extra;
@@ -125,10 +128,17 @@ banner1_parse(
             banout_append(banout, PROTO_HEUR, px, length);
         }
         break;
+    case PROTO_FTP:
+            banner_ftp.parse(   banner1,
+                             banner1->http_fields,
+                             tcb_state,
+                             px, length,
+                             banout,
+                             more);
+            break;
+            
     case PROTO_SSH1:
     case PROTO_SSH2:
-    case PROTO_FTP1:
-    case PROTO_FTP2:
     case PROTO_SMTP:
     case PROTO_POP3:
     case PROTO_IMAP4:

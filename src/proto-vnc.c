@@ -13,7 +13,25 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
 {
     char foo[16];
 
-    
+    /*
+     http://www.iana.org/assignments/rfb/rfb.xml
+    Value 	Name 	Reference 
+    0	Invalid	[RFC6143]
+    1	None	[RFC6143]
+    2	VNC Authentication	[RFC6143]
+    3-15	RealVNC	historic assignment
+    16	Tight	historic assignment
+    17	Ultra	historic assignment
+    18	TLS	historic assignment
+    19	VeNCrypt	historic assignment
+    20	GTK-VNC SASL	historic assignment
+    21	MD5 hash authentication	historic assignment
+    22	Colin Dean xvp	historic assignment
+    23-29	Unassigned	
+    30-35	Apple Inc.	[Michael_Stein]
+    36-127	Unassigned	
+    128-255	RealVNC	historic assignment
+    */
     switch (sectype) {
         case 0:
             banout_append(banout, PROTO_VNC_RFB, "invalid", AUTO_LEN); 
@@ -58,7 +76,10 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
             banout_append(banout, PROTO_VNC_RFB, "Colin-Dean-xvp", AUTO_LEN); 
             break;
         case 30:
-            banout_append(banout, PROTO_VNC_RFB, "Apple", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_RFB, "Apple30", AUTO_LEN); 
+            break;
+        case 35:
+            banout_append(banout, PROTO_VNC_RFB, "Apple35", AUTO_LEN); 
             break;
         default:
             sprintf_s(foo, sizeof(foo), "%u", sectype);

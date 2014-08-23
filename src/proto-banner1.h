@@ -93,6 +93,11 @@ struct VNCSTUFF {
     struct PIXEL_FORMAT pixel;    
 };
 
+struct FTPSTUFF {
+    unsigned code;
+    unsigned is_last:1;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -105,6 +110,7 @@ struct ProtocolState {
     union {
         struct SSLRECORD ssl;
         struct VNCSTUFF vnc;
+        struct FTPSTUFF ftp;
     } sub;
 };
 

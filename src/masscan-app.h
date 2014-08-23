@@ -11,8 +11,7 @@ enum ApplicationProtocol {
     PROTO_SSH1,
     PROTO_SSH2,
     PROTO_HTTP,
-    PROTO_FTP1,
-    PROTO_FTP2,
+    PROTO_FTP,
     PROTO_DNS_VERSIONBIND,
     PROTO_SNMP,             /* simple network management protocol, udp/161 */
     PROTO_NBTSTAT,          /* netbios, udp/137 */
