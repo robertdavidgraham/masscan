@@ -1,3 +1,24 @@
+/*
+
+    SMTP banner checker
+ 
+ This file interacts with an SMTP server when it finds a connection on
+ an SMTP port like 25 with a "220 " as the banner.
+ 
+ Firstly, SMTP requires that the client send a "EHLO" command in order to
+ announce its presence. This command will tell us about some optional
+ features of the server, which we'll record as part of the [smtp] banner.
+ 
+ Secondly, we'll attempt to do a STARTTLS command, regardless whether the
+ server advertised the capability. This should either get back an "OK" 
+ message or an error, which we also record as part of the banner.
+ 
+ If we get an OK, then we switch the parser to SSL, and continue as if 
+ this were an SSL connection. Any SSL data will show up as an [ssl] protocol
+ rather than an SMTP protocol.
+ 
+*/
+
 #include "proto-smtp.h"
 #include "proto-banner1.h"
 #include "unusedparm.h"

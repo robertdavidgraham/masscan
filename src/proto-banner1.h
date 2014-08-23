@@ -104,6 +104,11 @@ struct SMTPSTUFF {
     unsigned is_last:1;
 };
 
+struct POP3STUFF {
+    unsigned code;
+    unsigned is_last:1;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -118,6 +123,7 @@ struct ProtocolState {
         struct VNCSTUFF vnc;
         struct FTPSTUFF ftp;
         struct SMTPSTUFF smtp;
+        struct POP3STUFF pop3;
     } sub;
 };
 

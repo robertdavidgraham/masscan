@@ -11,6 +11,7 @@
 #include "proto-ssh.h"
 #include "proto-ftp.h"
 #include "proto-smtp.h"
+#include "proto-pop3.h"
 #include "proto-vnc.h"
 #include "masscan-app.h"
 #include <ctype.h>
@@ -137,18 +138,26 @@ banner1_parse(
                              banout,
                              more);
             break;
-    case PROTO_SMTP:
+        case PROTO_SMTP:
             banner_smtp.parse(   banner1,
-                             banner1->http_fields,
-                             tcb_state,
-                             px, length,
-                             banout,
-                             more);
+                              banner1->http_fields,
+                              tcb_state,
+                              px, length,
+                              banout,
+                              more);
+            break;
+            
+    case PROTO_POP3:
+            banner_pop3.parse(   banner1,
+                              banner1->http_fields,
+                              tcb_state,
+                              px, length,
+                              banout,
+                              more);
             break;
             
     case PROTO_SSH1:
     case PROTO_SSH2:
-    case PROTO_POP3:
     case PROTO_IMAP4:
         /* generic text-based parser
          * TODO: in future, need to split these into separate protocols,
