@@ -10,6 +10,7 @@
 #include "proto-ssl.h"
 #include "proto-ssh.h"
 #include "proto-ftp.h"
+#include "proto-smtp.h"
 #include "proto-vnc.h"
 #include "masscan-app.h"
 #include <ctype.h>
@@ -90,7 +91,7 @@ banner1_parse(
              * pattern */
             switch (proto) {
             case PROTO_FTP:
-                if (patterns[x].extra == 0) {
+                if (patterns[x].extra == 1) {
                     if (tcb_state->port == 25 || tcb_state->port == 587)
                         proto = PROTO_SMTP;
                 }
@@ -136,10 +137,17 @@ banner1_parse(
                              banout,
                              more);
             break;
+    case PROTO_SMTP:
+            banner_smtp.parse(   banner1,
+                             banner1->http_fields,
+                             tcb_state,
+                             px, length,
+                             banout,
+                             more);
+            break;
             
     case PROTO_SSH1:
     case PROTO_SSH2:
-    case PROTO_SMTP:
     case PROTO_POP3:
     case PROTO_IMAP4:
         /* generic text-based parser

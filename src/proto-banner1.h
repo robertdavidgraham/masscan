@@ -98,6 +98,12 @@ struct FTPSTUFF {
     unsigned is_last:1;
 };
 
+
+struct SMTPSTUFF {
+    unsigned code;
+    unsigned is_last:1;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -111,6 +117,7 @@ struct ProtocolState {
         struct SSLRECORD ssl;
         struct VNCSTUFF vnc;
         struct FTPSTUFF ftp;
+        struct SMTPSTUFF smtp;
     } sub;
 };
 
