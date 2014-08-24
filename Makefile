@@ -23,7 +23,7 @@ endif
 # my regularly regression-test environment. That means at any point
 # in time, something might be minorly broken in Mac OS X.
 ifneq (, $(findstring darwin, $(SYS)))
-LIBS = -lpcap -lm -rdynamic
+LIBS = -lpcap -lm 
 INCLUDES = -I.
 FLAGS2 = 
 INSTALL_DATA = -pm755
