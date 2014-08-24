@@ -36,7 +36,6 @@ imap4_parse(  const struct Banner1 *banner1,
         if (px[i] == '\r')
             continue;
         
-        printf("\n%u-%c\n", state, px[i]);
         switch (state) {
             case 0:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
