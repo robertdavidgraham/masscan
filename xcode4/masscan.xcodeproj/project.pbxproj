@@ -13,6 +13,7 @@
 		11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDA19A84A9E00DB5BFE /* proto-smtp.c */; };
 		11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDD19A8FDE300DB5BFE /* proto-pop3.c */; };
 		11420DE019A90CB300DB5BFE /* proto-interactive.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDF19A90CB300DB5BFE /* proto-interactive.c */; };
+		11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DE219A9363A00DB5BFE /* proto-imap4.c */; };
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
 		11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
@@ -110,6 +111,8 @@
 		11420DDC19A8F2D200DB5BFE /* proto-pop3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-pop3.h"; sourceTree = "<group>"; };
 		11420DDD19A8FDE300DB5BFE /* proto-pop3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-pop3.c"; sourceTree = "<group>"; };
 		11420DDF19A90CB300DB5BFE /* proto-interactive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-interactive.c"; sourceTree = "<group>"; };
+		11420DE119A9361500DB5BFE /* proto-imap4.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-imap4.h"; sourceTree = "<group>"; };
+		11420DE219A9363A00DB5BFE /* proto-imap4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-imap4.c"; sourceTree = "<group>"; };
 		115C0CA318035BC5004E6CD7 /* out-record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-record.h"; sourceTree = "<group>"; };
 		115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns-parse.h"; sourceTree = "<group>"; };
 		115C0CA518035BC5004E6CD7 /* proto-netbios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-netbios.c"; sourceTree = "<group>"; };
@@ -420,6 +423,8 @@
 				11420DDC19A8F2D200DB5BFE /* proto-pop3.h */,
 				11420DDD19A8FDE300DB5BFE /* proto-pop3.c */,
 				11420DDF19A90CB300DB5BFE /* proto-interactive.c */,
+				11420DE119A9361500DB5BFE /* proto-imap4.h */,
+				11420DE219A9363A00DB5BFE /* proto-imap4.c */,
 			);
 			name = src;
 			path = ../src;
@@ -552,6 +557,7 @@
 				11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */,
 				11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */,
 				11420DE019A90CB300DB5BFE /* proto-interactive.c in Sources */,
+				11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

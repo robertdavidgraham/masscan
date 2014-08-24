@@ -11,6 +11,7 @@
 #include "proto-ssh.h"
 #include "proto-ftp.h"
 #include "proto-smtp.h"
+#include "proto-imap4.h"
 #include "proto-pop3.h"
 #include "proto-vnc.h"
 #include "masscan-app.h"
@@ -155,10 +156,17 @@ banner1_parse(
                               banout,
                               more);
             break;
+    case PROTO_IMAP4:
+            banner_imap4.parse(banner1,
+                              banner1->http_fields,
+                              tcb_state,
+                              px, length,
+                              banout,
+                              more);
+            break;
             
     case PROTO_SSH1:
     case PROTO_SSH2:
-    case PROTO_IMAP4:
         /* generic text-based parser
          * TODO: in future, need to split these into separate protocols,
          * especially when binary parsing is added to SSH */
