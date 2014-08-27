@@ -667,6 +667,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                     "                                          ");
 
         fprintf(stdout, "\n");
+        fflush(stdout);
 
     }
 
