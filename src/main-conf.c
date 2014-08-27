@@ -1600,10 +1600,9 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("version-trace", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
-    } else if (EQUALS("vlan", name)) {
+    } else if (EQUALS("vlan", name) || EQUALS("adapter-vlan", name)) {
         masscan->nic[index].is_vlan = 1;
         masscan->nic[index].vlan_id = parseInt(value);
-        printf("using vlan = 0x%08x\n", masscan->nic[index].vlan_id);
     } else if (EQUALS("wait", name)) {
         if (EQUALS("forever", value))
             masscan->wait =  INT_MAX;
