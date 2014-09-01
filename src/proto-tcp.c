@@ -447,7 +447,7 @@ tcpcon_destroy_tcb(
         /* TODO: this should be impossible, but it's happening anyway, about
          * 20 times on a full Internet scan. I don't know why, and I'm too
          * lazy to fix it right now, but I'll get around to eventually */
-        fprintf(stderr, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
+        LOG(1, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
                 (tcb->ip_them>>24)&0xFF,
                 (tcb->ip_them>>16)&0xFF,
                 (tcb->ip_them>> 8)&0xFF,
