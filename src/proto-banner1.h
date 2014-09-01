@@ -79,8 +79,8 @@ struct PIXEL_FORMAT {
     unsigned char blue_shift;
     unsigned char bits_per_pixel;
     unsigned char depth;
-    unsigned char big_endian_flag:1;
-    unsigned char true_colour_flag:1;
+    unsigned big_endian_flag:1;
+    unsigned true_colour_flag:1;
 };
 struct VNCSTUFF {
     unsigned sectype;

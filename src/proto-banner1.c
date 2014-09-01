@@ -99,7 +99,7 @@ banner1_parse(
                 }
                 break;
             case PROTO_VNC_RFB:
-                tcb_state->sub.vnc.version = patterns[x].extra;
+                tcb_state->sub.vnc.version = (unsigned char)patterns[x].extra;
                 break;
             }
 

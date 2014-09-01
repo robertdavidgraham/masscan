@@ -12,6 +12,10 @@
 #endif
 #include <ctype.h>
 
+#if _MSC_VER
+#define strdup _strdup
+#endif
+
 static char * tcp_services[65536];
 
 static void init_tcp_services();
