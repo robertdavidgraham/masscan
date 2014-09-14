@@ -36,10 +36,10 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     UNUSEDPARM(timestamp);
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  ip: \"%u.%u.%u.%u\", ", 
+    fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ", 
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "  ports: [ {port: %u, proto: \"%s\", status: \"%s\","
-                " reason: \"%s\", ttl: %u} ] ",
+    fprintf(fp, "  \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"status\": \"%s\","
+                " \"reason\": \"%s\", \"ttl\": %u} ] ",
                 port,
                 name_from_ip_proto(ip_proto),
                 status_string(status),
@@ -101,9 +101,9 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(timestamp);
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  ip: \"%u.%u.%u.%u\", ", 
+    fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ", 
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "  ports: [ {port: %u, proto: \"%s\", service: {name: \"%s\", banner: \"%s\"} } ] ",
+    fprintf(fp, "  \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
             port,
             name_from_ip_proto(ip_proto),
             masscan_app_to_string(proto),
