@@ -154,7 +154,15 @@ pixie_cpu_get_count(void)
             perror("sched_getaffinity");
             return 1;
         } else {
+#if __GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 6)            
             return CPU_COUNT(&mask);
+#else
+            unsigned int bit;
+            int np;
+            for( np = 0, bit = 0; bit < sizeof(mask); bit++ )
+                np += (((uint8_t *)&mask)[bit / 8] >> (bit % 8)) & 1;
+            return np;
+#endif /* GLIBC */            
         }
     }
 #else
