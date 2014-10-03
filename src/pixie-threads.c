@@ -154,7 +154,11 @@ pixie_cpu_get_count(void)
             perror("sched_getaffinity");
             return 1;
         } else {
+#ifndef CPU_COUNT
+            return 1;
+#else
             return CPU_COUNT(&mask);
+#endif
         }
     }
 #else
