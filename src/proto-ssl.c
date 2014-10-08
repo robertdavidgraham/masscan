@@ -1006,22 +1006,22 @@ ssl_hello_heartbeat_template = ssl_hello_heartbeat_templatex;
  * Figure out the Hello message size by parsing the data
  *****************************************************************************/
 unsigned
-ssl_hello_size(const void *template)
+ssl_hello_size(const void *templ)
 {
-    const unsigned char *px = (const unsigned char *)template;
+    const unsigned char *px = (const unsigned char *)templ;
     size_t template_size;
     
     template_size = (px[3]<<8 | px[4]) + 5;
     
-    return template_size;
+    return (unsigned)template_size;
 }
     
 /*****************************************************************************
  *****************************************************************************/
 char *
-ssl_hello(const void *template)
+ssl_hello(const void *templ)
 {
-    unsigned char *px = (unsigned char *)template;
+    unsigned char *px = (unsigned char *)templ;
     unsigned now = (unsigned)time(0);
     unsigned i;
     
@@ -1030,7 +1030,7 @@ ssl_hello(const void *template)
     
     /* allocate memory for that size and copy */
     px = malloc(template_size);
-    memcpy(px, template, template_size);
+    memcpy(px, templ, template_size);
     
     /* set the new timestamp and randomize buffer */
     px[11] = (unsigned char)(now>>24);

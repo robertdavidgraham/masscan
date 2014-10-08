@@ -68,6 +68,7 @@ struct Output
         unsigned offset;
         uint64_t filesize;
         uint64_t bytes_written;
+        unsigned filecount; /* filesize rotates */
         char *directory;
     } rotate;
 
