@@ -49,6 +49,7 @@
 #include "proto-interactive.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
+#include "siphash24.h"
 #include "string_s.h"
 #include <string.h>
 #include <ctype.h>
@@ -901,7 +902,7 @@ ssl_init(struct Banner1 *banner1)
  * select various options.
  *****************************************************************************/
 static const char
-ssl_hello[] =
+ssl_hello_template[] =
 "\x16\x03\x02\x01\x6f"          /* TLSv1.1 record layer */
 "\x01" /* type = client-hello */
 "\x00\x01\x6b" /* length = 363 */
@@ -960,28 +961,94 @@ ssl_hello[] =
 ;
 
 
-const char
-ssl_hello_heartbeat_data[] =
-/*0000*/ "\x16\x03\x02\x00\xdc\x01\x00\x00\xd8\x03\x02\x53\x43\x5b\x90\x9d"
+static const char
+ssl_hello_heartbeat_templatex[] =
+"\x16"      /* type = handshake */
+"\x03\x02"  /* version = 3.2 (TLS/1.1) */
+"\x00\xdc"  /* length  = 220 */
+ "\x01"         /* type = client hello */
+ "\x00\x00\xd8" /* length = 216 */
+ "\x03\x02"     /* version = 3.2 (TLS/1.1) */
+ "\x53\x43\x5b\x90" /* gm time = April 7 */
+/*000F*/ "\x9d"
 /*0010*/ "\x9b\x72\x0b\xbc\x0c\xbc\x2b\x92\xa8\x48\x97\xcf\xbd\x39\x04\xcc"
-/*0020*/ "\x16\x0a\x85\x03\x90\x9f\x77\x04\x33\xd4\xde\x00\x00\x66\xc0\x14"
+/*0020*/ "\x16\x0a\x85\x03\x90\x9f\x77\x04\x33\xd4\xde"
+
+ "\x00"         /* session id length = 0 */
+                /* session id */
+ "\x00\x66"     /* cipher suites length = 102 */
+/*002e*/ "\xc0\x14"
 /*0030*/ "\xc0\x0a\xc0\x22\xc0\x21\x00\x39\x00\x38\x00\x88\x00\x87\xc0\x0f"
 /*0040*/ "\xc0\x05\x00\x35\x00\x84\xc0\x12\xc0\x08\xc0\x1c\xc0\x1b\x00\x16"
 /*0050*/ "\x00\x13\xc0\x0d\xc0\x03\x00\x0a\xc0\x13\xc0\x09\xc0\x1f\xc0\x1e"
 /*0060*/ "\x00\x33\x00\x32\x00\x9a\x00\x99\x00\x45\x00\x44\xc0\x0e\xc0\x04"
 /*0070*/ "\x00\x2f\x00\x96\x00\x41\xc0\x11\xc0\x07\xc0\x0c\xc0\x02\x00\x05"
 /*0080*/ "\x00\x04\x00\x15\x00\x12\x00\x09\x00\x14\x00\x11\x00\x08\x00\x06"
-/*0090*/ "\x00\x03\x00\xff\x01\x00\x00\x49\x00\x0b\x00\x04\x03\x00\x01\x02"
-/*00a0*/ "\x00\x0a\x00\x34\x00\x32\x00\x0e\x00\x0d\x00\x19\x00\x0b\x00\x0c"
+/*0090*/ "\x00\x03\x00\xff"
+ "\x01"         /* compression methods = 1 */
+ "\x00"         /* nul compression */
+ "\x00\x49"     /* extensions length */
+ "\x00\x0b\x00\x04\x03\x00\x01\x02"
+/*00a0*/ 
+ "\x00\x0a\x00\x34\x00\x32\x00\x0e\x00\x0d\x00\x19\x00\x0b\x00\x0c"
 /*00b0*/ "\x00\x18\x00\x09\x00\x0a\x00\x16\x00\x17\x00\x08\x00\x06\x00\x07"
 /*00c0*/ "\x00\x14\x00\x15\x00\x04\x00\x05\x00\x12\x00\x13\x00\x01\x00\x02"
-/*00d0*/ "\x00\x03\x00\x0f\x00\x10\x00\x11\x00\x23\x00\x00\x00\x0f\x00\x01"
-/*00e0*/ "\x01";
+/*00d0*/ "\x00\x03\x00\x0f\x00\x10\x00\x11"
+ "\x00\x23\x00\x00"
+ "\x00\x0f\x00\x01\x01";
+
+const char *
+ssl_hello_heartbeat_template = ssl_hello_heartbeat_templatex;
 
 
-unsigned ssl_hello_heartbeat_size = sizeof(ssl_hello_heartbeat_data)-1;
-const char *ssl_hello_heartbeat = ssl_hello_heartbeat_data;
 
+/*****************************************************************************
+ * Figure out the Hello message size by parsing the data
+ *****************************************************************************/
+unsigned
+ssl_hello_size(const void *template)
+{
+    const unsigned char *px = (const unsigned char *)template;
+    size_t template_size;
+    
+    template_size = (px[3]<<8 | px[4]) + 5;
+    
+    return template_size;
+}
+    
+/*****************************************************************************
+ *****************************************************************************/
+char *
+ssl_hello(const void *template)
+{
+    unsigned char *px = (unsigned char *)template;
+    unsigned now = (unsigned)time(0);
+    unsigned i;
+    
+    /* parse existing template to figure out size */
+    size_t template_size = (px[3]<<8 | px[4]) + 5;
+    
+    /* allocate memory for that size and copy */
+    px = malloc(template_size);
+    memcpy(px, template, template_size);
+    
+    /* set the new timestamp and randomize buffer */
+    px[11] = (unsigned char)(now>>24);
+    px[12] = (unsigned char)(now>>16);
+    px[13] = (unsigned char)(now>> 8);
+    px[14] = (unsigned char)(now>> 0);
+    
+    /* create a pattern to make this detectable as specfically masscan */
+    for (i=4; i<32; i++) {
+        static const uint64_t key[2] = {0,0};
+        unsigned val = i+now;
+        unsigned char c = (unsigned char)siphash24(&val, sizeof(val), key);
+        
+        px[11+i] = c;
+    }
+    
+    return (char*)px;
+}
 
 
 extern unsigned char ssl_test_case_1[];
@@ -1163,7 +1230,7 @@ ssl_selftest(void)
  * the main system.
  *****************************************************************************/
 struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello, sizeof(ssl_hello)-1, 0,
+    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1, 0,
     ssl_selftest,
     ssl_init,
     ssl_parse_record,

@@ -237,8 +237,8 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
         /* Change the hello message to including negotiating the use of 
          * the "heartbeat" extension */
-        banner_ssl.hello = ssl_hello_heartbeat;
-        banner_ssl.hello_length = ssl_hello_heartbeat_size;
+        banner_ssl.hello = ssl_hello(ssl_hello_heartbeat_template);
+        banner_ssl.hello_length = ssl_hello_size(banner_ssl.hello);
         tcpcon->is_heartbleed = 1;
         tcpcon->banner1->is_heartbleed = 1;
 
