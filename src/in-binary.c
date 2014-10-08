@@ -204,6 +204,89 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
                 );
 }
 
+struct CNDB_Entry {
+    unsigned ip;
+    char *name;
+    struct CNDB_Entry *next;
+};
+
+struct CNDB_Database {
+    struct CNDB_Entry *entries[65536];
+};
+
+/***************************************************************************
+ ***************************************************************************/
+static struct CNDB_Database *db = NULL;
+
+/***************************************************************************
+ ***************************************************************************/
+static const char *
+cndb_lookup(unsigned ip)
+{
+    const struct CNDB_Entry *entry;
+    
+    entry = db->entries[ip&0xFFFF];
+    while (entry && entry->ip != ip)
+        entry = entry->next;
+    if (entry)
+        return entry->name;
+    else {
+        return 0;
+    }
+}
+/***************************************************************************
+ ***************************************************************************/
+static void
+cndb_add(unsigned ip, const unsigned char *data, size_t length)
+{
+    size_t offset = 0;
+    size_t name_offset;
+    size_t name_length;
+    
+    if (length < 7)
+        return;
+    
+    /*cipher:0x39 , safe-we1.dyndns.org*/
+    if (memcmp(data+offset, "cipher:", 7) != 0)
+        return;
+    offset += 7;
+    
+    /* skip to name */
+    while (offset < length && data[offset] != ',')
+        offset++;
+    if (offset >= length)
+        return;
+    else
+        offset++; /* skip ',' */
+    while (offset < length && data[offset] == ' ')
+        offset++;
+    if (offset >= length)
+        return;
+    
+    /* we should have a good name */
+    name_offset = offset;
+    while (offset < length && data[offset] != ',')
+        offset++;
+    name_length = offset - name_offset;
+    
+    /* now insert into database */
+    if (db == NULL) {
+        db = malloc(sizeof(*db));
+        memset(db, 0, sizeof(*db));
+    }
+    {
+        struct CNDB_Entry *entry;
+        
+        entry = malloc(sizeof(*entry));
+        entry->ip =ip;
+        entry->name = malloc(name_length+1);
+        memcpy(entry->name, data+name_offset, name_length+1);
+        entry->name[name_length] = '\0';
+        entry->next = db->entries[ip&0xFFFF];
+        db->entries[ip&0xFFFF] = entry;
+    }
+}
+
 /***************************************************************************
  ***************************************************************************/
 static void
@@ -213,6 +296,8 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
               const struct RangeList *btypes)
 {
     struct MasscanRecord record;
+    const unsigned char *data = buf+14;
+    size_t data_length = buf_length-14;
 
     if (buf_length < 14)
         return;
@@ -230,6 +315,26 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
 
+    /*
+     * KLUDGE: when doing SSL stuff, add a IP:name pair to a database
+     * so we can annotate [VULN] strings with this information
+     */
+    if (record.app_proto == PROTO_SSL3) {
+        cndb_add(record.ip, data, data_length);
+    } else if (record.app_proto == PROTO_VULN) {
+        const char *name = cndb_lookup(record.ip);
+        
+        if (data_length == 15 && memcmp(data, "SSL[heartbeat] ", 15) == 0)
+            return;
+
+        if (name && strlen(name) < 300) {
+            //printf("vuln=%s\n", name);
+            ((char*)data)[data_length] = ' ';
+            memcpy((char*)data+data_length+1, name, strlen(name)+1);
+            data_length += strlen(name)+1;
+        }
+    }
+    
     /*
      * Filter
      */
@@ -257,7 +362,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 record.ttl, /* ttl */
-                buf+14, (unsigned)buf_length-14
+                data, (unsigned)data_length
                 );
 }
 
