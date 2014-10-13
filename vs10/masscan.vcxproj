@@ -22,6 +22,8 @@
     <ClCompile Include="..\src\crypto-base64.c" />
     <ClCompile Include="..\src\crypto-blackrock2.c" />
     <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\in-filter.c" />
+    <ClCompile Include="..\src\in-report.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
@@ -100,6 +102,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\crypto-base64.h" />
+    <ClInclude Include="..\src\in-filter.h" />
+    <ClInclude Include="..\src\in-report.h" />
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />

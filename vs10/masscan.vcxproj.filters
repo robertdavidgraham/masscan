@@ -270,6 +270,12 @@
     <ClCompile Include="..\src\proto-interactive.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\in-filter.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-report.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -463,6 +469,12 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-vnc.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-filter.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-report.h">
+      <Filter>Source Files\output</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
