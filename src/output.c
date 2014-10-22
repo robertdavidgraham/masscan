@@ -680,7 +680,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
     /* If in "--interactive" mode, then print the banner to the command
      * line screen */
-    if (out->is_interactive || out->format == 0) {
+    if (out->is_interactive || out->format == 0 || out->format == Output_Interactive) {
         unsigned count;
 
         count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
@@ -800,7 +800,7 @@ output_report_banner(struct Output *out, time_t now,
 
     /* If in "--interactive" mode, then print the banner to the command
      * line screen */
-    if (out->is_interactive || out->format == 0) {
+    if (out->is_interactive || out->format == 0 || out->format == Output_Interactive) {
         unsigned count;
         char banner_buffer[4096];
 

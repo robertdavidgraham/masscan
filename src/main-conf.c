@@ -1382,10 +1382,12 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("output-format", name)) {
         enum OutputFormat x = 0;
-        if (EQUALS("interactive", value))
-            masscan->output.format = Output_Interactive;
+        if (EQUALS("unknown(0)", value)) {
+            x = Output_Interactive;
+        }
+        else if (EQUALS("interactive", value))  x = Output_Interactive;
         else if (EQUALS("list", value))         x = Output_List;
-        else if (EQUALS("unicornscan", value))         x = Output_Unicornscan;
+        else if (EQUALS("unicornscan", value))  x = Output_Unicornscan;
         else if (EQUALS("xml", value))          x = Output_XML;
         else if (EQUALS("binary", value))       x = Output_Binary;
         else if (EQUALS("greppable", value))    x = Output_Grepable;

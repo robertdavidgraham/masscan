@@ -288,7 +288,10 @@ struct Masscan
     
         /**
          * --interactive
-         * Print to command-line while also writing to output file
+         * Print to command-line while also writing to output file. This isn't
+         * needed if the output format is already 'interactive' (the default),
+         * but only if the default output format is anything else, and the
+         * user also wants interactivity.
          */
         unsigned is_interactive:1;
         
