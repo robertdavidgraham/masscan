@@ -175,6 +175,7 @@ struct Masscan
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
+    unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
         
 
     /**

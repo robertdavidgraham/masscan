@@ -1488,6 +1488,16 @@ masscan_set_parameter(struct Masscan *masscan,
         while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
             p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
+        if (EQUALS("heartbleed", value)) {
+            masscan_set_parameter(masscan, "heartbleed", "true");
+            return;
+        } else if (EQUALS("poodle", value) || EQUALS("sslv3", value)) {
+            masscan->is_poodle_sslv3 = 1;
+            masscan_set_parameter(masscan, "no-capture", "cert");
+            masscan_set_parameter(masscan, "banners", "true");
+            return;
+        }
+        
         if (!script_lookup(value)) {
             fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
             fprintf(stderr, "  hint: most nmap scripts aren't supported\n");

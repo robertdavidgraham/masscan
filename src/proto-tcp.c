@@ -71,7 +71,6 @@ struct TCP_ConnectionTable {
     unsigned mask;
     unsigned timeout_connection;
     unsigned timeout_hello;
-    unsigned is_heartbleed:1;
 
     uint64_t active_count;
     uint64_t entropy;
@@ -239,7 +238,6 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
          * the "heartbeat" extension */
         banner_ssl.hello = ssl_hello(ssl_hello_heartbeat_template);
         banner_ssl.hello_length = ssl_hello_size(banner_ssl.hello);
-        tcpcon->is_heartbleed = 1;
         tcpcon->banner1->is_heartbleed = 1;
 
         for (i=0; i<65535; i++) {
@@ -249,6 +247,28 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
+    /*
+     * 2014-10-16: scan for SSLv3 servers (POODLE)
+     */
+    if (name_equals(name, "poodle") || name_equals(name, "sslv3")) {
+        unsigned i;
+        void *px;
+        
+        /* Change the hello message to including negotiating the use of 
+         * the "heartbeat" extension */
+        px = ssl_hello(ssl_hello_sslv3_template);
+        banner_ssl.hello = ssl_add_cipherspec(px, 0x5600, 1);
+        banner_ssl.hello_length = ssl_hello_size(banner_ssl.hello);
+        tcpcon->banner1->is_poodle_sslv3 = 1;
+
+        for (i=0; i<65535; i++) {
+            banner1->tcp_payloads[i] = &banner_ssl;
+        }
+        
+        return;
+    }
+
+    
     /*
      * You can reconfigure the "hello" message to be anything
      * you want.
@@ -1006,7 +1026,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             /*
              * KLUDGE
              */
-            if (tcpcon->is_heartbleed) {
+            if (tcpcon->banner1->is_heartbleed) {
                 ctrl = CTRL_SMALL_WINDOW;
             }
 

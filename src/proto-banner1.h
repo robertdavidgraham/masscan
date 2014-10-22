@@ -18,6 +18,7 @@ struct Banner1
     unsigned is_capture_cert:1;
     unsigned is_capture_heartbleed:1;
     unsigned is_heartbleed:1;
+    unsigned is_poodle_sslv3:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];
 };
@@ -47,6 +48,10 @@ struct SSL_SERVER_CERT {
     } sub;
     struct CertDecode x509;
 };
+struct SSL_SERVER_ALERT {
+    unsigned char level;
+    unsigned char description;
+};
 
 struct SSLRECORD {
     unsigned char type;
@@ -66,6 +71,7 @@ struct SSLRECORD {
         } all;
         struct SSL_SERVER_HELLO server_hello;
         struct SSL_SERVER_CERT server_cert;
+        struct SSL_SERVER_ALERT server_alert;
     } x;
 
 };
