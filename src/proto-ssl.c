@@ -787,7 +787,7 @@ parse_alert(
         DESCRIPTION,
         UNKNOWN,
     };
-    
+	char foo[64];    
     UNUSEDPARM(more);
     UNUSEDPARM(banner1_private);
     
@@ -819,7 +819,6 @@ parse_alert(
                         default:
                             banout_append(banout, PROTO_SAFE, 
                                           "poodle[no-SSLv3] ", AUTO_LEN);
-                            char foo[64];
                             sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                                       ssl->x.server_alert.level,
                                       ssl->x.server_alert.description
@@ -829,7 +828,7 @@ parse_alert(
                             break;
                     }
                 } else {
-                    char foo[64];
+
                     sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                               ssl->x.server_alert.level,
                               ssl->x.server_alert.description
