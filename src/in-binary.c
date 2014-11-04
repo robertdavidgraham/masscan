@@ -24,6 +24,7 @@ struct MasscanRecord {
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
+    unsigned char mac[6];
     enum ApplicationProtocol app_proto;
 };
 
@@ -46,6 +47,12 @@ parse_status(struct Output *out,
     record.port      = buf[8]<<8 | buf[9];
     record.reason    = buf[10];
     record.ttl       = buf[11];
+
+    /* if ARP, then there will be a MAC address */
+    if (record.ip == 0 && buf_length >= 12+6)
+        memcpy(record.mac, buf+12, 6);
+    else
+        memset(record.mac, 0, 6);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -77,7 +84,8 @@ parse_status(struct Output *out,
                     record.ip_proto,
                     record.port,
                     record.reason,
-                    record.ttl);
+                    record.ttl,
+                    record.mac);
 
 }
 
@@ -102,6 +110,12 @@ parse_status2(struct Output *out,
     record.port      = buf[9]<<8 | buf[10];
     record.reason    = buf[11];
     record.ttl       = buf[12];
+
+    /* if ARP, then there will be a MAC address */
+    if (record.ip == 0 && buf_length >= 13+6)
+        memcpy(record.mac, buf+13, 6);
+    else
+        memset(record.mac, 0, 6);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -128,7 +142,8 @@ parse_status2(struct Output *out,
                     record.ip_proto,
                     record.port,
                     record.reason,
-                    record.ttl);
+                    record.ttl,
+                    record.mac);
 
 }
 

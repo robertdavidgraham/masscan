@@ -804,6 +804,8 @@ parse_alert(
             case DESCRIPTION:
                 ssl->x.server_alert.description = px[i];
                 if (banner1->is_poodle_sslv3 && ssl->x.server_alert.level == 2) {
+                    char foo[64];
+
                     /* fatal error */
                     switch (ssl->x.server_alert.description) {
                         case 86:
@@ -819,7 +821,6 @@ parse_alert(
                         default:
                             banout_append(banout, PROTO_SAFE, 
                                           "poodle[no-SSLv3] ", AUTO_LEN);
-                            char foo[64];
                             sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                                       ssl->x.server_alert.level,
                                       ssl->x.server_alert.description

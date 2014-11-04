@@ -89,7 +89,9 @@
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\rte-ring.c" />
+    <ClCompile Include="..\src\script-heartbleed.c" />
     <ClCompile Include="..\src\script-ntp-monlist.c" />
+    <ClCompile Include="..\src\script-sslv3.c" />
     <ClCompile Include="..\src\script.c" />
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
