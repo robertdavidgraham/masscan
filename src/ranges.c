@@ -92,7 +92,7 @@ range_combine(struct Range *lhs, struct Range rhs)
 void
 rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 {
-    unsigned i;
+    int first, middle, last;
     struct Range range;
 
     range.begin = begin;
@@ -116,28 +116,50 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         task->max = (unsigned)new_max;
     }
 
-    /* See if the range overlaps any exist range already in the
-     * list */
-    for (i = 0; i < task->count; i++) {
-        if (range_is_overlap(task->list[i], range)) {
-            range_combine(&range, task->list[i]);
-            todo_remove_at(task, i);
-            rangelist_add_range(task, range.begin, range.end);
-            return;
-        }
+    if (!task->count) {
+        task->list[0].begin = begin;
+        task->list[0].end = end;
+        task->count++;
+        return;
     }
 
-    /* Find a spot to insert in sorted order */
-    for (i = 0; i < task->count; i++) {
-        if (range.begin < task->list[i].begin) {
-            memmove(task->list+i+1, task->list+i, (task->count - i) * sizeof(task->list[0]));
+    /* Binary search to find where the current IP range belongs by comparing range beginnings */
+    first = 0;
+    last = task->count - 1;
+    middle = (first + last) / 2;
+
+    while (first <= last) {
+        if (task->list[middle].begin < range.begin)
+            first = middle + 1;
+        else if (task->list[middle].begin == range.begin)
             break;
-        }
+        else
+            last = middle - 1;
+
+        middle = (first + last) / 2;
     }
 
-    /* Add to end of list */
-    task->list[i].begin = begin;
-    task->list[i].end = end;
+    /* `middle` now points to the IP range numerically smaller than or equal to it. Try to merge it
+     *  with the numerically smaller, and then greater ranges. */
+    if (range_is_overlap(task->list[middle], range)) {
+        range_combine(&range, task->list[middle]);
+        todo_remove_at(task, middle);
+        rangelist_add_range(task, range.begin, range.end);
+        return;
+    }
+    if (task->count > (middle+1) && range_is_overlap(task->list[middle+1], range)) {
+        range_combine(&range, task->list[middle+1]);
+        todo_remove_at(task, middle+1);
+        rangelist_add_range(task, range.begin, range.end);
+        return;
+    }
+
+    /* Make space for the current range respecting sorted order by placing it in entry `middle+1` */
+    memmove(task->list+middle+2, task->list+middle+1, (task->count - middle - 1) * sizeof(task->list[0]));
+
+    /* Add to the list */
+    task->list[middle+1].begin = begin;
+    task->list[middle+1].end = end;
     task->count++;
 }
 
