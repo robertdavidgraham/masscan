@@ -9,8 +9,9 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
 #include "proto-ssl.h"
+#include "proto-tcp-transmit.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -23,7 +24,7 @@ pop3_parse(  const struct Banner1 *banner1,
            struct ProtocolState *pstate,
            const unsigned char *px, size_t length,
            struct BannerOutput *banout,
-           struct InteractiveData *more)
+           struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -48,7 +49,7 @@ pop3_parse(  const struct Banner1 *banner1,
             case 3:
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "CAPA\r\n", 6);
+                    tcp_add_xmit(tcb, "CAPA\r\n", 6, XMIT_STATIC);
                     state++;
                 }
                 break;
@@ -102,7 +103,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     continue;
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "STLS\r\n", 6);
+                    tcp_add_xmit(tcb, "STLS\r\n", 6, XMIT_STATIC);
                     state = 204;
                 } else {
                     state = 8;
@@ -114,17 +115,8 @@ pop3_parse(  const struct Banner1 *banner1,
                     continue;
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    /* change the state here to SSL */
-                    unsigned port = pstate->port;
-                    memset(pstate, 0, sizeof(*pstate));
-                    pstate->app_proto = PROTO_SSL3;
-                    pstate->is_sent_sslhello = 1;
-                    pstate->port = (unsigned short)port;
-                    state = 0;
-                    
-                    more->payload = banner_ssl.hello;
-                    more->length = (unsigned)banner_ssl.hello_length;
-                    break;
+                    ssl_switch(tcb, pstate);
+                    return;
                 }
                 break;
 
@@ -145,10 +137,25 @@ pop3_parse(  const struct Banner1 *banner1,
 
 /***************************************************************************
  ***************************************************************************/
-static void *
-pop3_init(struct Banner1 *banner1)
+static void 
+pop3_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void *
+pop3_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -164,8 +171,11 @@ pop3_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_pop3 = {
-    "pop3", 21, 0, 0, 0,
+    "pop3", 21, 
+    //0, 0, 0,
     pop3_selftest,
     pop3_init,
     pop3_parse,
+    pop3_hello,
+    default_set_parameter,
 };

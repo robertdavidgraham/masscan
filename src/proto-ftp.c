@@ -2,8 +2,9 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
 #include "proto-ssl.h"
+#include "proto-tcp-transmit.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -16,7 +17,7 @@ ftp_parse(  const struct Banner1 *banner1,
           struct ProtocolState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -68,8 +69,7 @@ ftp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (ftp->is_last) {
-                        more->payload = "AUTH TLS\r\n";
-                        more->length = 10;
+                        tcp_add_xmit(tcb, "AUTH TLS\r\n", 10, XMIT_STATIC);
                         state = 100;
                         banout_append_char(banout, PROTO_FTP, px[i]);
                     } else {
@@ -89,18 +89,8 @@ ftp_parse(  const struct Banner1 *banner1,
                 else if (px[i] == '\n') {
                     
                     if (ftp->code == 234) {
-                        
-                        /* change the state here to SSL */
-                        unsigned port = pstate->port;
-                        memset(pstate, 0, sizeof(*pstate));
-                        pstate->app_proto = PROTO_SSL3;
-                        pstate->is_sent_sslhello = 1;
-                        pstate->port = (unsigned short)port;
-                        state = 0;
-                        
-                        more->payload = banner_ssl.hello;
-                        more->length = (unsigned)banner_ssl.hello_length;
-                        
+                        ssl_switch(tcb, pstate);
+                        return;                                                
                     } else {
                         state = STATE_DONE;
                     }
@@ -119,12 +109,14 @@ ftp_parse(  const struct Banner1 *banner1,
     pstate->state = state;
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 static void *
-ftp_init(struct Banner1 *banner1)
+ftp_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -140,8 +132,11 @@ ftp_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_ftp = {
-    "ftp", 21, 0, 0, 0,
+    "ftp", 21, 
+    //0, 0, 0,
     ftp_selftest,
     ftp_init,
     ftp_parse,
+    default_hello,
+    default_set_parameter,
 };

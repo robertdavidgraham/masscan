@@ -6,13 +6,19 @@
 #include "proto-banout.h"
 #include "proto-x509.h"
 
-struct InteractiveData;
+struct TCP_Control_Block;
+struct lua_State;
 
 struct Banner1
 {
     struct SMACK *smack;
     struct SMACK *http_fields;
     struct SMACK *html_fields;
+
+    /** [LUAPROBE] The main thread of the LUA subsystem. Each TCP
+     * connection will have a seperate state variable linking to
+     * this one. This contains such things as Lua globals. */
+    struct lua_State *L;
 
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
@@ -144,18 +150,32 @@ enum {
 struct ProtocolParserStream {
     const char *name;
     unsigned port;
-    const void *hello;
-    size_t hello_length;
-    unsigned ctrl_flags;
+    //const void *hello;
+    //size_t hello_length;
+    //unsigned ctrl_flags;
     int (*selftest)(void);
-    void *(*init)(struct Banner1 *b);
+    void *(*init)(struct Banner1 *b, struct ProtocolParserStream *self);
     void (*parse)(
         const struct Banner1 *banner1,
         void *banner1_private,
         struct ProtocolState *stream_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
+        struct TCP_Control_Block *tcb);
+    void (*hello)(
+        const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb);
+    void (*set_parameter)(
+        const struct Banner1 *banner1,
+        struct ProtocolParserStream *proto,
+        const char *name,
+        size_t value_length,
+        const void *value);
+
+    void *private_hello;
+    size_t private_hello_length;
 };
 
 
@@ -179,7 +199,7 @@ banner1_parse(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
+        struct TCP_Control_Block *tcb);
 
 
 

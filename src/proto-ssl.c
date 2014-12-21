@@ -46,11 +46,13 @@
     open TCP connections with minimal memory usage.
  */
 #include "proto-ssl.h"
-#include "proto-interactive.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "siphash24.h"
 #include "string_s.h"
+#include "proto-tcp-transmit.h"
+#include "misc-name-equals.h"
+#include "proto-stream-default.h"
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
@@ -62,7 +64,6 @@
  * it makes stepping through the code in a debugger so much easier.
  */
 #define DROPDOWN(i,length,state) (state)++;if (++(i)>=(length)) break
-
 
 /*****************************************************************************
  *****************************************************************************/
@@ -130,7 +131,7 @@ parse_server_hello(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
@@ -154,7 +155,7 @@ parse_server_hello(
     UNUSEDPARM(banout);
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(tcb);
 
     /* What this structure looks like in ASN.1 format
        struct {
@@ -510,7 +511,7 @@ parse_handshake(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -568,8 +569,7 @@ parse_handshake(
             static const char heartbleed_request[] = 
                 "\x15\x03\x02\x00\x02\x01\x80"
                 "\x18\x03\x02\x00\x03\x01" "\x40\x00";
-            more->payload = heartbleed_request;
-            more->length = sizeof(heartbleed_request)-1;
+            tcp_add_xmit(tcb, heartbleed_request, sizeof(heartbleed_request)-1, XMIT_STATIC);
         }
         DROPDOWN(i,length,state);
 
@@ -607,7 +607,7 @@ parse_handshake(
                                        pstate,
                                        px+i, len,
                                        banout,
-                                       more);
+                                       tcb);
                     break;
                 case 11: /* server certificate */
                     parse_server_cert(  banner1,
@@ -656,7 +656,7 @@ parse_heartbeat(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -669,7 +669,7 @@ parse_heartbeat(
         UNKNOWN,
     };
 
-    UNUSEDPARM(more);
+    UNUSEDPARM(tcb);
     UNUSEDPARM(banner1_private);
 
     /*
@@ -776,7 +776,7 @@ parse_alert(
                 struct ProtocolState *pstate,
                 const unsigned char *px, size_t length,
                 struct BannerOutput *banout,
-                struct InteractiveData *more)
+                struct TCP_Control_Block *tcb)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -788,7 +788,7 @@ parse_alert(
         UNKNOWN,
     };
     
-    UNUSEDPARM(more);
+    UNUSEDPARM(tcb);
     UNUSEDPARM(banner1_private);
     
     /*
@@ -880,7 +880,7 @@ ssl_parse_record(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
@@ -987,7 +987,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    tcb);
                     break;
                 case 22: /* handshake */
                     parse_handshake(banner1,
@@ -995,7 +995,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    tcb);
                     break;
                 case 23: /* application data */
                     /* encrypted, always*/
@@ -1007,7 +1007,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    tcb);
                     break;
             }
             
@@ -1038,19 +1038,6 @@ ssl_parse_record(
 
 
 /*****************************************************************************
- * This is called at program startup to initialize any structures we need
- * for parsing. The SSL parser doesn't need anything in particular, so
- * we just ignore it. We have to implement the callback, however, which
- * is why this empty function exists.
- *****************************************************************************/
-static void *
-ssl_init(struct Banner1 *banner1)
-{
-    UNUSEDPARM(banner1);
-    return 0;
-}
-
-/*****************************************************************************
  * This is the template "Client Hello" packet that is sent to the server
  * to initiate the SSL connection. Right now, it's statically just transmitted
  * on to the wire.
@@ -1058,7 +1045,7 @@ ssl_init(struct Banner1 *banner1)
  * select various options.
  *****************************************************************************/
 static const char
-ssl_hello_template[] =
+my_ssl_hello_template[] =
 "\x16\x03\x02\x01\x6f"          /* TLSv1.1 record layer */
 "\x01" /* type = client-hello */
 "\x00\x01\x6b" /* length = 363 */
@@ -1116,6 +1103,19 @@ ssl_hello_template[] =
 "\x00"
 ;
 
+/*****************************************************************************
+ * Figure out the Hello message size by parsing the data
+ *****************************************************************************/
+static unsigned
+ssl_hello_size(const void *templ)
+{
+    const unsigned char *px = (const unsigned char *)templ;
+    size_t template_size;
+    
+    template_size = (px[3]<<8 | px[4]) + 5;
+    
+    return (unsigned)template_size;
+}
 
 /*****************************************************************************
  *****************************************************************************/
@@ -1204,19 +1204,6 @@ ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append)
     }
 }
 
-/*****************************************************************************
- * Figure out the Hello message size by parsing the data
- *****************************************************************************/
-unsigned
-ssl_hello_size(const void *templ)
-{
-    const unsigned char *px = (const unsigned char *)templ;
-    size_t template_size;
-    
-    template_size = (px[3]<<8 | px[4]) + 5;
-    
-    return (unsigned)template_size;
-}
     
 /*****************************************************************************
  *****************************************************************************/
@@ -1252,6 +1239,19 @@ ssl_hello(const void *templ)
     return (char*)px;
 }
 
+/***************************************************************************
+ ***************************************************************************/
+static void 
+ssl_send_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+}
 
 extern unsigned char ssl_test_case_1[];
 extern size_t ssl_test_case_1_size;
@@ -1273,7 +1273,7 @@ ssl_selftest(void)
     unsigned ii;
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];
-    struct InteractiveData more;
+    struct TCP_Control_Block *tcb = NULL;
     unsigned x;
 
     /*
@@ -1348,7 +1348,7 @@ ssl_selftest(void)
                          ssl_test_case_3+i,
                          1,
                          banout1,
-                         &more
+                         tcb
                          );
     }
     /*if (0) {
@@ -1383,7 +1383,7 @@ ssl_selftest(void)
                 (const unsigned char *)ssl_test_case_3+ii,
                 1,
                 banout2,
-                &more
+                tcb
                 );
     banner1_destroy(banner1);
     banout_release(banout2);
@@ -1428,13 +1428,88 @@ ssl_selftest(void)
 }
 
 /*****************************************************************************
+ *****************************************************************************/
+static void
+ssl_set_parameter(
+    const struct Banner1 *banner1,
+        struct ProtocolParserStream *self,
+        const char *name,
+        size_t value_length,
+        const void *value)
+
+{
+    /* Change the hello message to including negotiating the use of 
+     * the "heartbeat" extension */
+    if (name_equals(name, "heartbleed")) {
+        free(self->private_hello);
+        self->private_hello = ssl_hello(ssl_hello_heartbeat_template);
+        self->private_hello_length = ssl_hello_size(self->private_hello);
+        return;
+    }
+
+    /*
+     * 2014-10-16: scan for SSLv3 servers (POODLE)
+     */
+    if (name_equals(name, "poodle") || name_equals(name, "sslv3")) {
+        void *px;
+
+        free(self->private_hello);
+
+        /* Change the hello message to including negotiating the use of 
+         * the "heartbeat" extension */
+        px = ssl_hello(ssl_hello_sslv3_template);
+        self->private_hello = ssl_add_cipherspec(px, 0x5600, 1);
+        self->private_hello_length = ssl_hello_size(self->private_hello);
+        return;
+    }
+
+    banner_default.set_parameter(banner1, self, name, value_length, value);
+}
+
+/*****************************************************************************
+ * This is called at program startup to initialize any structures we need
+ * for parsing. The SSL parser doesn't need anything in particular, so
+ * we just ignore it. We have to implement the callback, however, which
+ * is why this empty function exists.
+ *****************************************************************************/
+static void *
+ssl_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
+{
+    UNUSEDPARM(banner1);
+
+    self->private_hello = ssl_hello(my_ssl_hello_template);
+    self->private_hello_length = ssl_hello_size(my_ssl_hello_template);
+
+    return 0;
+}
+
+/*****************************************************************************
+ * Kludge: called by other protocols (e.g. SMTP STARTTLS) to change to SSL
+ *****************************************************************************/
+void
+ssl_switch(struct TCP_Control_Block *tcb, struct ProtocolState *pstate)
+{
+    /* change the state here to SSL */
+    unsigned port = pstate->port;
+    memset(pstate, 0, sizeof(*pstate));
+    pstate->app_proto = PROTO_SSL3;
+    pstate->is_sent_sslhello = 1;
+    pstate->port = (unsigned short)port;
+                        
+    tcp_add_xmit(tcb, banner_ssl.private_hello, banner_ssl.private_hello_length, XMIT_STATIC);
+}
+
+
+/*****************************************************************************
  * This is the 'plugin' structure that registers callbacks for this parser in
  * the main system.
  *****************************************************************************/
 struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1, 0,
+    "ssl", 443,
     ssl_selftest,
     ssl_init,
     ssl_parse_record,
+    ssl_send_hello,
+    ssl_set_parameter,
 };
 

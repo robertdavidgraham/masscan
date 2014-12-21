@@ -4,7 +4,6 @@
 #include "smack.h"
 #include "rawsock-pcapfile.h"
 #include "proto-preprocess.h"
-#include "proto-interactive.h"
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
@@ -63,7 +62,7 @@ banner1_parse(
         struct ProtocolState *tcb_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     size_t x;
     unsigned offset = 0;
@@ -119,14 +118,14 @@ banner1_parse(
                                 tcb_state,
                                 s, s_len,
                                 banout,
-                                more);
+                                tcb);
             }
             banner1_parse(
                             banner1,
                             tcb_state,
                             px, length,
                             banout,
-                            more);
+                            tcb);
         } else {
             banout_append(banout, PROTO_HEUR, px, length);
         }
@@ -137,7 +136,7 @@ banner1_parse(
                              tcb_state,
                              px, length,
                              banout,
-                             more);
+                             tcb);
             break;
         case PROTO_SMTP:
             banner_smtp.parse(   banner1,
@@ -145,7 +144,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              tcb);
             break;
             
     case PROTO_POP3:
@@ -154,7 +153,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              tcb);
             break;
     case PROTO_IMAP4:
             banner_imap4.parse(banner1,
@@ -162,7 +161,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              tcb);
             break;
             
     case PROTO_SSH1:
@@ -175,7 +174,7 @@ banner1_parse(
                             tcb_state,
                             px, length,
                             banout,
-                            more);
+                            tcb);
         break;
     case PROTO_HTTP:
         banner_http.parse(
@@ -184,7 +183,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        tcb);
         break;
     case PROTO_SSL3:
         banner_ssl.parse(
@@ -193,7 +192,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        tcb);
         break;
     case PROTO_VNC_RFB:
         banner_vnc.parse(    banner1,
@@ -201,7 +200,7 @@ banner1_parse(
                              tcb_state,
                              px, length,
                              banout,
-                             more);
+                             tcb);
         break;
     default:
         fprintf(stderr, "banner1: internal error\n");
@@ -241,7 +240,7 @@ banner1_create(void)
     smack_compile(b->smack);
 
 
-    banner_http.init(b);
+    banner_http.init(b, &banner_http);
 
     b->tcp_payloads[80] = &banner_http;
     b->tcp_payloads[8080] = &banner_http;
@@ -375,14 +374,12 @@ banner1_selftest()
     memset(tcb_state, 0, sizeof(tcb_state[0]));
 
     for (i=0; i<length; i++) {
-        struct InteractiveData more = {0,0};
-
         banner1_parse(
                     b,
                     tcb_state,
                     px+i, 1,
                     banout,
-                    &more);
+                    0);
     }
 
 

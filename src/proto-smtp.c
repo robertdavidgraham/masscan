@@ -23,8 +23,9 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
 #include "proto-ssl.h"
+#include "proto-tcp-transmit.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -37,7 +38,7 @@ smtp_parse(  const struct Banner1 *banner1,
           struct ProtocolState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -94,8 +95,7 @@ smtp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (smtp->is_last) {
-                        more->payload = "EHLO masscan\r\n";
-                        more->length = 14;
+                        tcp_add_xmit(tcb, "EHLO masscan\r\n", 14, XMIT_STATIC);
                         state = 100;
                         banout_append_char(banout, PROTO_SMTP, px[i]);
                     } else {
@@ -114,8 +114,7 @@ smtp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (smtp->is_last) {
-                        more->payload = "STARTTLS\r\n";
-                        more->length = 10;
+                        tcp_add_xmit(tcb, "STARTTLS\r\n", 10, XMIT_STATIC);
                         state = 200;
                         banout_append_char(banout, PROTO_SMTP, px[i]);
                     } else {
@@ -135,18 +134,8 @@ smtp_parse(  const struct Banner1 *banner1,
                 else if (px[i] == '\n') {
                     
                     if (smtp->code == 220) {
-                        
-                        /* change the state here to SSL */
-                        unsigned port = pstate->port;
-                        memset(pstate, 0, sizeof(*pstate));
-                        pstate->app_proto = PROTO_SSL3;
-                        pstate->is_sent_sslhello = 1;
-                        pstate->port = (unsigned short)port;
-                        state = 0;
-                        
-                        more->payload = banner_ssl.hello;
-                        more->length = (unsigned)banner_ssl.hello_length;
-                        
+                        ssl_switch(tcb, pstate);
+                        return;                        
                     } else {
                         state = STATE_DONE;
                     }
@@ -167,10 +156,25 @@ smtp_parse(  const struct Banner1 *banner1,
 
 /***************************************************************************
  ***************************************************************************/
-static void *
-smtp_init(struct Banner1 *banner1)
+static void 
+smtp_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void *
+smtp_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -186,8 +190,11 @@ smtp_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_smtp = {
-    "smtp", 21, 0, 0, 0,
+    "smtp", 21, 
+    //0, 0, 0,
     smtp_selftest,
     smtp_init,
     smtp_parse,
+    smtp_hello,
+    default_set_parameter,
 };

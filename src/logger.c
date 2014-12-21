@@ -10,8 +10,12 @@
 */
 #include "logger.h"
 #include "string_s.h"
+#include "pixie-timer.h"
 #include <stdarg.h>
 #include <stdio.h>
+
+/*kludge: defined in main.c */
+extern double global_time_start;
 
 static int global_debug_level = 0; /* yea! a global variable!! */
 void LOG_add_level(int x)
@@ -50,9 +54,13 @@ static void
 vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
 {
     if (level <= global_debug_level) {
-        char sz_ip[16];
+        char sz_ip[160];
+        double timestamp = 1.0 * pixie_gettime() / 1000000.0;
 
-        sprintf_s(sz_ip, sizeof(sz_ip), "%u.%u.%u.%u",
+        sprintf_s(sz_ip, sizeof(sz_ip), 
+            "EVENT(%5.4f) "
+            "%u.%u.%u.%u",
+            timestamp - global_time_start,
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF);
         fprintf(stderr, "%-15s:%5u: ", sz_ip, port);
         vfprintf(stderr, fmt, marker);

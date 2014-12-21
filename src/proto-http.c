@@ -4,6 +4,8 @@
 #include "unusedparm.h"
 #include "string_s.h"
 #include "masscan-app.h"
+#include "misc-name-equals.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -38,9 +40,6 @@ static struct Patterns html_fields[] = {
     {"<TiTle",          6, HTML_TITLE, 0},
     {0,0,0,0}
 };
-
-extern struct ProtocolParserStream banner_http;
-
 
 
 /***************************************************************************
@@ -117,13 +116,12 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
 /***************************************************************************
  ***************************************************************************/
 static const char
-http_hello[] =      "GET / HTTP/1.0\r\n"
+http_hello_prototype[] =      "GET / HTTP/1.0\r\n"
                     "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
                     "Accept: */*\r\n"
                     //"Connection: Keep-Alive\r\n"
                     //"Content-Length: 0\r\n"
                     "\r\n";
-
 
 /*****************************************************************************
  *****************************************************************************/
@@ -159,9 +157,11 @@ field_name(struct BannerOutput *banout, size_t id,
  * Initialize some stuff that's part of the HTTP state-machine-parser.
  *****************************************************************************/
 static void *
-http_init(struct Banner1 *b)
+http_init(struct Banner1 *b, struct ProtocolParserStream *self)
 {
     unsigned i;
+
+    UNUSEDPARM(self);
 
     /*
      * These match HTTP Header-Field: names
@@ -189,8 +189,12 @@ http_init(struct Banner1 *b)
                           html_fields[i].is_anchored);
     smack_compile(b->html_fields);
 
-    banner_http.hello = (unsigned char*)malloc(banner_http.hello_length);
-    memcpy((char*)banner_http.hello, http_hello, banner_http.hello_length);
+    /*
+     * Create a copy of the 'hello' banner
+     */
+    banner_http.private_hello = (unsigned char*)malloc(strlen(http_hello_prototype)+1);
+    memcpy((char*)banner_http.private_hello, http_hello_prototype, strlen(http_hello_prototype)+1);
+    banner_http.private_hello_length = strlen(http_hello_prototype);
 
     return b->http_fields;
 }
@@ -220,7 +224,7 @@ http_parse(
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -239,7 +243,7 @@ http_parse(
     };
 
     UNUSEDPARM(banner1_private);
-    UNUSEDPARM(more);
+    UNUSEDPARM(tcb);
 
     state2 = (state>>16) & 0xFFFF;
     id = (state>>8) & 0xFF;
@@ -413,18 +417,59 @@ http_parse(
 
 /***************************************************************************
  ***************************************************************************/
+static void 
+http_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+}
+
+/***************************************************************************
+ ***************************************************************************/
 static int
 http_selftest(void)
 {
     return 0;
 }
 
+
+/***************************************************************************
+ ***************************************************************************/
+void
+http_set_parameter(
+        const struct Banner1 *banner1,
+        struct ProtocolParserStream *self,
+        const char *name,
+        size_t value_length,
+        const void *value)
+{
+    if (name_equals(name, "http-user-agent")) {
+        banner_http.private_hello_length = http_change_field(
+                                (unsigned char**)&banner_http.private_hello,
+                                (unsigned)banner_http.private_hello_length,
+                                "User-Agent:",
+                                (const unsigned char *)value,
+                                (unsigned)value_length);
+        return;
+    }
+
+    banner_default.set_parameter(banner1, self, name, value_length, value);
+}
+
 /***************************************************************************
  ***************************************************************************/
 struct ProtocolParserStream banner_http = {
-    "http", 80, http_hello, sizeof(http_hello)-1, 0,
+    "http", 80, 
+    //http_hello, sizeof(http_hello)-1, 0,
     http_selftest,
     http_init,
     http_parse,
+    default_hello,
+    http_set_parameter,
 };
 

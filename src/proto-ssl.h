@@ -7,6 +7,11 @@ extern struct ProtocolParserStream banner_ssl;
 extern const char *ssl_hello_heartbeat_template;
 extern const char *ssl_hello_sslv3_template;
 
+void
+ssl_switch(struct TCP_Control_Block *tcb, struct ProtocolState *pstate);
+
+#if 0
+
 /**
  * Parse the SSL Hello template to find its size
  */
@@ -25,6 +30,6 @@ char *ssl_hello(const void *templ);
  * the template.
  */
 char *ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append);
-
+#endif
 
 #endif
