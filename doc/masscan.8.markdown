@@ -166,7 +166,7 @@ one port.
 	Times are aligned on an even boundary, so if "daily" is specified,
 	then the file will be rotated every day at midnight.
 
-  * `--rotate-offset <time>`: an offset in the time. This is to accomodate
+  * `--rotate-offset <time>`: an offset in the time. This is to accommodate
     timezones.
 
   * `--rotate-size <size>`: rotates the output file when it exceeds the
@@ -216,26 +216,26 @@ one port.
 	`xml` will be used.
 		   
   * `-oB <filename>`: sets the output format to binary and saves the output in
-    the given filename. This is equivelent to using the `--output-format` and
+    the given filename. This is equivalent to using the `--output-format` and
     `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
     equivelents, but require a separate step to convert back into XML or
     another readable format.
 	
   * `-oX <filename>`: sets the output format to XML and saves the output in the
-    given filename. This is equivelent to using the `--output-format xml` and
+    given filename. This is equivalent to using the `--output-format xml` and
     `--output-filename` parameters.
 	
   * `-oG <filename>`: sets the output format to grepable and saves the output 
-	  in the given filename. This is equivelent to using the --output-format grepable 
+	  in the given filename. This is equivalent to using the --output-format grepable 
 	  and --output-filename parameters.
   
   * `-oJ <filename>`: sets the output format to JSON and saves the output in 
-	  the given filename. This is equivelent to using the --output-format json 
+	  the given filename. This is equivalent to using the --output-format json 
 	  and --output-filename parameters.
   
   * `-oL <filename>`: sets the output format to a simple list format and saves 
-	  the output in the given filename. This is equivelent to using 
+	  the output in the given filename. This is equivalent to using 
 	  the --output-format list and --output-filename parameters.
 
   *  `--readscan <binary-files>`: reads the files created by the `-oB` option
@@ -255,7 +255,7 @@ one port.
 
   * `--hello-file[<port>] <filename>`: send the contents of the file once the 
     TCP connection has been established with the given port. Requires that
-    `--banners` also be set. Heuristics will be performed on the reponse in
+    `--banners` also be set. Heuristics will be performed on the response in
     an attempt to discover what protocol, so HTTP responses will be parsed
     differently than other protocols.
 
@@ -290,7 +290,7 @@ might be:
 	router-mac = 66-55-44-33-22-11
 
 	# other
-	exclude-file = /etc/masscan/exludes.txt
+	exclude-file = /etc/masscan/excludes.txt
 
 By default, the program will read default configuration from the file
 `/etc/masscan/masscan.conf`. This is useful for system-specific settings,
@@ -335,7 +335,7 @@ by doing something like:
     # iptables -A INPUT -i eth0 -p tcp --dport 44444 -j DROP
     
 This will prevent the Linux kernel from processing incoming packets to port
-44444, but `masscan` will still see the packets. Set the maching parameter
+44444, but `masscan` will still see the packets. Set the matching parameter
 of `--adapter-port 44444` to force `masscan` to use that port instead of
 a random port.
     

@@ -6,7 +6,7 @@
     correlate probes with responses. We must therefore suffer the fact that
     sometimes we get repeat responses, and therefore, repeat records.
 
-    We can mimimize this with a table remembering recent responses. Occassional
+    We can mimimize this with a table remembering recent responses. Occasional
     duplicates still leak through, but it'll be less of a problem.
 */
 #include "main-dedup.h"

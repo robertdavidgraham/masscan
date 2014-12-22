@@ -160,7 +160,7 @@ print_nmap_help(void)
 "  -sS: TCP SYN (always on, default)\n"
 "SERVICE/VERSION DETECTION:\n"
 "  --banners: get the banners of the listening service if available. The\n"
-"    default timeout for waiting to recieve data is 30 seconds.\n"
+"    default timeout for waiting to receive data is 30 seconds.\n"
 "PORT SPECIFICATION AND SCAN ORDER:\n"
 "  -p <port ranges>: Only scan specified ports\n"
 "    Ex: -p22; -p1-65535; -p 111,137,80,139,8080\n"
@@ -515,7 +515,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
                     break;
                 }
             }
-            /* Loop back to the begining state at the start of a line */
+            /* Loop back to the beginning state at the start of a line */
             continue;
         }
 

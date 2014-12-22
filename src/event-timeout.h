@@ -79,7 +79,7 @@ timeouts_create(uint64_t timestamp_now);
  *      first before inserting into the new location.
  * @param offset
  *      The 'entry' field above is part of an existing structure. This
- *      tells the offset_of() from the begining of that structure. 
+ *      tells the offset_of() from the beginning of that structure. 
  *      In other words, this tells us the pointer to the object that
  *      that is the subject of the timeout.
  * @param timestamp_expires

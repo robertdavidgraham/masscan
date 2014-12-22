@@ -40,7 +40,7 @@
 /*
  * PORTABILITY: Windows supports the "sendq" feature, and is really slow
  * without this feature. It's not needed on Linux, so we just create
- * equivelent functions that do nothing
+ * equivalent functions that do nothing
  */
 struct pcap_send_queue;
 typedef struct pcap_send_queue pcap_send_queue;

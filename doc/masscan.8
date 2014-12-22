@@ -141,19 +141,19 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-\-output\-filename <filename>\fR: the file which to save results to\. If the parameter \fB\-\-output\-format\fR is not specified, then the default of \fBxml\fR will be used\.
 .
 .IP "\(bu" 4
-\fB\-oB <filename>\fR: sets the output format to binary and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\. The option \fB\-\-readscan\fR can then be used to read the binary file\. Binary files are mush smaller than their XML equivelents, but require a separate step to convert back into XML or another readable format\.
+\fB\-oB <filename>\fR: sets the output format to binary and saves the output in the given filename\. This is equivalent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\. The option \fB\-\-readscan\fR can then be used to read the binary file\. Binary files are mush smaller than their XML equivelents, but require a separate step to convert back into XML or another readable format\.
 .
 .IP "\(bu" 4
-\fB\-oX <filename>\fR: sets the output format to XML and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format xml\fR and \fB\-\-output\-filename\fR parameters\.
+\fB\-oX <filename>\fR: sets the output format to XML and saves the output in the given filename\. This is equivalent to using the \fB\-\-output\-format xml\fR and \fB\-\-output\-filename\fR parameters\.
 .
 .IP "\(bu" 4
-\fB\-oG <filename>\fR: sets the output format to grepable and saves the output in the given filename\. This is equivelent to using the \-\-output\-format grepable and \-\-output\-filename parameters\.
+\fB\-oG <filename>\fR: sets the output format to grepable and saves the output in the given filename\. This is equivalent to using the \-\-output\-format grepable and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
-\fB\-oJ <filename>\fR: sets the output format to JSON and saves the output in the given filename\. This is equivelent to using the \-\-output\-format json and \-\-output\-filename parameters\.
+\fB\-oJ <filename>\fR: sets the output format to JSON and saves the output in the given filename\. This is equivalent to using the \-\-output\-format json and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
-\fB\-oL <filename>\fR: sets the output format to a simple list format and saves the output in the given filename\. This is equivelent to using the \-\-output\-format list and \-\-output\-filename parameters\.
+\fB\-oL <filename>\fR: sets the output format to a simple list format and saves the output in the given filename\. This is equivalent to using the \-\-output\-format list and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
 \fB\-\-readscan <binary\-files>\fR: reads the files created by the \fB\-oB\fR option from a scan, then outputs them in one of the other formats, depending on command\-line parameters\. In other words, it can take the binary version of the output and convert it to an XML or JSON format\.
@@ -179,7 +179,7 @@ adapter\-ip = 192\.168\.0\.1
 router\-mac = 66\-55\-44\-33\-22\-11
 
 # other
-exclude\-file = /etc/masscan/exludes\.txt
+exclude\-file = /etc/masscan/excludes\.txt
 .
 .fi
 .

@@ -415,7 +415,7 @@ int pcapfile_readframe(
             /* We could stop here, but we are going to try one more thing.
              * Most cases of corruption will be because the PREVOUS packet
              * was truncated, not becausae the CURRENT packet was bad.
-             * Since we have seeked forward to find the NEXT packet, we
+             * Since we have sought forward to find the NEXT packet, we
              * want to now seek backwards and see if there is actually
              * a good CURRENT packet. */
             if (fseek(capfile->fp, -2000, SEEK_CUR) == 0) {

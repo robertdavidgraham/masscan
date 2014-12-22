@@ -280,7 +280,7 @@ arp_response(
         }
     }
     if (response == NULL)
-        return -1; /* just to supress warnings */
+        return -1; /* just to suppress warnings */
 
     /* ARP packets are too short, so increase the packet size to
      * the Ethernet minimum */

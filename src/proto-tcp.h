@@ -35,7 +35,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
  *
  * @param entry_count
  *      A hint about the desired initial size. This should be about twice
- *      the number of oustanding connections, so you should base this number
+ *      the number of outstanding connections, so you should base this number
  *      on your transmit rate (the faster the transmit rate, the more
  *      outstanding connections you'll have). This function will automatically
  *      round this number up to the nearest power of 2, or round it down
