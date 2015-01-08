@@ -210,13 +210,13 @@ parseInt(const void *vstr, size_t length)
 }
 
 /***************************************************************************
- * [LUAPROBE]
+ * [LUAPROBE] [SCRIPTING]
  ***************************************************************************/
 void
 tcpcon_init_luaprobe(struct TCP_ConnectionTable *tcpcon, const char *scriptname)
 {
 
-    tcpcon->banner1->L = luaprobe_init(scriptname);
+    tcpcon->banner1->L = scripting_init(scriptname);
     if (tcpcon->banner1->L == NULL) {
 #ifdef WIN32
         {
@@ -974,7 +974,6 @@ parse_banner(
 static const char *
 state_to_string(int state)
 {
-    static char buf[64];
     switch (state) {
     case STATE_SYN_SENT:    return "[SYN_SENT]";
     case STATE_SYN_RCVD:    return "[SYN_RCVD]";
@@ -1064,7 +1063,7 @@ handle_ack(
 /*****************************************************************************
  * Notifies the user that the system has connected to the target
  *****************************************************************************/
-void
+static void
 tcpuser_connect(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb)
@@ -1096,7 +1095,7 @@ tcpuser_connect(
 /*****************************************************************************
  * Notifies the user that a packet has arrived on the connection
  *****************************************************************************/
-void
+static void
 tcpuser_receive(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,
@@ -1131,7 +1130,7 @@ tcpuser_receive(
 /*****************************************************************************
  * Called when we receive a "fin" from the other side.
  *****************************************************************************/
-void
+static void
 tcpuser_receive_close(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,

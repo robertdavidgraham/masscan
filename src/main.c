@@ -54,6 +54,7 @@
 #include "proto-sctp.h"
 #include "script.h"
 #include "main-readrange.h"
+#include "scripting.h"          /* Lua scripting */
 
 #include <assert.h>
 #include <limits.h>
@@ -1418,9 +1419,6 @@ int main(int argc, char *argv[])
      * the scan */
     global_time_start = 1.0 * pixie_gettime() / 1000000.0;
 
-    /* If LUA exists, then link to it so that we can support scripting */
-    lua_dynamic_load();
-
     /* Set system to report debug information on crash */
     pixie_backtrace_init(argv[0]);
     
@@ -1604,6 +1602,7 @@ int main(int argc, char *argv[])
             x += rte_ring_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
+            x += scripting_selftest();
 
 
             if (x != 0) {

@@ -1,6 +1,6 @@
 #ifndef PROTO_TCP_TRANSMIT_H
 #define PROTO_TCP_TRANSMIT_H
-
+#include <stdlib.h>
 struct TCP_Control_Block;
 
 enum {

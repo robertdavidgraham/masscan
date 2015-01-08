@@ -1104,7 +1104,13 @@ my_ssl_hello_template[] =
 ;
 
 /*****************************************************************************
- * Figure out the Hello message size by parsing the data
+ * Calculate the Hello message size by parsing the message. We are exploiting
+ * the fact that SSL uses record structures that contain length fields.
+ * We call this while initializing or changing the hello template. We
+ * initialize the using several possible templates, then we do things
+ * like add/remove cipherspecs.
+ * TODO: it's possible to split the hello message across multiple reocrds,
+ * but this will only give the size of the first record.
  *****************************************************************************/
 static unsigned
 ssl_hello_size(const void *templ)
@@ -1117,7 +1123,9 @@ ssl_hello_size(const void *templ)
     return (unsigned)template_size;
 }
 
+
 /*****************************************************************************
+ * Like 'ssl_add_cipherspec()', but for SSLv3, which has a different format.
  *****************************************************************************/
 static char *
 ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
@@ -1177,8 +1185,13 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
 }
 
 /*****************************************************************************
+ * Called during configuration to add a "cipherspec" to the list encryption
+ * algorithms that we'll advertise when connecting with SSL. This edits
+ * the template hello message we send. We do this in order to emulate existing
+ * SSL clients (browsers, namely), or to randomize the pattern so that the
+ * request isn't detected as coming from masscan.
  *****************************************************************************/
-char *
+static char *
 ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append)
 {
     const unsigned char *px = (const unsigned char *)templ;
@@ -1206,9 +1219,16 @@ ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append)
 
     
 /*****************************************************************************
+ * Called at startup to initiailize the "hello" message that we are going to
+ * send via SSL. We start with a choice of various templates, to test for
+ * various problems like Heartbleed and Poodle. We then fill in the dynamic
+ * content. The message has a timestamp and random data fields. If we copy
+ * these blindly from a template, then the hello message has a unique
+ * fingerprint. By randomizing these fields, it becomes impossible to write
+ * signatures for IDS for masscan.
  *****************************************************************************/
-char *
-ssl_hello(const void *templ)
+static char *
+ssl_init_hello(const void *templ)
 {
     unsigned char *px = (unsigned char *)templ;
     unsigned now = (unsigned)time(0);
@@ -1442,7 +1462,7 @@ ssl_set_parameter(
      * the "heartbeat" extension */
     if (name_equals(name, "heartbleed")) {
         free(self->private_hello);
-        self->private_hello = ssl_hello(ssl_hello_heartbeat_template);
+        self->private_hello = ssl_init_hello(ssl_hello_heartbeat_template);
         self->private_hello_length = ssl_hello_size(self->private_hello);
         return;
     }
@@ -1457,7 +1477,7 @@ ssl_set_parameter(
 
         /* Change the hello message to including negotiating the use of 
          * the "heartbeat" extension */
-        px = ssl_hello(ssl_hello_sslv3_template);
+        px = ssl_init_hello(ssl_hello_sslv3_template);
         self->private_hello = ssl_add_cipherspec(px, 0x5600, 1);
         self->private_hello_length = ssl_hello_size(self->private_hello);
         return;
@@ -1477,7 +1497,7 @@ ssl_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
 {
     UNUSEDPARM(banner1);
 
-    self->private_hello = ssl_hello(my_ssl_hello_template);
+    self->private_hello = ssl_init_hello(my_ssl_hello_template);
     self->private_hello_length = ssl_hello_size(my_ssl_hello_template);
 
     return 0;

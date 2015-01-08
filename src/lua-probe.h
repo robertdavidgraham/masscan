@@ -1,6 +1,6 @@
 #ifndef LUA_PROBE_H
 #define LUA_PROBE_H
-
+#include <stdlib.h>
 struct lua_State;
 struct TCP_Control_Block;
 
@@ -10,7 +10,7 @@ struct TCP_Control_Block;
  * each transmit thread.
  */
 struct lua_State *
-luaprobe_init(const char *scriptname);
+scripting_init(const char *scriptname);
 
 /**
  * Once the TCP connection is established, call this function to

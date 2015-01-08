@@ -1,15 +1,18 @@
 #include "lua-probe.h"
-#include "lua-dynload.h"
+#include "lua/lua.h"
+#include "lua/lauxlib.h"
+#include "lua/lualib.h"
 #include "logger.h"
 #include "proto-tcp-transmit.h"
 #include <string.h>
+#include <stdio.h>
 
 /****************************************************************************
  ****************************************************************************/
 static int
 socket_send(lua_State *L)
 {
-    int argc = lua.gettop(L); /* get number of arguments */
+    int argc = lua_gettop(L); /* get number of arguments */
     struct TCP_Control_Block *tcb;
     const char *buf;
     size_t buf_size;
@@ -21,11 +24,11 @@ socket_send(lua_State *L)
     }
 
     /* Get socket file descriptor */
-    lua.getfield(L, 1, "fd");
-    tcb = lua.touserdata(L, -1);
+    lua_getfield(L, 1, "fd");
+    tcb = lua_touserdata(L, -1);
     
     /* Get the buffer */
-    buf = lua.tolstring(L, 2, &buf_size);
+    buf = lua_tolstring(L, 2, &buf_size);
     printf("send = %.*s\n", (unsigned)buf_size, buf);
 
 
@@ -59,7 +62,7 @@ push_socket(lua_State *L, struct TCP_Control_Block *tcb)
         return -1;
     }
 
-    lua.pushlightuserdata(L, tcb);
+    lua_pushlightuserdata(L, tcb);
     lua_pushcfunction(L, socket_send);
     lua_pushcfunction(L, socket_send);
     x = lua_pcall(L, 3, 1, 0);
@@ -83,9 +86,9 @@ luaprobe_event_connect(struct lua_State *L, struct TCP_Control_Block *tcb)
     struct lua_State *thread;
 
     LOG(1, "LUAPROBE: connect\n");
-    thread = lua.newthread(L);
+    thread = lua_newthread(L);
 
-    return L;
+    return thread;
 }
 
 /***************************************************************************
@@ -142,8 +145,8 @@ luaprobe_load_script(struct lua_State *L, const char *scriptname)
         };
 
         for (i=0; vars[i]; i++) {
-            lua.pushnil(L);
-            lua.setglobal(L, vars[i]);
+            lua_pushnil(L);
+            lua_setglobal(L, vars[i]);
         }
     }
 
@@ -175,18 +178,18 @@ luaprobe_load_script(struct lua_State *L, const char *scriptname)
 }
 
 /***************************************************************************
- * [LUAPROBE]
+ * [LUAPROBE] [SCRIPTING]
  ***************************************************************************/
 struct lua_State *
-luaprobe_init(const char *scriptname)
+scripting_init(const char *scriptname)
 {
     struct lua_State *L;
 
-    L = lua.newstate();
+    L = luaL_newstate();
     luaL_openlibs(L);
 
     if (luaprobe_load_script(L, scriptname) != 0) {
-        lua.close(L);
+        lua_close(L);
         return NULL;
     }
 

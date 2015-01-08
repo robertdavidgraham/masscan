@@ -44,7 +44,7 @@ static struct Patterns html_fields[] = {
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+static unsigned
 http_change_field(unsigned char **inout_header, unsigned header_length,
                     const char *field_name,
                     const unsigned char *field_value, unsigned field_value_len)
@@ -415,19 +415,6 @@ http_parse(
 }
 
 
-/***************************************************************************
- ***************************************************************************/
-static void 
-http_hello(const struct Banner1 *banner1,
-        void *banner1_private,
-        struct ProtocolState *stream_state,
-        struct TCP_Control_Block *tcb)
-{
-    UNUSEDPARM(banner1);
-    UNUSEDPARM(banner1_private);
-    UNUSEDPARM(stream_state);
-    UNUSEDPARM(tcb);
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -440,7 +427,7 @@ http_selftest(void)
 
 /***************************************************************************
  ***************************************************************************/
-void
+static void
 http_set_parameter(
         const struct Banner1 *banner1,
         struct ProtocolParserStream *self,

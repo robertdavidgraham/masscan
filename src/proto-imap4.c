@@ -167,20 +167,6 @@ imap4_parse(  const struct Banner1 *banner1,
 
 /***************************************************************************
  ***************************************************************************/
-static void 
-imap4_send(const struct Banner1 *banner1,
-        void *banner1_private,
-        struct ProtocolState *stream_state,
-        struct TCP_Control_Block *tcb)
-{
-    UNUSEDPARM(banner1);
-    UNUSEDPARM(banner1_private);
-    UNUSEDPARM(stream_state);
-    UNUSEDPARM(tcb);
-}
-
-/***************************************************************************
- ***************************************************************************/
 static void *
 imap4_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
 {
