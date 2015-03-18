@@ -365,6 +365,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     }
 
     fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
+    fprintf(fp, "retries = %u\n", masscan->retries);
     fprintf(fp, "ports = ");
     for (i=0; i<masscan->ports.count; i++) {
         struct Range range = masscan->ports.list[i];
