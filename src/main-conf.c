@@ -1280,6 +1280,10 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_interactive = 1;
     } else if (EQUALS("nointeractive", name)) {
         masscan->output.is_interactive = 0;
+    } else if (EQUALS("status", name)) {
+        masscan->output.status_updates = 1;
+    } else if (EQUALS("nostatus", name)) {
+        masscan->output.status_updates = 0;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1649,7 +1653,7 @@ is_singleton(const char *name)
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
-        "arp",  "infinite", "interactive",
+        "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;

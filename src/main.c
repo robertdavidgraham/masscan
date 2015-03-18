@@ -1291,9 +1291,10 @@ main_scan(struct Masscan *masscan)
          * update screen about once per second with statistics,
          * namely packets/second.
          */
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            0);
+        if (masscan->output.status_updates)
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                0);
 
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1345,9 +1346,10 @@ main_scan(struct Masscan *masscan)
         }
 
 
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            masscan->wait - (time(0) - now));
+        if (masscan->output.status_updates)
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
             control_c_pressed_again = 1;
@@ -1407,6 +1409,7 @@ int main(int argc, char *argv[])
     memset(masscan, 0, sizeof(*masscan));
     masscan->blackrock_rounds = 4;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
+    masscan->output.status_updates = 1; /* default: show status updates */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
