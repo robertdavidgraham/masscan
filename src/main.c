@@ -1032,6 +1032,7 @@ main_scan(struct Masscan *masscan)
     uint64_t count_ports;
     uint64_t range;
     unsigned index;
+    unsigned is_error = 0;
     unsigned *picker;
     time_t now = time(0);
     struct Status status;
@@ -1049,7 +1050,7 @@ main_scan(struct Masscan *masscan)
         
         /* If no ports specified on command-line, grab default ports */
         if (rangelist_count(&masscan->ports) == 0)
-            rangelist_parse_ports(&masscan->ports, script->ports, 0);
+            rangelist_parse_ports(&masscan->ports, script->ports, &is_error);
         
         /* Kludge: change normal port range to script range */
         for (i=0; i<masscan->ports.count; i++) {
