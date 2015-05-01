@@ -368,6 +368,11 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "ports = ");
     for (i=0; i<masscan->ports.count; i++) {
         struct Range range = masscan->ports.list[i];
+        if (range.begin > 0xFFFF){ // UDP
+            range.begin -= 0x10000;
+            range.end   -= 0x10000;
+            fprintf(fp, "U:");
+        }
         if (range.begin == range.end)
             fprintf(fp, "%u", range.begin);
         else
