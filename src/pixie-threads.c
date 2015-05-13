@@ -180,7 +180,7 @@ pixie_begin_thread(
 #if defined(WIN32)
     UNUSEDPARM(flags);
     return _beginthread(worker_thread, 0, worker_data);
-#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__kFreeBSD__) || defined(__OpenBSD__)
 
     typedef void *(*PTHREADFUNC)(void*);
     pthread_t thread_id;
