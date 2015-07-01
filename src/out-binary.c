@@ -14,10 +14,20 @@ binary_out_open(struct Output *out, FILE *fp)
 
     UNUSEDPARM(out);
 
-
     memset(firstrecord, 0, 2+'a');
-    sprintf_s(firstrecord, 2+'a', "masscan/1.1.02\ns:%u\n", 
-        (unsigned)out->when_scan_started);
+    sprintf_s(firstrecord, 2+'a', "masscan/1.1.02\ns:%u\ni:%u\n", 
+        (unsigned)out->when_scan_started,
+	(unsigned)((out->is_gmt ? 1<<31 : 0)
+			|(out->is_show_host ? 1<<19 : 0)
+			|(out->is_show_closed ? 1<<18 : 0)
+			|(out->is_show_open ? 1<<17 : 0)
+			|(out->is_banner ? 1<<16 : 0)
+			|(out->is_capture_html ? 1<<15 : 0)
+			|(out->is_capture_cert ? 1<<14 : 0)
+			|(out->is_capture_heartbleed ? 1<<13 : 0)
+			|(out->is_heartbleed ? 1<<7 : 0)
+			|(out->is_poodle_sslv3 ? 1<<6 : 0))
+	);
     bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
     if (bytes_written != 2+'a') {
         perror("output");
