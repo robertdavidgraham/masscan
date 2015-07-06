@@ -55,7 +55,7 @@
 
 const char *strerror_x(int x);
 
-#if defined(_MSC_VER) && (_MSC_VER == 1600)
+#if defined(_MSC_VER) && (_MSC_VER >= 1600)
 /*Visual Studio 2010*/
 # include <stdio.h>
 # include <string.h>
