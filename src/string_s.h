@@ -77,7 +77,7 @@ const char *strerror_x(int x);
  typedef int errno_t;
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 
-#elif defined(__GNUC__) && (__GNUC__ == 4)
+#elif defined(__GNUC__) && (__GNUC__ >= 4)
 #include <inttypes.h>
 /* GCC 4 */
 # define sprintf_s      snprintf
