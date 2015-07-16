@@ -660,7 +660,12 @@ rawsock_init_adapter(const char *adapter_name,
      *  Since a lot of things can go wrong, we do a lot of extra
      *  logging here.
      *----------------------------------------------------------------*/
-    if (is_pfring || is_pfring_dna(adapter_name)) {
+    if(is_pfring && !is_pfring_dna(adapter_name)){ /*First ensure pfring dna adapter is available*/
+        fprintf(stderr,"No pfring adapter available. Please install pfring or run masscan without the --pfring option.\n");
+        return 0;
+    }
+
+    if (is_pfring_dna(adapter_name)) {
         int err;
         unsigned version;
 
