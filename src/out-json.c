@@ -100,9 +100,11 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     char banner_buffer[65536];
 
     UNUSEDPARM(ttl);
-    UNUSEDPARM(timestamp);
     
     fprintf(fp, "{ ");
+    fprintf(fp, "  \"timestamp\": \"%s\", ", 
+		timestamp
+	   );
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ", 
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
     fprintf(fp, "  \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
