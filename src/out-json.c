@@ -35,7 +35,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     UNUSEDPARM(out);
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"timestamp\": \"%s\", ", 
+    fprintf(fp, "  \"timestamp\": \"%lu\", ", 
 		timestamp
 	   );
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ", 
@@ -102,7 +102,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ttl);
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"timestamp\": \"%s\", ", 
+    fprintf(fp, "  \"timestamp\": \"%lu\", ", 
 		timestamp
 	   );
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ", 
