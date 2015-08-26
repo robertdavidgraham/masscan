@@ -1907,9 +1907,12 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 exit(1);
                 break;
             case 'p':
-                if (argv[i][2])
-                    arg = argv[i]+2;
-                else
+                if (argv[i][2]) {
+                    if (EQUALS((const char *)&argv[i][2], "-"))
+                      arg = "1-65535";
+                    else
+                      arg = argv[i]+2;
+                } else
                     arg = argv[++i];
                 masscan_set_parameter(masscan, "ports", arg);
                 break;
