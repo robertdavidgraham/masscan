@@ -144,7 +144,7 @@ On Mac OS X and BSD, it might look like this:
 	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
 	
 Windows doesn't respond with RST packets, so neither of these techniques
-are necessary. However, masscan is still desigend to work best using its
+are necessary. However, masscan is still designed to work best using its
 own IP address, so you should run that way when possible, even when its
 not strictly necessary.
 
@@ -154,7 +154,7 @@ which is just a form of banner checking.
 
 ## How to scan the entire Internet
 
-While useful for smaller, internal networks, the program is designed really
+While useful for smaller, internal networks, the program is really designed
 with the entire Internet in mind. It might look something like this:
 
 	# masscan 0.0.0.0/0 -p0-65535
