@@ -1,0 +1,326 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\crypto-base64.c" />
+    <ClCompile Include="..\src\crypto-blackrock2.c" />
+    <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\in-filter.c" />
+    <ClCompile Include="..\src\in-report.c" />
+    <ClCompile Include="..\src\main-listscan.c" />
+    <ClCompile Include="..\src\main-ptrace.c" />
+    <ClCompile Include="..\src\main-readrange.c" />
+    <ClCompile Include="..\src\main-src.c" />
+    <ClCompile Include="..\src\in-binary.c" />
+    <ClCompile Include="..\src\masscan-app.c" />
+    <ClCompile Include="..\src\out-binary.c" />
+    <ClCompile Include="..\src\out-certs.c" />
+    <ClCompile Include="..\src\out-grepable.c" />
+    <ClCompile Include="..\src\out-json.c" />
+    <ClCompile Include="..\src\out-null.c" />
+    <ClCompile Include="..\src\out-redis.c" />
+    <ClCompile Include="..\src\out-text.c" />
+    <ClCompile Include="..\src\out-unicornscan.c" />
+    <ClCompile Include="..\src\out-xml.c" />
+    <ClCompile Include="..\src\pixie-backtrace.c" />
+    <ClCompile Include="..\src\pixie-file.c" />
+    <ClCompile Include="..\src\proto-arp.c" />
+    <ClCompile Include="..\src\proto-banner1.c" />
+    <ClCompile Include="..\src\proto-banout.c" />
+    <ClCompile Include="..\src\proto-dns.c" />
+    <ClCompile Include="..\src\proto-ftp.c" />
+    <ClCompile Include="..\src\proto-http.c" />
+    <ClCompile Include="..\src\proto-icmp.c" />
+    <ClCompile Include="..\src\proto-imap4.c" />
+    <ClCompile Include="..\src\proto-interactive.c" />
+    <ClCompile Include="..\src\proto-netbios.c" />
+    <ClCompile Include="..\src\proto-ntp.c" />
+    <ClCompile Include="..\src\proto-pop3.c" />
+    <ClCompile Include="..\src\proto-sctp.c" />
+    <ClCompile Include="..\src\proto-smtp.c" />
+    <ClCompile Include="..\src\proto-snmp.c" />
+    <ClCompile Include="..\src\proto-ssh.c" />
+    <ClCompile Include="..\src\proto-ssl-test.c" />
+    <ClCompile Include="..\src\proto-ssl.c" />
+    <ClCompile Include="..\src\proto-tcp.c" />
+    <ClCompile Include="..\src\logger.c" />
+    <ClCompile Include="..\src\main-conf.c" />
+    <ClCompile Include="..\src\main-dedup.c" />
+    <ClCompile Include="..\src\main-initadapter.c" />
+    <ClCompile Include="..\src\main-status.c" />
+    <ClCompile Include="..\src\main-throttle.c" />
+    <ClCompile Include="..\src\main.c" />
+    <ClCompile Include="..\src\output.c" />
+    <ClCompile Include="..\src\pixie-threads.c" />
+    <ClCompile Include="..\src\pixie-timer.c" />
+    <ClCompile Include="..\src\proto-preprocess.c" />
+    <ClCompile Include="..\src\proto-tcp-telnet.c" />
+    <ClCompile Include="..\src\proto-udp.c" />
+    <ClCompile Include="..\src\proto-vnc.c" />
+    <ClCompile Include="..\src\proto-x509.c" />
+    <ClCompile Include="..\src\proto-zeroaccess.c" />
+    <ClCompile Include="..\src\rand-blackrock.c" />
+    <ClCompile Include="..\src\rand-lcg.c" />
+    <ClCompile Include="..\src\rand-primegen.c" />
+    <ClCompile Include="..\src\ranges.c" />
+    <ClCompile Include="..\src\rawsock-arp.c" />
+    <ClCompile Include="..\src\rawsock-getif.c" />
+    <ClCompile Include="..\src\rawsock-getip.c" />
+    <ClCompile Include="..\src\rawsock-getmac.c" />
+    <ClCompile Include="..\src\rawsock-getroute.c" />
+    <ClCompile Include="..\src\rawsock-pcapfile.c" />
+    <ClCompile Include="..\src\rawsock-pfring.c" />
+    <ClCompile Include="..\src\rawsock.c" />
+    <ClCompile Include="..\src\rte-ring.c" />
+    <ClCompile Include="..\src\script-heartbleed.c" />
+    <ClCompile Include="..\src\script-ntp-monlist.c" />
+    <ClCompile Include="..\src\script-sslv3.c" />
+    <ClCompile Include="..\src\script.c" />
+    <ClCompile Include="..\src\siphash24.c" />
+    <ClCompile Include="..\src\smack1.c" />
+    <ClCompile Include="..\src\smackqueue.c" />
+    <ClCompile Include="..\src\string_s.c" />
+    <ClCompile Include="..\src\syn-cookie.c" />
+    <ClCompile Include="..\src\templ-payloads.c" />
+    <ClCompile Include="..\src\templ-pkt.c" />
+    <ClCompile Include="..\src\xring.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\crypto-base64.h" />
+    <ClInclude Include="..\src\in-filter.h" />
+    <ClInclude Include="..\src\in-report.h" />
+    <ClInclude Include="..\src\main-globals.h" />
+    <ClInclude Include="..\src\event-timeout.h" />
+    <ClInclude Include="..\src\in-binary.h" />
+    <ClInclude Include="..\src\logger.h" />
+    <ClInclude Include="..\src\main-dedup.h" />
+    <ClInclude Include="..\src\main-ptrace.h" />
+    <ClInclude Include="..\src\main-readrange.h" />
+    <ClInclude Include="..\src\main-src.h" />
+    <ClInclude Include="..\src\main-status.h" />
+    <ClInclude Include="..\src\main-throttle.h" />
+    <ClInclude Include="..\src\masscan-app.h" />
+    <ClInclude Include="..\src\masscan-version.h" />
+    <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\out-record.h" />
+    <ClInclude Include="..\src\output.h" />
+    <ClInclude Include="..\src\packet-queue.h" />
+    <ClInclude Include="..\src\pixie-backtrace.h" />
+    <ClInclude Include="..\src\pixie-file.h" />
+    <ClInclude Include="..\src\pixie-sockets.h" />
+    <ClInclude Include="..\src\pixie-threads.h" />
+    <ClInclude Include="..\src\pixie-timer.h" />
+    <ClInclude Include="..\src\proto-arp.h" />
+    <ClInclude Include="..\src\proto-banner1.h" />
+    <ClInclude Include="..\src\proto-banout.h" />
+    <ClInclude Include="..\src\proto-dns-parse.h" />
+    <ClInclude Include="..\src\proto-dns.h" />
+    <ClInclude Include="..\src\proto-ftp.h" />
+    <ClInclude Include="..\src\proto-http.h" />
+    <ClInclude Include="..\src\proto-icmp.h" />
+    <ClInclude Include="..\src\proto-imap4.h" />
+    <ClInclude Include="..\src\proto-interactive.h" />
+    <ClInclude Include="..\src\proto-netbios.h" />
+    <ClInclude Include="..\src\proto-ntp.h" />
+    <ClInclude Include="..\src\proto-pop3.h" />
+    <ClInclude Include="..\src\proto-preprocess.h" />
+    <ClInclude Include="..\src\proto-sctp.h" />
+    <ClInclude Include="..\src\proto-smtp.h" />
+    <ClInclude Include="..\src\proto-snmp.h" />
+    <ClInclude Include="..\src\proto-ssh.h" />
+    <ClInclude Include="..\src\proto-ssl.h" />
+    <ClInclude Include="..\src\proto-tcp.h" />
+    <ClInclude Include="..\src\proto-tcp-telnet.h" />
+    <ClInclude Include="..\src\proto-udp.h" />
+    <ClInclude Include="..\src\proto-vnc.h" />
+    <ClInclude Include="..\src\proto-x509.h" />
+    <ClInclude Include="..\src\proto-zeroaccess.h" />
+    <ClInclude Include="..\src\rand-blackrock.h" />
+    <ClInclude Include="..\src\rand-lcg.h" />
+    <ClInclude Include="..\src\rand-primegen.h" />
+    <ClInclude Include="..\src\ranges.h" />
+    <ClInclude Include="..\src\rawsock-pcapfile.h" />
+    <ClInclude Include="..\src\rawsock-pfring.h" />
+    <ClInclude Include="..\src\rawsock.h" />
+    <ClInclude Include="..\src\rte-ring.h" />
+    <ClInclude Include="..\src\script.h" />
+    <ClInclude Include="..\src\siphash24.h" />
+    <ClInclude Include="..\src\smack.h" />
+    <ClInclude Include="..\src\smackqueue.h" />
+    <ClInclude Include="..\src\string_s.h" />
+    <ClInclude Include="..\src\syn-cookie.h" />
+    <ClInclude Include="..\src\templ-payloads.h" />
+    <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\xring.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\doc\masscan.8.markdown" />
+    <None Include="..\LICENSE" />
+    <None Include="..\Makefile" />
+    <None Include="..\README.md" />
+    <None Include="..\VULNINFO.md" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C88D7583-254F-4BE6-A9B9-89A5BB52E679}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>masscan</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)\..\tmp\</IntDir>
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>lib;</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>lib\x64;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>setargv.obj;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>lib</AdditionalLibraryDirectories>
+    </Link>
+    <BuildLog>
+      <Path>$(IntDir)\$(MSBuildProjectName).log</Path>
+    </BuildLog>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>lib\x64</AdditionalLibraryDirectories>
+    </Link>
+    <BuildLog>
+      <Path>$(IntDir)\$(MSBuildProjectName).log</Path>
+    </BuildLog>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
