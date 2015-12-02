@@ -19,9 +19,18 @@ json_out_open(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 json_out_close(struct Output *out, FILE *fp)
-{    
+{
+    time_t now = time(0);
     UNUSEDPARM(out);
-    fprintf(fp, "{finished: 1}\n");
+    fprintf(fp, "{\"finished\": 1, "
+                "\"time\": %u, \"elapsed\": %u, "
+                "\"up\": %" PRIu64 ", \"down\": %" PRIu64 ", \"total\": %" PRIu64 "}\n",
+            (unsigned)now,                      /* time */
+            (unsigned)(now - out->rotate.last), /* elapsed */
+            out->counts.tcp.open,
+            out->counts.tcp.closed,
+            out->counts.tcp.open + out->counts.tcp.closed
+            );
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
