@@ -69,6 +69,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     char reason_buffer[128];
     UNUSEDPARM(out);
     fprintf(fp, "<host endtime=\"%u\">"
+                    "<status state=\"up\" reason=\"port-%s\" reason_ttl=\"%u\"/>"
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
@@ -78,6 +79,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
+        status_string(status), ttl,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
@@ -95,7 +97,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
 static void
 xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         unsigned ip, unsigned ip_proto, unsigned port,
-        enum ApplicationProtocol proto, 
+        enum ApplicationProtocol proto,
         unsigned ttl,
         const unsigned char *px, unsigned length)
 {
@@ -110,6 +112,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(out);
 
     fprintf(fp, "<host endtime=\"%u\">"
+                    "<status state=\"up\" reason=\"port-%s\" reason_ttl=\"%u\"/>"
                     "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
@@ -120,6 +123,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
+        reason, ttl,
         (ip>>24)&0xFF,
         (ip>>16)&0xFF,
         (ip>> 8)&0xFF,
