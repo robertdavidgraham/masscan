@@ -111,7 +111,7 @@ one port.
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
-  * `--nmap`: print help aobut nmap-compatibility alternatives for these
+  * `--nmap`: print help about nmap-compatibility alternatives for these
     options.
 
   * `--pcap-payloads`: read packets from a libpcap file containing packets
