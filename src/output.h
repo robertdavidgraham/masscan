@@ -68,6 +68,7 @@ struct Output
         unsigned offset;
         uint64_t filesize;
         uint64_t bytes_written;
+        unsigned filecount; /* filesize rotates */
         char *directory;
     } rotate;
 
@@ -148,7 +149,8 @@ output_create(const struct Masscan *masscan, unsigned thread_index);
 void output_destroy(struct Output *output);
 
 void output_report_status(struct Output *output, time_t timestamp,
-    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl);
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
+    const unsigned char mac[6]);
 
 
 typedef void (*OUTPUT_REPORT_BANNER)(

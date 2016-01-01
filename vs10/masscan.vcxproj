@@ -22,6 +22,8 @@
     <ClCompile Include="..\src\crypto-base64.c" />
     <ClCompile Include="..\src\crypto-blackrock2.c" />
     <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\in-filter.c" />
+    <ClCompile Include="..\src\in-report.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
@@ -43,11 +45,16 @@
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-banout.c" />
     <ClCompile Include="..\src\proto-dns.c" />
+    <ClCompile Include="..\src\proto-ftp.c" />
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
+    <ClCompile Include="..\src\proto-imap4.c" />
+    <ClCompile Include="..\src\proto-interactive.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-ntp.c" />
+    <ClCompile Include="..\src\proto-pop3.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
+    <ClCompile Include="..\src\proto-smtp.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
     <ClCompile Include="..\src\proto-ssl-test.c" />
@@ -66,6 +73,7 @@
     <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\proto-tcp-telnet.c" />
     <ClCompile Include="..\src\proto-udp.c" />
+    <ClCompile Include="..\src\proto-vnc.c" />
     <ClCompile Include="..\src\proto-x509.c" />
     <ClCompile Include="..\src\proto-zeroaccess.c" />
     <ClCompile Include="..\src\rand-blackrock.c" />
@@ -81,7 +89,9 @@
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\rte-ring.c" />
+    <ClCompile Include="..\src\script-heartbleed.c" />
     <ClCompile Include="..\src\script-ntp-monlist.c" />
+    <ClCompile Include="..\src\script-sslv3.c" />
     <ClCompile Include="..\src\script.c" />
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
@@ -94,6 +104,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\crypto-base64.h" />
+    <ClInclude Include="..\src\in-filter.h" />
+    <ClInclude Include="..\src\in-report.h" />
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />
@@ -120,19 +132,24 @@
     <ClInclude Include="..\src\proto-banout.h" />
     <ClInclude Include="..\src\proto-dns-parse.h" />
     <ClInclude Include="..\src\proto-dns.h" />
+    <ClInclude Include="..\src\proto-ftp.h" />
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
+    <ClInclude Include="..\src\proto-imap4.h" />
     <ClInclude Include="..\src\proto-interactive.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
+    <ClInclude Include="..\src\proto-pop3.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-sctp.h" />
+    <ClInclude Include="..\src\proto-smtp.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-tcp-telnet.h" />
     <ClInclude Include="..\src\proto-udp.h" />
+    <ClInclude Include="..\src\proto-vnc.h" />
     <ClInclude Include="..\src\proto-x509.h" />
     <ClInclude Include="..\src\proto-zeroaccess.h" />
     <ClInclude Include="..\src\rand-blackrock.h" />
@@ -208,11 +225,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -232,6 +251,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -247,6 +267,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

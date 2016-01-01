@@ -27,6 +27,7 @@ enum ApplicationProtocol {
     PROTO_VULN,
     PROTO_HEARTBLEED,
     PROTO_VNC_RFB,
+    PROTO_SAFE,
 };
 
 const char *

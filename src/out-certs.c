@@ -61,6 +61,8 @@ cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(fp);
     UNUSEDPARM(out);
     UNUSEDPARM(ttl);
+    UNUSEDPARM(proto);
+    UNUSEDPARM(port);
 
     if (length > 5 && memcmp(px, "cert:", 5) == 0) {
         px += 5;

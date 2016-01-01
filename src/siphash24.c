@@ -132,7 +132,7 @@ static int crypto_auth( unsigned char *out, const unsigned char *in, unsigned lo
 }
 
 uint64_t
-siphash24(const void *in, size_t inlen, uint64_t key[2])
+siphash24(const void *in, size_t inlen, const uint64_t key[2])
 {
     uint64_t result;
 

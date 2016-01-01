@@ -89,6 +89,7 @@ TBSCertificate  ::=  SEQUENCE  {
 #include "proto-banout.h"
 #include "masscan-app.h"
 #include "smack.h"
+#include "logger.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -341,7 +342,7 @@ ASN1_push(struct CertDecode *x, unsigned next_state, uint64_t remaining)
      */
     if (x->stack.depth) {
         if (remaining > x->stack.remainings[0]) {
-            fprintf(stderr, "ASN.1 inner object bigger than container [%u, %u]\n",
+            LOG(1, "ASN.1 inner object bigger than container [%u, %u]\n",
                 next_state, x->stack.states[0]);
             x->state = 0xFFFFFFFF;
             return;
@@ -586,7 +587,9 @@ x509_decode(struct CertDecode *x,
                 state++;
                 continue;
             }
-            //printf("issuer:");
+            if (x->is_capture_issuer) {
+                banout_append(banout, PROTO_SSL3, " issuer[", AUTO_LEN);
+            }
             state++;
             break;
         case SUBJECTNAME_TAG:
@@ -594,7 +597,9 @@ x509_decode(struct CertDecode *x,
                 state++;
                 continue;
             }
-            //printf("subject:");
+            if (x->is_capture_subject) {
+                banout_append(banout, PROTO_SSL3, " subject[", AUTO_LEN);
+            }
             state++;
             break;
         case ISSUER1_TAG:
@@ -642,17 +647,20 @@ x509_decode(struct CertDecode *x,
             state++;
             break;
         case ISSUERNAME_CONTENTS:
-            //printf("%c", px[i]);
-            //if (x->stack.remainings[0] == 0)
-            //    printf("\n");
+            if (x->is_capture_issuer) {
+                banout_append(banout, PROTO_SSL3, px+i, 1);
+                if (x->stack.remainings[0] == 0)
+                    banout_append(banout, PROTO_SSL3, "]", 1);
+            }
             break;
         case SUBJECTNAME_CONTENTS:
         case EXT_DNSNAME_CONTENTS:
-            //printf("%c", px[i]);
-            if (x->subject.type == Subject_Common)
+            if (x->is_capture_subject) {
                 banout_append(banout, PROTO_SSL3, px+i, 1);
-            //if (x->stack.remainings[0] == 0)
-            //    printf("\n");
+                if (x->stack.remainings[0] == 0)
+                    banout_append(banout, PROTO_SSL3, "]", 1);
+            } else if (x->subject.type == Subject_Common)
+                banout_append(banout, PROTO_SSL3, px+i, 1);
             break;
         case VERSION_CONTENTS:
             x->u.num <<= 8;
