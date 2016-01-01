@@ -85,6 +85,8 @@
 		11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA29681890560C0064A759 /* script-ntp-monlist.c */; };
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
 		11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
+		11F9375419F1A54200C1947F /* script-sslv3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11F9375319F1A54200C1947F /* script-sslv3.c */; };
+		11F9375719F1AD5000C1947F /* script-heartbleed.c in Sources */ = {isa = PBXBuildFile; fileRef = 11F9375619F1AD5000C1947F /* script-heartbleed.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -247,6 +249,8 @@
 		11BA296C189060590064A759 /* proto-ntp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-ntp.h"; sourceTree = "<group>"; };
 		11E76DB21889BC5200061F45 /* pixie-backtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-backtrace.c"; sourceTree = "<group>"; };
 		11E76DB31889BC5200061F45 /* pixie-backtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-backtrace.h"; sourceTree = "<group>"; };
+		11F9375319F1A54200C1947F /* script-sslv3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "script-sslv3.c"; sourceTree = "<group>"; };
+		11F9375619F1AD5000C1947F /* script-heartbleed.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "script-heartbleed.c"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -425,6 +429,8 @@
 				11420DDF19A90CB300DB5BFE /* proto-interactive.c */,
 				11420DE119A9361500DB5BFE /* proto-imap4.h */,
 				11420DE219A9363A00DB5BFE /* proto-imap4.c */,
+				11F9375319F1A54200C1947F /* script-sslv3.c */,
+				11F9375619F1AD5000C1947F /* script-heartbleed.c */,
 			);
 			name = src;
 			path = ../src;
@@ -558,6 +564,8 @@
 				11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */,
 				11420DE019A90CB300DB5BFE /* proto-interactive.c in Sources */,
 				11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */,
+				11F9375419F1A54200C1947F /* script-sslv3.c in Sources */,
+				11F9375719F1AD5000C1947F /* script-heartbleed.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

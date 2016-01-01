@@ -27,6 +27,10 @@
     work -- it's just that the first rotated file will contain several
     periods of data.
 */
+
+/* Needed for Linux to make offsets 64 bits */
+#define _FILE_OFFSET_BITS 64
+
 #include "output.h"
 #include "masscan.h"
 #include "masscan-status.h"
@@ -42,6 +46,18 @@
 #include <ctype.h>
 #include <string.h>
 
+/*****************************************************************************
+ *****************************************************************************/
+static int64_t ftell_x(FILE *fp)
+{
+#if defined(WIN32) && defined(__GNUC__)
+    return ftello64(fp);
+#elif defined(WIN32) && defined(_MSC_VER)
+    return _ftelli64(fp);
+#else
+    return ftello(fp);
+#endif
+}
 
 /*****************************************************************************
  * The 'status' variable contains both the open/closed info as well as the
@@ -544,20 +560,38 @@ output_do_rotate(struct Output *out, int is_closing)
      * happen. */
     err = 0;
 again:
-    sprintf_s(new_filename, new_filename_size,
-              "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
-        dir,
-        tm.tm_year % 100,
-        tm.tm_mon+1,
-        tm.tm_mday,
-        tm.tm_hour,
-        tm.tm_min,
-        tm.tm_sec,
-        filename);
-    if (access(new_filename, 0) == 0) {
-        tm.tm_sec++;
-        if (err++ == 0)
-            goto again;
+    if (out->rotate.filesize) {
+        size_t x_off=0, x_len=0;
+        if (strrchr(filename, '.')) {
+            x_off = strrchr(filename, '.') - filename;
+            x_len = strlen(filename + x_off);
+        } else {
+            x_off = strlen(filename);
+            x_len = 0;
+        }
+        sprintf_s(new_filename, new_filename_size,
+                      "%s/%.*s-%05u%.*s",
+                dir,
+                (unsigned)x_off, filename,
+                out->rotate.filecount++,
+                (unsigned)x_len, filename + x_off
+                );
+    } else {
+        sprintf_s(new_filename, new_filename_size,
+                  "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
+            dir,
+            tm.tm_year % 100,
+            tm.tm_mon+1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+            filename);
+        if (access(new_filename, 0) == 0) {
+            tm.tm_sec++;
+            if (err++ == 0)
+                goto again;
+        }
     }
     filename = out->filename;
 
@@ -610,18 +644,46 @@ again:
 /***************************************************************************
  ***************************************************************************/
 static int
-is_rotate_time(const struct Output *out, time_t now)
+is_rotate_time(const struct Output *out, time_t now, FILE *fp)
 {
     if (out->is_virgin_file)
         return 0;
     if (now >= out->rotate.next)
         return 1;
     if (out->rotate.filesize != 0 &&
-        out->rotate.bytes_written >= out->rotate.filesize)
+        ftell_x(fp) >= (int64_t)out->rotate.filesize)
         return 1;
     return 0;
 }
 
+/***************************************************************************
+ * Return the vendor/OUI string matchng the first three bytes of a
+ * MAC address.
+ * TODO: this should be read in from a file
+ ***************************************************************************/
+static const char *
+oui_from_mac(const unsigned char mac[6])
+{
+    unsigned oui = mac[0]<<16 | mac[1]<<8 | mac[2];
+    switch (oui) {
+    case 0x94dbc9: return "Azurewave";
+    case 0x404a03: return "Zyxel";
+    case 0x000c29: return "VMware";
+    case 0x002590: return "Supermicro";
+    case 0xc0c1c0: return "Cisco-Linksys";
+    case 0x2c27d7: return "HP";
+    case 0x001132: return "Synology";
+    case 0x0022b0: return "D-Link";
+    case 0x0001c0: return "Compulab";
+    case 0x00236c: return "Apple";
+    case 0x0016cb: return "Apple";
+    case 0x08cc68: return "Cisco";
+    case 0x022618: return "Asustek"; /* */
+
+
+    default: return "";
+    }
+}
 
 /***************************************************************************
  * Report simply "open" or "closed", with little additional information.
@@ -630,7 +692,8 @@ is_rotate_time(const struct Output *out, time_t now)
  ***************************************************************************/
 void
 output_report_status(struct Output *out, time_t timestamp, int status,
-        unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+        unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
+        const unsigned char mac[6])
 {
     FILE *fp = out->fp;
     time_t now = time(0);
@@ -646,18 +709,34 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
     /* If in "--interactive" mode, then print the banner to the command
      * line screen */
-    if (out->is_interactive || out->format == 0) {
+    if (out->is_interactive || out->format == 0 || out->format == Output_Interactive) {
         unsigned count;
 
-        count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
-                    status_string(status),
-                    port,
-                    name_from_ip_proto(ip_proto),
-                    (ip>>24)&0xFF,
-                    (ip>>16)&0xFF,
-                    (ip>> 8)&0xFF,
-                    (ip>> 0)&0xFF
-                    );
+        switch (ip_proto) {
+        case 0: /* ARP */
+            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u (%02x:%02x:%02x:%02x:%02x:%02x) %s",
+                        status_string(status),
+                        port,
+                        name_from_ip_proto(ip_proto),
+                        (ip>>24)&0xFF,
+                        (ip>>16)&0xFF,
+                        (ip>> 8)&0xFF,
+                        (ip>> 0)&0xFF,
+                        mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
+                        oui_from_mac(mac)
+                        );
+            break;
+        default:
+            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
+                        status_string(status),
+                        port,
+                        name_from_ip_proto(ip_proto),
+                        (ip>>24)&0xFF,
+                        (ip>>16)&0xFF,
+                        (ip>> 8)&0xFF,
+                        (ip>> 0)&0xFF
+                        );
+        }
 
         /* Because this line may overwrite the "%done" status line, print
          * some spaces afterward to completely cover up the line */
@@ -680,7 +759,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (is_rotate_time(out, now)) {
+    if (is_rotate_time(out, now, fp)) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
@@ -766,7 +845,7 @@ output_report_banner(struct Output *out, time_t now,
 
     /* If in "--interactive" mode, then print the banner to the command
      * line screen */
-    if (out->is_interactive || out->format == 0) {
+    if (out->is_interactive || out->format == 0 || out->format == Output_Interactive) {
         unsigned count;
         char banner_buffer[4096];
 
@@ -800,7 +879,7 @@ output_report_banner(struct Output *out, time_t now,
      * file, rather than in a separate thread right at the time interval.
      * Thus, if results are coming in slowly, the rotation won't happen
      * on precise boundaries */
-    if (is_rotate_time(out, now)) {
+    if (is_rotate_time(out, now, fp)) {
         fp = output_do_rotate(out, 0);
         if (fp == NULL)
             return;
@@ -834,8 +913,10 @@ output_destroy(struct Output *out)
 
     /* If rotating files, then do one last rotate of this file to the
      * destination directory */
-    if (out->rotate.period)
+    if (out->rotate.period || out->rotate.filesize) {
+        LOG(1, "doing finale rotate\n");
         output_do_rotate(out, 1);
+    }
 
     /* If not rotating files, then simply close this file. Remember
      * that some files will write closing information before closing

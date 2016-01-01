@@ -175,6 +175,7 @@ struct Masscan
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
+    unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
         
 
     /**
@@ -287,7 +288,10 @@ struct Masscan
     
         /**
          * --interactive
-         * Print to command-line while also writing to output file
+         * Print to command-line while also writing to output file. This isn't
+         * needed if the output format is already 'interactive' (the default),
+         * but only if the default output format is anything else, and the
+         * user also wants interactivity.
          */
         unsigned is_interactive:1;
         

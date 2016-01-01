@@ -13,16 +13,31 @@ struct MassScript
      */
     const char *ports;
     
+    /**
+     * The hello packet template
+     */
     const unsigned char *packet;
     
+    /**
+     * The hello packet template length
+     */
     unsigned packet_length;
     
+    
+    /**
+     * Called to change the template based upon the target
+     */
     void (*set_target)(struct TemplatePacket *tmpl,
                          unsigned ip_them, unsigned port_them,
                          unsigned ip_me, unsigned port_me,
                          unsigned seqno,
                          unsigned char *px, size_t sizeof_px, 
                          size_t *r_length);
+    
+    /**
+     * Called at startup to change the template according to options
+     */
+    void (*init)(struct TemplatePacket *tmpl);
 };
 
 /**

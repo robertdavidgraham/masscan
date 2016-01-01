@@ -95,11 +95,11 @@ ftp_parse(  const struct Banner1 *banner1,
                         memset(pstate, 0, sizeof(*pstate));
                         pstate->app_proto = PROTO_SSL3;
                         pstate->is_sent_sslhello = 1;
-                        pstate->port = port;
+                        pstate->port = (unsigned short)port;
                         state = 0;
                         
                         more->payload = banner_ssl.hello;
-                        more->length = banner_ssl.hello_length;
+                        more->length = (unsigned)banner_ssl.hello_length;
                         
                     } else {
                         state = STATE_DONE;

@@ -9,6 +9,11 @@
 #include "main-globals.h"
 #include "output.h"
 #include "string_s.h"
+#include "in-filter.h"
+#include "in-report.h"
+
+#include <stdlib.h>
+#include <assert.h>
 
 static const size_t BUF_MAX = 1024*1024;
 
@@ -19,6 +24,7 @@ struct MasscanRecord {
     unsigned short port;
     unsigned char reason;
     unsigned char ttl;
+    unsigned char mac[6];
     enum ApplicationProtocol app_proto;
 };
 
@@ -41,6 +47,12 @@ parse_status(struct Output *out,
     record.port      = buf[8]<<8 | buf[9];
     record.reason    = buf[10];
     record.ttl       = buf[11];
+
+    /* if ARP, then there will be a MAC address */
+    if (record.ip == 0 && buf_length >= 12+6)
+        memcpy(record.mac, buf+12, 6);
+    else
+        memset(record.mac, 0, 6);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -72,7 +84,8 @@ parse_status(struct Output *out,
                     record.ip_proto,
                     record.port,
                     record.reason,
-                    record.ttl);
+                    record.ttl,
+                    record.mac);
 
 }
 
@@ -97,6 +110,12 @@ parse_status2(struct Output *out,
     record.port      = buf[9]<<8 | buf[10];
     record.reason    = buf[11];
     record.ttl       = buf[12];
+
+    /* if ARP, then there will be a MAC address */
+    if (record.ip == 0 && buf_length >= 13+6)
+        memcpy(record.mac, buf+13, 6);
+    else
+        memset(record.mac, 0, 6);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -123,7 +142,8 @@ parse_status2(struct Output *out,
                     record.ip_proto,
                     record.port,
                     record.reason,
-                    record.ttl);
+                    record.ttl,
+                    record.mac);
 
 }
 
@@ -204,6 +224,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
                 );
 }
 
+
 /***************************************************************************
  ***************************************************************************/
 static void
@@ -213,6 +234,8 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
               const struct RangeList *btypes)
 {
     struct MasscanRecord record;
+    unsigned char *data = buf+14;
+    size_t data_length = buf_length-14;
 
     if (buf_length < 14)
         return;
@@ -231,20 +254,18 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
         out->when_scan_started = record.timestamp;
 
     /*
-     * Filter
+     * KLUDGE: when doing SSL stuff, add a IP:name pair to a database
+     * so we can annotate [VULN] strings with this information
      */
-    if (ips && ips->count) {
-        if (!rangelist_is_contains(ips, record.ip))
-            return;
-    }
-    if (ports && ports->count) {
-        if (!rangelist_is_contains(ports, record.port))
-            return;
-    }
-    if (btypes && btypes->count) {
-        if (!rangelist_is_contains(btypes, record.app_proto))
-            return;
-    }
+    //readscan_report(record.ip, record.app_proto, &data, &data_length);
+
+
+    /*
+     * Filter out records if requested
+     */
+    if (!readscan_filter_pass(record.ip, record.port, record.app_proto,
+              ips, ports, btypes))
+          return;
     
     /*
      * Now print the output
@@ -257,7 +278,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 record.ttl, /* ttl */
-                buf+14, (unsigned)buf_length-14
+                data, (unsigned)data_length
                 );
 }
 
@@ -441,6 +462,9 @@ read_binary_scanfile(struct Masscan *masscan,
     struct Output *out;
     int i;
 
+    //readscan_report_init();
+
+
     out = output_create(masscan, 0);
     
     /*
@@ -465,6 +489,9 @@ read_binary_scanfile(struct Masscan *masscan,
     }
 
     output_destroy(out);
+
+    //readscan_report_print();
+
 }
 
 

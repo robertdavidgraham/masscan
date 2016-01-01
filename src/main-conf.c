@@ -1382,10 +1382,12 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("output-format", name)) {
         enum OutputFormat x = 0;
-        if (EQUALS("interactive", value))
-            masscan->output.format = Output_Interactive;
+        if (EQUALS("unknown(0)", value)) {
+            x = Output_Interactive;
+        }
+        else if (EQUALS("interactive", value))  x = Output_Interactive;
         else if (EQUALS("list", value))         x = Output_List;
-        else if (EQUALS("unicornscan", value))         x = Output_Unicornscan;
+        else if (EQUALS("unicornscan", value))  x = Output_Unicornscan;
         else if (EQUALS("xml", value))          x = Output_XML;
         else if (EQUALS("binary", value))       x = Output_Binary;
         else if (EQUALS("greppable", value))    x = Output_Grepable;
@@ -1488,6 +1490,16 @@ masscan_set_parameter(struct Masscan *masscan,
         while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
             p[strlen(p)-1] = '\0';
     } else if (EQUALS("script", name)) {
+        if (EQUALS("heartbleed", value)) {
+            masscan_set_parameter(masscan, "heartbleed", "true");
+            return;
+        } else if (EQUALS("poodle", value) || EQUALS("sslv3", value)) {
+            masscan->is_poodle_sslv3 = 1;
+            masscan_set_parameter(masscan, "no-capture", "cert");
+            masscan_set_parameter(masscan, "banners", "true");
+            return;
+        }
+        
         if (!script_lookup(value)) {
             fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
             fprintf(stderr, "  hint: most nmap scripts aren't supported\n");
@@ -1602,7 +1614,7 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("vlan", name) || EQUALS("adapter-vlan", name)) {
         masscan->nic[index].is_vlan = 1;
-        masscan->nic[index].vlan_id = parseInt(value);
+        masscan->nic[index].vlan_id = (unsigned)parseInt(value);
     } else if (EQUALS("wait", name)) {
         if (EQUALS("forever", value))
             masscan->wait =  INT_MAX;

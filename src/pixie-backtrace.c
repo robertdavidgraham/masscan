@@ -208,7 +208,7 @@ pixie_backtrace_init(const char *self)
         }
     }
 
-	signal(SIGSEGV, handle_segfault);
+	//signal(SIGSEGV, handle_segfault);
 }
 #else
 void

@@ -620,9 +620,14 @@ receive_thread(void *v)
                                     masscan->http_user_agent);
         if (masscan->is_heartbleed)
             tcpcon_set_parameter(   tcpcon,
-                                    "heartbleed",
-                                    1,
-                                    "1");
+                                 "heartbleed",
+                                 1,
+                                 "1");
+        if (masscan->is_poodle_sslv3)
+            tcpcon_set_parameter(   tcpcon,
+                                 "sslv3",
+                                 1,
+                                 "1");
         if (masscan->tcp_connection_timeout) {
             char foo[64];
             sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
@@ -907,6 +912,7 @@ receive_thread(void *v)
 
         if (TCP_IS_SYNACK(px, parsed.transport_offset)
             || TCP_IS_RST(px, parsed.transport_offset)) {
+
             /* figure out the status */
             status = PortStatus_Unknown;
             if (TCP_IS_SYNACK(px, parsed.transport_offset))
@@ -942,7 +948,8 @@ receive_thread(void *v)
                         6, /* ip proto = tcp */
                         port_them,
                         px[parsed.transport_offset + 13], /* tcp flags */
-                        parsed.ip_ttl
+                        parsed.ip_ttl,
+                        parsed.mac_src
                         );
 
             /*

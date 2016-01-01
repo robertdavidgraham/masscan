@@ -252,6 +252,36 @@
     <ClCompile Include="..\src\out-unicornscan.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-ftp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-imap4.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-pop3.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-smtp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-vnc.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-interactive.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-filter.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-report.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\script-heartbleed.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\script-sslv3.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -430,6 +460,27 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-interactive.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ftp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-imap4.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-pop3.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-smtp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-vnc.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-filter.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-report.h">
+      <Filter>Source Files\output</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

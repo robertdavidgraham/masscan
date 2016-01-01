@@ -77,6 +77,8 @@ one port.
   * `--adapter-mac <mac-address>`: send packets using this as the source MAC
     address. If not specified, then the first MAC address bound to the network
 	interface will be used.
+    
+  * `--adapter-vlan <vlanid>`: send packets using this 802.1q VLAN ID
 
   * `--router-mac <mac address>`: send packets to this MAC address as the
     destination. If not specified, then the gateway address of the network
@@ -310,6 +312,33 @@ The program will not exit immediately, but will wait a default of 10
 seconds to receive results from the Internet and save the results before
 exiting completely. This time can be changed with the `--wait` option.
 
+## USER-MODE STACK
+
+Masscan has a user-mode TCP/IP stack that co-exists with the operating-system's
+stack. Normally, this works fine but sometimes can cause problems, especially
+with the `--banners` option that establishes a TCP/IP connection. In some
+cases, all the stack's parameters will have to be specified separately:
+
+    --adapter-port <port>
+    --adapter-ip <ip>
+    --adapter-mac <mac>
+    --adapter-vlan <vlanid>
+    --router-mac <mac>
+
+If the user-mode stack shares the same IP address as the operating-system,
+then the kernel will send RST packets during a scan. This can cause
+unnecessary traffic during a simple port scan, and will terminate TCP
+connections when doing a `--banners` scan. To prevent, this, the built-in
+firewall should be used to filte the source ports. On Linux, this can be done
+by doing something like:
+
+    # iptables -A INPUT -i eth0 -p tcp --dport 44444 -j DROP
+    
+This will prevent the Linux kernel from processing incoming packets to port
+44444, but `masscan` will still see the packets. Set the maching parameter
+of `--adapter-port 44444` to force `masscan` to use that port instead of
+a random port.
+    
 
 ## SIMPLE EXAMPLES
 

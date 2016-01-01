@@ -60,6 +60,7 @@ handle_udp(struct Output *out, time_t timestamp,
                         17, /* ip proto = udp */
                         port_them,
                         0,
-                        0);
+                        0,
+                        parsed->mac_src);
 
 }

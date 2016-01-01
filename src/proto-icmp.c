@@ -95,7 +95,8 @@ handle_icmp(struct Output *out, time_t timestamp,
                             1, /* ip proto */
                             0,
                             0,
-                            parsed->ip_ttl);
+                            parsed->ip_ttl,
+                            parsed->mac_src);
         break;
     case 3: /* destination unreachable */
         switch (code) {
@@ -137,7 +138,8 @@ handle_icmp(struct Output *out, time_t timestamp,
                                         ip_proto,
                                         port_them2,
                                         0,
-                                        parsed->ip_ttl);
+                                        parsed->ip_ttl,
+                                        parsed->mac_src);
                     break;
                 case 17:
                     output_report_status(
@@ -148,7 +150,8 @@ handle_icmp(struct Output *out, time_t timestamp,
                                         ip_proto,
                                         port_them2,
                                         0,
-                                        parsed->ip_ttl);
+                                        parsed->ip_ttl,
+                                        parsed->mac_src);
                     break;
                 case 132:
                     output_report_status(
@@ -159,7 +162,8 @@ handle_icmp(struct Output *out, time_t timestamp,
                                         ip_proto,
                                         port_them2,
                                         0,
-                                        parsed->ip_ttl);
+                                        parsed->ip_ttl,
+                                        parsed->mac_src);
                     break;
                 }
             }
