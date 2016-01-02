@@ -1246,7 +1246,7 @@ main_scan(struct Masscan *masscan)
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
 
-        if (count_ports == 1 && masscan->ports.list->begin == 196608 && masscan->ports.list->end == 196608 )
+        if (count_ports == 1 && masscan->ports.list->begin == Templ_ICMP_echo && masscan->ports.list->end == Templ_ICMP_echo)
             { /* ping only scan - no TCP */
                 LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
                 LOG(0, "Initiating ICMP Echo Scan\n");
