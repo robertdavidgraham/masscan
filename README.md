@@ -100,7 +100,7 @@ Usage is similar to `nmap`. To scan a network segment for some ports:
 
 This will:
 * scan the 10.x.x.x subnet, all 16 million addresses
-* scans port 80 and the range 8000 to 8100, or 102 addresses total
+* scans port 80 and the range 8000 to 8100, or 102 ports total
 * print output to `<stdout>` that can be redirected to a file
 
 To see the complete list of options, use the `--echo` feature. This
