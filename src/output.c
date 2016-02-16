@@ -206,7 +206,7 @@ open_rotate(struct Output *out, const char *filename)
             fprintf(stderr, "out: could not open file for %s\n",
                     is_append?"appending":"writing");
             perror(filename);
-            tx_done = 1;
+            is_tx_done = 1;
             return NULL;
         }
     }

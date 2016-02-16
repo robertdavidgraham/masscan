@@ -297,7 +297,7 @@ struct Masscan
         /**
         * Print state updates
         */
-        unsigned status_updates:1;
+        unsigned is_status_updates:1;
 
         struct {
             /**
