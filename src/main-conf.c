@@ -26,6 +26,8 @@
 #include <ctype.h>
 #include <limits.h>
 
+#define min(a,b) ((a)<(b)?(a):(b))
+
 /***************************************************************************
  ***************************************************************************/
 /*static struct Range top_ports_tcp[] = {
@@ -290,6 +292,7 @@ static void
 masscan_echo(struct Masscan *masscan, FILE *fp)
 {
     unsigned i;
+    unsigned l = 0;
 
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
@@ -355,25 +358,44 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
      * Targets
      */
 
-    for (i=0; i<masscan->ports.count; i++) {
-	struct Range range = masscan->ports.list[i];
-	if ( (range.begin == range.end) && (range.begin == Templ_ICMP_echo) )
-		{
-		fprintf(fp,"ping = true\n");
-		break;
-		}
-    }
-
     fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
+    fprintf(fp, "retries = %u\n", masscan->retries);
     fprintf(fp, "ports = ");
+    /* Disable comma generation for the first element */
+    l = 0;
     for (i=0; i<masscan->ports.count; i++) {
         struct Range range = masscan->ports.list[i];
-        if (range.begin == range.end)
-            fprintf(fp, "%u", range.begin);
-        else
-            fprintf(fp, "%u-%u", range.begin, range.end);
-        if (i+1 < masscan->ports.count)
-            fprintf(fp, ",");
+        do {
+            struct Range rrange = range;
+            unsigned done = 0;
+            if (l)
+                fprintf(fp, ",");
+            l = 1;
+            if (rrange.begin >= Templ_ICMP_echo) {
+                rrange.begin -= Templ_ICMP_echo;
+                rrange.end -= Templ_ICMP_echo;
+                fprintf(fp,"I:");
+                done = 1;
+            } else if (rrange.begin >= Templ_SCTP) {
+                rrange.begin -= Templ_SCTP;
+                rrange.end -= Templ_SCTP;
+                fprintf(fp,"S:");
+                range.begin = Templ_ICMP_echo;
+            } else if (rrange.begin >= Templ_UDP) {
+                rrange.begin -= Templ_UDP;
+                rrange.end -= Templ_UDP;
+                fprintf(fp,"U:");
+                range.begin = Templ_SCTP;
+            } else
+                range.begin = Templ_UDP;
+            rrange.end = min(rrange.end, 65535);
+            if (rrange.begin == rrange.end)
+                fprintf(fp, "%u", rrange.begin);
+            else
+                fprintf(fp, "%u-%u", rrange.begin, rrange.end);
+            if (done)
+                break;
+        } while (range.begin <= range.end);
     }
     fprintf(fp, "\n");
     for (i=0; i<masscan->targets.count; i++) {
@@ -1280,6 +1302,10 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_interactive = 1;
     } else if (EQUALS("nointeractive", name)) {
         masscan->output.is_interactive = 0;
+    } else if (EQUALS("status", name)) {
+        masscan->output.status_updates = 1;
+    } else if (EQUALS("nostatus", name)) {
+        masscan->output.status_updates = 0;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1649,7 +1675,7 @@ is_singleton(const char *name)
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
-        "arp",  "infinite", "interactive",
+        "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;

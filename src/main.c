@@ -77,8 +77,8 @@
 /*
  * yea I know globals suck
  */
-unsigned control_c_pressed = 0;
-static unsigned control_c_pressed_again = 0;
+unsigned volatile tx_done = 0;
+unsigned volatile rx_done = 0;
 time_t global_now;
 
 
@@ -441,7 +441,7 @@ infinite:
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to --resume the scan later, we save the current
          * state in a file */
-        if (control_c_pressed) {
+        if (tx_done) {
             break;
         }
     }
@@ -450,7 +450,7 @@ infinite:
      * --infinite
      *  For load testing, go around and do this again
      */
-    if (masscan->is_infinite && !control_c_pressed) {
+    if (masscan->is_infinite && !tx_done) {
         seed++;
         repeats++;
         goto infinite;
@@ -468,7 +468,7 @@ infinite:
      * Wait until the receive thread realizes the scan is over
      */
     LOG(1, "Transmit thread done, waiting for receive thread to realize this\n");
-    while (!control_c_pressed)
+    while (!tx_done)
         pixie_usleep(1000);
 
     /*
@@ -477,7 +477,7 @@ infinite:
      * packets to arrive. Pressing <ctrl-c> a second time will exit this
      * prematurely.
      */
-    while (!control_c_pressed_again) {
+    while (!rx_done) {
         unsigned k;
         uint64_t batch_size;
 
@@ -661,7 +661,7 @@ receive_thread(void *v)
      * wait until transmitter thread is done then go to the end
      */
     if (masscan->is_offline) {
-        while (!control_c_pressed_again)
+        while (!rx_done)
             pixie_usleep(10000);
         parms->done_receiving = 1;
         goto end;
@@ -672,7 +672,7 @@ receive_thread(void *v)
      * them to the terminal.
      */
     LOG(1, "begin receive thread\n");
-    while (!control_c_pressed_again) {
+    while (!rx_done) {
         int status;
         unsigned length;
         unsigned secs;
@@ -1005,6 +1005,8 @@ end:
  ***************************************************************************/
 static void control_c_handler(int x)
 {
+    static unsigned control_c_pressed = 0;
+    static unsigned control_c_pressed_again = 0;
     if (control_c_pressed == 0) {
         fprintf(stderr,
                 "waiting several seconds to exit..."
@@ -1012,8 +1014,11 @@ static void control_c_handler(int x)
                 );
         fflush(stderr);
         control_c_pressed = 1+x;
-    } else
+        tx_done = control_c_pressed;
+    } else {
         control_c_pressed_again = 1;
+        rx_done = control_c_pressed_again;
+    }
 
 }
 
@@ -1256,7 +1261,7 @@ main_scan(struct Masscan *masscan)
      */
     status_start(&status);
     status.is_infinite = masscan->is_infinite;
-    while (!control_c_pressed) {
+    while (!tx_done) {
         unsigned i;
         double rate = 0;
         uint64_t total_tcbs = 0;
@@ -1284,16 +1289,17 @@ main_scan(struct Masscan *masscan)
 
         if (min_index >= range && !masscan->is_infinite) {
             /* Note: This is how we can tell the scan has ended */
-            control_c_pressed = 1;
+            tx_done = 1;
         }
 
         /*
          * update screen about once per second with statistics,
          * namely packets/second.
          */
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            0);
+        if (masscan->output.status_updates)
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                0);
 
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1345,12 +1351,13 @@ main_scan(struct Masscan *masscan)
         }
 
 
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            masscan->wait - (time(0) - now));
+        if (masscan->output.status_updates)
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
-            control_c_pressed_again = 1;
+            rx_done = 1;
 
         for (i=0; i<masscan->nic_count; i++) {
             struct ThreadPair *parms = &parms_array[i];
@@ -1364,8 +1371,8 @@ main_scan(struct Masscan *masscan)
 
         if (transmit_count < masscan->nic_count)
             continue;
-        control_c_pressed = 1;
-        control_c_pressed_again = 1;
+        tx_done = 1;
+        rx_done = 1;
         if (receive_count < masscan->nic_count)
             continue;
         break;
@@ -1407,6 +1414,7 @@ int main(int argc, char *argv[])
     memset(masscan, 0, sizeof(*masscan));
     masscan->blackrock_rounds = 4;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
+    masscan->output.status_updates = 1; /* default: show status updates */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
