@@ -41,12 +41,13 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     fprintf(fp, "\"ip\": \"%u.%u.%u.%u\", ", 
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
     fprintf(fp, "\"port\": {\"num\": %u, \"proto\": \"%s\", \"status\": \"%s\","
-                " \"reason\": \"%s\", \"ttl\": %u}",
+                " \"reason\": \"%s\", \"ttl\": %u, \"timestamp\": %u }",
                 port,
                 name_from_ip_proto(ip_proto),
                 status_string(status),
                 reason_string(reason, reason_buffer, sizeof(reason_buffer)),
-                ttl
+                ttl,
+                (unsigned) timestamp
             );
     fprintf(fp, "},\n");
     
