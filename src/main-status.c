@@ -139,7 +139,7 @@ status_print(
                         total_tcbs
                         );
     } else {
-        if (control_c_pressed) {
+        if (is_tx_done) {
             fprintf(stderr,
                 "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
                         x/1000.0,
