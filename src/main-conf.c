@@ -22,6 +22,7 @@
 #include "crypto-base64.h"
 #include "script.h"
 #include "masscan-app.h"
+#include "main-status.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -1360,6 +1361,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_show_open = 1;
         masscan->output.is_show_closed = 0;
         masscan->output.is_show_host = 0;
+    } else if (EQUALS("newlines", name)) {
+        STATUS_newlines();
     } else if (EQUALS("output-status", name) || EQUALS("show", name)) {
         for (;;) {
             const char *val2 = value;
@@ -1676,7 +1679,7 @@ is_singleton(const char *name)
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
         "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
-        "read-range", "read-ranges", "readrange", "read-ranges",
+        "read-range", "read-ranges", "readrange", "read-ranges","newlines",
         0};
     size_t i;
 
@@ -1874,6 +1877,10 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'n':
                 /* This looks like an nmap option*/
                 /* Do nothing: this code never does DNS lookups anyway */
+                break;
+            case 'N':
+                /* use 0xa instead of 0xd in console status output */
+                STATUS_newlines();
                 break;
             case 'o': /* nmap output format */
                 switch (argv[i][2]) {
