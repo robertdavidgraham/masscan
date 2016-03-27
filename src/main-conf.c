@@ -446,6 +446,9 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
 
+    if (masscan->output.is_newlines)
+        fprintf(fp, "newlines = true\n");
+    
     /*
      *  TCP payloads
      */
@@ -1881,6 +1884,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             case 'N':
                 /* use 0xa instead of 0xd in console status output */
                 STATUS_newlines();
+                masscan->output.is_newlines = 1;
                 break;
             case 'o': /* nmap output format */
                 switch (argv[i][2]) {

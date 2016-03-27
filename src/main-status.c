@@ -15,7 +15,10 @@
 #include "string_s.h"
 #include <stdio.h>
 
-
+/*
+ * There is no masscan context here, so it has to be hacked as a global
+ * variable.
+ */
 static uint8_t global_token = '\r'; /* yea! a global variable!! */
 void STATUS_newlines()
 {

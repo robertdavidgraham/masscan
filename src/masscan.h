@@ -293,7 +293,19 @@ struct Masscan
          * user also wants interactivity.
          */
         unsigned is_interactive:1;
-        
+
+        /**
+         * --newlines
+         * Instead of using the fancy real-time \r output, print a newline
+         * character for every status update. This is useful if you wan't
+         * see the history of the scan in a screen session, or if you don't
+         * want to deal with programmatically parsing lines with \r or \n
+         * as line endings as masscan uses both when in different contexts. 
+         * Though this value isn't actually used by the output function, it 
+         * has to be set for pause and resume to work.
+         */
+        unsigned is_newlines:1;
+
         /**
         * Print state updates
         */
