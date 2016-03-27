@@ -452,7 +452,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
         fprintf(fp,"lockfile = %s\n", masscan->lockfile);
 
     if (masscan->output.is_newlines)
-        fprintf(fp, "newlines\n");
+        fprintf(fp, "newlines = true\n");
     
     /*
      *  TCP payloads
@@ -1376,6 +1376,7 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_show_host = 0;
     } else if (EQUALS("newlines", name)) {
         STATUS_newlines();
+        masscan->output.is_newlines = 1;
     } else if (EQUALS("output-status", name) || EQUALS("show", name)) {
         for (;;) {
             const char *val2 = value;
