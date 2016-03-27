@@ -23,6 +23,7 @@
 #include "script.h"
 #include "masscan-app.h"
 #include "main-status.h"
+#include "posix-lock.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -445,6 +446,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
+
+
+    if (masscan->lockfile)
+        fprintf(fp,"lockfile = %s\n", masscan->lockfile);
 
     if (masscan->output.is_newlines)
         fprintf(fp, "newlines\n");
@@ -1313,6 +1318,11 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
+    } else if (EQUALS("lockfile",name)) {
+        /* Get a lock on an existing file, a failsafe for programmatic use of masscan */
+        /* acquire_posix_lock() will exit if it fails so no return check is necessary */
+        masscan->lockfile = (unsigned char *)strdup(value);
+        acquire_posix_lock(value);
     } else if (EQUALS("log-errors", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1876,6 +1886,18 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 
                     masscan_set_parameter(masscan, "adapter", arg);
                 }
+                break;
+            case 'l':
+                /* Acquire lock on file, exit on fail */
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
+                /* 
+                 * this will short-circuit command line parsing, which might be annoying
+                 * when using --echo
+                 */
+                masscan_set_parameter(masscan, "lockfile", arg);
                 break;
             case 'n':
                 /* This looks like an nmap option*/
