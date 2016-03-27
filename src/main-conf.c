@@ -447,7 +447,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
 
     if (masscan->output.is_newlines)
-        fprintf(fp, "newlines = true\n");
+        fprintf(fp, "newlines\n");
     
     /*
      *  TCP payloads
