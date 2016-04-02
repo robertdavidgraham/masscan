@@ -3,6 +3,8 @@ Fork of: https://github.com/robertdavidgraham/masscan
 
 Changes made that are not applied to upstream as of 3/20:
 
+- Added '--lockfile' / 'lockfile' to require an exclusive lock in order to run, helpful in
+  preventing scans from an automated process running twice and flooding a network.
 - Added '-N' and 'newlines' configuration options to use newlines instead of carriage returns 
   in the 'real-time' console output
 - Fixed invalid JSON output when using -oJ
