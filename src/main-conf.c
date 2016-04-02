@@ -1389,6 +1389,11 @@ masscan_set_parameter(struct Masscan *masscan,
                 masscan->output.is_show_closed = 1;
             else if (EQUALSx("open", val2, val2_len))
                 masscan->output.is_show_host = 1;
+            else if (EQUALSx("all",val2,val2_len)){
+                masscan->output.is_show_open = 1;
+                masscan->output.is_show_closed = 1;
+                masscan->output.is_show_host = 1;
+            }
             else {
                 LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
                 exit(1);
