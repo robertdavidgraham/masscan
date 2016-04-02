@@ -2,7 +2,7 @@ PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
 SYS := $(shell gcc -dumpmachine)
 GITVER := $(shell git describe --tags)
-INSTALL_DATA := -pDm755
+INSTALL_DATA := -pDm750
 
 ifeq ($(GITVER),)
 GITVER = "unknown"
@@ -105,5 +105,23 @@ test: regress
 
 install: bin/masscan
 	install $(INSTALL_DATA) bin/masscan $(DESTDIR)$(BINDIR)/masscan
+ifneq (, $(findstring linux, $(SYS)))
 	
+	@setcap CAP_NET_RAW+ep $(DESTDIR)$(BINDIR)/masscan
+	@echo
+	@echo -n "        "
+	@getcap $(DESTDIR)$(BINDIR)/masscan
+	@echo -n "        "
+	@ls -l $(DESTDIR)$(BINDIR)/masscan	
+	@echo
+	@echo '********************************************************************************'
+	@echo SECURITY NOTICE: masscan has been installed secure by default with filesystem \
+permissions that only allow root to execute it. However, the CAP_NET_RAW capability has been \
+set on the binary. If you decide you want to allow non-root users to run masscan without granting\
+them root privileges via sudo or a setuid wrapper, chgrp the masscan binary to some special \
+group and add that user or users to the group. | fold -s -w 80 -
+	@echo '********************************************************************************'
+	@echo
+endif
+
 default: bin/masscan
