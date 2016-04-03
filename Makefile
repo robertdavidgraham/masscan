@@ -2,7 +2,7 @@ PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
 SYS := $(shell gcc -dumpmachine)
 GITVER := $(shell git describe --tags)
-INSTALL_DATA := -pDm750
+INSTALL_DATA := -pDm755
 
 ifeq ($(GITVER),)
 GITVER = "unknown"
