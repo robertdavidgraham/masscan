@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEDUP_ENTRIES 4096
+#define DEDUP_ENTRIES 65536
 
 struct DedupEntry
 {
