@@ -177,7 +177,6 @@ struct Masscan
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
     unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
         
-
     /**
      * Wait forever for responses, instead of the default 10 seconds
      */
@@ -295,6 +294,11 @@ struct Masscan
          */
         unsigned is_interactive:1;
         
+        /**
+        * Print state updates
+        */
+        unsigned is_status_updates:1;
+
         struct {
             /**
              * When we should rotate output into the target directory

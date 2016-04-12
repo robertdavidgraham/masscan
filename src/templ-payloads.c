@@ -681,7 +681,7 @@ payloads_read_file(FILE *fp, const char *filename,
 #endif
 
 end:
-    fclose(fp);
+    ;//fclose(fp);
 }
 
 /***************************************************************************
