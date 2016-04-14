@@ -105,5 +105,5 @@ test: regress
 
 install: bin/masscan
 	install $(INSTALL_DATA) bin/masscan $(DESTDIR)$(BINDIR)/masscan
-	
+
 default: bin/masscan

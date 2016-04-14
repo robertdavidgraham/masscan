@@ -22,6 +22,8 @@
 #include "crypto-base64.h"
 #include "script.h"
 #include "masscan-app.h"
+#include "main-status.h"
+#include "posix-lock.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -445,6 +447,13 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
 
+
+    if (masscan->lockfile)
+        fprintf(fp,"lockfile = %s\n", masscan->lockfile);
+
+    if (masscan->output.is_newlines)
+        fprintf(fp, "newlines = true\n");
+    
     /*
      *  TCP payloads
      */
@@ -1296,6 +1305,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
         ranges_from_file(&masscan->targets, value);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     } else if (EQUALS("infinite", name)) {
         masscan->is_infinite = 1;
     } else if (EQUALS("interactive", name)) {
@@ -1309,6 +1320,11 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
+    } else if (EQUALS("lockfile",name)) {
+        /* Get a lock on an existing file, a failsafe for programmatic use of masscan */
+        /* acquire_posix_lock() will exit if it fails so no return check is necessary */
+        masscan->lockfile = (unsigned char *)strdup(value);
+        acquire_posix_lock(value);
     } else if (EQUALS("log-errors", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -1360,6 +1376,9 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_show_open = 1;
         masscan->output.is_show_closed = 0;
         masscan->output.is_show_host = 0;
+    } else if (EQUALS("newlines", name)) {
+        STATUS_newlines();
+        masscan->output.is_newlines = 1;
     } else if (EQUALS("output-status", name) || EQUALS("show", name)) {
         for (;;) {
             const char *val2 = value;
@@ -1372,6 +1391,11 @@ masscan_set_parameter(struct Masscan *masscan,
                 masscan->output.is_show_closed = 1;
             else if (EQUALSx("open", val2, val2_len))
                 masscan->output.is_show_host = 1;
+            else if (EQUALSx("all",val2,val2_len)){
+                masscan->output.is_show_open = 1;
+                masscan->output.is_show_closed = 1;
+                masscan->output.is_show_host = 1;
+            }
             else {
                 LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
                 exit(1);
@@ -1676,7 +1700,7 @@ is_singleton(const char *name)
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep",
         "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
-        "read-range", "read-ranges", "readrange", "read-ranges",
+        "read-range", "read-ranges", "readrange", "read-ranges","newlines",
         0};
     size_t i;
 
@@ -1871,9 +1895,26 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     masscan_set_parameter(masscan, "adapter", arg);
                 }
                 break;
+            case 'l':
+                /* Acquire lock on file, exit on fail */
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
+                /* 
+                 * this will short-circuit command line parsing, which might be annoying
+                 * when using --echo
+                 */
+                masscan_set_parameter(masscan, "lockfile", arg);
+                break;
             case 'n':
                 /* This looks like an nmap option*/
                 /* Do nothing: this code never does DNS lookups anyway */
+                break;
+            case 'N':
+                /* use 0xa instead of 0xd in console status output */
+                STATUS_newlines();
+                masscan->output.is_newlines = 1;
                 break;
             case 'o': /* nmap output format */
                 switch (argv[i][2]) {
@@ -2096,6 +2137,7 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
+        fprintf(stderr,"WARN: %s: %s\n", filename, strerror(errno));
         perror(filename);
         return;
     }

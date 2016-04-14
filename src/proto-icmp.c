@@ -5,6 +5,7 @@
 #include "output.h"
 #include "masscan-status.h"
 #include "templ-port.h"
+#include "main-dedup.h"
 
 
 /***************************************************************************
@@ -65,6 +66,12 @@ handle_icmp(struct Output *out, time_t timestamp,
     unsigned ip_them;
     unsigned cookie;
 
+    static struct DedupTable *echo_reply_dedup = NULL; /* dedup ICMP echo replies */
+
+
+    if (!echo_reply_dedup)
+        echo_reply_dedup = dedup_create();
+
     ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
             | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
@@ -80,6 +87,9 @@ handle_icmp(struct Output *out, time_t timestamp,
         cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0, entropy);
         if ((cookie & 0xFFFFFFFF) != seqno_me)
             return; /* not my response */
+
+        if (dedup_is_duplicate(echo_reply_dedup, ip_them, 0, ip_me, 0))
+            break;
 
         //if (syn_hash(ip_them, Templ_ICMP_echo) != seqno_me)
         //    return; /* not my response */

@@ -15,6 +15,16 @@
 #include "string_s.h"
 #include <stdio.h>
 
+/*
+ * There is no masscan context here, so it has to be hacked as a global
+ * variable.
+ */
+static uint8_t global_token = '\r'; /* yea! a global variable!! */
+void STATUS_newlines()
+{
+    global_token = '\n';
+}
+
 
 
 /***************************************************************************
@@ -131,31 +141,34 @@ status_print(
      */
     if (status->is_infinite) {
         fprintf(stderr,
-                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %" PRIu64 "-tcbs,         \r",
+                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %" PRIu64 "-tcbs,         %c",
                         x/1000.0,
                         syn_rate,
                         synack_rate,
                         tcb_rate,
-                        total_tcbs
+                        total_tcbs,
+                        global_token
                         );
     } else {
         if (is_tx_done) {
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
+                "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       %c",
                         x/1000.0,
                         percent_done,
                         (int)exiting,
-                        total_synacks
+                        total_synacks,
+                        global_token
                        );
         } else {
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       \r",
+                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       %c",
                         x/1000.0,
                         percent_done,
                         (unsigned)(time_remaining/60/60),
                         (unsigned)(time_remaining/60)%60,
                         (unsigned)(time_remaining)%60,
-                        total_synacks
+                        total_synacks,
+                        global_token
                        );
         }
     }

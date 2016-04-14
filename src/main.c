@@ -1250,10 +1250,20 @@ main_scan(struct Masscan *masscan)
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
-        LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
-        LOG(0, "Initiating SYN Stealth Scan\n");
-        LOG(0, "Scanning %u hosts [%u port%s/host]\n",
-            (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
+
+        if (count_ports == 1 && masscan->ports.list->begin == Templ_ICMP_echo && masscan->ports.list->end == Templ_ICMP_echo)
+            { /* ping only scan - no TCP */
+                LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
+                LOG(0, "Initiating ICMP Echo Scan\n");
+                LOG(0, "Scanning %u hosts\n",(unsigned)count_ips);
+             }
+        else
+            {
+                LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+                LOG(0, "Initiating SYN Stealth Scan\n");
+                LOG(0, "Scanning %u hosts [%u port%s/host]\n",
+                    (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
+            }
     }
 
     /*

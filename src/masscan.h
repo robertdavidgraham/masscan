@@ -293,7 +293,19 @@ struct Masscan
          * user also wants interactivity.
          */
         unsigned is_interactive:1;
-        
+
+        /**
+         * --newlines
+         * Instead of using the fancy real-time \r output, print a newline
+         * character for every status update. This is useful if you wan't
+         * see the history of the scan in a screen session, or if you don't
+         * want to deal with programmatically parsing lines with \r or \n
+         * as line endings as masscan uses both when in different contexts. 
+         * Though this value isn't actually used by the output function, it 
+         * has to be set for pause and resume to work.
+         */
+        unsigned is_newlines:1;
+
         /**
         * Print state updates
         */
@@ -345,7 +357,7 @@ struct Masscan
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
     unsigned tcp_connection_timeout;
-    
+    unsigned char *lockfile;
     /** Number of seconds to wait for a 'hello' from the server before
      * giving up and sending a 'hello' from the client. Should be a small
      * value when doing scans that expect client-side hellos, like HTTP or

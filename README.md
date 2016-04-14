@@ -36,6 +36,17 @@ by using the multi-threaded build:
 
 	$ make -j
 
+If you want to let non-root users use masscan without making masscan setuid
+root, you can use Linux capabilities to give the binary special caps on the
+filesystem. On Debian and probably Ubuntu:
+
+	$ sudo apt-get install libcap2-bin
+	$ sudo chmod 750 /usr/bin/masscan
+	$ sudo chgrp rawsock /usr/bin/masscan
+	$ sudo setcap CAP_NEW_RAW+ep /usr/bin/masscan
+
+Obviously you will need the group 'rawsock' and you will need users in it.
+
 While Linux is the primary target platform, the code runs well on many other
 systems. Here's some additional build info:
 * Windows w/ Visual Studio: use the VS10 project
