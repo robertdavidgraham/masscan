@@ -2137,6 +2137,7 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
+        fprintf(stderr,"WARN: %s: %s\n", filename, strerror(errno));
         perror(filename);
         return;
     }
