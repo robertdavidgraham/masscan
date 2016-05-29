@@ -1060,6 +1060,7 @@ main_scan(struct Masscan *masscan)
         for (i=0; i<masscan->ports.count; i++) {
             struct Range *r = &masscan->ports.list[i];
             r->begin = (r->begin&0xFFFF) | Templ_Script;
+            r->end = (r->end & 0xFFFF) | Templ_Script;
         }
     }
     
