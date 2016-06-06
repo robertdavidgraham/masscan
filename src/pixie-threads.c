@@ -194,3 +194,16 @@ pixie_begin_thread(
 #error pixie_begin_thread undefined
 #endif
 }
+
+/****************************************************************************
+ ****************************************************************************/
+void pixie_thread_join(size_t thread_handle)
+{
+#if defined(WIN32)
+    WaitForSingleObject((HANDLE)thread_handle, INFINITE);
+#else
+    void *p;
+
+    pthread_join(thread_handle, &p);
+#endif
+}
