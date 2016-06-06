@@ -732,13 +732,20 @@ rawsock_init_adapter(const char *adapter_name,
         LOG(1, "pcap: %s\n", pcap_lib_version());
         LOG(2, "pcap:'%s': opening...\n", adapter_name);
      
-        adapter->pcap = pcap_open_live(
-                    adapter_name,           /* interface name */
-                    65536,                  /* max packet size */
-                    8,                      /* promiscuous mode */
-                    1000,                   /* read timeout in milliseconds */
-                    errbuf);
-        
+        if (memcmp(adapter_name, "file:", 5) == 0) {
+            LOG(1, "pcap: file: %s\n", adapter_name+5);
+            adapter->pcap = pcap_open_offline(
+                        adapter_name+5,         /* interface name */
+                        errbuf);
+        } else {
+            adapter->pcap = pcap_open_live(
+                        adapter_name,           /* interface name */
+                        65536,                  /* max packet size */
+                        8,                      /* promiscuous mode */
+                        1000,                   /* read timeout in milliseconds */
+                        errbuf);
+        }
+
         if (adapter->pcap == NULL) {
             LOG(0, "FAIL: %s\n", errbuf);
             if (strstr(errbuf, "perm")) {
