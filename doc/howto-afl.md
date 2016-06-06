@@ -92,7 +92,7 @@ I generated the file *masscan/data/afl-http.pcap* as an example file
 to read for fuzzing the parsing of HTTP. The command-line parameters
 to use are:
 
-    bin\masscan --nobacktrace --adapter file:data/afl-http.pcap --source-ip 10.20.30.200 --source-port 6000 --source-mac 00-11-22-33-44-55 --router-mac c0-c1-c0-a0-9b-9d --seed 0 --banners -p80 74.125.196.147
+    bin/masscan --nobacktrace --adapter file:data/afl-http.pcap --source-ip 10.20.30.200 --source-port 6000 --source-mac 00-11-22-33-44-55 --router-mac c0-c1-c0-a0-9b-9d --seed 0 --banners -p80 74.125.196.147
 
 The explanation are:
 
