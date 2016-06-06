@@ -183,13 +183,13 @@ pixie_begin_thread(
 #elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__kFreeBSD__) || defined(__OpenBSD__)
 
     typedef void *(*PTHREADFUNC)(void*);
-    pthread_t thread_id;
-    return (size_t)pthread_create(
+    pthread_t thread_id = 0;
+    (size_t)pthread_create(
                           &thread_id,
                           NULL,
                           (PTHREADFUNC)worker_thread,
                           worker_data);
-
+    return (size_t)thread_id;
 #else
 #error pixie_begin_thread undefined
 #endif
