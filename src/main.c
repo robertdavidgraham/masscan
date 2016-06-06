@@ -279,7 +279,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
-    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
@@ -325,7 +325,7 @@ infinite:
     /* -----------------
      * the main loop
      * -----------------*/
-    LOG(3, "xmit: starting main loop: [%llu..%llu]\n", start, end);
+    LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
     for (i=start; i<end; ) {
         uint64_t batch_size;
 
@@ -467,7 +467,7 @@ infinite:
     /*
      * Wait until the receive thread realizes the scan is over
      */
-    LOG(1, "Transmit thread done, waiting for receive thread to realize this\n");
+    LOG(1, "THREAD: xmit done, waiting for receive thread to realize this\n");
     while (!is_tx_done)
         pixie_usleep(1000);
 
@@ -506,7 +506,7 @@ infinite:
 
     /* Thread is about to exit */
     parms->done_transmitting = 1;
-    LOG(1, "xmit: stopping transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: stopping thread #%u\n", parms->nic_index);
 }
 
 
@@ -555,7 +555,7 @@ receive_thread(void *v)
     *status_tcb_count = 0;
     parms->total_tcbs = status_tcb_count;
 
-    LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: starting thread #%u\n", parms->nic_index);
 
     /* Lock this thread to a CPU. Transmit threads are on even CPUs,
      * receive threads on odd CPUs */
@@ -671,7 +671,7 @@ receive_thread(void *v)
      * Receive packets. This is where we catch any responses and print
      * them to the terminal.
      */
-    LOG(1, "begin receive thread\n");
+    LOG(1, "THREAD: recv: starting main loop\n");
     while (!is_rx_done) {
         int status;
         unsigned length;
@@ -969,7 +969,7 @@ receive_thread(void *v)
     }
 
 
-    LOG(1, "recv: end receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: stopping thread #%u\n", parms->nic_index);
 
     /*
      * cleanup
@@ -1261,7 +1261,7 @@ main_scan(struct Masscan *masscan)
      */
     status_start(&status);
     status.is_infinite = masscan->is_infinite;
-    while (!is_tx_done) {
+    while (!is_tx_done && masscan->output.is_status_updates) {
         unsigned i;
         double rate = 0;
         uint64_t total_tcbs = 0;
@@ -1321,6 +1321,7 @@ main_scan(struct Masscan *masscan)
     /*
      * Now wait for all threads to exit
      */
+    LOG(1, "THREAD: status: starting thread\n");
     now = time(0);
     for (;;) {
         unsigned transmit_count = 0;
@@ -1367,7 +1368,7 @@ main_scan(struct Masscan *masscan)
 
         }
 
-        pixie_mssleep(100);
+        pixie_mssleep(10);
 
         if (transmit_count < masscan->nic_count)
             continue;
@@ -1378,7 +1379,7 @@ main_scan(struct Masscan *masscan)
         break;
     }
 
-    LOG(1, "EXITING main thread\n");
+    LOG(1, "THREAD: status: stopping thread\n");
 
     /*
      * Now cleanup everything
