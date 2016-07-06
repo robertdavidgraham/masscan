@@ -18,6 +18,8 @@
 #include <assert.h>
 #include <ctype.h>
 
+static int is_pcap_file = 0;
+
 #ifdef WIN32
 #include <Win32-Extensions.h>
 #include <iphlpapi.h>
@@ -383,8 +385,14 @@ int rawsock_recv_packet(
 
         *packet = pcap_next(adapter->pcap, &hdr);
 
-        if (*packet == NULL)
+        if (*packet == NULL) {
+            if (is_pcap_file) {
+                //pixie_time_set_offset(10*100000);
+                is_tx_done = 1;
+                is_rx_done = 1;
+            }
             return 1;
+        }
 
         *length = hdr.caplen;
         *secs = hdr.ts.tv_sec;
@@ -732,13 +740,22 @@ rawsock_init_adapter(const char *adapter_name,
         LOG(1, "pcap: %s\n", pcap_lib_version());
         LOG(2, "pcap:'%s': opening...\n", adapter_name);
      
-        adapter->pcap = pcap_open_live(
-                    adapter_name,           /* interface name */
-                    65536,                  /* max packet size */
-                    8,                      /* promiscuous mode */
-                    1000,                   /* read timeout in milliseconds */
-                    errbuf);
-        
+        if (memcmp(adapter_name, "file:", 5) == 0) {
+            LOG(1, "pcap: file: %s\n", adapter_name+5);
+            is_pcap_file = 1;
+
+            adapter->pcap = pcap_open_offline(
+                        adapter_name+5,         /* interface name */
+                        errbuf);
+        } else {
+            adapter->pcap = pcap_open_live(
+                        adapter_name,           /* interface name */
+                        65536,                  /* max packet size */
+                        8,                      /* promiscuous mode */
+                        1000,                   /* read timeout in milliseconds */
+                        errbuf);
+        }
+
         if (adapter->pcap == NULL) {
             LOG(0, "FAIL: %s\n", errbuf);
             if (strstr(errbuf, "perm")) {

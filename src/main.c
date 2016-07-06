@@ -81,7 +81,7 @@ unsigned volatile is_tx_done = 0;
 unsigned volatile is_rx_done = 0;
 time_t global_now;
 
-
+uint64_t usec_start;
 
 /***************************************************************************
  * We create a pair of transmit/receive threads for each network adapter.
@@ -157,6 +157,9 @@ struct ThreadPair {
     uint64_t *total_synacks;
     uint64_t *total_tcbs;
     uint64_t *total_syns;
+
+    size_t thread_handle_xmit;
+    size_t thread_handle_recv;
 };
 
 
@@ -279,7 +282,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
-    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
@@ -325,7 +328,7 @@ infinite:
     /* -----------------
      * the main loop
      * -----------------*/
-    LOG(3, "xmit: starting main loop: [%llu..%llu]\n", start, end);
+    LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
     for (i=start; i<end; ) {
         uint64_t batch_size;
 
@@ -467,9 +470,9 @@ infinite:
     /*
      * Wait until the receive thread realizes the scan is over
      */
-    LOG(1, "Transmit thread done, waiting for receive thread to realize this\n");
-    while (!is_tx_done)
-        pixie_usleep(1000);
+    LOG(1, "THREAD: xmit done, waiting for receive thread to realize this\n");
+    /*while (!is_tx_done)
+        pixie_mssleep(1);*/
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -506,7 +509,7 @@ infinite:
 
     /* Thread is about to exit */
     parms->done_transmitting = 1;
-    LOG(1, "xmit: stopping transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: stopping thread #%u\n", parms->nic_index);
 }
 
 
@@ -555,7 +558,7 @@ receive_thread(void *v)
     *status_tcb_count = 0;
     parms->total_tcbs = status_tcb_count;
 
-    LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: starting thread #%u\n", parms->nic_index);
 
     /* Lock this thread to a CPU. Transmit threads are on even CPUs,
      * receive threads on odd CPUs */
@@ -671,7 +674,7 @@ receive_thread(void *v)
      * Receive packets. This is where we catch any responses and print
      * them to the terminal.
      */
-    LOG(1, "begin receive thread\n");
+    LOG(1, "THREAD: recv: starting main loop\n");
     while (!is_rx_done) {
         int status;
         unsigned length;
@@ -969,7 +972,7 @@ receive_thread(void *v)
     }
 
 
-    LOG(1, "recv: end receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: stopping thread #%u\n", parms->nic_index);
 
     /*
      * cleanup
@@ -1115,6 +1118,9 @@ main_scan(struct Masscan *masscan)
      * hundreds of subranges. This scans through them faster. */
     picker = rangelist_pick2_create(&masscan->targets);
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+  __AFL_INIT();
+#endif
 
     /*
      * Start scanning threats for each adapter
@@ -1228,14 +1234,14 @@ main_scan(struct Masscan *masscan)
          * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
          * RATE OF SPEED.
          */
-        pixie_begin_thread(transmit_thread, 0, parms);
+        parms->thread_handle_xmit = pixie_begin_thread(transmit_thread, 0, parms);
 
 
         /*
          * Start the MATCHING receive thread. Transmit and receive threads
          * come in matching pairs.
          */
-        pixie_begin_thread(receive_thread, 0, parms);
+        parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
 
     }
 
@@ -1259,9 +1265,10 @@ main_scan(struct Masscan *masscan)
     /*
      * Now wait for <ctrl-c> to be pressed OR for threads to exit
      */
+    LOG(1, "THREAD: status: starting thread\n");
     status_start(&status);
     status.is_infinite = masscan->is_infinite;
-    while (!is_tx_done) {
+    while (!is_tx_done && masscan->output.is_status_updates) {
         unsigned i;
         double rate = 0;
         uint64_t total_tcbs = 0;
@@ -1351,34 +1358,53 @@ main_scan(struct Masscan *masscan)
         }
 
 
-        if (masscan->output.is_status_updates)
-            status_print(&status, min_index, range, rate,
-                total_tcbs, total_synacks, total_syns,
-                masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
             is_rx_done = 1;
 
-        for (i=0; i<masscan->nic_count; i++) {
-            struct ThreadPair *parms = &parms_array[i];
+        if (masscan->output.is_status_updates) {
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                masscan->wait - (time(0) - now));
 
-            transmit_count += parms->done_transmitting;
-            receive_count += parms->done_receiving;
+            for (i=0; i<masscan->nic_count; i++) {
+                struct ThreadPair *parms = &parms_array[i];
 
+                transmit_count += parms->done_transmitting;
+                receive_count += parms->done_receiving;
+
+            }
+
+            pixie_mssleep(250);
+
+            if (transmit_count < masscan->nic_count)
+                continue;
+            is_tx_done = 1;
+            is_rx_done = 1;
+            if (receive_count < masscan->nic_count)
+                continue;
+
+        } else {
+            /* [AFL-fuzz]
+             * Join the threads, which doesn't allow us to print out 
+             * status messages, but allows us to exit cleaningly without
+             * any waiting */
+            for (i=0; i<masscan->nic_count; i++) {
+                struct ThreadPair *parms = &parms_array[i];
+
+                pixie_thread_join(parms->thread_handle_xmit);
+                parms->thread_handle_xmit = 0;
+                pixie_thread_join(parms->thread_handle_recv);
+                parms->thread_handle_recv = 0;
+            }
+            is_tx_done = 1;
+            is_rx_done = 1;
         }
 
-        pixie_mssleep(100);
-
-        if (transmit_count < masscan->nic_count)
-            continue;
-        is_tx_done = 1;
-        is_rx_done = 1;
-        if (receive_count < masscan->nic_count)
-            continue;
         break;
     }
 
-    LOG(1, "EXITING main thread\n");
+    LOG(1, "THREAD: status: stopping thread\n");
 
     /*
      * Now cleanup everything
@@ -1386,6 +1412,11 @@ main_scan(struct Masscan *masscan)
     status_finish(&status);
     rangelist_pick2_destroy(picker);
 
+    if (!masscan->output.is_status_updates) {
+        uint64_t usec_now = pixie_gettime();
+
+        printf("%u milliseconds ellapsed\n", (unsigned)((usec_now - usec_start)/1000));
+    }
     return 0;
 }
 
@@ -1399,6 +1430,7 @@ int main(int argc, char *argv[])
     struct Masscan masscan[1];
     unsigned i;
 
+    usec_start = pixie_gettime();
 #if defined(WIN32)
     {WSADATA x; WSAStartup(0x101, &x);}
 #endif
@@ -1406,7 +1438,15 @@ int main(int argc, char *argv[])
     global_now = time(0);
 
     /* Set system to report debug information on crash */
-    pixie_backtrace_init(argv[0]);
+    {
+        int is_backtrace = 1;
+        for (i=1; i<(unsigned)argc; i++) {
+            if (strcmp(argv[i], "--nobacktrace") == 0)
+                is_backtrace = 0;
+        }
+        if (is_backtrace)
+            pixie_backtrace_init(argv[0]);
+    }
     
     /*
      * Initialize those defaults that aren't zero
@@ -1512,10 +1552,10 @@ int main(int argc, char *argv[])
          */
         return main_scan(masscan);
 
-        case Operation_ListScan:
-            /* Create a randomized list of IP addresses */
-            main_listscan(masscan);
-            return 0;
+    case Operation_ListScan:
+        /* Create a randomized list of IP addresses */
+        main_listscan(masscan);
+        return 0;
 
     case Operation_List_Adapters:
         /* List the network adapters we might want to use for scanning */

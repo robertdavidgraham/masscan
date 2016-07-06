@@ -26,7 +26,9 @@
 #include <ctype.h>
 #include <limits.h>
 
+#ifndef min
 #define min(a,b) ((a)<(b)?(a):(b))
+#endif
 
 /***************************************************************************
  ***************************************************************************/
@@ -1595,6 +1597,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->shard.one = one;
         masscan->shard.of = of;
 
+    } else if (EQUALS("nobacktrace", name) || EQUALS("backtrace", name)) {
+        ;
     } else if (EQUALS("no-stylesheet", name)) {
         masscan->output.stylesheet[0] = '\0';
     } else if (EQUALS("stylesheet", name)) {
@@ -1674,7 +1678,7 @@ is_singleton(const char *name)
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
-        "offline", "ping", "ping-sweep",
+        "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
         "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
@@ -1933,13 +1937,12 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 exit(1);
                 break;
             case 'p':
-                if (argv[i][2]) {
-                    if (EQUALS((const char *)&argv[i][2], "-"))
-                      arg = "1-65535";
-                    else
-                      arg = argv[i]+2;
-                } else
-                    arg = argv[++i];
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    // arg = argv[++i]; // Passes a NULL value that breaks rangelist_parse_ports in ranges.c
+					fprintf(stderr, "%.*s: empty parameter\n", argv[0], argv[1]);
+					break;
                 masscan_set_parameter(masscan, "ports", arg);
                 break;
             case 'P':
