@@ -11,7 +11,7 @@ static void
 json_out_open(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    UNUSEDPARM(fp);
+    fprintf(fp, "[");
 }
 
 
@@ -21,7 +21,7 @@ static void
 json_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, "{finished: 1}\n");
+    fprintf(fp, "{\"finished\": 1}]\n");
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
@@ -31,16 +31,19 @@ static void
 json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
-    char reason_buffer[128];
     UNUSEDPARM(out);
-    //UNUSEDPARM(timestamp);
+    char reason_buffer[128];
+    char human_timestamp[64];
+
+    strftime((char *)&human_timestamp, sizeof(human_timestamp), "%Y-%m-%d %H:%M:%S %Z", localtime(&timestamp));
 
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"status\": \"%s\","
+    fprintf(fp, "  \"timestamp\": \"%d\", \"human_timestamp\": \"%s\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"status\": \"%s\","
                 " \"reason\": \"%s\", \"ttl\": %u} ] ",
                 (int) timestamp,
+                human_timestamp,
                 port,
                 name_from_ip_proto(ip_proto),
                 status_string(status),
@@ -48,8 +51,6 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 ttl
             );
     fprintf(fp, "},\n");
-
-
 }
 
 /*****************************************************************************
@@ -96,46 +97,26 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                unsigned ttl,
                const unsigned char *px, unsigned length)
 {
-    char banner_buffer[65536];
-
     UNUSEDPARM(ttl);
-    //UNUSEDPARM(timestamp);
+    UNUSEDPARM(out);
+
+    char banner_buffer[65536];
+    char human_timestamp[64];
+
+    strftime((char *)&human_timestamp, sizeof(human_timestamp), "%Y-%m-%d %H:%M:%S %Z", localtime(&timestamp));
 
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
+    fprintf(fp, "  \"timestamp\": \"%d\", \"human_timestamp\": \"%s\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
             (int) timestamp,
+            human_timestamp,
             port,
             name_from_ip_proto(ip_proto),
             masscan_app_to_string(proto),
             normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
     fprintf(fp, "},\n");
-
-    UNUSEDPARM(out);
-
-/*    fprintf(fp, "<host endtime=\"%u\">"
-            "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
-            "<ports>"
-            "<port protocol=\"%s\" portid=\"%u\">"
-            "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
-            "<service name=\"%s\" banner=\"%s\"></service>"
-            "</port>"
-            "</ports>"
-            "</host>"
-            "\r\n",
-            (unsigned)timestamp,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            name_from_ip_proto(ip_proto),
-            port,
-            reason, ttl,
-            masscan_app_to_string(proto),
-            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
-            );*/
 }
 
 /****************************************************************************
@@ -148,4 +129,3 @@ const struct OutputType json_output = {
     json_out_status,
     json_out_banner
 };
-
