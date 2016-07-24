@@ -345,6 +345,9 @@ struct Masscan
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
     unsigned tcp_connection_timeout;
+#if defined(__linux__)
+    unsigned char *lockfile;
+#endif
     
     /** Number of seconds to wait for a 'hello' from the server before
      * giving up and sending a 'hello' from the client. Should be a small
