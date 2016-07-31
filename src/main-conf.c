@@ -1940,9 +1940,13 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 if (argv[i][2])
                     arg = argv[i]+2;
                 else
-                    // arg = argv[++i]; // Passes a NULL value that breaks rangelist_parse_ports in ranges.c
-					fprintf(stderr, "%.*s: empty parameter\n", argv[0], argv[1]);
-					break;
+                    arg = argv[++i]; // Passes a NULL value that breaks rangelist_parse_ports in ranges.c
+				
+                if (!arg){
+                    fprintf(stderr, "%.*s: empty parameter\n", argv[0], argv[1]);
+                    exit(1);
+                }
+
                 masscan_set_parameter(masscan, "ports", arg);
                 break;
             case 'P':
