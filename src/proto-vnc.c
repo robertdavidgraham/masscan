@@ -34,56 +34,56 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
     */
     switch (sectype) {
         case 0:
-            banout_append(banout, PROTO_VNC_RFB, "invalid", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  invalid", AUTO_LEN);
             break;
         case 1:
-            banout_append(banout, PROTO_VNC_RFB, "none", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  none", AUTO_LEN);
             break;
         case 2:
-            banout_append(banout, PROTO_VNC_RFB, "VNC-chap", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  VNC-chap", AUTO_LEN);
             break;
         case 5:
-            banout_append(banout, PROTO_VNC_RFB, "RA2", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  RA2", AUTO_LEN);
             break;
         case 6:
-            banout_append(banout, PROTO_VNC_RFB, "RA2ne", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  RA2ne", AUTO_LEN);
             break;
         case 7:
-            banout_append(banout, PROTO_VNC_RFB, "SSPI", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  SSPI", AUTO_LEN);
             break;
         case 8:
-            banout_append(banout, PROTO_VNC_RFB, "SSPIne", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  SSPIne", AUTO_LEN);
             break;
         case 16:
-            banout_append(banout, PROTO_VNC_RFB, "Tight", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  Tight", AUTO_LEN);
             break;
         case 17:
-            banout_append(banout, PROTO_VNC_RFB, "Ultra", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  Ultra", AUTO_LEN);
             break;
         case 18:
-            banout_append(banout, PROTO_VNC_RFB, "TLS", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  TLS", AUTO_LEN);
             break;
         case 19:
-            banout_append(banout, PROTO_VNC_RFB, "VeNCrypt", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  VeNCrypt", AUTO_LEN);
             break;
         case 20:
-            banout_append(banout, PROTO_VNC_RFB, "GTK-VNC-SASL", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  GTK-VNC-SASL", AUTO_LEN);
             break;
         case 21:
-            banout_append(banout, PROTO_VNC_RFB, "MD5", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  MD5", AUTO_LEN);
             break;
         case 22:
-            banout_append(banout, PROTO_VNC_RFB, "Colin-Dean-xvp", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  Colin-Dean-xvp", AUTO_LEN);
             break;
         case 30:
-            banout_append(banout, PROTO_VNC_RFB, "Apple30", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  Apple30", AUTO_LEN);
             break;
         case 35:
-            banout_append(banout, PROTO_VNC_RFB, "Apple35", AUTO_LEN); 
+            banout_append(banout, PROTO_VNC_INFO, "  Apple35", AUTO_LEN);
             break;
         default:
-            sprintf_s(foo, sizeof(foo), "%u", sectype);
-            banout_append(banout, PROTO_VNC_RFB, foo, AUTO_LEN); 
+            sprintf_s(foo, sizeof(foo), "  %u", sectype);
+            banout_append(banout, PROTO_VNC_INFO, foo, AUTO_LEN);
             break;
     }
 }
@@ -128,6 +128,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_VNC_RFB, px[i]);
                 break;
             case 11:
+                banout_append_char(banout, PROTO_VNC_RFB, px[i]);
                 if ('\n' == px[i]) {
                     static const char *response[] = {
                         "RFB 003.003\n",
@@ -182,9 +183,8 @@ vnc_parse(  const struct Banner1 *banner1,
             case RFB3_3_SECURITYTYPES+3:
                 pstate->sub.vnc.sectype <<= 8;
                 pstate->sub.vnc.sectype |= px[i];
-                banout_append(banout, PROTO_VNC_RFB, " auth=[", AUTO_LEN);
+                banout_append(banout, PROTO_VNC_INFO, "Security types:\n", AUTO_LEN);
                 vnc_append_sectype(banout, pstate->sub.vnc.sectype);
-                banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
                 if (pstate->sub.vnc.sectype == 0)
                     state = RFB_SECURITYERROR;
                 else if (pstate->sub.vnc.sectype == 1) {
@@ -212,7 +212,7 @@ vnc_parse(  const struct Banner1 *banner1,
             case RFB_SECURITYERROR+3:
                 pstate->sub.vnc.sectype <<= 8;
                 pstate->sub.vnc.sectype = px[i];
-                banout_append(banout, PROTO_VNC_RFB, " ERROR=", AUTO_LEN);
+                banout_append(banout, PROTO_VNC_INFO, "ERROR: ", AUTO_LEN);
                 state++;
                 break;
             case RFB_SECURITYERROR+4:
@@ -220,7 +220,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     state = STATE_DONE;
                 } else {
                     pstate->sub.vnc.sectype--;
-                    banout_append_char(banout, PROTO_VNC_RFB, px[i]);
+                    banout_append_char(banout, PROTO_VNC_INFO, px[i]);
                 }
                 break;
             case RFB3_7_SECURITYTYPES:
@@ -229,7 +229,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     state = RFB_SECURITYERROR;
                 else {
                     state++;
-                    banout_append(banout, PROTO_VNC_RFB, " auth=[", AUTO_LEN);
+                    banout_append(banout, PROTO_VNC_INFO, "Security types:\n", AUTO_LEN);
                 }
                 break;
             case RFB3_7_SECURITYTYPES+1:
@@ -238,7 +238,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     vnc_append_sectype(banout, px[i]);
                 }
                 if (pstate->sub.vnc.len == 0) {
-                    banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
+                    banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
                     if (pstate->sub.vnc.version < 7) {
                         state = RFB_SERVERINIT;
                         more->payload = "\x01";
@@ -253,7 +253,7 @@ vnc_parse(  const struct Banner1 *banner1,
                         more->length = 1;
                     }
                 } else {
-                    banout_append(banout, PROTO_VNC_RFB, "/", AUTO_LEN);
+                    banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
                 }
                 break;
             
@@ -306,7 +306,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 pstate->sub.vnc.sectype |= px[i];
                 state++;
                 if (pstate->sub.vnc.sectype) {
-                    banout_append(banout, PROTO_VNC_RFB, " name=[", AUTO_LEN);
+                    banout_append(banout, PROTO_VNC_INFO, "Name: ", AUTO_LEN);
                 } else {
                     state = STATE_DONE;
                 }
@@ -314,9 +314,9 @@ vnc_parse(  const struct Banner1 *banner1,
                 
             case RFB_SERVERINIT+24:
                 pstate->sub.vnc.sectype--;
-                banout_append_char(banout, PROTO_VNC_RFB, px[i]);
+                banout_append_char(banout, PROTO_VNC_INFO, px[i]);
                 if (pstate->sub.vnc.sectype == 0) {
-                    banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
+                    banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
                     state = STATE_DONE;
                 }
                 break;
