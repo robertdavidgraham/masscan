@@ -26,6 +26,7 @@ enum ApplicationProtocol {
     PROTO_NTP,              /* network time protocol, udp/123 */
     PROTO_VULN,
     PROTO_HEARTBLEED,
+    PROTO_TICKETBLEED,
     PROTO_VNC_RFB,
     PROTO_SAFE,
 };

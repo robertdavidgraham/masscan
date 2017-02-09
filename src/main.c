@@ -615,7 +615,8 @@ receive_thread(void *v)
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
                 masscan->is_capture_html,
-                masscan->is_capture_heartbleed);
+                masscan->is_capture_heartbleed,
+				masscan->is_capture_ticketbleed);
         if (masscan->http_user_agent_length)
             tcpcon_set_parameter(   tcpcon,
                                     "http-user-agent",
@@ -624,6 +625,11 @@ receive_thread(void *v)
         if (masscan->is_heartbleed)
             tcpcon_set_parameter(   tcpcon,
                                  "heartbleed",
+                                 1,
+                                 "1");
+        if (masscan->is_ticketbleed)
+            tcpcon_set_parameter(   tcpcon,
+                                 "ticketbleed",
                                  1,
                                  "1");
         if (masscan->is_poodle_sslv3)

@@ -222,6 +222,9 @@ parse_server_hello(
 
     case SESSION_LENGTH:
         remaining = px[i];
+		if (banner1->is_ticketbleed && remaining > 16) {
+			banout_append(  banout, PROTO_VULN, "SSL[ticketbleed] ", 17);
+		}
         DROPDOWN(i,length,state);
 
     case SESSION_ID:

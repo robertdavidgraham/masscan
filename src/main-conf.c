@@ -446,6 +446,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
+    fprintf(fp, "%scapture = ticketbleed\n", masscan->is_capture_ticketbleed?"":"no");
 
     /*
      *  TCP payloads
@@ -1070,6 +1071,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_html = 1;
         else if (EQUALS("heartbleed", value))
             masscan->is_capture_heartbleed = 1;
+        else if (EQUALS("ticketbleed", value))
+            masscan->is_capture_ticketbleed = 1;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1081,6 +1084,8 @@ masscan_set_parameter(struct Masscan *masscan,
             masscan->is_capture_html = 0;
         else if (EQUALS("heartbleed", value))
             masscan->is_capture_heartbleed = 0;
+        else if (EQUALS("ticketbleed", value))
+            masscan->is_capture_ticketbleed = 0;
         else {
             fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
             exit(1);
@@ -1203,6 +1208,11 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->is_heartbleed = 1;
         masscan_set_parameter(masscan, "no-capture", "cert");
         masscan_set_parameter(masscan, "no-capture", "heartbleed");
+        masscan_set_parameter(masscan, "banners", "true");
+    } else if (EQUALS("ticketbleed", name)) {
+        masscan->is_ticketbleed = 1;
+        masscan_set_parameter(masscan, "no-capture", "cert");
+        masscan_set_parameter(masscan, "no-capture", "ticketbleed");
         masscan_set_parameter(masscan, "banners", "true");
     } else if (EQUALS("hello-file", name)) {
         /* When connecting via TCP, send this file */
@@ -1526,6 +1536,9 @@ masscan_set_parameter(struct Masscan *masscan,
         if (EQUALS("heartbleed", value)) {
             masscan_set_parameter(masscan, "heartbleed", "true");
             return;
+		} else if (EQUALS("ticketbleed", value)) {
+            masscan_set_parameter(masscan, "ticketbleed", "true");
+            return;
         } else if (EQUALS("poodle", value) || EQUALS("sslv3", value)) {
             masscan->is_poodle_sslv3 = 1;
             masscan_set_parameter(masscan, "no-capture", "cert");
@@ -1679,7 +1692,7 @@ is_singleton(const char *name)
         "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
         "log-errors", "append-output", "webxml", "no-stylesheet",
-        "no-stylesheet", "heartbleed",
+        "no-stylesheet", "heartbleed", "ticketbleed",
         "send-eth", "send-ip", "iflist", "randomize-hosts",
         "nmap", "trace-packet", "pfring", "sendq",
         "banners", "banner", "nobanners", "nobanner",
