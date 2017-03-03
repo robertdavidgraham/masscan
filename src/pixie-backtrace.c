@@ -11,7 +11,7 @@
 char global_self[512] = "";
 
 
-#if defined(__linux__)
+#if defined(__linux__) && defined(__GLIBC__)
 #include <unistd.h>
 #include <execinfo.h>
 #include <dlfcn.h>
