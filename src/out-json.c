@@ -11,7 +11,7 @@ static void
 json_out_open(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    UNUSEDPARM(fp);
+    fprintf(fp, "[\n"); // enclose the atomic {}'s into an []
 }
 
 
@@ -21,7 +21,7 @@ static void
 json_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, "{finished: 1}\n");
+    fprintf(fp, "]\n"); // enclose the atomic {}'s into an []
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
@@ -148,4 +148,3 @@ const struct OutputType json_output = {
     json_out_status,
     json_out_banner
 };
-
