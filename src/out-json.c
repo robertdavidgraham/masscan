@@ -29,7 +29,7 @@ json_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-               unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+               unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl, const unsigned char mac[6])
 {
     char reason_buffer[128];
     UNUSEDPARM(out);
