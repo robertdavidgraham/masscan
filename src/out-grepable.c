@@ -128,7 +128,7 @@ grepable_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl, const unsigned char mac[6])
 {
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);

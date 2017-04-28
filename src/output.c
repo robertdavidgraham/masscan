@@ -822,7 +822,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * Now do the actual output, whether it be XML, binary, JSON, Redis,
      * and so on.
      */
-    out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
+    out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl, mac);
 }
 
 

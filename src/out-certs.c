@@ -28,7 +28,7 @@ cert_out_close(struct Output *out, FILE *fp)
  ******************************************************************************/
 static void
 cert_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-                unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+                unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl, const unsigned char mac[6])
 {
     /* certificates only come with banner info, so there is no port info
      * to report */
