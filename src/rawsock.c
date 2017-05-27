@@ -575,6 +575,8 @@ is_pfring_dna(const char *name)
 {
     if (strlen(name) < 4)
         return 0;
+    if (memcmp(name, "zc:", 3) == 0)
+        return 1;
     if (memcmp(name, "dna", 3) != 0)
         return 0;
 
