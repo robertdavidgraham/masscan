@@ -70,6 +70,7 @@ cndb_add(unsigned ip, const unsigned char *name, size_t name_length)
 
 /***************************************************************************
  ***************************************************************************/
+#if 0
 static void
 cndb_add_cn(unsigned ip, const unsigned char *data, size_t length)
 {
@@ -106,9 +107,11 @@ cndb_add_cn(unsigned ip, const unsigned char *data, size_t length)
     /* now insert into database */
     cndb_add(ip, data+name_offset, name_length);
 }
+#endif
 
 /***************************************************************************
  ***************************************************************************/
+#if 0
 static unsigned
 found(const char *str, size_t str_len, const unsigned char *p, size_t length)
 {
@@ -123,6 +126,7 @@ found(const char *str, size_t str_len, const unsigned char *p, size_t length)
     }
     return 0;
 }
+#endif
 
 enum {
     XUnknown,
@@ -268,7 +272,8 @@ struct Names {
 };
 
 static struct SMACK *global_xnames;
-void
+
+static void
 xname_init(void)
 {
     unsigned i;

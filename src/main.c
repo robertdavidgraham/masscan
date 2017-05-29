@@ -54,6 +54,7 @@
 #include "proto-sctp.h"
 #include "script.h"
 #include "main-readrange.h"
+#include "scripting.h"          /* Lua scripting */
 
 #include <assert.h>
 #include <limits.h>
@@ -80,6 +81,7 @@
 unsigned volatile is_tx_done = 0;
 unsigned volatile is_rx_done = 0;
 time_t global_now;
+double global_time_start;
 
 uint64_t usec_start;
 
@@ -149,8 +151,6 @@ struct ThreadPair {
 
     unsigned done_transmitting;
     unsigned done_receiving;
-
-    double pt_start;
 
     struct Throttler throttler[1];
 
@@ -549,6 +549,7 @@ receive_thread(void *v)
     uint64_t *status_tcb_count;
     uint64_t entropy = masscan->seed;
 
+
     /* some status variables */
     status_synack_count = (uint64_t*)malloc(sizeof(uint64_t));
     *status_synack_count = 0;
@@ -663,6 +664,9 @@ receive_thread(void *v)
                                     pay->payload_base64);
         }
 
+        /* [LUAPROBE] Initialize for this thread */
+        if (masscan->probe_filename)
+            tcpcon_init_luaprobe(tcpcon, masscan->probe_filename);
     }
 
     /*
@@ -758,7 +762,7 @@ receive_thread(void *v)
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
             continue;
-//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
+
 
 
         /*
@@ -805,7 +809,7 @@ receive_thread(void *v)
                 if (!is_nic_port(masscan, port_me))
                     continue;
                 if (parms->masscan->nmap.packet_trace)
-                    packet_trace(stdout, parms->pt_start, px, length, 0);
+                    packet_trace(stdout, global_time_start, px, length, 0);
                 handle_udp(out, secs, px, length, &parsed, entropy);
                 continue;
             case FOUND_ICMP:
@@ -826,9 +830,9 @@ receive_thread(void *v)
         if (!is_my_port(&parms->src, port_me))
             continue;
         if (parms->masscan->nmap.packet_trace)
-            packet_trace(stdout, parms->pt_start, px, length, 0);
+            packet_trace(stdout, global_time_start, px, length, 0);
 
-        /* Save raw packet in --pcap file */
+        /* Save raw packet in --pcap <file> */
         if (pcapfile) {
             pcapfile_writeframe(
                 pcapfile,
@@ -874,20 +878,25 @@ receive_thread(void *v)
                 }
 
                 tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK,
-                    0, 0, secs, usecs, seqno_them+1);
+                    0, 0,           /* no payload */
+                    secs, usecs, 
+                    seqno_them+1, seqno_me);
 
             } else if (tcb) {
                 /* If this is an ACK, then handle that first */
                 if (TCP_IS_ACK(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_ACK,
-                        0, seqno_me, secs, usecs, seqno_them);
+                        0, 0, 
+                        secs, usecs, 
+                        seqno_them, seqno_me);
                 }
 
                 /* If this contains payload, handle that */
                 if (parsed.app_length) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_DATA,
                         px + parsed.app_offset, parsed.app_length,
-                        secs, usecs, seqno_them);
+                        secs, usecs, 
+                        seqno_them, seqno_me);
                 }
 
                 /* If this is a FIN, handle that. Note that ACK +
@@ -895,13 +904,17 @@ receive_thread(void *v)
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN,
-                        0, parsed.app_length, secs, usecs, seqno_them);
+                        0, 0, 
+                        secs, usecs, 
+                        seqno_them, seqno_me);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
                 if (TCP_IS_RST(px, parsed.transport_offset)) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_RST,
-                        0, 0, secs, usecs, seqno_them);
+                        0, 0, 
+                        secs, usecs, 
+                        seqno_them, seqno_me);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
                 /*
@@ -1071,6 +1084,12 @@ main_scan(struct Masscan *masscan)
             r->begin = (r->begin&0xFFFF) | Templ_Script;
         }
     }
+
+    /*
+     * Probe initialization
+     */
+    if (masscan->probe_filename) {
+    }
     
     /*
      * Initialize the task size
@@ -1141,11 +1160,6 @@ main_scan(struct Masscan *masscan)
         parms->my_index = masscan->resume.index;
         parms->done_transmitting = 0;
         parms->done_receiving = 0;
-
-        /* needed for --packet-trace option so that we know when we started
-         * the scan */
-        parms->pt_start = 1.0 * pixie_gettime() / 1000000.0;
-
 
         /*
          * Turn the adapter on, and get the running configuration
@@ -1428,6 +1442,7 @@ main_scan(struct Masscan *masscan)
 
 
 
+extern int lua_dynamic_load(void);
 
 /***************************************************************************
  ***************************************************************************/
@@ -1441,7 +1456,13 @@ int main(int argc, char *argv[])
     {WSADATA x; WSAStartup(0x101, &x);}
 #endif
 
+    /* kludge */
     global_now = time(0);
+    
+
+    /* needed for --packet-trace option so that we know when we started
+     * the scan */
+    global_time_start = 1.0 * pixie_gettime() / 1000000.0;
 
     /* Set system to report debug information on crash */
     {
@@ -1635,6 +1656,7 @@ int main(int argc, char *argv[])
             x += rte_ring_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
+            x += scripting_selftest();
 
 
             if (x != 0) {

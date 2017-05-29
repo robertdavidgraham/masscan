@@ -30,6 +30,13 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const void *value);
 
 /**
+ * [LUAPROBE] Initialize the scripting system, so that the data sent/received
+ * is handled by a script rather than by masscan
+ */
+void
+tcpcon_init_luaprobe(struct TCP_ConnectionTable *tcpcon, const char *scriptname);
+
+/**
  * Create a TCP connection table (to store TCP control blocks) with
  * the desired initial size.
  *
@@ -84,13 +91,15 @@ enum TCP_What {
     TCP_WHAT_FIN,
     TCP_WHAT_ACK,
     TCP_WHAT_DATA,
+    TCP_WHAT_DONE_SENDING,
 };
 
 void
 tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
-    int what, const void *p, size_t length,
+    int what, 
+    const void *p, unsigned length,
     unsigned secs, unsigned usecs,
-    unsigned seqno_them);
+    unsigned seqno_them, unsigned seqno_me);
 
 
 /**

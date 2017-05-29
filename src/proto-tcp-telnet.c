@@ -2,6 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 
 
@@ -13,14 +14,14 @@ telnet_parse(  const struct Banner1 *banner1,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
 
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(tcb);
 
     for (i=0; i<length; i++)
     switch (state) {
@@ -42,10 +43,26 @@ telnet_parse(  const struct Banner1 *banner1,
 
 /***************************************************************************
  ***************************************************************************/
-static void *
-telnet_init(struct Banner1 *banner1)
+static void 
+telnet_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+    banner_default.hello(banner1, banner1_private, stream_state, tcb);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void *
+telnet_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -61,8 +78,11 @@ telnet_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_telnet = {
-    "telnet", 22, 0, 0, 0,
+    "telnet", 22, 
+    //0, 0, 0,
     telnet_selftest,
     telnet_init,
     telnet_parse,
+    telnet_hello,
+    default_set_parameter,
 };

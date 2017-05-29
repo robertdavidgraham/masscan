@@ -1453,6 +1453,18 @@ masscan_set_parameter(struct Masscan *masscan,
                  value);
     } else if (EQUALS("pcap", name)) {
         strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
+    } else if (EQUALS("probe", name)) {
+        masscan_set_parameter(masscan, "banners", "true");
+        /* [LUAPROBE] */
+        if (masscan->probe_filename) { 
+            if (strcmp(masscan->probe_filename, value) != 0) {
+                fprintf(stderr, "error: only one probe can be specified at a time\n");
+                exit(1);
+            }
+        } else {
+            masscan->probe_filename = malloc(strlen(value)+1);
+            memcpy(masscan->probe_filename, value, strlen(value)+1);
+        }
     } else if (EQUALS("packet-trace", name) || EQUALS("trace-packet", name)) {
         masscan->nmap.packet_trace = 1;
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {

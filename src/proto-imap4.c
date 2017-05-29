@@ -9,8 +9,9 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
 #include "proto-ssl.h"
+#include "proto-tcp-transmit.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 #include <string.h>
 
@@ -23,7 +24,7 @@ imap4_parse(  const struct Banner1 *banner1,
            struct ProtocolState *pstate,
            const unsigned char *px, size_t length,
            struct BannerOutput *banout,
-           struct InteractiveData *more)
+           struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -81,7 +82,7 @@ imap4_parse(  const struct Banner1 *banner1,
             case 5:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a001 CAPABILITY\r\n", 17); 
+                    tcp_add_xmit(tcb, "a001 CAPABILITY\r\n", 17, XMIT_STATIC); 
                     state = 100;
                 }
                 break;
@@ -136,7 +137,7 @@ imap4_parse(  const struct Banner1 *banner1,
             case 105:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a002 STARTTLS\r\n", 15);
+                    tcp_add_xmit(tcb, "a002 STARTTLS\r\n", 15, XMIT_STATIC);
                     state = 300;
                 }
                 break;
@@ -151,16 +152,8 @@ imap4_parse(  const struct Banner1 *banner1,
             case 305:
                 if (px[i] == '\n') {
                     /* change the state here to SSL */
-                    unsigned port = pstate->port;
-                    memset(pstate, 0, sizeof(*pstate));
-                    pstate->app_proto = PROTO_SSL3;
-                    pstate->is_sent_sslhello = 1;
-                    pstate->port = (unsigned short)port;
-                    state = 0;
-                    
-                    more->payload = banner_ssl.hello;
-                    more->length = (unsigned)banner_ssl.hello_length;
-                    break;
+                    ssl_switch(tcb, pstate);
+                    return;
                 }
                 break;
                 
@@ -175,9 +168,10 @@ imap4_parse(  const struct Banner1 *banner1,
 /***************************************************************************
  ***************************************************************************/
 static void *
-imap4_init(struct Banner1 *banner1)
+imap4_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -193,8 +187,12 @@ imap4_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_imap4 = {
-    "imap4", 21, 0, 0, 0,
+    "imap4", 21, 
+    //0, 0, 0,
     imap4_selftest,
     imap4_init,
     imap4_parse,
+    default_hello,
+    default_set_parameter,
+
 };

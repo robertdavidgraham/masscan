@@ -1,10 +1,11 @@
 #include "proto-vnc.h"
 #include "proto-banner1.h"
-#include "proto-interactive.h"
+#include "proto-tcp-transmit.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "string_s.h"
 #include "smack.h"
+#include "proto-stream-default.h"
 #include <ctype.h>
 
 
@@ -91,12 +92,12 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
 /***************************************************************************
  ***************************************************************************/
 static void
-vnc_parse(  const struct Banner1 *banner1,
+vnc_parse(const struct Banner1 *banner1,
           void *banner1_private,
           struct ProtocolState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct TCP_Control_Block *tcb)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -142,8 +143,10 @@ vnc_parse(  const struct Banner1 *banner1,
                         "RFB 003.008\n",
                     };
                     unsigned version = pstate->sub.vnc.version % 10;
-                    more->payload = response[version];
-                    more->length = 12;
+
+                    /* [XMIT] Tell the other size which version we want to use,
+                     * which is determined from the options it gave us */
+                    tcp_add_xmit(tcb, response[version], 12, XMIT_STATIC);
 
                     if (version < 7)
                         /* Version 3.3: the server selects either "none" or
@@ -190,8 +193,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 else if (pstate->sub.vnc.sectype == 1) {
                     /* v3.3 sectype=none
                      * We move immediately to ClientInit stage */
-                    more->payload = "\x01";
-                    more->length = 1;
+                    tcp_add_xmit(tcb, "\x01", 1, XMIT_STATIC);
                     state = RFB_SERVERINIT;
                 } else
                     state = STATE_DONE;
@@ -201,8 +203,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 pstate->sub.vnc.sectype |= px[i];
                 if (pstate->sub.vnc.sectype == 0) {
                     /* security ok, move to client init */
-                    more->payload = "\x01";
-                    more->length = 1;
+                    tcp_add_xmit(tcb, "\x01", 1, XMIT_STATIC);
                     state = RFB_SERVERINIT;
                 } else {
                     /* error occurred, so grab error message */
@@ -241,16 +242,13 @@ vnc_parse(  const struct Banner1 *banner1,
                     banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
                     if (pstate->sub.vnc.version < 7) {
                         state = RFB_SERVERINIT;
-                        more->payload = "\x01";
-                        more->length = 1;
+                        tcp_add_xmit(tcb, "\x01", 1, XMIT_STATIC);
                     } else if (pstate->sub.vnc.version == 7) {
                         state = RFB_SERVERINIT;
-                        more->payload = "\x01\x01";
-                        more->length = 2;
+                        tcp_add_xmit(tcb, "\x01\x01", 2, XMIT_STATIC);
                     } else {
                         state = RFB_SECURITYRESULT;
-                        more->payload = "\x01";
-                        more->length = 1;
+                        tcp_add_xmit(tcb, "\x01", 1, XMIT_STATIC);
                     }
                 } else {
                     banout_append(banout, PROTO_VNC_RFB, "/", AUTO_LEN);
@@ -335,10 +333,25 @@ vnc_parse(  const struct Banner1 *banner1,
 
 /***************************************************************************
  ***************************************************************************/
-static void *
-vnc_init(struct Banner1 *banner1)
+static void 
+vnc_hello(const struct Banner1 *banner1,
+        void *banner1_private,
+        struct ProtocolState *stream_state,
+        struct TCP_Control_Block *tcb)
 {
     UNUSEDPARM(banner1);
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(stream_state);
+    UNUSEDPARM(tcb);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void *
+vnc_init(struct Banner1 *banner1, struct ProtocolParserStream *self)
+{
+    UNUSEDPARM(banner1);
+    UNUSEDPARM(self);
     return 0;
 }
 
@@ -354,8 +367,11 @@ vnc_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_vnc = {
-    "vnc", 5900, 0, 0, 0,
+    "vnc", 5900, 
+    //0, 0, 0,
     vnc_selftest,
     vnc_init,
     vnc_parse,
+    vnc_hello,
+    default_set_parameter,
 };

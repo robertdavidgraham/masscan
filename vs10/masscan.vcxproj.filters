@@ -267,9 +267,6 @@
     <ClCompile Include="..\src\proto-vnc.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-interactive.c">
-      <Filter>Source Files\proto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\in-filter.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
@@ -281,6 +278,21 @@
     </ClCompile>
     <ClCompile Include="..\src\script-sslv3.c">
       <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lua-dynload.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lua-probe.c">
+      <Filter>Source Files\scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp-transmit.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\misc-name-equals.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-stream-default.c">
+      <Filter>Source Files\proto</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -458,9 +470,6 @@
     <ClInclude Include="..\src\main-readrange.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\proto-interactive.h">
-      <Filter>Source Files\proto</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-ftp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
@@ -481,6 +490,21 @@
     </ClInclude>
     <ClInclude Include="..\src\in-report.h">
       <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lua-dynload.h">
+      <Filter>Source Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\lua-probe.h">
+      <Filter>Source Files\scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp-transmit.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\misc-name-equals.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-stream-default.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

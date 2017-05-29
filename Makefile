@@ -86,13 +86,19 @@ tmp/main-conf.o: src/main-conf.c src/*.h
 tmp/%.o: src/%.c src/*.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+tmp/lua/%.o: src/lua/%.c src/lua/*.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-SRC = $(wildcard src/*.c)
+
+SRC = $(wildcard src/*.c) 
 OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC))))) 
 
+SRCL = $(wildcard src/lua/*.c) 
+OBJL = $(addprefix tmp/lua/, $(notdir $(addsuffix .o, $(basename $(SRCL))))) 
 
-bin/masscan: $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LDFLAGS) $(LIBS)
+
+bin/masscan: $(OBJ) $(OBJL)
+	$(CC) $(CFLAGS) -o $@ $(OBJ) $(OBJL) $(LDFLAGS) $(LIBS)
 
 clean:
 	rm -f tmp/*.o

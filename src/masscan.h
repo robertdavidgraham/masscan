@@ -390,6 +390,8 @@ struct Masscan
     struct {
         const char *name;
     } script;
+
+    char *probe_filename;
 };
 
 
