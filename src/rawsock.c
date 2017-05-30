@@ -12,8 +12,8 @@
 #include "rawsock-pfring.h"
 #include "pixie-timer.h"
 #include "main-globals.h"
+
 #include "rawsock-pcap.h"
-//#include <pcap.h>
 
 #include <assert.h>
 #include <ctype.h>
@@ -21,12 +21,10 @@
 static int is_pcap_file = 0;
 
 #ifdef WIN32
-#include <Win32-Extensions.h>
+#include <winsock.h>
 #include <iphlpapi.h>
 
 #if defined(_MSC_VER)
-#pragma comment(lib, "packet.lib")
-#pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
 
@@ -39,20 +37,6 @@ static int is_pcap_file = 0;
 #include <net/if.h>
 #include <arpa/inet.h>
 
-/*
- * PORTABILITY: Windows supports the "sendq" feature, and is really slow
- * without this feature. It's not needed on Linux, so we just create
- * equivelent functions that do nothing
- */
-struct pcap_send_queue;
-typedef struct pcap_send_queue pcap_send_queue;
-static pcap_send_queue *pcap_sendqueue_alloc(size_t size) {return 0;}
-static unsigned pcap_sendqueue_transmit(
-    pcap_t *p, pcap_send_queue *queue, int sync) {return 0;}
-static void pcap_sendqueue_destroy(pcap_send_queue *queue) {;}
-static int pcap_sendqueue_queue(pcap_send_queue *queue,
-    const struct pcap_pkthdr *pkt_header,
-    const unsigned char *pkt_data) {return 0;}
 #else
 #endif
 
@@ -78,7 +62,7 @@ int pcap_setdirection(pcap_t *pcap, pcap_direction_t direction)
     static int (*real_setdirection)(pcap_t *, pcap_direction_t) = 0;
 
     if (real_setdirection == 0) {
-        HMODULE h = LoadLibraryA("wpcap.dll");
+        void* h = LoadLibraryA("wpcap.dll");
         if (h == NULL) {
             fprintf(stderr, "couldn't load wpcap.dll: %u\n", 
                                 (unsigned)GetLastError());
@@ -274,12 +258,12 @@ void
 rawsock_flush(struct Adapter *adapter)
 {
     if (adapter->sendq) {
-        pcap_sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
+        PCAP.sendqueue_transmit(adapter->pcap, adapter->sendq, 0);
 
         /* Dude, I totally forget why this step is necessary. I vaguely
          * remember there's a good reason for it though */
-        pcap_sendqueue_destroy(adapter->sendq);
-        adapter->sendq =  pcap_sendqueue_alloc(SENDQ_SIZE);
+        PCAP.sendqueue_destroy(adapter->sendq);
+        adapter->sendq =  PCAP.sendqueue_alloc(SENDQ_SIZE);
     }
 
 }
@@ -326,10 +310,10 @@ rawsock_send_packet(
         hdr.len = length;
         hdr.caplen = length;
 
-        err = pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+        err = PCAP.sendqueue_queue(adapter->sendq, &hdr, packet);
         if (err) {
             rawsock_flush(adapter);
-            pcap_sendqueue_queue(adapter->sendq, &hdr, packet);
+            PCAP.sendqueue_queue(adapter->sendq, &hdr, packet);
         }
 
         if (flush) {
@@ -513,7 +497,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
             PCAP.perror(adapter->pcap, "pcap_setdirection(IN)");
         }
     }
-#else
+#elif defined(WIN32xxx)
     if (adapter->pcap) {
         int err;
         char filter[256];
@@ -543,8 +527,6 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         }
     }
 #endif
-
-
 }
 
 /***************************************************************************
@@ -559,7 +541,7 @@ rawsock_close_adapter(struct Adapter *adapter)
         PCAP.close(adapter->pcap);
     }
     if (adapter->sendq) {
-        pcap_sendqueue_destroy(adapter->sendq);
+        PCAP.sendqueue_destroy(adapter->sendq);
     }
 
     free(adapter);
@@ -835,7 +817,7 @@ rawsock_init_adapter(const char *adapter_name,
     adapter->sendq = 0;
 #if defined(WIN32)
     if (is_sendq)
-        adapter->sendq = pcap_sendqueue_alloc(SENDQ_SIZE);
+        adapter->sendq = PCAP.sendqueue_alloc(SENDQ_SIZE);
 #endif
 
 

@@ -1,6 +1,11 @@
 #ifndef RAWSOCK_PCAP_H
 #define RAWSOCK_PCAP_H
-#include <sys/time.h>
+#include <stdio.h>
+
+struct pcap_timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
 
 struct pcap;
 typedef struct pcap pcap_t;
@@ -17,7 +22,7 @@ typedef enum {
 } pcap_direction_t;
 
 struct pcap_pkthdr {
-    struct timeval ts;
+    struct pcap_timeval ts;
     unsigned caplen;
     unsigned len;
 #ifdef __APPLE__
@@ -50,6 +55,21 @@ typedef void (*PCAP_PERROR)(pcap_t *p, char *prefix);
 typedef const char *(*PCAP_DEV_NAME)(const pcap_if_t *dev);
 typedef const char *(*PCAP_DEV_DESCRIPTION)(const pcap_if_t *dev);
 typedef const pcap_if_t *(*PCAP_DEV_NEXT)(const pcap_if_t *dev);
+
+/*
+ * PORTABILITY: Windows supports the "sendq" feature, and is really slow
+ * without this feature. It's not needed on Linux, so we just create
+ * equivelent functions that do nothing
+ */
+struct pcap_send_queue;
+typedef struct pcap_send_queue pcap_send_queue;
+
+typedef pcap_send_queue *(*PCAP_SENDQUEUE_ALLOC)(size_t size);
+typedef unsigned (*PCAP_SENDQUEUE_TRANSMIT)(pcap_t *p, pcap_send_queue *queue, int sync);
+typedef void (*PCAP_SENDQUEUE_DESTROY)(pcap_send_queue *queue);
+typedef int (*PCAP_SENDQUEUE_QUEUE)(pcap_send_queue *queue, const struct pcap_pkthdr *pkt_header, const unsigned char *pkt_data);
+
+
 
 
 
@@ -84,10 +104,15 @@ struct PcapFunctions {
     PCAP_DATALINK_VAL_TO_NAME datalink_val_to_name;
     PCAP_PERROR         perror;
     
-    PCAP_DEV_NAME dev_name;
+    PCAP_DEV_NAME		dev_name;
     PCAP_DEV_DESCRIPTION dev_description;
-    PCAP_DEV_NEXT dev_next;
-    
+    PCAP_DEV_NEXT		dev_next;
+
+	PCAP_SENDQUEUE_ALLOC		sendqueue_alloc;
+	PCAP_SENDQUEUE_TRANSMIT		sendqueue_transmit;
+	PCAP_SENDQUEUE_DESTROY		sendqueue_destroy;
+	PCAP_SENDQUEUE_QUEUE		sendqueue_queue;
+
 };
 
 extern struct PcapFunctions PCAP;

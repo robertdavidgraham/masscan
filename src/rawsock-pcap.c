@@ -38,6 +38,8 @@
 #ifndef UNUSEDPARM
 #ifdef __GNUC__
 #define UNUSEDPARM(x) x=(x)
+#else
+#define UNUSEDPARM(x) x=(x)
 #endif
 #endif
 
@@ -234,6 +236,7 @@ struct PcapFunctions PCAP = {
 
 static void *my_null(int x, ...)
 {
+	UNUSEDPARM(x);
     return 0;
 }
 static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
@@ -242,23 +245,29 @@ static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
 }
 static int null_PCAP_SENDPACKET(pcap_t *p, const unsigned char *buf, int size)
 {
-    return (int)my_null(p, buf, size);
+    my_null(3, p, buf, size);
+	return 0;
 }
 
 static const unsigned char *null_PCAP_NEXT(pcap_t *p, struct pcap_pkthdr *h)
 {
+	my_null(3, p, h);
     return 0;
 }
 static int null_PCAP_SETDIRECTION(pcap_t *p, pcap_direction_t d)
 {
+	my_null(2, p, d);
     return 0;
 }
 static const char *null_PCAP_DATALINK_VAL_TO_NAME(int dlt)
 {
+	my_null(1, dlt);
     return 0;
 }
 static void null_PCAP_PERROR(pcap_t *p, char *prefix)
 {
+	UNUSEDPARM(p);
+	fprintf(stderr, "%s\n", prefix);
     perror("pcap");
 }
 static const char *null_PCAP_DEV_NAME(const pcap_if_t *dev)
@@ -274,6 +283,29 @@ static const pcap_if_t *null_PCAP_DEV_NEXT(const pcap_if_t *dev)
     return dev->next;
 }
 
+static pcap_send_queue *null_PCAP_SENDQUEUE_ALLOC(size_t size)
+{
+	UNUSEDPARM(size);
+	return 0;
+}
+static unsigned null_PCAP_SENDQUEUE_TRANSMIT(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	my_null(3, p, queue, sync);
+	return 0;
+}
+static void null_PCAP_SENDQUEUE_DESTROY(pcap_send_queue *queue) 
+{
+	my_null(1, queue);
+	UNUSEDPARM(queue);
+}
+static int null_PCAP_SENDQUEUE_QUEUE(pcap_send_queue *queue,
+    const struct pcap_pkthdr *pkt_header,
+    const unsigned char *pkt_data)
+{
+	my_null(4, queue, pkt_header, pkt_data);
+	return 0;
+}
+
 /**
  * Runtime-load the libpcap shared-object or the winpcap DLL. We
  * load at runtime rather than loadtime to allow this program to
@@ -284,9 +316,9 @@ void pcap_init(void)
 {
     struct PcapFunctions *pl = &PCAP;
 #ifdef WIN32
-    HMODULE hPacket;
-    HMODULE hLibpcap;
-    HMODULE hAirpcap;
+    void * hPacket;
+    void * hLibpcap;
+    void * hAirpcap;
     
     pl->is_available = 0;
     pl->is_printing_debug = 1;
@@ -404,6 +436,11 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
     DOLINK(PCAP_DEV_NAME        , dev_name);
     DOLINK(PCAP_DEV_DESCRIPTION , dev_description);
     DOLINK(PCAP_DEV_NEXT        , dev_next);
+
+	DOLINK(PCAP_SENDQUEUE_ALLOC		, sendqueue_alloc);
+	DOLINK(PCAP_SENDQUEUE_TRANSMIT	, sendqueue_transmit);
+	DOLINK(PCAP_SENDQUEUE_DESTROY	, sendqueue_destroy);
+	DOLINK(PCAP_SENDQUEUE_QUEUE		, sendqueue_queue);
 
     
     pl->can_transmit = null_CAN_TRANSMIT;
