@@ -84,6 +84,9 @@
 		11BA2967189055CA0064A759 /* script.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA2966189055CA0064A759 /* script.c */; };
 		11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA29681890560C0064A759 /* script-ntp-monlist.c */; };
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
+		11C936C31EDCE77F0023D32E /* in-filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936BF1EDCE77F0023D32E /* in-filter.c */; };
+		11C936C41EDCE77F0023D32E /* in-report.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C11EDCE77F0023D32E /* in-report.c */; };
+		11C936C71EDCE8B40023D32E /* rawsock-pcap.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C51EDCE8B40023D32E /* rawsock-pcap.c */; };
 		11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
 		11F9375419F1A54200C1947F /* script-sslv3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11F9375319F1A54200C1947F /* script-sslv3.c */; };
 		11F9375719F1AD5000C1947F /* script-heartbleed.c in Sources */ = {isa = PBXBuildFile; fileRef = 11F9375619F1AD5000C1947F /* script-heartbleed.c */; };
@@ -247,6 +250,12 @@
 		11BA29681890560C0064A759 /* script-ntp-monlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "script-ntp-monlist.c"; sourceTree = "<group>"; };
 		11BA296A189060220064A759 /* proto-ntp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntp.c"; sourceTree = "<group>"; };
 		11BA296C189060590064A759 /* proto-ntp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-ntp.h"; sourceTree = "<group>"; };
+		11C936BF1EDCE77F0023D32E /* in-filter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-filter.c"; sourceTree = "<group>"; };
+		11C936C01EDCE77F0023D32E /* in-filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-filter.h"; sourceTree = "<group>"; };
+		11C936C11EDCE77F0023D32E /* in-report.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-report.c"; sourceTree = "<group>"; };
+		11C936C21EDCE77F0023D32E /* in-report.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-report.h"; sourceTree = "<group>"; };
+		11C936C51EDCE8B40023D32E /* rawsock-pcap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-pcap.c"; sourceTree = "<group>"; };
+		11C936C61EDCE8B40023D32E /* rawsock-pcap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-pcap.h"; sourceTree = "<group>"; };
 		11E76DB21889BC5200061F45 /* pixie-backtrace.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-backtrace.c"; sourceTree = "<group>"; };
 		11E76DB31889BC5200061F45 /* pixie-backtrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-backtrace.h"; sourceTree = "<group>"; };
 		11F9375319F1A54200C1947F /* script-sslv3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "script-sslv3.c"; sourceTree = "<group>"; };
@@ -284,6 +293,12 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11C936C51EDCE8B40023D32E /* rawsock-pcap.c */,
+				11C936C61EDCE8B40023D32E /* rawsock-pcap.h */,
+				11C936BF1EDCE77F0023D32E /* in-filter.c */,
+				11C936C01EDCE77F0023D32E /* in-filter.h */,
+				11C936C11EDCE77F0023D32E /* in-report.c */,
+				11C936C21EDCE77F0023D32E /* in-report.h */,
 				11126596197A086B00DC5987 /* out-unicornscan.c */,
 				11A773E91881BFC700B135DE /* crypto-base64.c */,
 				11A773EA1881BFC700B135DE /* crypto-base64.h */,
@@ -514,6 +529,7 @@
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
 				11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */,
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,
+				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
 				11A921F217DBCC7E00DDFD32 /* rawsock-pfring.c in Sources */,
 				11A921F317DBCC7E00DDFD32 /* rawsock.c in Sources */,
@@ -541,6 +557,7 @@
 				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
 				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
 				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
+				11C936C71EDCE8B40023D32E /* rawsock-pcap.c in Sources */,
 				11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */,
 				11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */,
 				11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */,
@@ -559,6 +576,7 @@
 				11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */,
 				11126597197A086B00DC5987 /* out-unicornscan.c in Sources */,
 				11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */,
+				11C936C31EDCE77F0023D32E /* in-filter.c in Sources */,
 				11420DD819A8160500DB5BFE /* proto-ftp.c in Sources */,
 				11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */,
 				11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */,
@@ -592,7 +610,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -612,7 +630,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx;
 			};
 			name = Release;

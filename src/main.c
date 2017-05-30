@@ -1428,6 +1428,7 @@ main_scan(struct Masscan *masscan)
 
 
 
+void pcap_init(void);
 
 /***************************************************************************
  ***************************************************************************/
@@ -1435,7 +1436,7 @@ int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
     unsigned i;
-
+    
     usec_start = pixie_gettime();
 #if defined(WIN32)
     {WSADATA x; WSAStartup(0x101, &x);}
@@ -1506,6 +1507,7 @@ int main(int argc, char *argv[])
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
+    pcap_init();
     rawsock_init();
 
     /* Init some protocol parser data structures */
