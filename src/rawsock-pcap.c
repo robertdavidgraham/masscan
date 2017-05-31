@@ -221,7 +221,7 @@ static unsigned null_CAN_TRANSMIT(const char *devicename)
     return result;
 #elif defined(__linux__)
     return 1;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
     return 1;
 #else
 #error unknown os
