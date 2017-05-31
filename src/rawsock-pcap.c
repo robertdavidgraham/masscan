@@ -387,8 +387,10 @@ if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
             }
         }
      
-        if (hLibpcap == NULL)
-            fprintf(stderr, "pcap: failed to load libpcap\n");
+        if (hLibpcap == NULL) {
+            fprintf(stderr, "pcap: failed to load libpcap shared library\n");
+            fprintf(stderr, "    HINT: you must install libpcap or WinPcap\n");
+        }
     }
     
 #define DOLINK(PCAP_DATALINK, datalink) \
