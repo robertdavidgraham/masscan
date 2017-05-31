@@ -120,7 +120,7 @@ again:
         /* This is in case of gross failure of the system. This should never
          * actually happen, unless there is a bug. Really, I ought to make
          * this an 'assert()' instead to fail and fix the bug rather than
-         * silently continueing, but I'm too lazy */
+         * silently continuing, but I'm too lazy */
         if (waittime > 0.1)
             waittime = 0.1;
 

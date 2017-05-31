@@ -964,7 +964,7 @@ ssl_parse_record(
      * there are multiple records per packet), or the packet size (when the
      * record exceeds the size of the packet).
      * We then pass this sug-segment to the inner content parser. However, the
-     * inner parser has no effect on what happens in this parser. It's wholy
+     * inner parser has no effect on what happens in this parser. It's wholly
      * indpedent, doing it's own thing.
      */
     case CONTENTS:
@@ -1156,7 +1156,7 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
         px[offset2 + len2    ] = (unsigned char)(cipher_spec>>8);
         px[offset2 + len2 + 1] = (unsigned char)(cipher_spec>>0);
     } else {
-        /* prepend to start of list, making this the prefered cipherspec*/
+        /* prepend to start of list, making this the preferred cipherspec*/
         memmove(px + offset2 + 2,
                 px + offset2,
                 len0 - offset2);

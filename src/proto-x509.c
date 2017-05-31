@@ -1,5 +1,5 @@
 /*
-    !!!!! BIZZARE CODE ALERT !!!!
+    !!!!! BIZARRE CODE ALERT !!!!
 
     This module decodes X.509 public-key certificates using a
     "state-machine parser". If you are unfamiliar with such parsers,
@@ -1061,7 +1061,7 @@ x509_decode(struct CertDecode *x,
  * @param length
  *      The size of the certificate. This is parsed from the SSL/TLS field.
  *      We know that if we exceed this number of bytes, then an overflow has
- *      occured.
+ *      occurred.
  ****************************************************************************/
 void
 x509_decode_init(struct CertDecode *x, size_t length)

@@ -121,15 +121,15 @@ extern "C" {
 	- rpcap://devicename [opens the selected device devices available on the local host, without using the RPCAP protocol]
 	- rpcap://host/devicename [opens the selected device available on a remote host]
 	- rpcap://host:port/devicename [opens the selected device available on a remote host, using a non-standard port for RPCAP]
-	- adaptername [to open a local adapter; kept for compability, but it is strongly discouraged]
-	- (NULL) [to open the first local adapter; kept for compability, but it is strongly discouraged]
+	- adaptername [to open a local adapter; kept for compatibility, but it is strongly discouraged]
+	- (NULL) [to open the first local adapter; kept for compatibility, but it is strongly discouraged]
 
 	The formats allowed by the pcap_findalldevs_ex() are the following:
 	- file://folder/ [lists all the files in the given folder]
 	- rpcap:// [lists all local adapters]
 	- rpcap://host:port/ [lists the devices available on a remote host]
 
-	Referring to the 'host' and 'port' paramters, they can be either numeric or literal. Since
+	Referring to the 'host' and 'port' parameters, they can be either numeric or literal. Since
 	IPv6 is fully supported, these are the allowed formats:
 
 	- host (literal): e.g. host.foo.bar
@@ -395,7 +395,7 @@ struct pcap_samp
 
 
 
-//! Maximum lenght of an host name (needed for the RPCAP active mode)
+//! Maximum length of an host name (needed for the RPCAP active mode)
 #define RPCAP_HOSTLIST_SIZE 1024
 
 

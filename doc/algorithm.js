@@ -34,7 +34,7 @@
 
     Then, before the enumeration step, the index is permuted into another
     random index within the same range, in a 1-to-1 mapping. In other
-    words, the algorithm is theoretically reversable: given the output
+    words, the algorithm is theoretically reversible: given the output
     of the permutation function, we can obtain the original index.
 
 EXAMPLE

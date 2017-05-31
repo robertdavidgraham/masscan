@@ -321,7 +321,7 @@ parse_file(struct Output *out, const char *filename,
     /* Make sure it's got the format string */
     if (memcmp(buf, "masscan/1.1", 11) != 0) {
         fprintf(stderr,
-                "%s: unknown file format (expeced \"masscan/1.1\")\n",
+                "%s: unknown file format (expected \"masscan/1.1\")\n",
                 filename);
         goto end;
     }

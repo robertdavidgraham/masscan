@@ -1,7 +1,7 @@
 masscan (1.0.3-46+gbbadb7b-1) precise; urgency=low
 
   * Rebuild from current git
-  * Use propper git hash versioning
+  * Use proper git hash versioning
 
  -- Vladimir Vitkov (Packaging Key) <vvitkov@sdl.com>  Tue, 10 Jun 2014 12:11:04 +0300
 

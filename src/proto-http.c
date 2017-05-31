@@ -67,7 +67,7 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
             continue;
         if (hdr2[i] == '\n') {
             if (is_newline_seen) {
-                /* We've reached the end of header without seing
+                /* We've reached the end of header without seeing
                  * the field. Therefore, create space right here
                  * for it. */
                 while (hdr2[i-1] == '\r')

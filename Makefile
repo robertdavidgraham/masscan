@@ -19,7 +19,7 @@ FLAGS2 =
 endif
 
 # MAC OS X
-# I occassionally develope code on Mac OS X, but it's not part of
+# I occasionally develop code on Mac OS X, but it's not part of
 # my regularly regression-test environment. That means at any point
 # in time, something might be minorly broken in Mac OS X.
 ifneq (, $(findstring darwin, $(SYS)))
@@ -30,9 +30,9 @@ INSTALL_DATA = -pm755
 endif
 
 # MinGW on Windows
-# I develope on Visual Studio 2010, so that's the Windows environment
+# I develop on Visual Studio 2010, so that's the Windows environment
 # that'll work. However, 'git' on Windows runs under MingGW, so one
-# day I acccidentally typed 'make' instead of 'git, and felt compelled
+# day I accidentally typed 'make' instead of 'git, and felt compelled
 # to then fix all the errors, so this kinda works now. It's not the
 # intended environment, so it make break in the future.
 ifneq (, $(findstring mingw, $(SYS)))

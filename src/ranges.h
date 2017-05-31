@@ -115,7 +115,7 @@ uint64_t
 rangelist_count(const struct RangeList *targets);
 
 /**
- * Given an index in a continous range of [0...count], pick a corresponding
+ * Given an index in a continuous range of [0...count], pick a corresponding
  * number (IP address or port) from a list of non-continuous ranges (not
  * necessarily starting from 0). In other words, given the two ranges
  *    10-19 50-69
