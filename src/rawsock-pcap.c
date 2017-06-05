@@ -3,20 +3,28 @@
  * Programer(s): Robert David Graham [rdg]
  */
 /*
-	PCAPLIVE
+	LIBPCAP INTERFACE
  
- This code links the 'libpcap' module at RUNTIME rather than LOADTIME.
- This allows us to:
- (a) run this program on capture files without needing libpcap installed.
- (b) give more user friendly diagnostic to the users who don't realize
- that they need to install libpcap separately.
+ This VERY MESSY code is a hack to load the 'libpcap' library 
+ at runtime rather than compile time.
  
- On Windows, this uses the LoadLibrary/GetProcAddress functions to
- load the library.
+ This reason for this mess is that it gets rid of a dependency
+ when compiling this project. Otherwise, developers would have
+ to download the 'libpcap-dev' dependency in order to build
+ this project.
  
- On Linux, this uses the dlopen/dlsym functions to do essentially
- the same thing.
- */
+ Almost every platform these days (OpenBSD, FreeBSD, macOS,
+ Debian, RedHat) comes with a "libpcap.so" library already
+ installed by default with a known BINARY interface. Thus,
+ we can include the data structures definitions directly
+ in this project, then load the library dynamically.
+ 
+ For those systems without libpcap.so already installed, the
+ user can either install those on the system, or compile
+ this project in "STATIC" mode, which will link to the 
+ static libpcap.a library.
+ 
+*/
 #include "logger.h"
 
 #if _MSC_VER==1200
@@ -241,31 +249,50 @@ static void *my_null(int x, ...)
 }
 static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
 {
+#ifdef STATICPCAP
+    return pcap_open_offline(fname, errbuf);
+#endif
     return my_null(2, fname, errbuf);
 }
 static int null_PCAP_SENDPACKET(pcap_t *p, const unsigned char *buf, int size)
 {
+#ifdef STATICPCAP
+    return pcap_sendpacket(p, buf, size);
+#endif
     my_null(3, p, buf, size);
 	return 0;
 }
 
 static const unsigned char *null_PCAP_NEXT(pcap_t *p, struct pcap_pkthdr *h)
 {
-	my_null(3, p, h);
+#ifdef STATICPCAP
+    return pcap_next(p, h);
+#endif
+    my_null(3, p, h);
     return 0;
 }
 static int null_PCAP_SETDIRECTION(pcap_t *p, pcap_direction_t d)
 {
+#ifdef STATICPCAP
+    return pcap_setdirection(p, d);
+#endif
 	my_null(2, p, d);
     return 0;
 }
 static const char *null_PCAP_DATALINK_VAL_TO_NAME(int dlt)
 {
+#ifdef STATICPCAP
+    return pcap_datalink_val_toName(dlt);
+#endif
 	my_null(1, dlt);
     return 0;
 }
 static void null_PCAP_PERROR(pcap_t *p, char *prefix)
 {
+#ifdef STATICPCAP
+    pcap_perror(p, prefix);
+    return;
+#endif
 	UNUSEDPARM(p);
 	fprintf(stderr, "%s\n", prefix);
     perror("pcap");
