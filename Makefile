@@ -13,7 +13,7 @@ endif
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt -ldl -lpthread
+LIBS = -lm -lrt -ldl -lpthread
 INCLUDES =
 FLAGS2 = 
 endif
@@ -23,7 +23,7 @@ endif
 # my regularly regression-test environment. That means at any point
 # in time, something might be minorly broken in Mac OS X.
 ifneq (, $(findstring darwin, $(SYS)))
-LIBS = -lpcap -lm 
+LIBS = -lm 
 INCLUDES = -I.
 FLAGS2 = 
 INSTALL_DATA = -pm755
@@ -37,7 +37,7 @@ endif
 # intended environment, so it make break in the future.
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -Ivs10/include
-LIBS = -L vs10/lib -lwpcap -lIPHLPAPI -lWs2_32
+LIBS = -L vs10/lib -lIPHLPAPI -lWs2_32
 FLAGS2 = -march=i686
 endif
 
@@ -47,20 +47,20 @@ endif
 # head with a hammer and want to feel a different sort of pain.
 ifneq (, $(findstring cygwin, $(SYS)))
 INCLUDES = -I.
-LIBS = -lwpcap
+LIBS = 
 FLAGS2 = 
 endif
 
 # OpenBSD
 ifneq (, $(findstring openbsd, $(SYS)))
-LIBS = -lpcap -lm -pthread
+LIBS = -lm -pthread
 INCLUDES = -I.
 FLAGS2 = 
 endif
 
 # FreeBSD
 ifneq (, $(findstring freebsd, $(SYS)))
-LIBS = -lpcap -lm -pthread
+LIBS = -lm -pthread
 INCLUDES = -I.
 FLAGS2 =
 endif
