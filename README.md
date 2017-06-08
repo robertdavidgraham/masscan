@@ -216,24 +216,24 @@ parameter, so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
-The are five primary formats for output. 
+By default, masscan produces fairly large text files, but it's easy 
+to convert them into any other format. There are five supported output formats:
 
-1. xml: The default option also prodces fairly large files, but is easy 
-	to import into anything. Just use the parameter `-oX <filename>`. 
+1. xml:  Just use the parameter `-oX <filename>`. 
 	Or, use the parameters `--output-format xml` and `--output-filename <filename>`.
 
-2. binary: This is the masscan builtin format. This produces much smaller files, so that
+2. binary: This is the masscan builtin format. It produces much smaller files, so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
 though. The command line option `--readscan` will read binary scan files.
 Using `--readscan` with the `-oX` option will produce a XML version of the 
 results file.
 
 3. grepable: This is an implementation of the Nmap -oG
-output and can be easily parsed by command-line tools. Just use the
+output that can be easily parsed by command-line tools. Just use the
 parameter `-oG <filename>`. Or, use the parameters `--output-format grepable` and
 `--output-filename <filename>`.
 
-4. json: This saves the results in a json format. Just use the
+4. json: This saves the results in JSON format. Just use the
 parameter `-oJ <filename>`. Or, use the parameters `--output-format json` and
 `--output-filename <filename>`.
 
