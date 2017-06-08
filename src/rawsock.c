@@ -658,6 +658,11 @@ rawsock_init_adapter(const char *adapter_name,
         int err;
         unsigned version;
 
+        if (PFRING.open == NULL) {
+            LOG(0, "pfring: library not found\n");
+            exit(1);
+        }
+
         /*
          * Open
          *
