@@ -1308,6 +1308,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
         ranges_from_file(&masscan->targets, value);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     } else if (EQUALS("infinite", name)) {
         masscan->is_infinite = 1;
     } else if (EQUALS("interactive", name)) {
