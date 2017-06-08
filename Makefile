@@ -87,7 +87,7 @@ tmp/%.o: src/%.c src/*.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
-SRC = $(wildcard src/*.c)
+SRC = $(sort $(wildcard src/*.c))
 OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC))))) 
 
 
