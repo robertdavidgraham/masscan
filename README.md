@@ -50,18 +50,17 @@ systems. Here's some additional build info:
 ## PF_RING
 
 To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
-adapter and a special driver known as "PF_RING DNA" from http://www.ntop.org/products/pf_ring/.
-Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
+adapter and a special driver known as ["PF_RING ZC" from ntop](http://www.ntop.org/products/packet-capture/pf_ring/pf_ring-zc-zero-copy/). Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
 you need to build the following components:
+
 * `libpfring.so` (installed in /usr/lib/libpfring.so)
 * `pf_ring.ko` (their kernel driver)
 * `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
 
 You don't need to build their version of `libpcap.so`.
 
-When Masscan detects that an adapter is named something like `dna0` instead
-of something like `eth0`, it'll automatically switch to PF_RING mode.
-
+When Masscan detects that an adapter is named something like `zc:enp1s0` instead
+of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
 
 ## Regression testing
 
