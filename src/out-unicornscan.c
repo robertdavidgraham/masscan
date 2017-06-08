@@ -80,7 +80,8 @@ unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(timestamp);
 
     if (ip_proto == 6) {
-      fprintf(fp,"TCP open\t%16s[%5d]\t\tfrom %u.%u.%u.%u  ttl %-3d\n",
+      fprintf(fp,"TCP %s\t%16s[%5d]\t\tfrom %u.%u.%u.%u  ttl %-3d\n",
+              status_string(status),
               tcp_services[port],
               port,
               (ip>>24)&0xFF,
