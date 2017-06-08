@@ -1957,15 +1957,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 exit(1);
                 break;
             case 'p':
-                if (argv[i+1]) {
-                    arg = argv[++i];
-                } else {
+                if (argv[i][2])
                     arg = argv[i]+2;
-                }
-                if (arg[0] == 0) { // if string is empty
+                else
+                    arg = argv[++i];
+                if (i >= argc || arg[0] == 0) { // if string is empty
                     fprintf(stderr, "%s: empty parameter\n", argv[i]);
-                }
-                masscan_set_parameter(masscan, "ports", arg);
+                } else
+                    masscan_set_parameter(masscan, "ports", arg);
                 break;
             case 'P':
                 switch (argv[i][2]) {
