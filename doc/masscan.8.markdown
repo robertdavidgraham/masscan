@@ -280,7 +280,7 @@ might be:
 
 	# targets
 	range = 10.0.0.0/8,192.168.0.0/16
-	range = 172.16.0.0/14
+	range = 172.16.0.0/12
 	ports = 20-25,80,U:53
 	ping = true
 

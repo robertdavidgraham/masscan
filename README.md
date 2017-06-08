@@ -325,7 +325,7 @@ scan all "private" IP addresses. That would be the table of ranges like:
     
     192.168.0.0/16
     10.0.0.0/8
-    172.16.0.0/20
+    172.16.0.0/12
 
 In this example, the first 64k indexes are appended to 192.168.x.x to form
 the target address. Then, the next 16-million are appended to 10.x.x.x.
