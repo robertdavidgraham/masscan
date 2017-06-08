@@ -1486,7 +1486,7 @@ masscan_set_parameter(struct Masscan *masscan,
         if (offset < max_offset) {
             while (offset < max_offset && isspace(value[offset]))
                 offset++;
-            if (offset+1 < max_offset && value[offset] == ';' && isdigit(value[offset+1]&0xFF)) {
+            if (offset+1 < max_offset && value[offset] == ':' && isdigit(value[offset+1]&0xFF)) {
                 port = strtoul(value+offset+1, 0, 0);
                 if (port > 65535 || port == 0) {
                     LOG(0, "FAIL: bad redis port: %s\n", value+offset+1);
