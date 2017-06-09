@@ -1059,10 +1059,11 @@ main_scan(struct Masscan *masscan)
      */
     if (masscan->script.name) {
         unsigned i;
+		unsigned is_error;
         script = script_lookup(masscan->script.name);
         
         /* If no ports specified on command-line, grab default ports */
-        unsigned is_error = 0;
+        is_error = 0;
         if (rangelist_count(&masscan->ports) == 0)
             rangelist_parse_ports(&masscan->ports, script->ports, &is_error);
         
