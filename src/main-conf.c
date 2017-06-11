@@ -302,6 +302,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
     if (masscan->is_banners)
         fprintf(fp, "banners = true\n");
+    if (masscan->is_arp)
+        fprintf(fp, "arp = true\n");
+    if (masscan->is_noreset)
+        fprintf(fp, "noreset = true\n");
 
     fprintf(fp, "# ADAPTER SETTINGS\n");
     if (masscan->nic_count == 0)
@@ -654,6 +658,41 @@ parseInt(const char *str)
         str++;
     }
     return result;
+}
+
+static unsigned
+parseBoolean(const char *str)
+{
+    if (str == NULL || str[0] == 0)
+        return 1;
+    if (isdigit(str[0])) {
+        if (strtoul(str,0,0) == 0)
+            return 0;
+        else
+            return 1;
+    }
+    switch (str[0]) {
+    case 't':
+    case 'T':
+        return 1;
+    case 'f':
+    case 'F':
+        return 0;
+    case 'o':
+    case 'O':
+        if (str[1] == 'f' || str[1] == 'F')
+            return 0;
+        else
+            return 1;
+        break;
+    case 'Y':
+    case 'y':
+        return 1;
+    case 'n':
+    case 'N':
+        return 0;
+    }
+    return 1;
 }
 
 /***************************************************************************
@@ -1058,6 +1097,11 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
         masscan->is_arp = 1; /* needs additional flag */
         LOG(5, "--arpscan\n");
+    } else if (EQUALS("noreset", name)) {
+        if (value && value[0])
+            masscan->is_noreset = parseBoolean(value);
+        else
+            masscan->is_noreset = 1;
     } else if (EQUALS("bpf", name)) {
         size_t len = strlen(value) + 1;
         if (masscan->bpf_filter)
@@ -1700,6 +1744,7 @@ is_singleton(const char *name)
         "banners", "banner", "nobanners", "nobanner",
         "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
         "arp",  "infinite", "nointeractive", "interactive", "status", "nostatus",
+        "arpscan", "noreset", 
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;

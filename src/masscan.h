@@ -167,6 +167,7 @@ struct Masscan
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
     unsigned is_arp:1;          /* --arp */
+    unsigned is_noreset:1;      /* --noreset */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */

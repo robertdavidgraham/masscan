@@ -400,7 +400,7 @@ infinite:
                 port_me = src_port;
             }
             cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy);
-//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
+
             /*
              * SEND THE PROBE
              *  This is sorta the entire point of the program, but little
@@ -471,8 +471,6 @@ infinite:
      * Wait until the receive thread realizes the scan is over
      */
     LOG(1, "THREAD: xmit done, waiting for receive thread to realize this\n");
-    /*while (!is_tx_done)
-        pixie_mssleep(1);*/
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -758,8 +756,6 @@ receive_thread(void *v)
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
             continue;
-//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
-
 
         /*
          * Handle non-TCP protocols
@@ -943,6 +939,7 @@ receive_thread(void *v)
             if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me))
                 continue;
 
+            /* keep statistics on number received */
             if (TCP_IS_SYNACK(px, parsed.transport_offset))
                 (*status_synack_count)++;
 
@@ -965,7 +962,7 @@ receive_thread(void *v)
              * Send RST so other side isn't left hanging (only doing this in
              * complete stateless mode where we aren't tracking banners)
              */
-            if (tcpcon == NULL)
+            if (tcpcon == NULL && !masscan->is_noreset)
                 tcp_send_RST(
                     &parms->tmplset->pkts[Proto_TCP],
                     parms->packet_buffers,
