@@ -184,7 +184,7 @@ pixie_begin_thread(
 
     typedef void *(*PTHREADFUNC)(void*);
     pthread_t thread_id = 0;
-    (size_t)pthread_create(
+    pthread_create(
                           &thread_id,
                           NULL,
                           (PTHREADFUNC)worker_thread,

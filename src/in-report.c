@@ -272,7 +272,7 @@ struct Names {
 };
 
 static struct SMACK *global_xnames;
-void
+static void
 xname_init(void)
 {
     unsigned i;

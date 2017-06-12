@@ -339,7 +339,7 @@ static int null_PCAP_SENDQUEUE_QUEUE(pcap_send_queue *queue,
  * be used to process offline content, and to provide more helpful
  * messages to people who don't realize they need to install PCAP.
  */
-void pcap_init(void)
+int pcap_init(void)
 {
     struct PcapFunctions *pl = &PCAP;
 #ifdef WIN32
@@ -475,8 +475,10 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
     pl->can_transmit = null_CAN_TRANSMIT;
     
     if (!pl->func_err)
-    pl->is_available = 1;
+        pl->is_available = 1;
     else
-    pl->is_available = 0;
+        pl->is_available = 0;
+    
+    return 0;
 }
 

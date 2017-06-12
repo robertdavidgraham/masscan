@@ -966,12 +966,12 @@ smack_stage4_make_final_table(struct SMACK *smack)
      * Allocate table:
      * rows*columns
      */
-    table = (transition_t*)malloc(sizeof(transition_t*) * row_count * column_count);
+    table = malloc(sizeof(transition_t) * row_count * column_count);
     if (table == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(table, 0, sizeof(transition_t*) * row_count * column_count);
+    memset(table, 0, sizeof(transition_t) * row_count * column_count);
 
 
     for (row=0; row<row_count; row++) {

@@ -308,14 +308,15 @@ duplicate_string(const char *str)
         length = strlen(str);
 
     /* Allocate memory for the string */
-    result = (char*)malloc(length + 1);
+    result = malloc(length + 1);
     if (result == 0) {
         fprintf(stderr, "output: out of memory error\n");
         exit(1);
     }
 
     /* Copy the string */
-    memcpy(result, str, length+1);
+    if (str)
+        memcpy(result, str, length+1);
     result[length] = '\0';
 
     return result;
@@ -512,7 +513,7 @@ output_do_rotate(struct Output *out, int is_closing)
     int err;
 
     /* Don't do anything if there is no file */
-    if (out->fp == NULL)
+    if (out == NULL || out->fp == NULL)
         return NULL;
 
     /* Make sure that all output has been flushed to the file */
@@ -537,7 +538,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen(filename)
                             + 1  /* - */
                             + 1; /* nul */
-    new_filename = (char*)malloc(new_filename_size);
+    new_filename = malloc(new_filename_size);
     if (new_filename == NULL) {
         LOG(0, "rotate: out of memory error\n");
         return out->fp;
@@ -550,6 +551,7 @@ output_do_rotate(struct Output *out, int is_closing)
         err = localtime_s(&tm, &out->rotate.last);
     }
     if (err != 0) {
+        free(new_filename);
         perror("gmtime(): file rotation ended");
         return out->fp;
     }

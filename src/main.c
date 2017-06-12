@@ -37,6 +37,7 @@
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
+#include "rawsock-pcap.h"       /* dynamically load libpcap library */
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -1440,7 +1441,6 @@ main_scan(struct Masscan *masscan)
 
 
 
-void pcap_init(void);
 
 /***************************************************************************
  ***************************************************************************/
@@ -1519,7 +1519,8 @@ int main(int argc, char *argv[])
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
-    pcap_init();
+    if (pcap_init() != 0)
+        LOG(2, "libpcap: failed to load\n");
     rawsock_init();
 
     /* Init some protocol parser data structures */
