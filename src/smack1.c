@@ -115,6 +115,8 @@
 #include "pixie-timer.h"
 #if defined(_MSC_VER)
 #include <intrin.h>
+#elif defined(__llvm__)
+#include <x86intrin.h>
 #elif defined(__GNUC__)
 static __inline__ unsigned long long __rdtsc(void)
 {
