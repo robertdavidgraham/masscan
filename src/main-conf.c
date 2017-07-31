@@ -23,6 +23,10 @@
 #include "script.h"
 #include "masscan-app.h"
 
+#if defined(__linux__)
+#include "posix-lock.h"
+#endif
+
 #include <ctype.h>
 #include <limits.h>
 
@@ -451,6 +455,11 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
     fprintf(fp, "%scapture = ticketbleed\n", masscan->is_capture_ticketbleed?"":"no");
+
+#if defined(__linux__) && defined(__GNUC__)
+    if (masscan->lockfile)
+        fprintf(fp,"lockfile = %s\n", masscan->lockfile);
+#endif
 
     /*
      *  TCP payloads
@@ -1370,7 +1379,16 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("log-errors", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
-    } else if (EQUALS("min-packet", name) || EQUALS("min-pkt", name)) {
+    }
+#if defined(__linux__)
+    else if (EQUALS("lockfile",name)) {
+        /* Get a lock on an existing file, a failsafe for programmatic use of masscan */
+        /* acquire_posix_lock() will exit if it fails so no return check is necessary */
+        masscan->lockfile = (unsigned char *)strdup(value);
+        acquire_posix_lock(value);
+    } 
+#endif
+     else if (EQUALS("min-packet", name) || EQUALS("min-pkt", name)) {
         masscan->min_packet_size = (unsigned)parseInt(value);
     } else if (EQUALS("max-retries", name)) {
         masscan_set_parameter(masscan, "retries", value);
@@ -1897,6 +1915,20 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     arg = argv[++i];
                 masscan_set_parameter(masscan, "adapter", arg);
                 break;
+#if defined(__linux__)
+            case 'l':
+                /* Acquire lock on file, exit on fail */
+                if (argv[i][2])
+                    arg = argv[i]+2;
+                else
+                    arg = argv[++i];
+                /* 
+                 * this will short-circuit command line parsing, which might be annoying
+                 * when using --echo
+                 */
+                masscan_set_parameter(masscan, "lockfile", arg);
+                break;
+#endif
             case 'f':
                 fprintf(stderr, "nmap(%s): fragmentation not yet supported\n", argv[i]);
                 exit(1);
