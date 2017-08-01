@@ -4,6 +4,13 @@
 #include "string_s.h"
 #include <ctype.h>
 
+/* Used to keep state to know when to not place a comma */
+static int json_stream_started = 0;
+
+#define SEPARATE_ENTRIES()     if (json_stream_started) \
+        fprintf(fp, ",\n"); \
+    else \
+        json_stream_started = 1
 
 /****************************************************************************
  ****************************************************************************/
@@ -21,7 +28,7 @@ static void
 json_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, "]\n"); // enclose the atomic {}'s into an []
+    fprintf(fp, "\n]\n"); // enclose the atomic {}'s into an []
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
@@ -35,6 +42,8 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     UNUSEDPARM(out);
     //UNUSEDPARM(timestamp);
 
+    SEPARATE_ENTRIES();
+
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
@@ -47,7 +56,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 reason_string(reason, reason_buffer, sizeof(reason_buffer)),
                 ttl
             );
-    fprintf(fp, "},\n");
+    fprintf(fp, "}");
 
 
 }
@@ -101,6 +110,8 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ttl);
     //UNUSEDPARM(timestamp);
 
+    SEPARATE_ENTRIES();
+
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
@@ -111,7 +122,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
             masscan_app_to_string(proto),
             normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
-    fprintf(fp, "},\n");
+    fprintf(fp, "}");
 
     UNUSEDPARM(out);
 
