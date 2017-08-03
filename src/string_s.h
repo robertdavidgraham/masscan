@@ -55,8 +55,8 @@
 
 const char *strerror_x(int x);
 
-#if defined(_MSC_VER) && (_MSC_VER == 1900)
-/*Visual Studio 2015*/
+#if defined(_MSC_VER) && ((_MSC_VER == 1900)|| (_MSC_VER == 1800) ||(_MSC_VER == 1910))
+/*Visual Studio 2015 , compiles on visual studio 2017*/
 # include <stdio.h>
 # include <string.h>
 # define strcasecmp     _stricmp
