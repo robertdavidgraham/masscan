@@ -50,18 +50,17 @@ systems. Here's some additional build info:
 ## PF_RING
 
 To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
-adapter and a special driver known as "PF_RING DNA" from http://www.ntop.org/products/pf_ring/.
-Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
+adapter and a special driver known as ["PF_RING ZC" from ntop](http://www.ntop.org/products/packet-capture/pf_ring/pf_ring-zc-zero-copy/). Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
 you need to build the following components:
+
 * `libpfring.so` (installed in /usr/lib/libpfring.so)
 * `pf_ring.ko` (their kernel driver)
 * `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
 
 You don't need to build their version of `libpcap.so`.
 
-When Masscan detects that an adapter is named something like `dna0` instead
-of something like `eth0`, it'll automatically switch to PF_RING mode.
-
+When Masscan detects that an adapter is named something like `zc:enp1s0` instead
+of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
 
 ## Regression testing
 
@@ -144,7 +143,7 @@ On Mac OS X and BSD, it might look like this:
 	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
 	
 Windows doesn't respond with RST packets, so neither of these techniques
-are necessary. However, masscan is still desigend to work best using its
+are necessary. However, masscan is still designed to work best using its
 own IP address, so you should run that way when possible, even when its
 not strictly necessary.
 
@@ -154,7 +153,7 @@ which is just a form of banner checking.
 
 ## How to scan the entire Internet
 
-While useful for smaller, internal networks, the program is designed really
+While useful for smaller, internal networks, the program is really designed
 with the entire Internet in mind. It might look something like this:
 
 	# masscan 0.0.0.0/0 -p0-65535
@@ -217,24 +216,24 @@ parameter, so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
-The are five primary formats for output. 
+By default, masscan produces fairly large text files, but it's easy 
+to convert them into any other format. There are five supported output formats:
 
-1. xml: The default option also prodces fairly large files, but is easy 
-	to import into anything. Just use the parameter `-oX <filename>`. 
+1. xml:  Just use the parameter `-oX <filename>`. 
 	Or, use the parameters `--output-format xml` and `--output-filename <filename>`.
 
-2. binary: This is the masscan builtin format. This produces much smaller files, so that
+2. binary: This is the masscan builtin format. It produces much smaller files, so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
 though. The command line option `--readscan` will read binary scan files.
 Using `--readscan` with the `-oX` option will produce a XML version of the 
 results file.
 
 3. grepable: This is an implementation of the Nmap -oG
-output and can be easily parsed by command-line tools. Just use the
+output that can be easily parsed by command-line tools. Just use the
 parameter `-oG <filename>`. Or, use the parameters `--output-format grepable` and
 `--output-filename <filename>`.
 
-4. json: This saves the results in a json format. Just use the
+4. json: This saves the results in JSON format. Just use the
 parameter `-oJ <filename>`. Or, use the parameters `--output-format json` and
 `--output-filename <filename>`.
 
@@ -326,7 +325,7 @@ scan all "private" IP addresses. That would be the table of ranges like:
     
     192.168.0.0/16
     10.0.0.0/8
-    172.16.0.0/20
+    172.16.0.0/12
 
 In this example, the first 64k indexes are appended to 192.168.x.x to form
 the target address. Then, the next 16-million are appended to 10.x.x.x.

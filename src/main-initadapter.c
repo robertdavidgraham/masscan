@@ -25,6 +25,9 @@ masscan_initialize_adapter(
     char *ifname;
     char ifname2[256];
     unsigned adapter_ip = 0;
+    
+    if (masscan == NULL)
+        return -1;
 
     LOG(1, "initializing adapter\n");
 

@@ -247,6 +247,22 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         return;
     }
 
+    if (name_equals(name, "ticketbleed")) {
+        unsigned i;
+
+        /* Change the hello message to including negotiating the use of 
+         * the "heartbeat" extension */
+        banner_ssl.hello = ssl_hello(ssl_hello_ticketbleed_template);
+        banner_ssl.hello_length = ssl_hello_size(banner_ssl.hello);
+        tcpcon->banner1->is_ticketbleed = 1;
+
+        for (i=0; i<65535; i++) {
+            banner1->tcp_payloads[i] = &banner_ssl;
+        }
+
+        return;
+    }
+
     /*
      * 2014-10-16: scan for SSLv3 servers (POODLE)
      */
@@ -308,11 +324,13 @@ void
 tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
     unsigned is_capture_html,
-    unsigned is_capture_heartbleed)
+    unsigned is_capture_heartbleed,
+	unsigned is_capture_ticketbleed)
 {
     tcpcon->banner1->is_capture_cert = is_capture_cert;
     tcpcon->banner1->is_capture_html = is_capture_html;
     tcpcon->banner1->is_capture_heartbleed = is_capture_heartbleed;
+    tcpcon->banner1->is_capture_ticketbleed = is_capture_ticketbleed;
 }
 
 /***************************************************************************
@@ -702,7 +720,7 @@ tcpcon_send_packet(
     if (ctrl & CTRL_SMALL_WINDOW) {
         tcp_set_window(response->px, response->length, 600);
     }
-    tcp_set_window(response->px, response->length, 600);
+    //tcp_set_window(response->px, response->length, 600);
 
     /* If we have payload, then:
      * 1. remember the payload so we can resend it

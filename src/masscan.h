@@ -167,17 +167,19 @@ struct Masscan
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
     unsigned is_arp:1;          /* --arp */
+    unsigned is_noreset:1;      /* --noreset */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
     unsigned is_capture_heartbleed:1; /* --capture heartbleed */
+    unsigned is_capture_ticketbleed:1; /* --capture ticket */
     unsigned is_test_csv:1;     /* (temporary testing feature) */
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
+    unsigned is_ticketbleed:1;   /* --ticketbleed, scan for this vuln */
     unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
         
-
     /**
      * Wait forever for responses, instead of the default 10 seconds
      */
@@ -295,6 +297,11 @@ struct Masscan
          */
         unsigned is_interactive:1;
         
+        /**
+        * Print state updates
+        */
+        unsigned is_status_updates:1;
+
         struct {
             /**
              * When we should rotate output into the target directory

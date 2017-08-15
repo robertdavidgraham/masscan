@@ -37,6 +37,7 @@
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
+#include "rawsock-pcap.h"       /* dynamically load libpcap library */
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -77,11 +78,11 @@
 /*
  * yea I know globals suck
  */
-unsigned control_c_pressed = 0;
-static unsigned control_c_pressed_again = 0;
+unsigned volatile is_tx_done = 0;
+unsigned volatile is_rx_done = 0;
 time_t global_now;
 
-
+uint64_t usec_start;
 
 /***************************************************************************
  * We create a pair of transmit/receive threads for each network adapter.
@@ -157,6 +158,9 @@ struct ThreadPair {
     uint64_t *total_synacks;
     uint64_t *total_tcbs;
     uint64_t *total_syns;
+
+    size_t thread_handle_xmit;
+    size_t thread_handle_recv;
 };
 
 
@@ -279,7 +283,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
-    LOG(1, "xmit: starting transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
@@ -325,7 +329,7 @@ infinite:
     /* -----------------
      * the main loop
      * -----------------*/
-    LOG(3, "xmit: starting main loop: [%llu..%llu]\n", start, end);
+    LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
     for (i=start; i<end; ) {
         uint64_t batch_size;
 
@@ -397,7 +401,7 @@ infinite:
                 port_me = src_port;
             }
             cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy);
-//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
+
             /*
              * SEND THE PROBE
              *  This is sorta the entire point of the program, but little
@@ -441,7 +445,7 @@ infinite:
         /* If the user pressed <ctrl-c>, then we need to exit. but, in case
          * the user wants to --resume the scan later, we save the current
          * state in a file */
-        if (control_c_pressed) {
+        if (is_tx_done) {
             break;
         }
     }
@@ -450,7 +454,7 @@ infinite:
      * --infinite
      *  For load testing, go around and do this again
      */
-    if (masscan->is_infinite && !control_c_pressed) {
+    if (masscan->is_infinite && !is_tx_done) {
         seed++;
         repeats++;
         goto infinite;
@@ -467,9 +471,7 @@ infinite:
     /*
      * Wait until the receive thread realizes the scan is over
      */
-    LOG(1, "Transmit thread done, waiting for receive thread to realize this\n");
-    while (!control_c_pressed)
-        pixie_usleep(1000);
+    LOG(1, "THREAD: xmit done, waiting for receive thread to realize this\n");
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -477,7 +479,7 @@ infinite:
      * packets to arrive. Pressing <ctrl-c> a second time will exit this
      * prematurely.
      */
-    while (!control_c_pressed_again) {
+    while (!is_rx_done) {
         unsigned k;
         uint64_t batch_size;
 
@@ -506,7 +508,7 @@ infinite:
 
     /* Thread is about to exit */
     parms->done_transmitting = 1;
-    LOG(1, "xmit: stopping transmit thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: xmit: stopping thread #%u\n", parms->nic_index);
 }
 
 
@@ -555,7 +557,7 @@ receive_thread(void *v)
     *status_tcb_count = 0;
     parms->total_tcbs = status_tcb_count;
 
-    LOG(1, "recv: start receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: starting thread #%u\n", parms->nic_index);
 
     /* Lock this thread to a CPU. Transmit threads are on even CPUs,
      * receive threads on odd CPUs */
@@ -612,7 +614,8 @@ receive_thread(void *v)
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
                 masscan->is_capture_html,
-                masscan->is_capture_heartbleed);
+                masscan->is_capture_heartbleed,
+				masscan->is_capture_ticketbleed);
         if (masscan->http_user_agent_length)
             tcpcon_set_parameter(   tcpcon,
                                     "http-user-agent",
@@ -621,6 +624,11 @@ receive_thread(void *v)
         if (masscan->is_heartbleed)
             tcpcon_set_parameter(   tcpcon,
                                  "heartbleed",
+                                 1,
+                                 "1");
+        if (masscan->is_ticketbleed)
+            tcpcon_set_parameter(   tcpcon,
+                                 "ticketbleed",
                                  1,
                                  "1");
         if (masscan->is_poodle_sslv3)
@@ -661,7 +669,7 @@ receive_thread(void *v)
      * wait until transmitter thread is done then go to the end
      */
     if (masscan->is_offline) {
-        while (!control_c_pressed_again)
+        while (!is_rx_done)
             pixie_usleep(10000);
         parms->done_receiving = 1;
         goto end;
@@ -671,8 +679,8 @@ receive_thread(void *v)
      * Receive packets. This is where we catch any responses and print
      * them to the terminal.
      */
-    LOG(1, "begin receive thread\n");
-    while (!control_c_pressed_again) {
+    LOG(1, "THREAD: recv: starting main loop\n");
+    while (!is_rx_done) {
         int status;
         unsigned length;
         unsigned secs;
@@ -749,8 +757,6 @@ receive_thread(void *v)
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me))
             continue;
-//printf("0x%08x 0x%08x 0x%04x 0x%08x 0x%04x    \n", cookie, ip_them, port_them, ip_me, port_me);
-
 
         /*
          * Handle non-TCP protocols
@@ -934,6 +940,7 @@ receive_thread(void *v)
             if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me))
                 continue;
 
+            /* keep statistics on number received */
             if (TCP_IS_SYNACK(px, parsed.transport_offset))
                 (*status_synack_count)++;
 
@@ -956,7 +963,7 @@ receive_thread(void *v)
              * Send RST so other side isn't left hanging (only doing this in
              * complete stateless mode where we aren't tracking banners)
              */
-            if (tcpcon == NULL)
+            if (tcpcon == NULL && !masscan->is_noreset)
                 tcp_send_RST(
                     &parms->tmplset->pkts[Proto_TCP],
                     parms->packet_buffers,
@@ -969,7 +976,7 @@ receive_thread(void *v)
     }
 
 
-    LOG(1, "recv: end receive thread #%u\n", parms->nic_index);
+    LOG(1, "THREAD: recv: stopping thread #%u\n", parms->nic_index);
 
     /*
      * cleanup
@@ -1005,6 +1012,8 @@ end:
  ***************************************************************************/
 static void control_c_handler(int x)
 {
+    static unsigned control_c_pressed = 0;
+    static unsigned control_c_pressed_again = 0;
     if (control_c_pressed == 0) {
         fprintf(stderr,
                 "waiting several seconds to exit..."
@@ -1012,8 +1021,11 @@ static void control_c_handler(int x)
                 );
         fflush(stderr);
         control_c_pressed = 1+x;
-    } else
+        is_tx_done = control_c_pressed;
+    } else {
         control_c_pressed_again = 1;
+        is_rx_done = control_c_pressed_again;
+    }
 
 }
 
@@ -1045,16 +1057,19 @@ main_scan(struct Masscan *masscan)
      */
     if (masscan->script.name) {
         unsigned i;
+		unsigned is_error;
         script = script_lookup(masscan->script.name);
         
         /* If no ports specified on command-line, grab default ports */
+        is_error = 0;
         if (rangelist_count(&masscan->ports) == 0)
-            rangelist_parse_ports(&masscan->ports, script->ports, 0);
+            rangelist_parse_ports(&masscan->ports, script->ports, &is_error);
         
         /* Kludge: change normal port range to script range */
         for (i=0; i<masscan->ports.count; i++) {
             struct Range *r = &masscan->ports.list[i];
             r->begin = (r->begin&0xFFFF) | Templ_Script;
+            r->end = (r->end & 0xFFFF) | Templ_Script;
         }
     }
     
@@ -1110,6 +1125,9 @@ main_scan(struct Masscan *masscan)
      * hundreds of subranges. This scans through them faster. */
     picker = rangelist_pick2_create(&masscan->targets);
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+  __AFL_INIT();
+#endif
 
     /*
      * Start scanning threats for each adapter
@@ -1223,14 +1241,14 @@ main_scan(struct Masscan *masscan)
          * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
          * RATE OF SPEED.
          */
-        pixie_begin_thread(transmit_thread, 0, parms);
+        parms->thread_handle_xmit = pixie_begin_thread(transmit_thread, 0, parms);
 
 
         /*
          * Start the MATCHING receive thread. Transmit and receive threads
          * come in matching pairs.
          */
-        pixie_begin_thread(receive_thread, 0, parms);
+        parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
 
     }
 
@@ -1245,18 +1263,31 @@ main_scan(struct Masscan *masscan)
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
-        LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
-        LOG(0, "Initiating SYN Stealth Scan\n");
-        LOG(0, "Scanning %u hosts [%u port%s/host]\n",
-            (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
+
+        if (count_ports == 1 && \
+            masscan->ports.list->begin == Templ_ICMP_echo && \
+            masscan->ports.list->end == Templ_ICMP_echo)
+            { /* ICMP only */
+                LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
+                LOG(0, "Initiating ICMP Echo Scan\n");
+                LOG(0, "Scanning %u hosts\n",(unsigned)count_ips);
+             }
+        else /* This could actually also be a UDP only or mixed UDP/TCP/ICMP scan */
+            {
+                LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+                LOG(0, "Initiating SYN Stealth Scan\n");
+                LOG(0, "Scanning %u hosts [%u port%s/host]\n",
+                    (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
+            }
     }
 
     /*
      * Now wait for <ctrl-c> to be pressed OR for threads to exit
      */
+    LOG(1, "THREAD: status: starting thread\n");
     status_start(&status);
     status.is_infinite = masscan->is_infinite;
-    while (!control_c_pressed) {
+    while (!is_tx_done && masscan->output.is_status_updates) {
         unsigned i;
         double rate = 0;
         uint64_t total_tcbs = 0;
@@ -1284,16 +1315,17 @@ main_scan(struct Masscan *masscan)
 
         if (min_index >= range && !masscan->is_infinite) {
             /* Note: This is how we can tell the scan has ended */
-            control_c_pressed = 1;
+            is_tx_done = 1;
         }
 
         /*
          * update screen about once per second with statistics,
          * namely packets/second.
          */
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            0);
+        if (masscan->output.is_status_updates)
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                0);
 
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1345,33 +1377,53 @@ main_scan(struct Masscan *masscan)
         }
 
 
-        status_print(&status, min_index, range, rate,
-            total_tcbs, total_synacks, total_syns,
-            masscan->wait - (time(0) - now));
 
         if (time(0) - now >= masscan->wait)
-            control_c_pressed_again = 1;
+            is_rx_done = 1;
 
-        for (i=0; i<masscan->nic_count; i++) {
-            struct ThreadPair *parms = &parms_array[i];
+        if (masscan->output.is_status_updates) {
+            status_print(&status, min_index, range, rate,
+                total_tcbs, total_synacks, total_syns,
+                masscan->wait - (time(0) - now));
 
-            transmit_count += parms->done_transmitting;
-            receive_count += parms->done_receiving;
+            for (i=0; i<masscan->nic_count; i++) {
+                struct ThreadPair *parms = &parms_array[i];
 
+                transmit_count += parms->done_transmitting;
+                receive_count += parms->done_receiving;
+
+            }
+
+            pixie_mssleep(250);
+
+            if (transmit_count < masscan->nic_count)
+                continue;
+            is_tx_done = 1;
+            is_rx_done = 1;
+            if (receive_count < masscan->nic_count)
+                continue;
+
+        } else {
+            /* [AFL-fuzz]
+             * Join the threads, which doesn't allow us to print out 
+             * status messages, but allows us to exit cleaningly without
+             * any waiting */
+            for (i=0; i<masscan->nic_count; i++) {
+                struct ThreadPair *parms = &parms_array[i];
+
+                pixie_thread_join(parms->thread_handle_xmit);
+                parms->thread_handle_xmit = 0;
+                pixie_thread_join(parms->thread_handle_recv);
+                parms->thread_handle_recv = 0;
+            }
+            is_tx_done = 1;
+            is_rx_done = 1;
         }
 
-        pixie_mssleep(100);
-
-        if (transmit_count < masscan->nic_count)
-            continue;
-        control_c_pressed = 1;
-        control_c_pressed_again = 1;
-        if (receive_count < masscan->nic_count)
-            continue;
         break;
     }
 
-    LOG(1, "EXITING main thread\n");
+    LOG(1, "THREAD: status: stopping thread\n");
 
     /*
      * Now cleanup everything
@@ -1379,6 +1431,11 @@ main_scan(struct Masscan *masscan)
     status_finish(&status);
     rangelist_pick2_destroy(picker);
 
+    if (!masscan->output.is_status_updates) {
+        uint64_t usec_now = pixie_gettime();
+
+        printf("%u milliseconds ellapsed\n", (unsigned)((usec_now - usec_start)/1000));
+    }
     return 0;
 }
 
@@ -1391,7 +1448,8 @@ int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
     unsigned i;
-
+    
+    usec_start = pixie_gettime();
 #if defined(WIN32)
     {WSADATA x; WSAStartup(0x101, &x);}
 #endif
@@ -1399,7 +1457,15 @@ int main(int argc, char *argv[])
     global_now = time(0);
 
     /* Set system to report debug information on crash */
-    pixie_backtrace_init(argv[0]);
+    {
+        int is_backtrace = 1;
+        for (i=1; i<(unsigned)argc; i++) {
+            if (strcmp(argv[i], "--nobacktrace") == 0)
+                is_backtrace = 0;
+        }
+        if (is_backtrace)
+            pixie_backtrace_init(argv[0]);
+    }
     
     /*
      * Initialize those defaults that aren't zero
@@ -1407,6 +1473,7 @@ int main(int argc, char *argv[])
     memset(masscan, 0, sizeof(*masscan));
     masscan->blackrock_rounds = 4;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
+    masscan->output.is_status_updates = 1; /* default: show status updates */
     masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
@@ -1452,6 +1519,8 @@ int main(int argc, char *argv[])
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
+    if (pcap_init() != 0)
+        LOG(2, "libpcap: failed to load\n");
     rawsock_init();
 
     /* Init some protocol parser data structures */
@@ -1504,10 +1573,10 @@ int main(int argc, char *argv[])
          */
         return main_scan(masscan);
 
-        case Operation_ListScan:
-            /* Create a randomized list of IP addresses */
-            main_listscan(masscan);
-            return 0;
+    case Operation_ListScan:
+        /* Create a randomized list of IP addresses */
+        main_listscan(masscan);
+        return 0;
 
     case Operation_List_Adapters:
         /* List the network adapters we might want to use for scanning */

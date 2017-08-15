@@ -282,6 +282,9 @@
     <ClCompile Include="..\src\script-sslv3.c">
       <Filter>Source Files\scripts</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rawsock-pcap.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -481,6 +484,9 @@
     </ClInclude>
     <ClInclude Include="..\src\in-report.h">
       <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-pcap.h">
+      <Filter>Source Files\rawsock</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

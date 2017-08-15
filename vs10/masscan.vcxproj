@@ -85,6 +85,7 @@
     <ClCompile Include="..\src\rawsock-getip.c" />
     <ClCompile Include="..\src\rawsock-getmac.c" />
     <ClCompile Include="..\src\rawsock-getroute.c" />
+    <ClCompile Include="..\src\rawsock-pcap.c" />
     <ClCompile Include="..\src\rawsock-pcapfile.c" />
     <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
@@ -156,6 +157,7 @@
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\ranges.h" />
+    <ClInclude Include="..\src\rawsock-pcap.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
@@ -225,11 +227,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -249,11 +253,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>false</EnablePREfast>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lib;</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -264,12 +271,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lib\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>setargv.obj;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

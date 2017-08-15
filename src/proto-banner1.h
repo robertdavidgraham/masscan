@@ -17,7 +17,9 @@ struct Banner1
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
     unsigned is_capture_heartbleed:1;
+    unsigned is_capture_ticketbleed:1;
     unsigned is_heartbleed:1;
+    unsigned is_ticketbleed:1;
     unsigned is_poodle_sslv3:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];

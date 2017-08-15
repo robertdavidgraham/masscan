@@ -72,7 +72,7 @@ static int crypto_auth( unsigned char *out, const unsigned char *in, unsigned lo
   for ( ; in != end; in += 8 )
   {
     m = U8TO64_LE( in );
-#ifdef DEBUG
+#ifdef xxxDEBUG
     printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 );
     printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 );
     printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 );
@@ -104,7 +104,7 @@ static int crypto_auth( unsigned char *out, const unsigned char *in, unsigned lo
   case 0: break;
   }
 
-#ifdef DEBUG
+#ifdef xxxDEBUG
   printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 );
   printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 );
   printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 );
@@ -115,7 +115,7 @@ static int crypto_auth( unsigned char *out, const unsigned char *in, unsigned lo
   SIPROUND;
   SIPROUND;
   v0 ^= b;
-#ifdef DEBUG
+#ifdef xxxDEBUG
   printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 );
   printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 );
   printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 );
