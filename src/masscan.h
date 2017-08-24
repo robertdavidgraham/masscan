@@ -177,8 +177,9 @@ struct Masscan
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
-    unsigned is_ticketbleed:1;   /* --ticketbleed, scan for this vuln */
+    unsigned is_ticketbleed:1;  /* --ticketbleed, scan for this vuln */
     unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
+    unsigned is_hello_ssl:1;    /* --ssl, use SSL HELLO on all ports */
         
     /**
      * Wait forever for responses, instead of the default 10 seconds

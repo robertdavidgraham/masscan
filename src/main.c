@@ -621,6 +621,11 @@ receive_thread(void *v)
                                     "http-user-agent",
                                     masscan->http_user_agent_length,
                                     masscan->http_user_agent);
+        if (masscan->is_hello_ssl)
+            tcpcon_set_parameter(   tcpcon,
+                                 "hello",
+                                 1,
+                                 "ssl");
         if (masscan->is_heartbleed)
             tcpcon_set_parameter(   tcpcon,
                                  "heartbleed",

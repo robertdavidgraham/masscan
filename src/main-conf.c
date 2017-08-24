@@ -451,6 +451,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
     fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
     fprintf(fp, "%scapture = ticketbleed\n", masscan->is_capture_ticketbleed?"":"no");
+    
+    if (masscan->is_hello_ssl) {
+        fprintf(fp, "hello = ssl\n");
+    }
 
     /*
      *  TCP payloads
@@ -1108,6 +1112,13 @@ masscan_set_parameter(struct Masscan *masscan,
             free(masscan->bpf_filter);
         masscan->bpf_filter = (char*)malloc(len);
         memcpy(masscan->bpf_filter, value, len);
+    } else if (EQUALS("hello", name)) {
+        if (EQUALS("ssl", value))
+            masscan->is_hello_ssl = 1;
+        else {
+            fprintf(stderr, "FAIL: %s: unknown hello type\n", value);
+            exit(1);
+        }
     } else if (EQUALS("capture", name)) {
         if (EQUALS("cert", value))
             masscan->is_capture_cert = 1;

@@ -229,6 +229,20 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
     }
 
     /*
+     * Force SSL processing on all ports
+     */
+    if (name_equals(name, "hello") && name_equals(value, "ssl")) {
+        unsigned i;
+        
+        LOG(2, "HELLO: setting SSL hello message\n");
+        for (i=0; i<65535; i++) {
+            banner1->tcp_payloads[i] = &banner_ssl;
+        }
+        
+        return;
+    }
+    
+    /*
      * 2014-04-08: scan for Neel Mehta's "heartbleed" bug
      */
     if (name_equals(name, "heartbleed")) {
