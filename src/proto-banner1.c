@@ -349,6 +349,8 @@ banner1_create(void)
     b->payloads.tcp[445] = (void*)&banner_smb1;
     b->payloads.tcp[8530] = (void*)&banner_http; /* WSUS */
     b->payloads.tcp[8531] = (void*)&banner_ssl;  /* WSUS/s */
+    /* https://www.nomotion.net/blog/sharknatto/ */
+    b->payloads.tcp[49955] = (void*)&banner_ssl; /* AT&T box */
     b->payloads.tcp[443] = (void*)&banner_ssl;   /* HTTP/s */
     b->payloads.tcp[465] = (void*)&banner_ssl;   /* SMTP/s */
     b->payloads.tcp[990] = (void*)&banner_ssl;   /* FTP/s */
