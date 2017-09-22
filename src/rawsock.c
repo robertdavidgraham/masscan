@@ -485,6 +485,14 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         return;
     }
 
+    if (adapter->pcap) {
+        int err;
+
+        err = PCAP.setdirection(adapter->pcap, PCAP_D_IN);
+        if (err) {
+            PCAP.perror(adapter->pcap, "pcap_setdirection(IN)");
+        }
+    }
 
 #if !defined(WIN32)
     /* PORTABILITY: this is what we do on all systems except windows, because

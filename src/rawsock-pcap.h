@@ -74,9 +74,6 @@ typedef int         (*PCAP_MAJOR_VERSION)(void *p);
 typedef int         (*PCAP_MINOR_VERSION)(void *p);
 typedef void *      (*PCAP_OPEN_LIVE)(const char *devicename, unsigned snap_length, unsigned is_promiscuous, unsigned read_timeout, char *errbuf);
 typedef void        (*PCAP_FREEALLDEVS)(pcap_if_t *alldevs);
-typedef void *      (*PCAP_GET_AIRPCAP_HANDLE)(void *p);
-typedef unsigned    (*AIRPCAP_SET_DEVICE_CHANNEL)(void *p, unsigned channel);
-typedef unsigned    (*CAN_TRANSMIT)(const char *devicename);
 typedef pcap_t *    (*PCAP_OPEN_OFFLINE)(const char *fname, char *errbuf);
 typedef int         (*PCAP_SENDPACKET)(pcap_t *p, const unsigned char *buf, int size);
 typedef const unsigned char *(*PCAP_NEXT)(pcap_t *p, struct pcap_pkthdr *h);
@@ -121,12 +118,7 @@ struct PcapFunctions {
     PCAP_MAJOR_VERSION      major_version;
     PCAP_MINOR_VERSION      minor_version;
     PCAP_OPEN_LIVE          open_live;
-    PCAP_GET_AIRPCAP_HANDLE get_airpcap_handle;
-    AIRPCAP_SET_DEVICE_CHANNEL airpcap_set_device_channel;
-    //AIRPCAP_SET_FCS_PRESENCE airpcap_set_fcs_presence;
-    //BOOL AirpcapSetFcsPresence(PAirpcapHandle AdapterHandle, BOOL IsFcsPresent);
     
-    CAN_TRANSMIT            can_transmit;
     
     PCAP_OPEN_OFFLINE       open_offline;
     PCAP_SENDPACKET         sendpacket;

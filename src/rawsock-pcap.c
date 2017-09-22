@@ -168,73 +168,9 @@ static const char *null_PCAP_LIB_VERSION(void)
     return "stub/0.0";
 }
 
-#ifdef WIN32
-static void *null_PCAP_GET_AIRPCAP_HANDLE(void *p)
-{
-    UNUSEDPARM(p);
-    return NULL;
-}
-#endif
-
-#ifdef WIN32
-static unsigned null_AIRPCAP_SET_DEVICE_CHANNEL(void *p, unsigned channel)
-{
-    UNUSEDPARM(p);UNUSEDPARM(channel);
-    
-    return 0; /*0=failure, 1=success*/
-}
-#endif
 
 
-static unsigned null_CAN_TRANSMIT(const char *devicename)
-{
-#if WIN32
-    struct DeviceCapabilities {
-        unsigned AdapterId;		/* An Id that identifies the adapter model.*/
-        char AdapterModelName;	/* String containing a printable adapter model.*/
-        unsigned AdapterBus;	/* The type of bus the adapter is plugged to. */
-        unsigned CanTransmit;	/* TRUE if the adapter is able to perform frame injection.*/
-        unsigned CanSetTransmitPower; /* TRUE if the adapter's transmit power is can be specified by the user application.*/
-        unsigned ExternalAntennaPlug; /* TRUE if the adapter supports plugging one or more external antennas.*/
-        unsigned SupportedMedia;
-        unsigned SupportedBands;
-    } caps;
-    void * (*myopen)(const char *devicename, char *errbuf);
-    void (*myclose)(void *h);
-    unsigned (*mycapabilities)(void *h, struct DeviceCapabilities *caps);
-    
-    unsigned result = 0;
-    void *hAirpcap;
-    
-    
-    hAirpcap = LoadLibraryA("airpcap.dll");
-    if (hAirpcap == NULL)
-    return 0;
-    
-    
-    myopen = (void * (*)(const char *, char*))GetProcAddress(hAirpcap, "AirpcapOpen");
-    myclose = (void (*)(void*))GetProcAddress(hAirpcap, "AirpcapClose");
-    mycapabilities = (unsigned (*)(void*, struct DeviceCapabilities *))GetProcAddress(hAirpcap, "AirpcapGetDeviceCapabilities");
-    if (myopen && mycapabilities && myclose ) {
-        void *h = myopen(devicename, NULL);
-        if (h) {
-            if (mycapabilities(h, &caps)) {
-                result = caps.CanTransmit;
-            }
-            myclose(h);
-        }
-    }
-    
-    FreeLibrary(hAirpcap);
-    return result;
-#elif defined(__linux__)
-    return 1;
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
-    return 1;
-#else
-#error unknown os
-#endif
-}
+
 
 struct PcapFunctions PCAP = {
     0,0,0,0,0,
@@ -345,40 +281,36 @@ int pcap_init(void)
 #ifdef WIN32
     void * hPacket;
     void * hLibpcap;
-    void * hAirpcap;
     
     pl->is_available = 0;
     pl->is_printing_debug = 1;
     
     /* Look for the Packet.dll */
-    hPacket = LoadLibraryA("Packet.dll");
+    hPacket = LoadLibraryA("NPcap\\Packet.dll");
+    if (hPacket == NULL)
+        hPacket = LoadLibraryA("Packet.dll");
     if (hPacket == NULL) {
         if (pl->is_printing_debug)
         switch (GetLastError()) {
             case ERROR_MOD_NOT_FOUND:
-            fprintf(stderr, "%s: not found\n", "Packet.dll");
-            return;
+                fprintf(stderr, "%s: not found\n", "Packet.dll");
+                return -1;
             default:
-            fprintf(stderr, "%s: couldn't load %d\n", "Packet.dll", (int)GetLastError());
-            return;
+                fprintf(stderr, "%s: couldn't load %d\n", "Packet.dll", (int)GetLastError());
+                return -1;
         }
     }
     
-    /* Look for the Packet.dll */
-    hLibpcap = LoadLibraryA("wpcap.dll");
+    /* Look for the winpcap.dll */
+    hLibpcap = LoadLibraryA("Npcap\\wpcap.dll");
+    if (hLibpcap == NULL)
+        hLibpcap = LoadLibraryA("wpcap.dll");
     if (hLibpcap == NULL) {
         if (pl->is_printing_debug)
-        fprintf(stderr, "%s: couldn't load %d\n", "wpcap.dll", (int)GetLastError());
-        return;
+            fprintf(stderr, "%s: couldn't load %d\n", "wpcap.dll", (int)GetLastError());
+        return -1;
     }
     
-    /* Look for the Packet.dll */
-    hAirpcap = LoadLibraryA("airpcap.dll");
-    if (hLibpcap == NULL) {
-        if (pl->is_printing_debug)
-        fprintf(stderr, "%s: couldn't load %d\n", "airpcap.dll", (int)GetLastError());
-        return;
-    }
     
 #define DOLINK(PCAP_DATALINK, datalink) \
 pl->datalink = (PCAP_DATALINK)GetProcAddress(hLibpcap, "pcap_"#datalink); \
@@ -430,20 +362,6 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
 #endif
 #endif
     
-#ifdef WIN32
-    DOLINK(PCAP_GET_AIRPCAP_HANDLE, get_airpcap_handle);
-    if (pl->func_err) {
-        pl->func_err = 0;
-    }
-    if (hAirpcap) {
-        pl->airpcap_set_device_channel = (AIRPCAP_SET_DEVICE_CHANNEL)GetProcAddress(hAirpcap, "AirpcapSetDeviceChannel");
-        if (pl->airpcap_set_device_channel == NULL)
-        pl->airpcap_set_device_channel = null_AIRPCAP_SET_DEVICE_CHANNEL;
-    }
-#endif
-    
-    
-    
     DOLINK(PCAP_CLOSE			, close);
     DOLINK(PCAP_DATALINK		, datalink);
     DOLINK(PCAP_DISPATCH		, dispatch);
@@ -472,7 +390,6 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
 	DOLINK(PCAP_SENDQUEUE_QUEUE		, sendqueue_queue);
 
     
-    pl->can_transmit = null_CAN_TRANSMIT;
     
     if (!pl->func_err)
         pl->is_available = 1;
