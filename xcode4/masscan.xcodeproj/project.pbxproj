@@ -293,22 +293,46 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				11B360CD1F90174B0020F3A3 /* misc */,
+				11B360C71F90166D0020F3A3 /* rawsock */,
+				11B360CC1F90170D0020F3A3 /* crypto */,
+				11B360C81F90169F0020F3A3 /* main */,
+				11B360C91F9016AD0020F3A3 /* out */,
+				11B360CB1F9016D80020F3A3 /* pixie */,
+				11B360CA1F9016C00020F3A3 /* proto */,
+			);
+			name = src;
+			path = ../src;
+			sourceTree = "<group>";
+		};
+		11B360C71F90166D0020F3A3 /* rawsock */ = {
+			isa = PBXGroup;
+			children = (
+				116806EA1995D421005B0980 /* rawsock-adapter.h */,
+				11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */,
+				11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */,
+				11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */,
+				11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */,
+				11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */,
+				11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */,
+				11A921C217DBCC7E00DDFD32 /* rawsock-pcapfile.h */,
+				11A921C317DBCC7E00DDFD32 /* rawsock-pfring.c */,
+				11A921C417DBCC7E00DDFD32 /* rawsock-pfring.h */,
+				11A921C517DBCC7E00DDFD32 /* rawsock.c */,
 				11C936C51EDCE8B40023D32E /* rawsock-pcap.c */,
 				11C936C61EDCE8B40023D32E /* rawsock-pcap.h */,
-				11C936BF1EDCE77F0023D32E /* in-filter.c */,
-				11C936C01EDCE77F0023D32E /* in-filter.h */,
-				11C936C11EDCE77F0023D32E /* in-report.c */,
-				11C936C21EDCE77F0023D32E /* in-report.h */,
-				11126596197A086B00DC5987 /* out-unicornscan.c */,
-				11A773E91881BFC700B135DE /* crypto-base64.c */,
-				11A773EA1881BFC700B135DE /* crypto-base64.h */,
-				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
-				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
-				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
-				11A868081816F3A7008E00B8 /* in-binary.c */,
-				11A868091816F3A7008E00B8 /* in-binary.h */,
-				11A9219517DBCC7E00DDFD32 /* logger.c */,
-				11A9219617DBCC7E00DDFD32 /* logger.h */,
+			);
+			name = rawsock;
+			sourceTree = "<group>";
+		};
+		11B360C81F90169F0020F3A3 /* main */ = {
+			isa = PBXGroup;
+			children = (
+				11A8680D1816F3A7008E00B8 /* masscan-app.c */,
+				11A8680E1816F3A7008E00B8 /* masscan-app.h */,
+				113AD3B818208A1900D5E067 /* masscan-status.h */,
+				11BA295E18902CEE0064A759 /* masscan-version.h */,
+				11A921A017DBCC7E00DDFD32 /* masscan.h */,
 				11A9219717DBCC7E00DDFD32 /* main-conf.c */,
 				11A9219817DBCC7E00DDFD32 /* main-dedup.c */,
 				11A9219917DBCC7E00DDFD32 /* main-dedup.h */,
@@ -326,11 +350,21 @@
 				11A9219D17DBCC7E00DDFD32 /* main-throttle.c */,
 				11A9219E17DBCC7E00DDFD32 /* main-throttle.h */,
 				11A9219F17DBCC7E00DDFD32 /* main.c */,
-				11A8680D1816F3A7008E00B8 /* masscan-app.c */,
-				11A8680E1816F3A7008E00B8 /* masscan-app.h */,
-				113AD3B818208A1900D5E067 /* masscan-status.h */,
-				11BA295E18902CEE0064A759 /* masscan-version.h */,
-				11A921A017DBCC7E00DDFD32 /* masscan.h */,
+			);
+			name = main;
+			sourceTree = "<group>";
+		};
+		11B360C91F9016AD0020F3A3 /* out */ = {
+			isa = PBXGroup;
+			children = (
+				11623F69191E0DB00075EEE6 /* out-certs.c */,
+				11A868081816F3A7008E00B8 /* in-binary.c */,
+				11A868091816F3A7008E00B8 /* in-binary.h */,
+				11C936BF1EDCE77F0023D32E /* in-filter.c */,
+				11C936C01EDCE77F0023D32E /* in-filter.h */,
+				11C936C11EDCE77F0023D32E /* in-report.c */,
+				11C936C21EDCE77F0023D32E /* in-report.h */,
+				11126596197A086B00DC5987 /* out-unicornscan.c */,
 				11A921A117DBCC7E00DDFD32 /* out-binary.c */,
 				11BA295F18902CEE0064A759 /* out-grepable.c */,
 				11A50CAD191C128F006D5802 /* out-json.c */,
@@ -341,16 +375,13 @@
 				11A921A417DBCC7E00DDFD32 /* out-xml.c */,
 				11A921A517DBCC7E00DDFD32 /* output.c */,
 				11A921A617DBCC7E00DDFD32 /* output.h */,
-				11A921A717DBCC7E00DDFD32 /* packet-queue.h */,
-				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
-				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
-				11A868101816F3A7008E00B8 /* pixie-file.c */,
-				11A868111816F3A7008E00B8 /* pixie-file.h */,
-				11A868121816F3A7008E00B8 /* pixie-sockets.h */,
-				11A921A817DBCC7E00DDFD32 /* pixie-threads.c */,
-				11A921A917DBCC7E00DDFD32 /* pixie-threads.h */,
-				11A921AA17DBCC7E00DDFD32 /* pixie-timer.c */,
-				11A921AB17DBCC7E00DDFD32 /* pixie-timer.h */,
+			);
+			name = out;
+			sourceTree = "<group>";
+		};
+		11B360CA1F9016C00020F3A3 /* proto */ = {
+			isa = PBXGroup;
+			children = (
 				11A921AC17DBCC7E00DDFD32 /* proto-arp.c */,
 				11A921AD17DBCC7E00DDFD32 /* proto-arp.h */,
 				11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */,
@@ -360,18 +391,27 @@
 				115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */,
 				11B039C317E7834000925E7E /* proto-dns.c */,
 				11B039C417E7834000925E7E /* proto-dns.h */,
+				11420DD719A8160500DB5BFE /* proto-ftp.c */,
+				11420DD619A815CD00DB5BFE /* proto-ftp.h */,
 				11AC80E717E0DAD4001BCE3A /* proto-http.c */,
 				11AC80E817E0DAD4001BCE3A /* proto-http.h */,
 				11AC80E917E0DAD4001BCE3A /* proto-icmp.c */,
 				11AC80EA17E0DAD4001BCE3A /* proto-icmp.h */,
+				11420DE219A9363A00DB5BFE /* proto-imap4.c */,
+				11420DE119A9361500DB5BFE /* proto-imap4.h */,
+				11420DDF19A90CB300DB5BFE /* proto-interactive.c */,
 				115C0CA518035BC5004E6CD7 /* proto-netbios.c */,
 				115C0CA618035BC5004E6CD7 /* proto-netbios.h */,
 				11BA296A189060220064A759 /* proto-ntp.c */,
 				11BA296C189060590064A759 /* proto-ntp.h */,
+				11420DDD19A8FDE300DB5BFE /* proto-pop3.c */,
+				11420DDC19A8F2D200DB5BFE /* proto-pop3.h */,
 				11A921B017DBCC7E00DDFD32 /* proto-preprocess.c */,
 				11A921B117DBCC7E00DDFD32 /* proto-preprocess.h */,
 				11AC2F99188CE34A008CB623 /* proto-sctp.c */,
 				11AC2F9A188CE34A008CB623 /* proto-sctp.h */,
+				11420DDA19A84A9E00DB5BFE /* proto-smtp.c */,
+				11420DD919A844B000DB5BFE /* proto-smtp.h */,
 				11B039C917EA092B00925E7E /* proto-snmp.c */,
 				11B039CA17EA092B00925E7E /* proto-snmp.h */,
 				11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */,
@@ -385,70 +425,86 @@
 				11A921B317DBCC7E00DDFD32 /* proto-tcp.h */,
 				11B039C517E7834000925E7E /* proto-udp.c */,
 				11B039C617E7834000925E7E /* proto-udp.h */,
+				11420DD219A2D47A00DB5BFE /* proto-vnc.c */,
+				11420DD519A2D48C00DB5BFE /* proto-vnc.h */,
 				11B22ED318641DCC00DA5438 /* proto-x509.c */,
 				11B22ED418641DCC00DA5438 /* proto-x509.h */,
 				11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */,
 				11A8681D1819A6F7008E00B8 /* proto-zeroaccess.h */,
+				11F9375619F1AD5000C1947F /* script-heartbleed.c */,
+				11F9375319F1A54200C1947F /* script-sslv3.c */,
+				11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */,
+				11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */,
+				11A921D117DBCC7E00DDFD32 /* templ-pkt.c */,
+				11A921D217DBCC7E00DDFD32 /* templ-pkt.h */,
+				115C0CA918035BC5004E6CD7 /* templ-port.h */,
+			);
+			name = proto;
+			sourceTree = "<group>";
+		};
+		11B360CB1F9016D80020F3A3 /* pixie */ = {
+			isa = PBXGroup;
+			children = (
+				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
+				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
+				11A868101816F3A7008E00B8 /* pixie-file.c */,
+				11A868111816F3A7008E00B8 /* pixie-file.h */,
+				11A868121816F3A7008E00B8 /* pixie-sockets.h */,
+				11A921A817DBCC7E00DDFD32 /* pixie-threads.c */,
+				11A921A917DBCC7E00DDFD32 /* pixie-threads.h */,
+				11A921AA17DBCC7E00DDFD32 /* pixie-timer.c */,
+				11A921AB17DBCC7E00DDFD32 /* pixie-timer.h */,
+			);
+			name = pixie;
+			sourceTree = "<group>";
+		};
+		11B360CC1F90170D0020F3A3 /* crypto */ = {
+			isa = PBXGroup;
+			children = (
+				11A773E91881BFC700B135DE /* crypto-base64.c */,
+				11A773EA1881BFC700B135DE /* crypto-base64.h */,
+				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
 				11A921B417DBCC7E00DDFD32 /* rand-blackrock.c */,
 				11A921B517DBCC7E00DDFD32 /* rand-blackrock.h */,
 				11A921B617DBCC7E00DDFD32 /* rand-lcg.c */,
 				11A921B717DBCC7E00DDFD32 /* rand-lcg.h */,
 				11A921B817DBCC7E00DDFD32 /* rand-primegen.c */,
 				11A921B917DBCC7E00DDFD32 /* rand-primegen.h */,
+				11A868131816F3A7008E00B8 /* siphash24.c */,
+				11A868141816F3A7008E00B8 /* siphash24.h */,
+				11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */,
+				11A921D017DBCC7E00DDFD32 /* syn-cookie.h */,
+			);
+			name = crypto;
+			sourceTree = "<group>";
+		};
+		11B360CD1F90174B0020F3A3 /* misc */ = {
+			isa = PBXGroup;
+			children = (
+				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
+				11A921D317DBCC7E00DDFD32 /* xring.c */,
+				11A921D417DBCC7E00DDFD32 /* xring.h */,
 				11A921BA17DBCC7E00DDFD32 /* ranges.c */,
 				11A921BB17DBCC7E00DDFD32 /* ranges.h */,
-				11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */,
-				11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */,
-				11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */,
-				11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */,
-				11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */,
-				11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */,
-				11A921C217DBCC7E00DDFD32 /* rawsock-pcapfile.h */,
-				11A921C317DBCC7E00DDFD32 /* rawsock-pfring.c */,
-				11A921C417DBCC7E00DDFD32 /* rawsock-pfring.h */,
-				11A921C517DBCC7E00DDFD32 /* rawsock.c */,
 				11A921C617DBCC7E00DDFD32 /* rawsock.h */,
 				11A921C717DBCC7E00DDFD32 /* rte-ring.c */,
 				11A921C817DBCC7E00DDFD32 /* rte-ring.h */,
 				11BA29681890560C0064A759 /* script-ntp-monlist.c */,
 				11BA2966189055CA0064A759 /* script.c */,
 				11BA296518904F3A0064A759 /* script.h */,
-				11A868131816F3A7008E00B8 /* siphash24.c */,
-				11A868141816F3A7008E00B8 /* siphash24.h */,
 				11A921C917DBCC7E00DDFD32 /* smack.h */,
 				11A921CA17DBCC7E00DDFD32 /* smack1.c */,
 				11A921CB17DBCC7E00DDFD32 /* smackqueue.c */,
 				11A921CC17DBCC7E00DDFD32 /* smackqueue.h */,
 				11A921CD17DBCC7E00DDFD32 /* string_s.c */,
 				11A921CE17DBCC7E00DDFD32 /* string_s.h */,
-				11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */,
-				11A921D017DBCC7E00DDFD32 /* syn-cookie.h */,
-				11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */,
-				11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */,
-				11A921D117DBCC7E00DDFD32 /* templ-pkt.c */,
-				11A921D217DBCC7E00DDFD32 /* templ-pkt.h */,
-				115C0CA918035BC5004E6CD7 /* templ-port.h */,
-				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
-				11A921D317DBCC7E00DDFD32 /* xring.c */,
-				11A921D417DBCC7E00DDFD32 /* xring.h */,
-				11623F69191E0DB00075EEE6 /* out-certs.c */,
-				116806EA1995D421005B0980 /* rawsock-adapter.h */,
-				11420DD219A2D47A00DB5BFE /* proto-vnc.c */,
-				11420DD519A2D48C00DB5BFE /* proto-vnc.h */,
-				11420DD619A815CD00DB5BFE /* proto-ftp.h */,
-				11420DD719A8160500DB5BFE /* proto-ftp.c */,
-				11420DD919A844B000DB5BFE /* proto-smtp.h */,
-				11420DDA19A84A9E00DB5BFE /* proto-smtp.c */,
-				11420DDC19A8F2D200DB5BFE /* proto-pop3.h */,
-				11420DDD19A8FDE300DB5BFE /* proto-pop3.c */,
-				11420DDF19A90CB300DB5BFE /* proto-interactive.c */,
-				11420DE119A9361500DB5BFE /* proto-imap4.h */,
-				11420DE219A9363A00DB5BFE /* proto-imap4.c */,
-				11F9375319F1A54200C1947F /* script-sslv3.c */,
-				11F9375619F1AD5000C1947F /* script-heartbleed.c */,
+				11A921A717DBCC7E00DDFD32 /* packet-queue.h */,
+				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
+				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
+				11A9219517DBCC7E00DDFD32 /* logger.c */,
+				11A9219617DBCC7E00DDFD32 /* logger.h */,
 			);
-			name = src;
-			path = ../src;
+			name = misc;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

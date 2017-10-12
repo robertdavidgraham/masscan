@@ -204,6 +204,6 @@ void pixie_thread_join(size_t thread_handle)
 #else
     void *p;
 
-    pthread_join(thread_handle, &p);
+    pthread_join((pthread_t)thread_handle, &p);
 #endif
 }

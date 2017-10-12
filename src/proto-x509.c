@@ -176,10 +176,10 @@ static struct ObjectIdentifer {
 static unsigned
 id_prefix_count(unsigned id)
 {
-#define TWO_BYTE       ((~0)<<7)
-#define THREE_BYTE     ((~0)<<14)
-#define FOUR_BYTE      ((~0)<<21)
-#define FIVE_BYTE      ((~0)<<28)
+#define TWO_BYTE       ((unsigned long long)(~0)<<7)
+#define THREE_BYTE     ((unsigned long long)(~0)<<14)
+#define FOUR_BYTE      ((unsigned long long)(~0)<<21)
+#define FIVE_BYTE      ((unsigned long long)(~0)<<28)
     
     if (id & FIVE_BYTE)
         return 4;
