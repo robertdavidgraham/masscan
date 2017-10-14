@@ -22,7 +22,7 @@ This tool is free, but consider funding it here:
 
 On Debian/Ubuntu, it goes something like this:
 
-	$ sudo apt-get install git gcc make libpcap-dev
+	$ sudo apt-get install git gcc make libpcap-dev clang
 	$ git clone https://github.com/robertdavidgraham/masscan
 	$ cd masscan
 	$ make
