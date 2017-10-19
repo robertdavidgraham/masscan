@@ -34,6 +34,7 @@
     <ClCompile Include="..\src\out-certs.c" />
     <ClCompile Include="..\src\out-grepable.c" />
     <ClCompile Include="..\src\out-json.c" />
+    <ClCompile Include="..\src\out-ndjson.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-text.c" />
