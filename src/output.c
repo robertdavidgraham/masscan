@@ -433,6 +433,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_JSON:
         out->funcs = &json_output;
         break;
+    case Output_NDJSON:
+        out->funcs = &ndjson_output;
+        break;
     case Output_Certs:
         out->funcs = &certs_output;
         break;
@@ -821,7 +824,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     }
 
     /*
-     * Now do the actual output, whether it be XML, binary, JSON, Redis,
+     * Now do the actual output, whether it be XML, binary, JSON, ndjson, Redis,
      * and so on.
      */
     out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
@@ -896,7 +899,7 @@ output_report_banner(struct Output *out, time_t now,
     }
 
     /*
-     * Now do the actual output, whether it be XML, binary, JSON, Redis,
+     * Now do the actual output, whether it be XML, binary, JSON, ndjson, Redis,
      * and so on.
      */
     out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, ttl, px, length);
