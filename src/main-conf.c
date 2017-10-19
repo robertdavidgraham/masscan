@@ -179,10 +179,10 @@ print_nmap_help(void)
 "  --ttl <val>: Set IP time-to-live field\n"
 "  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
 "OUTPUT:\n"
-"  --output-format <format>: Sets output to binary/list/unicornscan/json/grepable/xml\n"
+"  --output-format <format>: Sets output to binary/list/unicornscan/json/ndjson/grepable/xml\n"
 "  --output-file <file>: Write scan results to file. If --output-format is\n"
 "     not given default is xml\n"
-"  -oL/-oJ/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/Grepable/Binary/XML/Unicornscan format,\n"
+"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan format,\n"
 "     respectively, to the given filename. Shortcut for\n"
 "     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
@@ -328,6 +328,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
     case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
     case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
+    case Output_NDJSON:     fprintf(fp, "output-format = ndjson\n"); break;
     case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
     case Output_None:       fprintf(fp, "output-format = none\n"); break;
     case Output_Redis:
@@ -1493,6 +1494,7 @@ masscan_set_parameter(struct Masscan *masscan,
         else if (EQUALS("greppable", value))    x = Output_Grepable;
         else if (EQUALS("grepable", value))     x = Output_Grepable;
         else if (EQUALS("json", value))         x = Output_JSON;
+        else if (EQUALS("ndjson", value))       x = Output_NDJSON;
         else if (EQUALS("certs", value))        x = Output_Certs;
         else if (EQUALS("none", value))         x = Output_None;
         else if (EQUALS("redis", value))        x = Output_Redis;
@@ -1964,6 +1966,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'B':
                     masscan->output.format = Output_Binary;
+                    break;
+                case 'D':
+                    masscan->output.format = Output_NDJSON;
                     break;
                 case 'J':
                     masscan->output.format = Output_JSON;

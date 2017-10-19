@@ -47,6 +47,7 @@ enum OutputFormat {
     Output_Binary       = 0x0004,   /* -oB, "binary", the primary format */
     Output_XML          = 0x0008,   /* -oX, "xml" */
     Output_JSON         = 0x0010,   /* -oJ, "json" */
+    Output_NDJSON       = 0x0011,   /* -oD, "ndjson" */
     Output_Nmap         = 0x0020,
     Output_ScriptKiddie = 0x0040,
     Output_Grepable     = 0x0080,   /* -oG, "grepable" */
@@ -240,7 +241,7 @@ struct Masscan
         
         /**
          * --output-format
-         * Examples are "xml", "binary", "json", "grepable", and so on.
+         * Examples are "xml", "binary", "json", "ndjson", "grepable", and so on.
          */
         enum OutputFormat format;
         

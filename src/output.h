@@ -125,6 +125,7 @@ extern const struct OutputType text_output;
 extern const struct OutputType unicornscan_output;
 extern const struct OutputType xml_output;
 extern const struct OutputType json_output;
+extern const struct OutputType ndjson_output;
 extern const struct OutputType certs_output;
 extern const struct OutputType binary_output;
 extern const struct OutputType null_output;
