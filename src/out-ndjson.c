@@ -11,7 +11,7 @@ static void
 ndjson_out_open(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, ""); 
+    UNUSEDPARM(fp);
 }
 
 
@@ -21,7 +21,7 @@ static void
 ndjson_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, ""); 
+    UNUSEDPARM(fp); 
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
@@ -38,8 +38,8 @@ ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     fprintf(fp, "{");
     fprintf(fp, "\"ip\":\"%u.%u.%u.%u\",",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "\"timestamp\":\"%d\",\"ports\":[{\"port\":%u,\"proto\":\"%s\",\"status\":\"%s\","
-                "\"reason\":\"%s\",\"ttl\":%u}]",
+    fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"status\",\"data\":{\"status\":\"%s\","
+                "\"reason\":\"%s\",\"ttl\":%u}",
                 (int) timestamp,
                 port,
                 name_from_ip_proto(ip_proto),
@@ -58,7 +58,8 @@ ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
  *
  * Keeping this here since we may need to change the behavior from what 
  * is done in the sister `normalize_json_string` function. It's unlikely
- * but it's a small function and will save time later if needed.
+ * but it's a small function and will save time later if needed. Could also
+ * set it up to base64 encode the banner payload.
  *****************************************************************************/
 static const char *
 normalize_ndjson_string(const unsigned char *px, size_t length,
@@ -108,13 +109,20 @@ ndjson_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     fprintf(fp, "{");
     fprintf(fp, "\"ip\":\"%u.%u.%u.%u\",",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
-    fprintf(fp, "\"timestamp\":\"%d\",\"ports\":[{\"port\":%u,\"proto\":\"%s\",\"service\":{\"name\":\"%s\",\"banner\":\"%s\"}}]",
+    fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"banner\",\"data\":{\"service_name\":\"%s\",\"banner\":\"%s\"}",
             (int) timestamp,
             port,
             name_from_ip_proto(ip_proto),
             masscan_app_to_string(proto),
             normalize_ndjson_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
+    // fprintf(fp, "\"timestamp\":\"%d\",\"ports\":[{\"port\":%u,\"proto\":\"%s\",\"service\":{\"name\":\"%s\",\"banner\":\"%s\"}}]",
+    //         (int) timestamp,
+    //         port,
+    //         name_from_ip_proto(ip_proto),
+    //         masscan_app_to_string(proto),
+    //         normalize_ndjson_string(px, length, banner_buffer, sizeof(banner_buffer))
+    //         );
     fprintf(fp, "}\n");
 
     UNUSEDPARM(out);
