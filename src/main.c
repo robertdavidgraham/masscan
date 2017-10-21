@@ -1049,6 +1049,7 @@ main_scan(struct Masscan *masscan)
     uint64_t count_ports;
     uint64_t range;
     unsigned index;
+    unsigned is_error = 0;
     unsigned *picker;
     time_t now = time(0);
     struct Status status;
