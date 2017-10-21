@@ -33,6 +33,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_HEARTBLEED:    return "heartbleed";
     case PROTO_TICKETBLEED:    return "ticketbleed";
     case PROTO_VNC_RFB: return "vnc";
+    case PROTO_VNC_INFO: return "vnc-info";
     case PROTO_SAFE:    return "safe";
             
     default:
@@ -71,6 +72,7 @@ masscan_string_to_app(const char *str)
         {"heartbleed", PROTO_HEARTBLEED},
         {"ticketbleed", PROTO_TICKETBLEED},
         {"vnc", PROTO_VNC_RFB},
+        {"vnc-info", PROTO_VNC_INFO},
         {"safe",    PROTO_SAFE},
         {0,0}
     };

@@ -28,6 +28,7 @@ enum ApplicationProtocol {
     PROTO_HEARTBLEED,
     PROTO_TICKETBLEED,
     PROTO_VNC_RFB,
+    PROTO_VNC_INFO,
     PROTO_SAFE,
 };
 
