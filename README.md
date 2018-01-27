@@ -1,7 +1,7 @@
 # MASSCAN: Mass IP port scanner
 
 This is the fastest Internet port scanner. It can scan the entire Internet
-in under 6 minutes, transmitting 10 million packets per second.
+in under 5 minutes, transmitting 10 million packets per second.
 
 It produces results similar to `nmap`, the most famous port scanner.
 Internally, it operates more like `scanrand`, `unicornscan`, and `ZMap`, using
