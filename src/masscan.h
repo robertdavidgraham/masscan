@@ -95,6 +95,13 @@ struct Masscan
      * which can be other things, like "Operation_SelfTest"
      */
     enum Operation op;
+    
+    struct {
+        unsigned tcp:1;
+        unsigned udp:1;
+        unsigned sctp:1;
+        unsigned ping:1;
+    } scan_type;
 
     /**
      * One or more network adapters that we'll use for scanning. Each adapter

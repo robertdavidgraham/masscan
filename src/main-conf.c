@@ -893,7 +893,7 @@ ARRAY(const char *rhs)
 }
 
 static void
-config_top_ports(struct RangeList *ports, unsigned n)
+config_top_ports(struct Masscan *masscan, unsigned n)
 {
     unsigned i;
     static const unsigned short top_tcp_ports[] = {
@@ -974,9 +974,16 @@ config_top_ports(struct RangeList *ports, unsigned n)
         52848,52869,54045,54328,55055,55056,55555,55600,56737,56738,57294,
         57797,58080,60020,60443,61532,61900,62078,63331,64623,64680,65000,
         65129,65389};
+    struct RangeList *ports = &masscan->ports;
 
+    if (masscan->scan_type.tcp) {
         for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
             rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+    }
+    if (masscan->scan_type.udp) {
+        for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
+            rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+    }
 }
 
 /***************************************************************************
@@ -1774,7 +1781,7 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("top-ports", name)) {
         unsigned n = (unsigned)parseInt(value);
-        config_top_ports(&masscan->ports, n);
+        config_top_ports(masscan, n);
     } else if (EQUALS("traceroute", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -2168,12 +2175,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         fprintf(stderr, "nmap(%s): IP proto scan not yet supported\n", argv[i]);
                         exit(1);
                     case 'S': /* TCP SYN scan - THIS IS WHAT WE DO! */
+                        masscan->scan_type.tcp = 1;
                         break;
                     case 'T': /* TCP connect scan */
                         fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
                         fprintf(stderr, "WARNING: doing SYN scan anyway\n");
                         break;
                     case 'U': /* UDP scan */
+                        masscan->scan_type.udp = 1;
                         break;
                     case 'V':
                         fprintf(stderr, "nmap(%s): unlikely this will be supported\n", argv[i]);
@@ -2187,8 +2196,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     case 'Y':
                         break;
                     case 'Z':
-                        fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
-                        exit(1);
+                        masscan->scan_type.sctp = 1;
+                        break;
                     default:
                         fprintf(stderr, "nmap(%s): unsupported option\n", argv[i]);
                         exit(1);

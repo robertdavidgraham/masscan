@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
+		112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
 		11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD219A2D47A00DB5BFE /* proto-vnc.c */; };
 		11420DD819A8160500DB5BFE /* proto-ftp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD719A8160500DB5BFE /* proto-ftp.c */; };
 		11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDA19A84A9E00DB5BFE /* proto-smtp.c */; };
@@ -106,6 +107,7 @@
 
 /* Begin PBXFileReference section */
 		11126596197A086B00DC5987 /* out-unicornscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-unicornscan.c"; sourceTree = "<group>"; };
+		112A87191F9D8DF200D4D240 /* out-ndjson.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-ndjson.c"; sourceTree = "<group>"; };
 		113AD3B818208A1900D5E067 /* masscan-status.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "masscan-status.h"; sourceTree = "<group>"; };
 		11420DD219A2D47A00DB5BFE /* proto-vnc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-vnc.c"; sourceTree = "<group>"; };
 		11420DD519A2D48C00DB5BFE /* proto-vnc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-vnc.h"; sourceTree = "<group>"; };
@@ -357,6 +359,7 @@
 		11B360C91F9016AD0020F3A3 /* out */ = {
 			isa = PBXGroup;
 			children = (
+				112A87191F9D8DF200D4D240 /* out-ndjson.c */,
 				11623F69191E0DB00075EEE6 /* out-certs.c */,
 				11A868081816F3A7008E00B8 /* in-binary.c */,
 				11A868091816F3A7008E00B8 /* in-binary.h */,
@@ -627,6 +630,7 @@
 				11BA29691890560C0064A759 /* script-ntp-monlist.c in Sources */,
 				11BA296B189060220064A759 /* proto-ntp.c in Sources */,
 				11B05EA618B9649F009C935E /* crypto-blackrock2.c in Sources */,
+				112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */,
 				11B05EA718B9649F009C935E /* main-readrange.c in Sources */,
 				11A50CAE191C128F006D5802 /* out-json.c in Sources */,
 				11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */,
