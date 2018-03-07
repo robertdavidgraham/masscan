@@ -104,6 +104,10 @@ struct Payload2 hard_coded_payloads[] = {
         "Content-Length: 0\r\n"
     },
 
+    {11211, 65536, 15, 0, 0,
+        "\x00\x00\x00\x00\x00\x01\x00\x00stats\r\n"
+    },
+
     //16464,16465,16470, 16471
     {16464, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
