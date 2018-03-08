@@ -29,6 +29,7 @@ enum ApplicationProtocol {
     PROTO_TICKETBLEED,
     PROTO_VNC_RFB,
     PROTO_SAFE,
+    PROTO_MEMCACHED,
 };
 
 const char *

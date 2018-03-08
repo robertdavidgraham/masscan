@@ -14,6 +14,7 @@
 #include "proto-imap4.h"
 #include "proto-pop3.h"
 #include "proto-vnc.h"
+#include "proto-memcached.h"
 #include "masscan-app.h"
 #include <ctype.h>
 #include <stdlib.h>
@@ -49,6 +50,7 @@ struct Patterns patterns[] = {
     {"RFB 004.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Intel AMT KVM */
     {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
     {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
+    {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN}, /* memcached stat response */
     {0,0}
 };
 
@@ -203,6 +205,14 @@ banner1_parse(
                              banout,
                              more);
         break;
+    case PROTO_MEMCACHED:
+        banner_memcached.parse(    banner1,
+                             banner1->http_fields,
+                             tcb_state,
+                             px, length,
+                             banout,
+                             more);
+        break;
     default:
         fprintf(stderr, "banner1: internal error\n");
         break;
@@ -242,6 +252,8 @@ banner1_create(void)
 
 
     banner_http.init(b);
+    banner_vnc.init(b);
+    banner_memcached.init(b);
 
     b->tcp_payloads[80] = &banner_http;
     b->tcp_payloads[8080] = &banner_http;

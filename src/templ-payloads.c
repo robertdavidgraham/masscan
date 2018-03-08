@@ -17,6 +17,7 @@
 #include "logger.h"
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
 #include "proto-snmp.h"
+#include "proto-memcached.h"
 #include "proto-ntp.h"
 #include "proto-dns.h"
 
@@ -104,7 +105,9 @@ struct Payload2 hard_coded_payloads[] = {
         "Content-Length: 0\r\n"
     },
 
-    {11211, 65536, 15, 0, 0,
+    /* memcached "stats" request. This looks for memcached systems that can
+     * be used for DDoS amplifiers */
+    {11211, 65536, 15, 0, memcached_udp_set_cookie,
         "\x00\x00\x00\x00\x00\x01\x00\x00stats\r\n"
     },
 

@@ -51,6 +51,7 @@
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-imap4.c" />
     <ClCompile Include="..\src\proto-interactive.c" />
+    <ClCompile Include="..\src\proto-memcached.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
@@ -139,6 +140,7 @@
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-imap4.h" />
     <ClInclude Include="..\src\proto-interactive.h" />
+    <ClInclude Include="..\src\proto-memcached.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-pop3.h" />

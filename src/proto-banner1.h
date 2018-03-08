@@ -13,6 +13,8 @@ struct Banner1
     struct SMACK *smack;
     struct SMACK *http_fields;
     struct SMACK *html_fields;
+    struct SMACK *memcached_responses;
+    struct SMACK *memcached_stats;
 
     unsigned is_capture_html:1;
     unsigned is_capture_cert:1;
@@ -117,6 +119,10 @@ struct POP3STUFF {
     unsigned is_last:1;
 };
 
+struct MEMCACHEDSTUFF {
+    unsigned match;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -132,6 +138,7 @@ struct ProtocolState {
         struct FTPSTUFF ftp;
         struct SMTPSTUFF smtp;
         struct POP3STUFF pop3;
+        struct MEMCACHEDSTUFF memcached;
     } sub;
 };
 

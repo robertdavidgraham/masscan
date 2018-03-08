@@ -2,6 +2,7 @@
 #include "proto-dns.h"
 #include "proto-netbios.h"
 #include "proto-snmp.h"
+#include "proto-memcached.h"
 #include "proto-ntp.h"
 #include "proto-zeroaccess.h"
 #include "proto-preprocess.h"
@@ -41,6 +42,11 @@ handle_udp(struct Output *out, time_t timestamp,
             break;
         case 161:
             status = handle_snmp(out, timestamp, px, length, parsed, entropy);
+            break;
+        case 11211:
+            px += parsed->app_offset;
+            length = parsed->app_length;
+            status = memcached_udp_parse(out, timestamp, px, length, parsed, entropy);
             break;
         case 16464:
         case 16465:
