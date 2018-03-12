@@ -11,6 +11,7 @@
 #include "proto-interactive.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
+#include "proto-udp.h"
 #include "syn-cookie.h"
 #include "templ-port.h"
 #include <ctype.h>
@@ -193,7 +194,8 @@ memcached_tcp_parse(
                     banout_append(banout, PROTO_MEMCACHED, memcached_stats[id].pattern, AUTO_LEN);
                     if (px[i] == '\n')
                         state = 0;
-                    state = 200;
+                    else
+                        state = 200;
                     banout_append_char(banout, PROTO_MEMCACHED, '=');
                     break;
                 default:
@@ -246,7 +248,7 @@ memcached_init(struct Banner1 *b)
             smack_add_pattern(
                           b->memcached_responses,
                           tmp,
-                          len+1,
+                          (unsigned)len+1,
                           memcached_responses[i].id,
                           memcached_responses[i].is_anchored);
         }
@@ -276,7 +278,7 @@ memcached_init(struct Banner1 *b)
             smack_add_pattern(
                           b->memcached_stats,
                           tmp,
-                          len+1,
+                          (unsigned)len+1,
                           memcached_stats[i].id,
                           memcached_stats[i].is_anchored);
         }
@@ -330,15 +332,15 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
 
     /* Ignore high sequence numbers. This should be zero normally */
     if (sequence_num > 100)
-        return 0;
+        goto not_memcached;
 
     /* Ignore too many dgrams, should be one normally */
     if (total_dgrams > 100)
-        return 0;
+        goto not_memcached;
 
     /* Make sure reserved field is zero */
     if (reserved != 0)
-        return 0;
+        goto not_memcached;
 
     /* Grab IP addresses */
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
@@ -385,6 +387,9 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
     banout_release(banout);
 
     return 0;
+    
+not_memcached:
+    return default_udp_parse(out, timestamp, px, length, parsed, entropy);
 }
 
 /****************************************************************************
@@ -428,3 +433,4 @@ const struct ProtocolParserStream banner_memcached = {
     memcached_init,
     memcached_tcp_parse,
 };
+                             

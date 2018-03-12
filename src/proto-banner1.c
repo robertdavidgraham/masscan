@@ -273,6 +273,7 @@ banner1_create(void)
     b->tcp_payloads[9050] = (void*)&banner_ssl;  /* Tor */
     b->tcp_payloads[8140] = (void*)&banner_ssl;  /* puppet */
 
+    b->tcp_payloads[11211] = (void*)&banner_memcached;
 
     return b;
 }
