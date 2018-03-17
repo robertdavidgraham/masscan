@@ -1156,6 +1156,20 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->max_rate = rate;
 
     }
+    else if (EQUALS("udp-ports", name) || EQUALS("udp-port", name)) {
+        unsigned is_error = 0;
+        masscan->scan_type.udp = 1;
+        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
+    }
+    else if (EQUALS("tcp-ports", name) || EQUALS("tcp-port", name)) {
+        unsigned is_error = 0;
+        masscan->scan_type.tcp = 1;
+        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_TCP);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
+    }
     else if (EQUALS("ports", name) || EQUALS("port", name)
              || EQUALS("dst-port", name) || EQUALS("dest-port", name)
              || EQUALS("destination-port", name)
