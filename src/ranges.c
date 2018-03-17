@@ -598,7 +598,7 @@ regress_pick2()
  * handle multiple stuff on the same line
  ***************************************************************************/
 const char *
-rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error)
+rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error, unsigned proto_offset)
 {
     char *p = (char*)string;
 
@@ -606,7 +606,6 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
     while (*p) {
         unsigned port;
         unsigned end;
-        unsigned proto_offset = 0;
 
         /* skip whitespace */
         while (*p && isspace(*p & 0xFF))
@@ -791,7 +790,7 @@ ranges_selftest(void)
         unsigned is_error = 0;
         memset(task, 0, sizeof(task[0]));
 
-        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error);
+        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error, 0);
         if (task->count != 3 || is_error) {
             ERROR();
             return 1;

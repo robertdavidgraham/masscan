@@ -618,7 +618,7 @@ payloads_read_file(FILE *fp, const char *filename,
         /* [ports] */
         if (!get_next_line(fp, &line_number, line, sizeof(line)))
             break;
-        p = rangelist_parse_ports(ports, line, &is_error);
+        p = rangelist_parse_ports(ports, line, &is_error, 0);
         if (is_error) {
             fprintf(stderr, "%s:%u: syntax error, expected ports\n",
                 filename, line_number);

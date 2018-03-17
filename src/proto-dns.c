@@ -363,6 +363,7 @@ handle_dns(struct Output *out, time_t timestamp,
     struct DNS_Incoming dns[1];
     unsigned offset;
     uint64_t seqno;
+    const char *reason = 0;
 
     ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
             | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
@@ -376,16 +377,47 @@ handle_dns(struct Output *out, time_t timestamp,
     if ((seqno & 0xFFFF) != dns->id)
         return 1;
 
+    /*
+     * In practice, DNS queries always have the query count set to 1,
+     * though in theory servers could support multiple queries in a 
+     * single request, almost none of them do
+     */
     if (dns->qr != 1)
         return 0;
-    if (dns->rcode != 0)
+    
+    /*
+     * If we get back NOERROR, we drop through and extract the strings in
+     * the packet. Otherwise, we report the error here.
+     */
+    switch (dns->rcode) {
+        case 0: reason = 0; break; /* NOERROR */
+        case 1: reason = "1:FORMERR"; break;
+        case 2: reason = "2:SERVFAIL"; break;
+        case 3: reason = "3:NXDOMAIN"; break;
+        case 4: reason = "4:NOTIMP"; break;
+        case 5: reason = "5:REFUSED"; break;
+        case 6: reason = "6:YXDOMAIN"; break;
+        case 7: reason = "7:XRRSET"; break;
+        case 8: reason = "8:NOTAUTH"; break;
+        case 9: reason = "9:NOTZONE"; break;
+    }
+    if (reason != 0) {
+        output_report_banner(
+                         out, timestamp,
+                         ip_them, 17, port_them,
+                         PROTO_DNS_VERSIONBIND,
+                         parsed->ip_ttl,
+                         (const unsigned char*)reason,
+                         (unsigned)strlen(reason));
         return 0;
-    if (dns->qdcount != 1)
+    }
+    
+    /*if (dns->qdcount != 1)
         return 0;
     if (dns->ancount < 1)
         return 0;
     if (dns->rr_count < 2)
-        return 0;
+        return 0;*/
 
 
     offset = dns->rr_offset[1];

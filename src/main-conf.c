@@ -1048,7 +1048,7 @@ masscan_set_parameter(struct Masscan *masscan,
         struct RangeList ports;
         memset(&ports, 0, sizeof(ports));
 
-        rangelist_parse_ports(&ports, value, &is_error);
+        rangelist_parse_ports(&ports, value, &is_error, 0);
 
         /* Check if there was an error in parsing */
         if (is_error) {
@@ -1161,7 +1161,10 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("destination-port", name)
              || EQUALS("target-port", name)) {
         unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->ports, value, &is_error);
+        if (masscan->scan_type.udp)
+            rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+        else
+            rangelist_parse_ports(&masscan->ports, value, &is_error, 0);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
@@ -1182,7 +1185,7 @@ masscan_set_parameter(struct Masscan *masscan,
     }
     else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->exclude_port, value, &is_error);
+        rangelist_parse_ports(&masscan->exclude_port, value, &is_error, 0);
         if (is_error) {
             LOG(0, "FAIL: bad exclude port: %s\n", value);
             exit(1);
@@ -2179,7 +2182,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         break;
                     case 'T': /* TCP connect scan */
                         fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
-                        fprintf(stderr, "WARNING: doing SYN scan anyway\n");
+                        fprintf(stderr, "WARNING: doing SYN scan (-sS) anyway, ignoring (-sT)\n");
                         break;
                     case 'U': /* UDP scan */
                         masscan->scan_type.udp = 1;

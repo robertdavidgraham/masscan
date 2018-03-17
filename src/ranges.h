@@ -161,7 +161,9 @@ unsigned rangelist_pick(const struct RangeList *targets, uint64_t i);
 const char *
 rangelist_parse_ports(  struct RangeList *ports,
                         const char *string,
-                        unsigned *is_error);
+                        unsigned *is_error,
+                        unsigned proto_offset
+                      );
 
 
 /**

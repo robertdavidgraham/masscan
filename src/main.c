@@ -1068,7 +1068,7 @@ main_scan(struct Masscan *masscan)
         /* If no ports specified on command-line, grab default ports */
         is_error = 0;
         if (rangelist_count(&masscan->ports) == 0)
-            rangelist_parse_ports(&masscan->ports, script->ports, &is_error);
+            rangelist_parse_ports(&masscan->ports, script->ports, &is_error, 0);
         
         /* Kludge: change normal port range to script range */
         for (i=0; i<masscan->ports.count; i++) {
