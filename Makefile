@@ -1,3 +1,6 @@
+#use llvm by default, GNU C otherwise
+CC=$(shell which clang || which gcc)
+
 PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
 SYS := $(shell gcc -dumpmachine)
@@ -65,8 +68,6 @@ INCLUDES = -I.
 FLAGS2 =
 endif
 
-# this works on llvm or real gcc
-CC = clang
 
 DEFINES = 
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
