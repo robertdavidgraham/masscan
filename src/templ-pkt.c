@@ -898,7 +898,7 @@ _template_init(
      * the correct way to do this, but I'm too lazy to refactor code
      * for the right way, so we'll do it this way now.
      */
-    if (data_link == 12 /* Raw IP */) {
+    if (data_link == 12 /* Raw IP */ || data_link == 113 /* SLL Socket Cooked mode */ ) {
         tmpl->length -= tmpl->offset_ip;
         tmpl->offset_tcp -= tmpl->offset_ip;
         tmpl->offset_app -= tmpl->offset_ip;

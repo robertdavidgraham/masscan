@@ -37,6 +37,12 @@ static int is_pcap_file = 0;
 #include <net/if.h>
 #include <arpa/inet.h>
 
+#if defined(__linux__)
+#include <netpacket/packet.h>
+#include <net/ethernet.h>
+#include <linux/if_ether.h>
+#endif
+
 #else
 #endif
 
@@ -322,6 +328,11 @@ rawsock_send_packet(
 
         return 0;
     }
+
+#if defined(__linux__)
+    if(adapter->socket_send>0)
+        return sendto(adapter->socket_send, packet, length, 0, (struct sockaddr *)&adapter->sll_struct,sizeof(struct sockaddr_ll ));
+#endif
 
     /* LIBPCAP */
     if (adapter->pcap)
@@ -776,12 +787,24 @@ rawsock_init_adapter(const char *adapter_name,
         /* Figure out the link-type. We suport Ethernet and IP */
         {
             int dl = PCAP.datalink(adapter->pcap);
+#if defined(__linux__)
+            adapter->socket_send = -1;
+#endif
+            adapter->is_iplayer = 0;
             switch (dl) {
                 case 1: /* Ethernet */
                     adapter->link_type = dl;
+#if defined(__linux__)
+                    adapter->socket_send = socket(AF_PACKET,SOCK_RAW,IPPROTO_RAW);
+#endif
                     break;
                 case 12: /* IP Raw */
+                case 113: /* Socket Cooked mode SLL */
                     adapter->link_type = dl;
+                    adapter->is_iplayer = 1;
+#if defined(__linux__)
+                    adapter->socket_send = socket(AF_PACKET,SOCK_DGRAM,IPPROTO_IP);
+#endif
                     break;
                 default:
                     LOG(0, "unknown data link type: %u(%s)\n",
@@ -790,6 +813,27 @@ rawsock_init_adapter(const char *adapter_name,
 
             }
         }
+
+#if defined(__linux__)
+        {
+            struct ifreq ifr;
+            size_t if_name_len=strlen(adapter_name);
+            if (if_name_len<sizeof(ifr.ifr_name)) {
+                memcpy(ifr.ifr_name,adapter_name,if_name_len);
+                ifr.ifr_name[if_name_len]=0;
+            }
+            if (ioctl(adapter->socket_send,SIOCGIFINDEX,&ifr)==-1) {
+                LOG(0, "FAIL: %s\n", strerror(errno));
+            }
+            adapter->sll_struct.sll_ifindex = ifr.ifr_ifindex;
+            adapter->sll_struct.sll_halen = ETH_ALEN;
+            if(adapter->link_type == 12 || adapter->link_type == 113) {
+                adapter->sll_struct.sll_protocol = htons(ETHERTYPE_IP);
+            } else {
+                adapter->sll_struct.sll_protocol = htons(ETH_P_ALL);
+            }
+        }
+#endif
         
 #if 0
         /* Set any BPF filters the user might've set */
