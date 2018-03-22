@@ -817,17 +817,17 @@ rawsock_init_adapter(const char *adapter_name,
 #if defined(__linux__)
         {
             struct ifreq ifr;
-            size_t if_name_len=strlen(adapter_name);
+            size_t if_name_len = strlen(adapter_name);
             if (if_name_len<sizeof(ifr.ifr_name)) {
                 memcpy(ifr.ifr_name,adapter_name,if_name_len);
-                ifr.ifr_name[if_name_len]=0;
+                ifr.ifr_name[if_name_len] = 0;
             }
             if (ioctl(adapter->socket_send,SIOCGIFINDEX,&ifr)==-1) {
                 LOG(0, "FAIL: %s\n", strerror(errno));
             }
             adapter->sll_struct.sll_ifindex = ifr.ifr_ifindex;
             adapter->sll_struct.sll_halen = ETH_ALEN;
-            if(adapter->link_type == 12 || adapter->link_type == 113) {
+            if(adapter->is_iplayer) {
                 adapter->sll_struct.sll_protocol = htons(ETHERTYPE_IP);
             } else {
                 adapter->sll_struct.sll_protocol = htons(ETH_P_ALL);
