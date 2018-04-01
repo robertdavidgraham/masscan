@@ -52,21 +52,15 @@ struct NmapPayloads {
 
 
 struct Payload2 hard_coded_payloads[] = {
-    {161, 65536, 59, 0, snmp_set_cookie,
-     "\x30" "\x39"
-       "\x02\x01\x00"                    /* version */
-       "\x04\x06" "public"               /* community = public */
-       "\xa0" "\x2c"                     /* type = GET */
-        "\x02\x04\x00\x00\x00\x00"      /* transaction id = ???? */
-        "\x02\x01\x00"                  /* error = 0 */
-        "\x02\x01\x00"                  /* error index = 0 */
-         "\x30\x1e"
-          "\x30\x0d"
-           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x01\x00" /*sysName*/
-           "\x05\x00"          /*^^^^_____IDS LULZ HAH HA HAH*/
-         "\x30\x0d"
-           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
-           "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
+    /* ECHO protocol - echoes back whatever we send */
+    {7, 65536, 12, 0, 0, "masscan-test 0x00000000"},
+
+    /* QOTD - quote of the day (amplifier) */
+    {17, 65536, 12, 0, 0, "masscan-test"},
+    
+    /* chargen - character generator (amplifier) */
+    {19, 65536, 12, 0, 0, "masscan-test"},
+    
     {53, 65536, 0x1f, 0, dns_set_cookie,
         /* 00 */"\x50\xb6"  /* transaction id */
         /* 02 */"\x01\x20"  /* quer y*/
@@ -92,6 +86,31 @@ struct Payload2 hard_coded_payloads[] = {
         "\x00\x21" /* type = nbt */
         "\x00\x01" /* class = iternet*/
     },
+    {161, 65536, 59, 0, snmp_set_cookie,
+     "\x30" "\x39"
+       "\x02\x01\x00"                    /* version */
+       "\x04\x06" "public"               /* community = public */
+       "\xa0" "\x2c"                     /* type = GET */
+        "\x02\x04\x00\x00\x00\x00"      /* transaction id = ???? */
+        "\x02\x01\x00"                  /* error = 0 */
+        "\x02\x01\x00"                  /* error index = 0 */
+         "\x30\x1e"
+          "\x30\x0d"
+           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x01\x00" /*sysName*/
+           "\x05\x00"          /*^^^^_____IDS LULZ HAH HA HAH*/
+         "\x30\x0d"
+           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
+           "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
+
+    /* UPnP SSDP - Univeral Plug-n-Play Simple Service Discovery Protocol */
+    {1900, 65536, 0xFFFFFFFF, 0, 0,
+            "M-SEARCH * HTTP/1.1\r\n"
+            "HOST: 239.255.255.250:1900\r\n"
+            "MAN: \"ssdp:discover\"\r\n"
+            "MX: 1\r\n"
+            "ST: ssdp:all\r\n"
+            "USER-AGENT: unix/1.0 UPnP/1.1 masscan/1.x\r\n"},
+
     {5060, 65536, 0xFFFFFFFF, 0, 0,
         "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
         "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
@@ -120,6 +139,13 @@ struct Payload2 hard_coded_payloads[] = {
         (char *)zeroaccess_getL},
     {16471, 65536, zeroaccess_getL_length, 0, 0,
         (char *)zeroaccess_getL},
+
+    /* Quake 3 (amplifier)
+     * http://blog.alejandronolla.com/2013/06/24/amplification-ddos-attack-with-quake3-servers-an-analysis-1-slash-2/
+     */
+    {27960, 65536, 0xFFFFFFFF, 0, 0,
+        "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x10"},
+
 
     {0,0,0,0,0}
 };

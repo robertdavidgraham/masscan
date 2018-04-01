@@ -294,6 +294,7 @@ int pcap_init(void)
         switch (GetLastError()) {
             case ERROR_MOD_NOT_FOUND:
                 fprintf(stderr, "%s: not found\n", "Packet.dll");
+                fprintf(stderr, "  HINT: you must install either WinPcap or Npcap\n");
                 return -1;
             default:
                 fprintf(stderr, "%s: couldn't load %d\n", "Packet.dll", (int)GetLastError());

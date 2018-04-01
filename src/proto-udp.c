@@ -66,19 +66,19 @@ handle_udp(struct Output *out, time_t timestamp,
 
 
     switch (port_them) {
-        case 53:
+        case 53: /* DNS - Domain Name System (amplifier) */
             status = handle_dns(out, timestamp, px, length, parsed, entropy);
             break;
-        case 123:
+        case 123: /* NTP - Network Time Protocol (amplifier) */
             status = ntp_handle_response(out, timestamp, px, length, parsed, entropy);
             break;
-        case 137:
+        case 137: /* NetBIOS (amplifier) */
             status = handle_nbtstat(out, timestamp, px, length, parsed, entropy);
             break;
-        case 161:
+        case 161: /* SNMP - Simple Network Managment Protocol (amplifier) */
             status = handle_snmp(out, timestamp, px, length, parsed, entropy);
             break;
-        case 11211:
+        case 11211: /* memcached (amplifier) */
             px += parsed->app_offset;
             length = parsed->app_length;
             status = memcached_udp_parse(out, timestamp, px, length, parsed, entropy);
