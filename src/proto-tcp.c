@@ -313,7 +313,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
             fprintf(stderr, "tcpcon: parmeter: expected array []: %s\n", name);
             exit(1);
         }
-        port = strtoul(p+1, 0, 0);
+        port = (unsigned)strtoul(p+1, 0, 0);
 
         x = banner1->tcp_payloads[port];
         if (x == NULL) {
@@ -461,6 +461,42 @@ enum DestroyReason {
 };
 
 /***************************************************************************
+ * Flush all the banners asssociated with this TCP connection. This always
+ * called when TCB is destroyed. This may also be called earlier, such
+ * as when a FIN is received.
+ ***************************************************************************/
+static void
+tcpcon_flush_banners(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb)
+{
+    struct BannerOutput *banout;
+    
+    /* Go through and print all the banners. Some protocols have 
+     * multiple banners. For example, web servers have both
+     * HTTP and HTML banners, and SSL also has several 
+     * X.509 certificate banners */
+    for (banout = &tcb->banout; banout != NULL; banout = banout->next) {
+        if (banout->length && banout->protocol) {
+            tcpcon->report_banner(
+                                  tcpcon->out,
+                                  global_now,
+                                  tcb->ip_them,
+                                  6, /*TCP protocol*/
+                                  tcb->port_them,
+                                  banout->protocol & 0x0FFFFFFF,
+                                  tcb->ttl,
+                                  banout->banner,
+                                  banout->length);
+        }
+    }
+    
+    /*
+     * Free up all the banners.
+     */
+    banout_release(&tcb->banout);
+
+}
+
+/***************************************************************************
  * Destroy a TCP connection entry. We have to unlink both from the
  * TCB-table as well as the timeout-table.
  * Called from 
@@ -473,8 +509,7 @@ tcpcon_destroy_tcb(
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
-    struct BannerOutput *banout;
-
+    
     UNUSEDPARM(reason);
 
 //printf("." "tcb age = %u-sec, reason=%u                                   \n", time(0) - tcb->when_created, reason);
@@ -512,27 +547,10 @@ tcpcon_destroy_tcb(
 
     /*
      * Print out any banners associated with this TCP session. Most of the
-     * time, there'll only be one.
+     * time, there'll only be one. After printing them out, delete the
+     * banners.
      */
-    for (banout = &tcb->banout; banout != NULL; banout = banout->next) {
-        if (banout->length && banout->protocol) {
-            tcpcon->report_banner(
-                tcpcon->out,
-                global_now,
-                tcb->ip_them,
-                6, /*TCP protocol*/
-                tcb->port_them,
-                banout->protocol & 0x0FFFFFFF,
-                tcb->ttl,
-                banout->banner,
-                banout->length);
-        }
-    }
-
-    /*
-     * If there are multiple banners, then free the additional ones
-     */
-    banout_release(&tcb->banout);
+    tcpcon_flush_banners(tcpcon, tcb);
 
     /*
      * Unlink this from the timeout system.
@@ -1238,6 +1256,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             0x11,
             0, 0, 0);
         tcb->seqno_me++;
+        tcpcon_flush_banners(tcpcon, tcb);
         break;
     
     case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:

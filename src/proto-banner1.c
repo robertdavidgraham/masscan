@@ -141,7 +141,7 @@ banner1_parse(
                              banout,
                              more);
             break;
-        case PROTO_SMTP:
+    case PROTO_SMTP:
             banner_smtp.parse(   banner1,
                               banner1->http_fields,
                               tcb_state,
@@ -238,7 +238,9 @@ banner1_create(void)
     memset(b, 0, sizeof(*b));
 
     /*
-     * These patterns match the start of the TCP stream
+     * This creates a pattern-matching blob for heuristically determining
+     * a protocol that runs on wrong ports, such as how FTP servers
+     * often respond with "220 " or VNC servers respond with "RFB".
      */
     b->smack = smack_create("banner1", SMACK_CASE_INSENSITIVE);
     for (i=0; patterns[i].pattern; i++)
@@ -251,9 +253,19 @@ banner1_create(void)
     smack_compile(b->smack);
 
 
+    /* 
+     * This goes down the list of all the TCP protocol handlers and initializes
+     * them.
+     */
+    banner_ftp.init(b);
     banner_http.init(b);
-    banner_vnc.init(b);
+    banner_imap4.init(b);
     banner_memcached.init(b);
+    banner_pop3.init(b);
+    banner_smtp.init(b);
+    banner_ssh.init(b);
+    banner_ssl.init(b);
+    banner_vnc.init(b);
 
     b->tcp_payloads[80] = &banner_http;
     b->tcp_payloads[8080] = &banner_http;

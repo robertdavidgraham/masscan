@@ -613,7 +613,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
 
     /* Read the first frame's timestamp */
     {
-        int loc;
+        long loc;
         char tsbuf[8];
         size_t x;
 

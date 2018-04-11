@@ -3,11 +3,21 @@
 #include <stdint.h>
 #define STATE_DONE 0xFFFFFFFF
 #include <stdio.h>
+#include "masscan-app.h"
 #include "proto-banout.h"
 #include "proto-x509.h"
 
 struct InteractiveData;
+struct Banner1;
+struct ProtocolState;
 
+typedef void (*BannerParser)(
+              const struct Banner1 *banner1,
+              void *banner1_private,
+              struct ProtocolState *stream_state,
+              const unsigned char *px, size_t length,
+              struct BannerOutput *banout,
+              struct InteractiveData *more);
 struct Banner1
 {
     struct SMACK *smack;
@@ -25,6 +35,8 @@ struct Banner1
     unsigned is_poodle_sslv3:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];
+    
+    BannerParser parser[PROTO_end_of_list];
 };
 
 struct BannerBase64

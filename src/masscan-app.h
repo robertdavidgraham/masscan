@@ -30,6 +30,10 @@ enum ApplicationProtocol {
     PROTO_VNC_RFB,
     PROTO_SAFE,
     PROTO_MEMCACHED,
+    
+    
+    
+    PROTO_end_of_list /* must be last one */
 };
 
 const char *

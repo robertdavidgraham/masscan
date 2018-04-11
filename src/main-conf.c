@@ -1345,7 +1345,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
-        unsigned x = strtoul(value, 0, 0);
+        unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 1514 - 14 - 40) {
             fprintf(stderr, "error: %s=<n>: expected number less than 1500\n", name);
         } else {
@@ -1655,7 +1655,7 @@ masscan_set_parameter(struct Masscan *masscan,
             while (offset < max_offset && isspace(value[offset]))
                 offset++;
             if (offset+1 < max_offset && value[offset] == ':' && isdigit(value[offset+1]&0xFF)) {
-                port = strtoul(value+offset+1, 0, 0);
+                port = (unsigned)strtoul(value+offset+1, 0, 0);
                 if (port > 65535 || port == 0) {
                     LOG(0, "FAIL: bad redis port: %s\n", value+offset+1);
                     exit(1);
@@ -1679,7 +1679,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("resume-count", name)) {
         masscan->resume.count = parseInt(value);
     } else if (EQUALS("retries", name) || EQUALS("retry", name)) {
-        unsigned x = strtoul(value, 0, 0);
+        unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 1000) {
             fprintf(stderr, "error: retries=<n>: expected number less than 1000\n");
         } else {
@@ -1809,7 +1809,7 @@ masscan_set_parameter(struct Masscan *masscan,
         if (EQUALS("csv", value))
             masscan->is_test_csv = 0;
     } else if (EQUALS("ttl", name)) {
-        unsigned x = strtoul(value, 0, 0);
+        unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 256) {
             fprintf(stderr, "error: %s=<n>: expected number less than 256\n", name);
         } else {
