@@ -229,6 +229,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
+    /* Wait to make sure receive_thread is ready */
+    pixie_usleep(1000000);
     LOG(1, "[+] starting transmit thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
