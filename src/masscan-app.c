@@ -43,6 +43,8 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_TELNET:         return "telnet";
     case PROTO_RDP:            return "rdp";
     case PROTO_HTTP_SERVER:     return "http.server";
+
+    case PROTO_ERROR: return "error";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
