@@ -986,6 +986,20 @@ config_top_ports(struct Masscan *masscan, unsigned n)
     }
 }
 
+int
+isInteger(const char *value)
+{
+    size_t i;
+    
+    if (value == NULL)
+        return 0;
+    
+    for (i=0; value[i]; i++)
+        if (!isdigit(value[i]&0xFF))
+            return 0;
+    return 1;
+}
+
 /***************************************************************************
  * Called either from the "command-line" parser when it sees a --parm,
  * or from the "config-file" parser for normal options.
@@ -1798,7 +1812,10 @@ masscan_set_parameter(struct Masscan *masscan,
         exit(1);
     } else if (EQUALS("top-ports", name)) {
         unsigned n = (unsigned)parseInt(value);
-        config_top_ports(masscan, n);
+        if (!isInteger(value))
+            n = 100;
+        LOG(2, "top-ports = %u\n", n);
+        masscan->top_ports = n;
     } else if (EQUALS("traceroute", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -1934,6 +1951,21 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
         if (argv[i][0] == '-' && argv[i][1] == '-') {
             if (strcmp(argv[i], "--help") == 0) {
                 masscan_help();
+            } else if (EQUALS("top-ports", argv[i]+2)) {
+                /* special handling here since the following parameter
+                 * is optional */
+                const char *value = "1000";
+                unsigned n;
+                
+                /* Only consume the next parameter if it's a number,
+                 * otherwise default to 10000 */
+                if (i+1 < argc && isInteger(argv[i+1])) {
+                    value = argv[++i];
+                }
+                n = (unsigned)parseInt(value);
+                LOG(2, "top-ports = %u\n", n);
+                masscan->top_ports = n;
+               
             } else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
@@ -2268,6 +2300,21 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          * IPv4 range
          */
         masscan_set_parameter(masscan, "range", argv[i]);
+    }
+    
+    /*
+     * If no other "scan type" found, then default to TCP
+     */
+    if (masscan->scan_type.udp == 0 && masscan->scan_type.sctp == 0
+        && masscan->scan_type.ping == 0 && masscan->scan_type.arp == 0)
+        masscan->scan_type.tcp = 1;
+    
+    /*
+     * If "top-ports" specified, then add all those ports. This may be in
+     * addition to any other ports
+     */
+    if (masscan->top_ports) {
+        config_top_ports(masscan, masscan->top_ports);
     }
 }
 

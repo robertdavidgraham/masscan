@@ -101,7 +101,13 @@ struct Masscan
         unsigned udp:1;
         unsigned sctp:1;
         unsigned ping:1;
+        unsigned arp:1; /*TODO*/
     } scan_type;
+    
+    /**
+     * After scan type has been configured, add these ports
+     */
+    unsigned top_ports;
 
     /**
      * One or more network adapters that we'll use for scanning. Each adapter
