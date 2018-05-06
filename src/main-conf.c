@@ -299,7 +299,9 @@ masscan_echo(struct Masscan *masscan, FILE *fp)
     fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
     fprintf(fp, "randomize-hosts = true\n");
     fprintf(fp, "seed = %" PRIu64 "\n", masscan->seed);
-    fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
+    
+    if (masscan->shard.one != 1 && masscan->shard.of != 1)
+        fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
     if (masscan->is_banners)
         fprintf(fp, "banners = true\n");
     if (masscan->is_arp)
@@ -986,6 +988,8 @@ config_top_ports(struct Masscan *masscan, unsigned n)
     }
 }
 
+/***************************************************************************
+ ***************************************************************************/
 int
 isInteger(const char *value)
 {
@@ -999,6 +1003,10 @@ isInteger(const char *value)
             return 0;
     return 1;
 }
+
+/***************************************************************************
+ ***************************************************************************/
+
 
 /***************************************************************************
  * Called either from the "command-line" parser when it sees a --parm,
