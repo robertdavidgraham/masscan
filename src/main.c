@@ -786,7 +786,7 @@ receive_thread(void *v)
                      * than port scanning them */
 
                     /* If we aren't doing an ARP scan, then ignore ARP responses */
-                    if (!masscan->is_arp)
+                    if (!masscan->scan_type.arp)
                         break;
 
                     /* If this response isn't in our range, then ignore it */

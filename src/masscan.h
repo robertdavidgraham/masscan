@@ -42,6 +42,7 @@ enum Operation {
  * outputing simultaneously.
  */
 enum OutputFormat {
+    Output_Default      = 0x0000,
     Output_Interactive  = 0x0001,   /* --interactive, print to cmdline */
     Output_List         = 0x0002,
     Output_Binary       = 0x0004,   /* -oB, "binary", the primary format */
@@ -100,14 +101,21 @@ struct Masscan
         unsigned tcp:1;
         unsigned udp:1;
         unsigned sctp:1;
-        unsigned ping:1;
-        unsigned arp:1; /*TODO*/
+        unsigned ping:1; /* --ping, ICMP echo */
+        unsigned arp:1; /* --arp, local ARP scan */
     } scan_type;
     
     /**
      * After scan type has been configured, add these ports
      */
     unsigned top_ports;
+    
+    /**
+     * Temporary file to echo parameters to, used for saving configuration
+     * to a file
+     */
+    FILE *echo;
+    unsigned echo_all;
 
     /**
      * One or more network adapters that we'll use for scanning. Each adapter
@@ -123,7 +131,7 @@ struct Masscan
         unsigned char router_mac[6];
         unsigned router_ip;
         int link_type; /* libpcap definitions */
-        unsigned char my_mac_count;
+        unsigned char my_mac_count; /*is there a MAC address? */
         unsigned vlan_id;
         unsigned is_vlan:1;
     } nic[8];
@@ -180,8 +188,7 @@ struct Masscan
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
-    unsigned is_arp:1;          /* --arp */
-    unsigned is_noreset:1;      /* --noreset */
+    unsigned is_noreset:1;      /* --noreset, don't transmit RST */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
