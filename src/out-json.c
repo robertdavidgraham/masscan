@@ -21,7 +21,8 @@ static void
 json_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    fprintf(fp, "]\n"); // enclose the atomic {}'s into an []
+    fseek(fp, -2, SEEK_END); // go back before last ","
+    fprintf(fp, "\n]\n"); // enclose the atomic {}'s into an []
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
