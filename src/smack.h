@@ -14,6 +14,7 @@ enum {
     SMACK_ANCHOR_BEGIN  = 0x01,
     SMACK_ANCHOR_END    = 0x02,
     SMACK_SNMP_HACK     = 0x04,
+    SMACK_WILDCARDS     = 0x08,
 };
 
 enum {
