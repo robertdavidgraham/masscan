@@ -16,6 +16,7 @@ enum ApplicationProtocol {
     PROTO_SNMP,             /* simple network management protocol, udp/161 */
     PROTO_NBTSTAT,          /* netbios, udp/137 */
     PROTO_SSL3,
+    PROTO_SMB,              /* SMB tcp/139 and tcp/445 */
     PROTO_SMTP,
     PROTO_POP3,
     PROTO_IMAP4,

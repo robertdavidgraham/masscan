@@ -135,6 +135,48 @@ struct MEMCACHEDSTUFF {
     unsigned match;
 };
 
+struct Smb72_Negotiate {
+    uint16_t DialectIndex;
+    uint16_t SecurityMode;
+    uint64_t SystemTime;
+    uint32_t Capabilities;
+    uint16_t ServerTimeZone;
+    uint8_t  ChallengeLength;
+    uint8_t  ChallengeOffset;
+};
+
+struct SMBSTUFF {
+    unsigned char nbt_type;
+    unsigned char nbt_flags;
+    unsigned length;
+    unsigned nbt_err;
+    
+    struct {
+        unsigned char   command;
+        unsigned        status;
+        unsigned char   flags1;
+        unsigned short  flags2;
+        unsigned        pid;
+        unsigned char   signature[8];
+        unsigned short  tid;
+        unsigned short  uid;
+        unsigned short  mid;
+        unsigned short  param_length;
+        unsigned short  param_offset;
+        unsigned short  byte_count;
+        unsigned short  byte_offset;
+        unsigned short  byte_state;
+        unsigned short  unicode_char;
+    } smb1;
+    union {
+        struct Smb72_Negotiate negotiate;
+    } parms1;
+    
+    union {
+        
+    } pkt;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -151,6 +193,7 @@ struct ProtocolState {
         struct SMTPSTUFF smtp;
         struct POP3STUFF pop3;
         struct MEMCACHEDSTUFF memcached;
+        struct SMBSTUFF smb;
     } sub;
 };
 

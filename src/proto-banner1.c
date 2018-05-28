@@ -8,6 +8,7 @@
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
+#include "proto-smb.h"
 #include "proto-ssh.h"
 #include "proto-ftp.h"
 #include "proto-smtp.h"
@@ -24,6 +25,16 @@
 
 
 struct Patterns patterns[] = {
+    {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
+    {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
+    
+    {"\x83\x00\x00\x01\x80", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening on called name */
+    {"\x83\x00\x00\x01\x81", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening for calling name */
+    {"\x83\x00\x00\x01\x82", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name not present */
+    {"\x83\x00\x00\x01\x83", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name present, but insufficient resources */
+    {"\x83\x00\x00\x01\x8f", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Unspecified error */
+
+    /* ...the remainder can be in any order */
     {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN},
     {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN},
     {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN},
@@ -31,6 +42,7 @@ struct Patterns patterns[] = {
     {"220 ",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 1},
     {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN},
     {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN},
+    {"521 ",        4, PROTO_SMTP, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
@@ -197,6 +209,15 @@ banner1_parse(
                         banout,
                         more);
         break;
+    case PROTO_SMB:
+        banner_smb1.parse(
+                        banner1,
+                        banner1->http_fields,
+                        tcb_state,
+                        px, length,
+                        banout,
+                        more);
+        break;
     case PROTO_VNC_RFB:
         banner_vnc.parse(    banner1,
                              banner1->http_fields,
@@ -265,10 +286,14 @@ banner1_create(void)
     banner_smtp.init(b);
     banner_ssh.init(b);
     banner_ssl.init(b);
+    banner_smb0.init(b);
+    banner_smb1.init(b);
     banner_vnc.init(b);
 
     b->tcp_payloads[80] = &banner_http;
     b->tcp_payloads[8080] = &banner_http;
+    b->tcp_payloads[139] = (void*)&banner_smb0;
+    b->tcp_payloads[445] = (void*)&banner_smb1;
     
     b->tcp_payloads[443] = (void*)&banner_ssl;   /* HTTP/s */
     b->tcp_payloads[465] = (void*)&banner_ssl;   /* SMTP/s */
@@ -449,7 +474,13 @@ banner1_selftest()
             fprintf(stderr, "SSL banner: selftest failed\n");
             return 1;
         }
-
+        
+        x = banner_smb1.selftest();
+        if (x) {
+            fprintf(stderr, "SMB banner: selftest failed\n");
+            return 1;
+        }
+        
         x = banner_http.selftest();
         if (x) {
             fprintf(stderr, "HTTP banner: selftest failed\n");
