@@ -172,9 +172,6 @@ struct SMBSTUFF {
         struct Smb72_Negotiate negotiate;
     } parms1;
     
-    union {
-        
-    } pkt;
 };
 
 struct ProtocolState {

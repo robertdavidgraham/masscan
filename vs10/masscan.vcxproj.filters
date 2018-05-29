@@ -291,6 +291,9 @@
     <ClCompile Include="..\src\proto-memcached.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-smb.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -495,6 +498,9 @@
       <Filter>Source Files\rawsock</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-memcached.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-smb.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>

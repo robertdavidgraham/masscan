@@ -56,6 +56,7 @@
     <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
+    <ClCompile Include="..\src\proto-smb.c" />
     <ClCompile Include="..\src\proto-smtp.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
@@ -146,6 +147,7 @@
     <ClInclude Include="..\src\proto-pop3.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-sctp.h" />
+    <ClInclude Include="..\src\proto-smb.h" />
     <ClInclude Include="..\src\proto-smtp.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
