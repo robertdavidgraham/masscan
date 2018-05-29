@@ -99,7 +99,7 @@ int
 rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 {
     int fd;
-    int seq = time(0);
+    int seq = (int)time(0);
     int err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;

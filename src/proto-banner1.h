@@ -3,11 +3,21 @@
 #include <stdint.h>
 #define STATE_DONE 0xFFFFFFFF
 #include <stdio.h>
+#include "masscan-app.h"
 #include "proto-banout.h"
 #include "proto-x509.h"
 
 struct InteractiveData;
+struct Banner1;
+struct ProtocolState;
 
+typedef void (*BannerParser)(
+              const struct Banner1 *banner1,
+              void *banner1_private,
+              struct ProtocolState *stream_state,
+              const unsigned char *px, size_t length,
+              struct BannerOutput *banout,
+              struct InteractiveData *more);
 struct Banner1
 {
     struct SMACK *smack;
@@ -25,6 +35,8 @@ struct Banner1
     unsigned is_poodle_sslv3:1;
 
     struct ProtocolParserStream *tcp_payloads[65536];
+    
+    BannerParser parser[PROTO_end_of_list];
 };
 
 struct BannerBase64
@@ -123,6 +135,48 @@ struct MEMCACHEDSTUFF {
     unsigned match;
 };
 
+struct Smb72_Negotiate {
+    uint16_t DialectIndex;
+    uint16_t SecurityMode;
+    uint64_t SystemTime;
+    uint32_t Capabilities;
+    uint16_t ServerTimeZone;
+    uint8_t  ChallengeLength;
+    uint8_t  ChallengeOffset;
+};
+
+struct SMBSTUFF {
+    unsigned char nbt_type;
+    unsigned char nbt_flags;
+    unsigned length;
+    unsigned nbt_err;
+    
+    struct {
+        unsigned char   command;
+        unsigned        status;
+        unsigned char   flags1;
+        unsigned short  flags2;
+        unsigned        pid;
+        unsigned char   signature[8];
+        unsigned short  tid;
+        unsigned short  uid;
+        unsigned short  mid;
+        unsigned short  param_length;
+        unsigned short  param_offset;
+        unsigned short  byte_count;
+        unsigned short  byte_offset;
+        unsigned short  byte_state;
+        unsigned short  unicode_char;
+    } smb1;
+    union {
+        struct Smb72_Negotiate negotiate;
+    } parms1;
+    
+    union {
+        
+    } pkt;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -139,6 +193,7 @@ struct ProtocolState {
         struct SMTPSTUFF smtp;
         struct POP3STUFF pop3;
         struct MEMCACHEDSTUFF memcached;
+        struct SMBSTUFF smb;
     } sub;
 };
 

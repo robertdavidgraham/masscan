@@ -37,6 +37,7 @@ banout_release(struct BannerOutput *banout)
         free(banout->next);
         banout->next = next;
     }
+    banout_init(banout);
 }
 
 

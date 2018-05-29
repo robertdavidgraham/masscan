@@ -642,11 +642,11 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
         if (!isdigit(p[0] & 0xFF))
             break;
 
-        port = strtoul(p, &p, 0);
+        port = (unsigned)strtoul(p, &p, 0);
         end = port;
         if (*p == '-') {
             p++;
-            end = strtoul(p, &p, 0);
+            end = (unsigned)strtoul(p, &p, 0);
         }
 
         if (port > 0xFFFF || end > 0xFFFF || end < port) {

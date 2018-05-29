@@ -21,6 +21,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_SNMP: return "snmp";
     case PROTO_NBTSTAT: return "nbtstat";
     case PROTO_SSL3:    return "ssl";
+    case PROTO_SMB:     return "smb";
     case PROTO_SMTP:    return "smtp";
     case PROTO_POP3:    return "pop";
     case PROTO_IMAP4:   return "imap";
@@ -61,6 +62,7 @@ masscan_string_to_app(const char *str)
         {"ssh2",    PROTO_SSH2},
         {"nbtstat", PROTO_NBTSTAT},
         {"ssl",     PROTO_SSL3},
+        {"smb",     PROTO_SMB},
         {"pop",     PROTO_POP3},
         {"imap",    PROTO_IMAP4},
         {"x509",    PROTO_X509_CERT},
