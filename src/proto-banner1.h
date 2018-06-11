@@ -6,6 +6,7 @@
 #include "masscan-app.h"
 #include "proto-banout.h"
 #include "proto-x509.h"
+#include "proto-spnego.h"
 
 struct InteractiveData;
 struct Banner1;
@@ -139,39 +140,70 @@ struct Smb72_Negotiate {
     uint16_t DialectIndex;
     uint16_t SecurityMode;
     uint64_t SystemTime;
+    uint32_t SessionKey;
     uint32_t Capabilities;
     uint16_t ServerTimeZone;
     uint8_t  ChallengeLength;
     uint8_t  ChallengeOffset;
 };
 
+struct Smb73_Setup {
+    uint16_t BlobLength;
+    uint16_t BlobOffset;
+};
+
 struct SMBSTUFF {
+    unsigned nbt_state;
     unsigned char nbt_type;
     unsigned char nbt_flags;
-    unsigned length;
+    unsigned is_printed_ver:1;
+    unsigned is_printed_guid:1;
+    unsigned is_printed_time:1;
+    unsigned nbt_length;
     unsigned nbt_err;
     
-    struct {
-        unsigned char   command;
-        unsigned        status;
-        unsigned char   flags1;
-        unsigned short  flags2;
-        unsigned        pid;
-        unsigned char   signature[8];
-        unsigned short  tid;
-        unsigned short  uid;
-        unsigned short  mid;
-        unsigned short  param_length;
-        unsigned short  param_offset;
-        unsigned short  byte_count;
-        unsigned short  byte_offset;
-        unsigned short  byte_state;
-        unsigned short  unicode_char;
-    } smb1;
+    union {
+        struct {
+            unsigned char   command;
+            unsigned        status;
+            unsigned char   flags1;
+            unsigned short  flags2;
+            unsigned        pid;
+            unsigned char   signature[8];
+            unsigned short  tid;
+            unsigned short  uid;
+            unsigned short  mid;
+            unsigned short  param_length;
+            unsigned short  param_offset;
+            unsigned short  byte_count;
+            unsigned short  byte_offset;
+            unsigned short  byte_state;
+            unsigned short  unicode_char;
+        } smb1;
+        struct {
+            unsigned seqno;
+            unsigned short header_length;
+            unsigned short offset;
+            unsigned short state;
+            unsigned short opcode;
+            unsigned short struct_length;
+            unsigned is_dynamic:1;
+            unsigned char flags;
+            unsigned ntstatus;
+            unsigned number;
+            unsigned short blob_offset;
+            unsigned short blob_length;
+        } smb2;
+    } hdr;
     union {
         struct Smb72_Negotiate negotiate;
-    } parms1;
-    
+        struct Smb73_Setup setup;
+        struct {
+            uint64_t current_time;
+            uint64_t boot_time;
+        } negotiate2;
+    } parms;
+    struct SpnegoDecode spnego;
 };
 
 struct ProtocolState {
@@ -217,6 +249,7 @@ struct ProtocolParserStream {
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more);
+    void (*cleanup)(struct ProtocolState *stream_state);
 };
 
 

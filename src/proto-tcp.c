@@ -20,6 +20,7 @@
 #include "proto-banner1.h"
 #include "proto-ssl.h"
 #include "proto-http.h"
+#include "proto-smb.h"
 #include "output.h"
 #include "string_s.h"
 #include "main-globals.h"
@@ -53,6 +54,11 @@ struct TCP_Control_Block
 
     unsigned char ttl;
     unsigned tcpstate:4;
+    
+    /* If the payload we've sent was dynamically allocated with
+     * malloc() from the heap, in which case we'll have to free()
+     * it. (Most payloads are static memory) */
+    unsigned is_payload_dynamic:1;
 
 
     unsigned short payload_length;
@@ -512,8 +518,6 @@ tcpcon_destroy_tcb(
     
     UNUSEDPARM(reason);
 
-//printf("." "tcb age = %u-sec, reason=%u                                   \n", time(0) - tcb->when_created, reason);
-
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
      * have to do a lookup to find the head pointer in the table.
@@ -551,6 +555,15 @@ tcpcon_destroy_tcb(
      * banners.
      */
     tcpcon_flush_banners(tcpcon, tcb);
+    if (tcb->is_payload_dynamic && tcb->payload_length && tcb->payload)
+        free((void*)tcb->payload);
+    
+    /* KLUDGE: this needs to be made more elegant */
+    switch (tcb->banner1_state.app_proto) {
+        case PROTO_SMB:
+            banner_smb1.cleanup(&tcb->banner1_state);
+            break;
+    }
 
     /*
      * Unlink this from the timeout system.
@@ -1113,8 +1126,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         {
             unsigned err;
             struct InteractiveData more;
-            more.payload = 0;
-            more.length =0;
+            
+            memset(&more, 0, sizeof(more));
 
             if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
                 tcpcon_send_packet(tcpcon, tcb,
@@ -1154,10 +1167,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             tcb->seqno_them += (unsigned)payload_length;
             
             /* acknowledge the bytes sent */
-            if (more.length) {
+            if (more.m_length) {
                 //printf("." "sending more data %u bytes\n", more.length);
-                tcpcon_send_packet(tcpcon, tcb, 0x18, more.payload, more.length, 0);
-                tcb->seqno_me += (uint32_t)more.length;
+                tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, 0);
+                tcb->seqno_me += (uint32_t)more.m_length;
+                tcb->is_payload_dynamic = more.is_payload_dynamic;
             } else {
                 tcpcon_send_packet(tcpcon, tcb,
                         0x10,
@@ -1197,6 +1211,11 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
 
         if (tcb->ackno_them - tcb->seqno_me == 0) {
             /* Now wait for response */
+            if (tcb->is_payload_dynamic)
+                free((void*)tcb->payload);
+            tcb->payload = 0;
+            tcb->payload_length = 0;
+            tcb->is_payload_dynamic = 0;
             tcb->tcpstate = STATE_WAITING_FOR_RESPONSE;
             timeouts_add(   tcpcon->timeouts,
                             tcb->timeout,

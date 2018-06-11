@@ -66,6 +66,16 @@ void
 banout_append_char(struct BannerOutput *banout, unsigned proto, int c);
 
 /**
+ * Append an integer, with hex digits, with the specified number of
+ * digits
+ */
+void
+banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long long number, int digits);
+
+void
+banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c);
+
+/**
  * Select a specific string (of the specified protocol).
  */
 const unsigned char *

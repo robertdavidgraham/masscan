@@ -142,8 +142,8 @@ vnc_parse(  const struct Banner1 *banner1,
                         "RFB 003.008\n",
                     };
                     unsigned version = pstate->sub.vnc.version % 10;
-                    more->payload = response[version];
-                    more->length = 12;
+                    
+                    tcp_transmit(more, response[version], 12, 0);
 
                     if (version < 7)
                         /* Version 3.3: the server selects either "none" or
@@ -190,8 +190,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 else if (pstate->sub.vnc.sectype == 1) {
                     /* v3.3 sectype=none
                      * We move immediately to ClientInit stage */
-                    more->payload = "\x01";
-                    more->length = 1;
+                    tcp_transmit(more, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
                 } else
                     state = STATE_DONE;
@@ -201,8 +200,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 pstate->sub.vnc.sectype |= px[i];
                 if (pstate->sub.vnc.sectype == 0) {
                     /* security ok, move to client init */
-                    more->payload = "\x01";
-                    more->length = 1;
+                    tcp_transmit(more, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
                 } else {
                     /* error occurred, so grab error message */
@@ -241,16 +239,13 @@ vnc_parse(  const struct Banner1 *banner1,
                     banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
                     if (pstate->sub.vnc.version < 7) {
                         state = RFB_SERVERINIT;
-                        more->payload = "\x01";
-                        more->length = 1;
+                        tcp_transmit(more, "\x01", 1, 0);
                     } else if (pstate->sub.vnc.version == 7) {
                         state = RFB_SERVERINIT;
-                        more->payload = "\x01\x01";
-                        more->length = 2;
+                        tcp_transmit(more, "\x01\x01", 2, 0);
                     } else {
                         state = RFB_SECURITYRESULT;
-                        more->payload = "\x01";
-                        more->length = 1;
+                        tcp_transmit(more, "\x01", 1, 0);
                     }
                 } else {
                     banout_append(banout, PROTO_VNC_RFB, "/", AUTO_LEN);

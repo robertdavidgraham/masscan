@@ -68,8 +68,7 @@ ftp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (ftp->is_last) {
-                        more->payload = "AUTH TLS\r\n";
-                        more->length = 10;
+                        tcp_transmit(more, "AUTH TLS\r\n", 10, 0);
                         state = 100;
                         banout_append_char(banout, PROTO_FTP, px[i]);
                     } else {
@@ -98,8 +97,7 @@ ftp_parse(  const struct Banner1 *banner1,
                         pstate->port = (unsigned short)port;
                         state = 0;
                         
-                        more->payload = banner_ssl.hello;
-                        more->length = (unsigned)banner_ssl.hello_length;
+                        tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
                         
                     } else {
                         state = STATE_DONE;

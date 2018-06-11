@@ -179,6 +179,68 @@ banout_append_char(struct BannerOutput *banout, unsigned proto, int c)
 
 /***************************************************************************
  ***************************************************************************/
+void
+banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long long number, int digits)
+{
+    if (digits == 0) {
+        for (digits=16; digits>0; digits--)
+            if (number>>((digits-1)*4) & 0xF)
+                break;
+    }
+    
+    for (;digits>0; digits--) {
+        char c = "0123456789abcdef"[(number>>(unsigned long long)((digits-1)*4)) & 0xF];
+        banout_append_char(banout, proto, c);
+    }
+}
+
+/***************************************************************************
+ * Output either a normal character, or the hex form of a UTF-8 string
+ ***************************************************************************/
+void
+banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c)
+{
+    if (c & ~0xFFFF) {
+        unsigned c2;
+        c2 = 0xF0 | ((c>>18)&0x03);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>>12)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>> 6)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>> 0)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+    } else if (c & ~0x7FF) {
+        unsigned c2;
+        c2 = 0xE0 | ((c>>12)&0x0F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>> 6)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>> 0)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+    } else if (c & ~0x7f) {
+        unsigned c2;
+        c2 = 0xc0 | ((c>> 6)&0x1F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+        c2 = 0x80 | ((c>> 0)&0x3F);
+        banout_append(banout, proto, "\\x", 2);
+        banout_append_hexint(banout, proto, c2, 2);
+    } else
+        banout_append_char(banout, proto, c);
+}
+
+
+
+/***************************************************************************
+ ***************************************************************************/
 static struct BannerOutput *
 banout_new_proto(struct BannerOutput *banout, unsigned proto)
 {
@@ -270,7 +332,6 @@ banout_append(struct BannerOutput *banout, unsigned proto,
     memcpy(p->banner + p->length, px, length);
     p->length = (unsigned)(p->length + length);
 
-    
 }
 
 /*****************************************************************************

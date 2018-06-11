@@ -503,14 +503,14 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 
     while (*src) {
         const char *next_src;
-        unsigned long id;
+        unsigned id;
         unsigned count;
         unsigned i;
 
         while (*src == '.')
             src++;
 
-        id = strtoul(src, (char**)&next_src, 0);
+        id = (unsigned)strtoul(src, (char**)&next_src, 0);
         if (src == next_src)
             break;
         else

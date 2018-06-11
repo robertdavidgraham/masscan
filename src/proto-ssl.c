@@ -571,8 +571,7 @@ parse_handshake(
             static const char heartbleed_request[] = 
                 "\x15\x03\x02\x00\x02\x01\x80"
                 "\x18\x03\x02\x00\x03\x01" "\x40\x00";
-            more->payload = heartbleed_request;
-            more->length = sizeof(heartbleed_request)-1;
+            tcp_transmit(more, heartbleed_request, sizeof(heartbleed_request)-1, 0);
         }
         DROPDOWN(i,length,state);
 

@@ -81,7 +81,7 @@ imap4_parse(  const struct Banner1 *banner1,
             case 5:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a001 CAPABILITY\r\n", 17); 
+                    tcp_transmit(more, "a001 CAPABILITY\r\n", 17, 0);
                     state = 100;
                 }
                 break;
@@ -136,7 +136,7 @@ imap4_parse(  const struct Banner1 *banner1,
             case 105:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a002 STARTTLS\r\n", 15);
+                    tcp_transmit(more, "a002 STARTTLS\r\n", 15, 0);
                     state = 300;
                 }
                 break;
@@ -158,8 +158,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     pstate->port = (unsigned short)port;
                     state = 0;
                     
-                    more->payload = banner_ssl.hello;
-                    more->length = (unsigned)banner_ssl.hello_length;
+                    tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
                     break;
                 }
                 break;

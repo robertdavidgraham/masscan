@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
 		112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
 		11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD219A2D47A00DB5BFE /* proto-vnc.c */; };
@@ -108,6 +109,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		110ED16520CA6A8300690C91 /* proto-spnego.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-spnego.h"; sourceTree = "<group>"; };
+		110ED16620CB0BC200690C91 /* proto-ntlmssp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ntlmssp.h"; sourceTree = "<group>"; };
+		110ED16720CB0BC200690C91 /* proto-ntlmssp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntlmssp.c"; sourceTree = "<group>"; };
 		11126596197A086B00DC5987 /* out-unicornscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-unicornscan.c"; sourceTree = "<group>"; };
 		112A87191F9D8DF200D4D240 /* out-ndjson.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-ndjson.c"; sourceTree = "<group>"; };
 		113AD3B818208A1900D5E067 /* masscan-status.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "masscan-status.h"; sourceTree = "<group>"; };
@@ -391,6 +395,9 @@
 		11B360CA1F9016C00020F3A3 /* proto */ = {
 			isa = PBXGroup;
 			children = (
+				110ED16720CB0BC200690C91 /* proto-ntlmssp.c */,
+				110ED16620CB0BC200690C91 /* proto-ntlmssp.h */,
+				110ED16520CA6A8300690C91 /* proto-spnego.h */,
 				11DE129420ABC2650041135D /* proto-smb.h */,
 				11DE129520ABC2650041135D /* proto-smb.c */,
 				119AB2042051FFED008E4DDD /* proto-memcached.c */,
@@ -580,6 +587,7 @@
 				11A921DC17DBCC7E00DDFD32 /* main.c in Sources */,
 				11A921DD17DBCC7E00DDFD32 /* out-binary.c in Sources */,
 				11A921DE17DBCC7E00DDFD32 /* out-null.c in Sources */,
+				110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */,
 				11A921DF17DBCC7E00DDFD32 /* out-text.c in Sources */,
 				11A921E017DBCC7E00DDFD32 /* out-xml.c in Sources */,
 				11A921E117DBCC7E00DDFD32 /* output.c in Sources */,
