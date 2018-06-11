@@ -1428,13 +1428,13 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
         case SMB1_DATA:
             switch (smb->hdr.smb1.command) {
                 case 0x72:
-                    if (smb->hdr.smb1.flags2 & 0x0800)
+                    if ((smb->hdr.smb1.flags2 & 0x0800) > 0 && smb->parms.negotiate.ChallengeLength == 0)
                         i += smb1_parse_negotiate2(smb, px, i, max, banout);
                     else
                         i += smb1_parse_negotiate1(smb, px, i, max, banout);
                     break;
                 case 0x73: /* session setup and x */
-                    if (smb->hdr.smb1.flags2 & 0x0800)
+                    if ((smb->hdr.smb1.flags2 & 0x0800) > 0 && smb->parms.negotiate.ChallengeLength == 0)
                         i += smb1_parse_setup2(smb, px, i, max, banout);
                     else
                         i += smb1_parse_setup1(smb, px, i, max, banout);
