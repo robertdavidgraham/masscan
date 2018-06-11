@@ -1357,7 +1357,6 @@ spnego_decode(struct SpnegoDecode *spnego,
                  * ready to parse the 'value'. Push the current state on the
                  * stack, then decend into the child field.
                  */
-                printf("\n%u\n", x->u.tag.remaining);
                 ASN1_push(x, x->brother_state, x->u.tag.remaining);
                 state = x->child_state;
                 memset(&x->u, 0, sizeof(x->u));
