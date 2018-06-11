@@ -200,7 +200,6 @@ smb_params_parse(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, s
     if (max > offset + (smb->hdr.smb1.param_length - smb->hdr.smb1.param_offset))
         max = offset + (smb->hdr.smb1.param_length - smb->hdr.smb1.param_offset);
     
-    //printf("\n max=%04x  \n", *(unsigned short*)(px+max));
     
     /* Find the correct header */
     for (c=0; params[c].command != smb->hdr.smb1.command && params[c].command != 0xFF; c++)
@@ -419,7 +418,7 @@ smb1_parse_setup1(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
         max = offset + (smb->hdr.smb1.byte_count - smb->hdr.smb1.byte_offset);
     
     for (;offset<max; offset++) {
-        //printf("\\x%02x", px[offset]);
+        
         switch (state) {
             case D_PADDING:
                 if (smb->hdr.smb1.flags2 & 0x8000) {
@@ -596,11 +595,11 @@ smb1_parse_setup2(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
         max = offset + (smb->hdr.smb1.byte_count - smb->hdr.smb1.byte_offset);
     
     for (;offset<max; offset++) {
-        //printf("\\x%02x", px[offset]);
+        
         switch (state) {
             case D_BLOB:
                 if (smb->parms.setup.BlobOffset == 0) {
-                    spnego_decode_init(&smb->spnego, smb->hdr.smb2.blob_length);
+                    spnego_decode_init(&smb->spnego, smb->parms.setup.BlobLength);
                 }
             {
                 size_t new_max = max;
@@ -619,7 +618,7 @@ smb1_parse_setup2(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
             case D_PADDING:
                 /* If the blog length is odd, then there is no padding. Otherwise,
                  * there is one byte of padding */
-                if (smb->parms.setup.BlobLength & 1)
+                //if (smb->parms.setup.BlobLength & 1)
                     offset--;
                 state = D_PADDING2;
                 break;
@@ -629,6 +628,7 @@ smb1_parse_setup2(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
                 } else {
                     state = D_OSA1;
                 }
+                offset--;
                 break;
             case D_OSA1:
                 if (px[offset] == 0)

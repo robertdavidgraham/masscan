@@ -174,6 +174,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
                   px[50] | px[51]<<8,
                   px[55]
                   );
+        banout_append(banout, PROTO_SMB, buf, AUTO_LEN);
     }
 
     /* Parse all the fields */
