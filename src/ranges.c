@@ -102,7 +102,6 @@ debug_dump_ranges(struct RangeList *task)
 void
 rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 {
-    unsigned i;
     struct Range range;
 
     range.begin = begin;
@@ -127,6 +126,8 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
     }
 
 #if 0
+    unsigned i;
+    
     /* See if the range overlaps any exist range already in the
      * list */
     for (i = 0; i < task->count; i++) {
