@@ -121,7 +121,7 @@ banout_is_contains(const struct BannerOutput *banout, unsigned proto,
     if (string_length > string2_length)
         return 0;
     
-    for (i=0; i<string2_length-string_length; i++) {
+    for (i=0; i<string2_length-string_length+1; i++) {
         if (memcmp(string, string2+i, string_length) == 0)
             return 1;
     }

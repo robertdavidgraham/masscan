@@ -107,7 +107,7 @@ smb1_hello_template[] = {
     
 };
 
-static char smb1_null_session_setup[] = {
+static unsigned char smb1_null_session_setup[] = {
     0x00, 0x00, 0x00, 0x7e, 0xff, 0x53, 0x4d, 0x42,
     0x73, 0x00, 0x00, 0x00, 0x00, 0x08, 0x01, 0xc0,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -305,8 +305,11 @@ smb1_parse_negotiate1(struct SMBSTUFF *smb, const unsigned char *px, size_t offs
     unsigned state = smb->hdr.smb1.byte_state;
     enum {
         D_NEGOT_CHALLENGE,
+        D_NEGOT_DOMAINA_PRE,
+        D_NEGOT_NAMEA_PRE,
         D_NEGOT_DOMAINA,
         D_NEGOT_NAMEA,
+        D_NEGOT_ENDA,
         D_NEGOT_DOMAINU1,
         D_NEGOT_DOMAINU2,
         D_NEGOT_DOMAIN1,
@@ -330,7 +333,7 @@ smb1_parse_negotiate1(struct SMBSTUFF *smb, const unsigned char *px, size_t offs
                 if (smb->hdr.smb1.flags2 & 0x8000) {
                     state = D_NEGOT_DOMAINU1;
                 } else {
-                    state = D_NEGOT_DOMAINA;
+                    state = D_NEGOT_DOMAINA_PRE;
                 }
                 offset--;
             } else
@@ -377,15 +380,33 @@ smb1_parse_negotiate1(struct SMBSTUFF *smb, const unsigned char *px, size_t offs
             }
             break;
             
+        case D_NEGOT_DOMAINA_PRE:
+            if (px[offset] == 0) {
+                state = D_NEGOT_NAMEA_PRE;
+            } else {
+                banout_append(banout, PROTO_SMB, " domain=", AUTO_LEN);
+                banout_append_char(banout, PROTO_SMB, px[offset]);
+                state = D_NEGOT_DOMAINA;
+            }
+            break;
+        case D_NEGOT_NAMEA_PRE:
+            if (px[offset] == 0) {
+                state = D_NEGOT_END;
+            } else {
+                banout_append(banout, PROTO_SMB, " name=", AUTO_LEN);
+                banout_append_char(banout, PROTO_SMB, px[offset]);
+                state = D_NEGOT_NAMEA;
+            }
+            break;
         case D_NEGOT_DOMAINA:
         case D_NEGOT_NAMEA:
             if (px[offset] == 0) {
                 state++;
             } else {
                 banout_append_char(banout, PROTO_SMB, px[offset]);
-                state++;
             }
             break;
+            
         default:
             break;
     }
@@ -1989,6 +2010,39 @@ smb2_negot_response[] = {
     
 };
 
+
+/*****************************************************************************
+ * Do a single test of response packets
+ *****************************************************************************/
+static int
+smb_do_test(const char *substring, const unsigned char *packet_bytes, size_t length)
+{
+    struct Banner1 *banner1;
+    struct ProtocolState state[1];
+    struct BannerOutput banout1[1];
+    struct InteractiveData more;
+    int x;
+    
+    banner1 = banner1_create();
+    banout_init(banout1);
+    memset(&state[0], 0, sizeof(state[0]));
+    
+    smb_parse_record(banner1,
+                     0,
+                     state,
+                     packet_bytes,
+                     length,
+                     banout1,
+                     &more);
+    x = banout_is_contains(banout1, PROTO_SMB, substring);
+    if (x == 0)
+        printf("smb parser failure: %s\n", substring);
+    banner1_destroy(banner1);
+    banout_release(banout1);
+    
+    return x?0:1;
+}
+
 /*****************************************************************************
  *****************************************************************************/
 static int
@@ -1998,7 +2052,7 @@ smb_selftest(void)
     struct ProtocolState state[1];
     struct BannerOutput banout1[1];
     struct InteractiveData more;
-    int x;
+    int x = 0;
     size_t i;
 
     unsigned char packet_bytes[] = {
@@ -2039,7 +2093,31 @@ smb_selftest(void)
 
     };
     
+
+    /*****************************************************************************
+     *****************************************************************************/
+    {
+        static const unsigned char packet_bytes[] = {
+            0x00, 0x00, 0x00, 0x56, 0xff, 0x53, 0x4d, 0x42,
+            0x72, 0x00, 0x00, 0x00, 0x00, 0x98, 0x45, 0x60,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x93, 0x07,
+            0x00, 0x00, 0x01, 0x00, 0x11, 0x00, 0x00, 0x03,
+            0x05, 0x00, 0x01, 0x00, 0x04, 0x11, 0x00, 0x00,
+            0x00, 0x00, 0x01, 0x00, 0xa9, 0x00, 0x00, 0x00,
+            0x1d, 0xc2, 0x00, 0x00, 0x00, 0x83, 0xa9, 0xe2,
+            0x31, 0x02, 0xd4, 0x01, 0x00, 0x00, 0x08, 0x11,
+            0x00, 0x77, 0x6d, 0x78, 0x8f, 0x06, 0x52, 0x8f,
+            0xb8, 0x53, 0x36, 0x35, 0x39, 0x43, 0x32, 0x37,
+            0x44, 0x00
+        };
+        x += smb_do_test("domain=S659C27D", packet_bytes, sizeof(packet_bytes));
+    }
     
+    if (x) {
+        printf("smb parser failure: google.com\n");
+        return 1;
+    }
     return 0;
     /*
      * SMBv2 negotiate response
