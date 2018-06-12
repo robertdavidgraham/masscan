@@ -2039,6 +2039,8 @@ smb_selftest(void)
 
     };
     
+    
+    return 0;
     /*
      * SMBv2 negotiate response
      */

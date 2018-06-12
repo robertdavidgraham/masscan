@@ -1574,8 +1574,8 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Only allow one range of ports */
         if (ports.count != 1) {
-            LOG(0, "FAIL: only one source port range may be specified: %s\n",
-                    name);
+            LOG(0, "FAIL: only one '%s' range may be specified, found %u ranges\n",
+                    name, ports.count);
             exit(1);
         }
 

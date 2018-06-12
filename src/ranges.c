@@ -86,6 +86,16 @@ range_combine(struct Range *lhs, struct Range rhs)
 }
 
 
+void
+debug_dump_ranges(struct RangeList *task)
+{
+    unsigned i;
+    for (i=0; i<task->count; i++) {
+        struct Range *range = &task->list[i];
+        printf("%08x - %08x\n", range->begin, range->end);
+    }
+    printf("\n");
+}
 /***************************************************************************
  * Add the IPv4 range to our list of ranges.
  ***************************************************************************/
@@ -116,6 +126,7 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         task->max = (unsigned)new_max;
     }
 
+#if 0
     /* See if the range overlaps any exist range already in the
      * list */
     for (i = 0; i < task->count; i++) {
@@ -134,11 +145,71 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
             break;
         }
     }
-
     /* Add to end of list */
     task->list[i].begin = begin;
     task->list[i].end = end;
     task->count++;
+
+#else
+    {
+        unsigned lo, hi, mid;
+        
+        lo = 0;
+        hi = task->count;
+        while (lo < hi) {
+            mid = lo + (hi - lo)/2;
+            if (range.end < task->list[mid].begin) {
+                /* This IP range comes BEFORE the current range */
+                hi = mid;
+            } else if (range.begin > task->list[mid].end) {
+                /* this IP range comes AFTER the current range */
+                lo = mid + 1;
+            } else
+                break;
+        }
+        
+        /* No matching range was found, so insert at this location */
+        mid = lo + (hi - lo)/2;
+        
+        /*
+         * If overlap, then combine it with the range at this point. Otherwise,
+         * insert it at this point.
+         */
+        if (mid < task->count && range_is_overlap(task->list[mid], range)) {
+            range_combine(&task->list[mid], range);
+        } else {
+            memmove(task->list+mid+1, task->list+mid, (task->count - mid) * sizeof(task->list[0]));
+            task->list[mid].begin = begin;
+            task->list[mid].end = end;
+            task->count++;
+        }
+        
+        /*
+         * If overlap with neighbors, then combine with neighbors
+         */
+        for (;;) {
+            unsigned is_neighbor_overlapped = 0;
+            if (mid > 0 && range_is_overlap(task->list[mid-1], task->list[mid])) {
+                range_combine(&task->list[mid-1], task->list[mid]);
+                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+                mid--;
+                is_neighbor_overlapped = 1;
+                task->count--;
+            }
+            if (mid+1 < task->count && range_is_overlap(task->list[mid], task->list[mid+1])) {
+                range_combine(&task->list[mid], task->list[mid+1]);
+                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+                is_neighbor_overlapped = 1;
+                task->count--;
+            }
+            if (!is_neighbor_overlapped)
+                break;
+        }
+        //debug_dump_ranges(task);
+        return;
+    }
+#endif
+
 }
 
 /***************************************************************************
@@ -601,7 +672,7 @@ const char *
 rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error, unsigned proto_offset)
 {
     char *p = (char*)string;
-
+    
     *is_error = 0;
     while (*p) {
         unsigned port;
