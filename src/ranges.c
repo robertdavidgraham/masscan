@@ -86,16 +86,6 @@ range_combine(struct Range *lhs, struct Range rhs)
 }
 
 
-void
-debug_dump_ranges(struct RangeList *task)
-{
-    unsigned i;
-    for (i=0; i<task->count; i++) {
-        struct Range *range = &task->list[i];
-        printf("%08x - %08x\n", range->begin, range->end);
-    }
-    printf("\n");
-}
 /***************************************************************************
  * Add the IPv4 range to our list of ranges.
  ***************************************************************************/

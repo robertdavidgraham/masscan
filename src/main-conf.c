@@ -903,10 +903,15 @@ static int SET_hello(struct Masscan *masscan, const char *name, const char *valu
         if (masscan->is_hello_ssl) {
             fprintf(masscan->echo, "hello = ssl\n");
         }
+        if (masscan->is_hello_smbv1) {
+            fprintf(masscan->echo, "hello = smbv1\n");
+        }
         return 0;
     }
     if (EQUALS("ssl", value))
         masscan->is_hello_ssl = 1;
+    else if (EQUALS("smbv1", value))
+        masscan->is_hello_smbv1 = 1;
     else {
         fprintf(stderr, "FAIL: %s: unknown hello type\n", value);
         return CONF_ERR;

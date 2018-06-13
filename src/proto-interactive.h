@@ -10,7 +10,17 @@ struct InteractiveData {
 enum {
     TCPTRAN_DYNAMIC = 0x0001,
 };
+
+/**
+ * Called to 'transmit' TCP packet payload.
+ */
 void
 tcp_transmit(struct InteractiveData *more, const void *data, size_t length, unsigned flags);
+
+/**
+ * Called to allocate a TCP buffer.
+ */
+unsigned char *
+tcp_transmit_alloc(struct InteractiveData *more, size_t length);
 
 #endif

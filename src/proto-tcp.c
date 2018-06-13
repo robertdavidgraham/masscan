@@ -247,7 +247,15 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         
         return;
     }
-    
+
+    /*
+     * Downgrade SMB hello from v1/v2 to use only v1
+     */
+    if (name_equals(name, "hello") && name_equals(value, "smbv1")) {
+        smb_set_hello_v1(&banner_smb1);        
+        return;
+    }
+
     /*
      * 2014-04-08: scan for Neel Mehta's "heartbleed" bug
      */

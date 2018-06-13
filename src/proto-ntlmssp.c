@@ -111,7 +111,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
     unsigned name_length;
     unsigned info_offset;
     unsigned info_length;
-    unsigned flags;
+    //unsigned flags;
     unsigned i;
     
     if (length > x->length - x->offset)
@@ -159,7 +159,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
     }
     
     /* Grab flags */
-    flags = px[20] | px[21]<<8 | px[22]<<16 | px[23]<<24;
+    //flags = px[20] | px[21]<<8 | px[22]<<16 | px[23]<<24;
     
     /* Info field */
     info_length = px[40] | px[41]<<8;

@@ -140,7 +140,7 @@ ntp_modlist_parse(const unsigned char *px,
         return;
     }
 
-    offset += 4;
+    //offset += 4;
 
     {
         char msg[128];
