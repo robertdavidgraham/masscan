@@ -108,6 +108,7 @@ vnc_parse(  const struct Banner1 *banner1,
         RFB3_7_SECURITYTYPES=100,
         RFB_SERVERINIT=200,
         RFB_SECURITYRESULT=300,
+        RFB_DONE=0xffffffff,
     };
     
     UNUSEDPARM(banner1_private);
@@ -157,7 +158,8 @@ vnc_parse(  const struct Banner1 *banner1,
                         state = RFB3_7_SECURITYTYPES;
                     }
                 } else {
-                    state = STATE_DONE;
+                    state = 0xFFFFFFFF;
+                    tcp_close(more);
                 }
                 break;
             case RFB3_3_SECURITYTYPES:
@@ -192,8 +194,10 @@ vnc_parse(  const struct Banner1 *banner1,
                      * We move immediately to ClientInit stage */
                     tcp_transmit(more, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
-                } else
-                    state = STATE_DONE;
+                } else {
+                    state = RFB_DONE;
+                    tcp_close(more);
+                }
                 break;
             case RFB_SECURITYRESULT+3:
                 pstate->sub.vnc.sectype <<= 8;
@@ -215,7 +219,8 @@ vnc_parse(  const struct Banner1 *banner1,
                 break;
             case RFB_SECURITYERROR+4:
                 if (pstate->sub.vnc.sectype == 0) {
-                    state = STATE_DONE;
+                    state = RFB_DONE;
+                    tcp_close(more);
                 } else {
                     pstate->sub.vnc.sectype--;
                     banout_append_char(banout, PROTO_VNC_RFB, px[i]);
@@ -303,7 +308,8 @@ vnc_parse(  const struct Banner1 *banner1,
                 if (pstate->sub.vnc.sectype) {
                     banout_append(banout, PROTO_VNC_RFB, " name=[", AUTO_LEN);
                 } else {
-                    state = STATE_DONE;
+                    state = RFB_DONE;
+                    tcp_close(more);
                 }
                 break;
                 
@@ -312,13 +318,15 @@ vnc_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_VNC_RFB, px[i]);
                 if (pstate->sub.vnc.sectype == 0) {
                     banout_append(banout, PROTO_VNC_RFB, "]", AUTO_LEN);
-                    state = STATE_DONE;
+                    state = RFB_DONE;
+                    tcp_close(more);
                 }
                 break;
 
 
                 
-            case STATE_DONE:
+            case RFB_DONE:
+                tcp_close(more);
                 i = (unsigned)length;
                 break;
             default:

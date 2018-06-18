@@ -1,5 +1,6 @@
 #include "proto-http.h"
 #include "proto-banner1.h"
+#include "proto-interactive.h"
 #include "smack.h"
 #include "unusedparm.h"
 #include "string_s.h"
@@ -235,7 +236,9 @@ http_parse(
         FIELD_VALUE,
         CONTENT,
         CONTENT_TAG,
-        CONTENT_FIELD
+        CONTENT_FIELD,
+        
+        DONE_PARSING
     };
 
     UNUSEDPARM(banner1_private);
@@ -248,22 +251,27 @@ http_parse(
     for (i=0; i<length; i++)
     switch (state) {
     case 0: case 1: case 2: case 3: case 4:
-        if (toupper(px[i]) != "HTTP/"[state])
-            state = STATE_DONE;
-        else
+        if (toupper(px[i]) != "HTTP/"[state]) {
+            state = DONE_PARSING;
+            tcp_close(more);
+        } else
             state++;
         break;
     case 5:
         if (px[i] == '.')
             state++;
-        else if (!isdigit(px[i]))
-            state = STATE_DONE;
+        else if (!isdigit(px[i])) {
+            state = DONE_PARSING;
+            tcp_close(more);
+        }
         break;
     case 6:
         if (isspace(px[i]))
             state++;
-        else if (!isdigit(px[i]))
-            state = STATE_DONE;
+        else if (!isdigit(px[i])) {
+            state = DONE_PARSING;
+            tcp_close(more);
+        }
         break;
     case 7:
         /* TODO: look for 1xx response code */
@@ -389,7 +397,7 @@ http_parse(
             banout_append_char(banout, PROTO_HTML_TITLE, px[i]);
         }
         break;
-    case STATE_DONE:
+    case DONE_PARSING:
     default:
         i = (unsigned)length;
         break;
@@ -402,11 +410,11 @@ http_parse(
 
 
 
-    if (state == STATE_DONE)
+    if (state == DONE_PARSING)
         pstate->state = state;
     else
         pstate->state = (state2 & 0xFFFF) << 16
-                | (id & 0xFF) << 8
+                | ((unsigned)id & 0xFF) << 8
                 | (state & 0xFF);
 }
 

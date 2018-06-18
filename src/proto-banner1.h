@@ -1,7 +1,7 @@
 #ifndef PROTO_BANNER1_H
 #define PROTO_BANNER1_H
 #include <stdint.h>
-#define STATE_DONE 0xFFFFFFFF
+
 #include <stdio.h>
 #include "masscan-app.h"
 #include "proto-banout.h"
@@ -212,7 +212,6 @@ struct ProtocolState {
     unsigned short port;
     unsigned short app_proto;
     unsigned is_sent_sslhello:1;
-    unsigned is_done:1;
     struct BannerBase64 base64;
 
     union {

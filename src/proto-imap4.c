@@ -41,29 +41,37 @@ imap4_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '*')
                     state++;
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 1:
                 if (px[i] == ' ') {
                     banout_append_char(banout, PROTO_IMAP4, px[i]);
                     continue;
-                } else
-                    state++;
+                } else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 /* fall through */
             case 2:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == 'O')
                     state++;
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 3:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == 'K')
                     state++;
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 4:
                 if (px[i] == ' ') {
@@ -92,46 +100,58 @@ imap4_parse(  const struct Banner1 *banner1,
                     state += 100;
                 else if (px[i] == 'a')
                     state++;
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 101:
             case 301:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '0')
                     state++;
-                else 
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 102:
             case 302:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '0')
                     state++;
-                else 
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 103:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '1')
                     state++;
-                else 
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 303:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '2')
                     state++;
-                else 
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 104:
             case 304:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == ' ')
                     state++;
-                else 
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 105:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
@@ -163,6 +183,7 @@ imap4_parse(  const struct Banner1 *banner1,
                 }
                 break;
                 
+            case 0xffffffff:
             default:
                 i = (unsigned)length;
                 break;

@@ -890,7 +890,7 @@ receive_thread(void *v)
                         0, seqno_me, secs, usecs, seqno_them);
                 }
 
-                /* If this contains payload, handle that */
+                /* If this contains payload, handle that second */
                 if (parsed.app_length) {
                     tcpcon_handle(tcpcon, tcb, TCP_WHAT_DATA,
                         px + parsed.app_offset, parsed.app_length,

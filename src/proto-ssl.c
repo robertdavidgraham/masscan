@@ -372,7 +372,8 @@ parse_server_cert(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     struct SSL_SERVER_CERT *data = &pstate->sub.ssl.x.server_cert;
     unsigned state = data->state;
@@ -464,7 +465,7 @@ parse_server_cert(
                 state = CLEN0;
                 if (remaining == 0) {
                     if (!banner1->is_heartbleed)
-                        pstate->is_done = 1;
+                        tcp_close(more);
                 }
             }
         }
@@ -616,7 +617,8 @@ parse_handshake(
                                       banner1_private,
                                       pstate,
                                       px+i, len,
-                                      banout);
+                                      banout,
+                                      more);
                     break;
             }
 

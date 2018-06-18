@@ -77,7 +77,6 @@ void
 tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usecs);
 
 enum TCP_What {
-    TCP_WHAT_NOTHING,
     TCP_WHAT_TIMEOUT,
     TCP_WHAT_SYNACK,
     TCP_WHAT_RST,

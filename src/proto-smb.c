@@ -471,8 +471,7 @@ smb1_parse_setup1(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
         max = offset + (smb->hdr.smb1.byte_count - smb->hdr.smb1.byte_offset);
     
     for (;offset<max; offset++) {
-        printf("%02x ", px[offset]);
-
+        
         switch (state) {
             case D_PADDING:
                 if (smb->hdr.smb1.flags2 & 0x8000) {
@@ -1492,6 +1491,10 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
             if (smb->hdr.smb1.byte_offset >= smb->hdr.smb1.byte_count) {
                 state = SMB1_DATA_AFTER;
                 i--; /* unconsume byte because of auto-increment */
+                
+                /* close the connection, we've found all we can */
+                if (smb->hdr.smb1.command == 0x73)
+                    tcp_close(more);
             }
             break;
             
@@ -1615,6 +1618,10 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
             if (smb->hdr.smb2.blob_length == 0) {
                 i--;
                 state = SMB2_PARSE_REMAINDER;
+                
+                /* Close the connection when we get a SessionSetup response */
+                if (smb->hdr.smb2.opcode == 1)
+                    tcp_close(more);
             }
         }
             break;
