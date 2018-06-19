@@ -1391,6 +1391,12 @@ main_scan(struct Masscan *masscan)
         if (time(0) - now >= masscan->wait)
             is_rx_done = 1;
 
+        if (time(0) - now - 5 > masscan->wait)
+        {
+            printf("Passed the wait window but still running, forceful exit.\n");
+            exit(0);
+        }
+
         if (masscan->output.is_status_updates) {
             status_print(&status, min_index, range, rate,
                 total_tcbs, total_synacks, total_syns,
