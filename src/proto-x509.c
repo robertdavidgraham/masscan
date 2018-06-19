@@ -1292,12 +1292,12 @@ spnego_decode(struct SpnegoDecode *spnego,
             {
                 size_t new_max = length - i;
                 
-                if (new_max > x->stack.remainings[0] + 1)
+                if (new_max > x->stack.remainings[0] + 1U)
                     new_max = x->stack.remainings[0] + 1;
                 
                 ntlmssp_decode(&spnego->ntlmssp, px+i, new_max, banout);
                 
-                x->stack.remainings[0] -= (new_max - 1);
+                x->stack.remainings[0] -= (unsigned short)(new_max - 1);
                 if (x->stack.remainings[0] == 0) {
                     if (spnego->ntlmssp.buf)
                         free(spnego->ntlmssp.buf);

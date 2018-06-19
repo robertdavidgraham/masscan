@@ -22,7 +22,7 @@
 #include "crypto-base64.h"
 #include "script.h"
 #include "masscan-app.h"
-
+#include "unusedparm.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -829,6 +829,10 @@ enum {CONF_OK, CONF_WARN, CONF_ERR};
 static int SET_arpscan(struct Masscan *masscan, const char *name, const char *value)
 {
     struct Range range;
+
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
+
     if (masscan->echo) {
         if (masscan->scan_type.arp || masscan->echo_all)
             fprintf(masscan->echo, "arpscan = %s\n", masscan->scan_type.arp?"true":"false");
@@ -845,6 +849,7 @@ static int SET_arpscan(struct Masscan *masscan, const char *name, const char *va
 
 static int SET_banners(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->is_banners || masscan->echo_all)
             fprintf(masscan->echo, "banners = %s\n", masscan->is_banners?"true":"false");
@@ -899,6 +904,7 @@ static int SET_capture(struct Masscan *masscan, const char *name, const char *va
 
 static int SET_hello(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->is_hello_ssl) {
             fprintf(masscan->echo, "hello = ssl\n");
@@ -1004,6 +1010,7 @@ static int SET_hello_string(struct Masscan *masscan, const char *name, const cha
 
 static int SET_hello_timeout(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->tcp_hello_timeout || masscan->echo_all)
             fprintf(masscan->echo, "hello-timeout = %u\n", masscan->tcp_hello_timeout);
@@ -1015,6 +1022,7 @@ static int SET_hello_timeout(struct Masscan *masscan, const char *name, const ch
 
 static int SET_min_packet(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->min_packet_size != 60 || masscan->echo_all)
             fprintf(masscan->echo, "min-packet = %u\n", masscan->min_packet_size);
@@ -1027,6 +1035,7 @@ static int SET_min_packet(struct Masscan *masscan, const char *name, const char 
 
 static int SET_nobanners(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         return 0;
     }
@@ -1036,6 +1045,7 @@ static int SET_nobanners(struct Masscan *masscan, const char *name, const char *
 
 static int SET_noreset(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->is_noreset || masscan->echo_all)
             fprintf(masscan->echo, "noreset = %s\n", masscan->is_noreset?"true":"false");
@@ -1062,6 +1072,7 @@ static int SET_output_append(struct Masscan *masscan, const char *name, const ch
 
 static int SET_output_filename(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->output.filename[0] || masscan->echo_all)
             fprintf(masscan->echo, "output-filename = %s\n", masscan->output.filename);
@@ -1078,6 +1089,7 @@ static int SET_output_filename(struct Masscan *masscan, const char *name, const 
 static int SET_output_format(struct Masscan *masscan, const char *name, const char *value)
 {
     enum OutputFormat x = 0;
+    UNUSEDPARM(name);
     if (masscan->echo) {
         FILE *fp = masscan->echo;
         switch (masscan->output.format) {
@@ -1133,6 +1145,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
 
 static int SET_output_noshow(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->echo_all) {
             fprintf(masscan->echo, "output-noshow = %s%s%s\n",
@@ -1172,6 +1185,7 @@ static int SET_output_noshow(struct Masscan *masscan, const char *name, const ch
 
 static int SET_output_show(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->echo_all) {
             fprintf(masscan->echo, "output-show = %s%s%s\n",
@@ -1210,6 +1224,8 @@ static int SET_output_show(struct Masscan *masscan, const char *name, const char
 }
 static int SET_output_show_open(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
     if (masscan->echo) {
         return 0;
     }
@@ -1221,6 +1237,7 @@ static int SET_output_show_open(struct Masscan *masscan, const char *name, const
 }
 static int SET_pcap_filename(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->pcap_filename && masscan->pcap_filename[0])
             fprintf(masscan->echo, "pcap-filename = %s\n", masscan->pcap_filename);
@@ -1233,6 +1250,8 @@ static int SET_pcap_filename(struct Masscan *masscan, const char *name, const ch
 
 static int SET_randomize_hosts(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
     if (masscan->echo) {
         //fprintf(masscan->echo, "randomize-hosts = true\n");
         return 0;
@@ -1282,6 +1301,7 @@ static int SET_rate(struct Masscan *masscan, const char *name, const char *value
 
 static int SET_resume_count(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->resume.count || masscan->echo_all) {
             fprintf(masscan->echo, "resume-count = %" PRIu64 "\n", masscan->resume.count);
@@ -1294,6 +1314,7 @@ static int SET_resume_count(struct Masscan *masscan, const char *name, const cha
 
 static int SET_resume_index(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->resume.index  || masscan->echo_all) {
             fprintf(masscan->echo, "\n# resume information\n");
@@ -1309,6 +1330,7 @@ static int SET_retries(struct Masscan *masscan, const char *name, const char *va
 {
     uint64_t x;
     
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->retries || masscan->echo_all)
             fprintf(masscan->echo, "retries = %u\n", masscan->retries);
@@ -1326,6 +1348,7 @@ static int SET_retries(struct Masscan *masscan, const char *name, const char *va
 
 static int SET_rotate_time(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->output.rotate.timeout || masscan->echo_all)
             fprintf(masscan->echo, "rotate = %u\n", masscan->output.rotate.timeout);
@@ -1337,6 +1360,7 @@ static int SET_rotate_time(struct Masscan *masscan, const char *name, const char
 static int SET_rotate_directory(struct Masscan *masscan, const char *name, const char *value)
 {
     char *p;
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (memcmp(masscan->output.rotate.directory, ".",2) != 0 || masscan->echo_all) {
             fprintf(masscan->echo, "rotate-dir = %s\n", masscan->output.rotate.directory);
@@ -1354,6 +1378,7 @@ static int SET_rotate_directory(struct Masscan *masscan, const char *name, const
 }
 static int SET_rotate_offset(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     /* Time offset, otherwise output files are aligned to nearest time
      * interval, e.g. at the start of the hour for "hourly" */
     if (masscan->echo) {
@@ -1366,6 +1391,7 @@ static int SET_rotate_offset(struct Masscan *masscan, const char *name, const ch
 }
 static int SET_rotate_filesize(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if (masscan->output.rotate.filesize || masscan->echo_all)
             fprintf(masscan->echo, "rotate-size = %" PRIu64 "\n", masscan->output.rotate.filesize);
@@ -1380,6 +1406,7 @@ static int SET_rotate_filesize(struct Masscan *masscan, const char *name, const 
 
 static int SET_seed(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
     if (masscan->echo) {
         fprintf(masscan->echo, "seed = %" PRIu64 "\n", masscan->seed);
         return 0;
@@ -1393,6 +1420,8 @@ static int SET_seed(struct Masscan *masscan, const char *name, const char *value
 
 static int SET_space(struct Masscan *masscan, const char *name, const char *value)
 {
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
     if (masscan->echo) {
         fprintf(masscan->echo, "\n");
         return 0;
@@ -1405,6 +1434,7 @@ static int SET_shard(struct Masscan *masscan, const char *name, const char *valu
     unsigned one = 0;
     unsigned of = 0;
 
+    UNUSEDPARM(name);
     if (masscan->echo) {
         if ((masscan->shard.one != 1 && masscan->shard.of != 1)  || masscan->echo_all)
             fprintf(masscan->echo, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);

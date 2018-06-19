@@ -154,7 +154,7 @@ memcached_tcp_parse(
 
             /* We've reached the end of input */
             case 3:
-                i = length;
+                i = (unsigned)length;
                 break;
 
             /* Ignore until end of line */

@@ -126,7 +126,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
         return;
     } else if (x->offset) {
         memcpy(x->buf + x->offset, px, length);
-        x->offset += length;
+        x->offset += (unsigned)length;
         if (x->offset < x->length)
             return;
         
@@ -221,7 +221,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
             default:
                 break;
         }
-        i += len;
+        i += (unsigned)len;
     }
 
     

@@ -108,7 +108,7 @@ vnc_parse(  const struct Banner1 *banner1,
         RFB3_7_SECURITYTYPES=100,
         RFB_SERVERINIT=200,
         RFB_SECURITYRESULT=300,
-        RFB_DONE=0xffffffff,
+        RFB_DONE=0x7fffffff,
     };
     
     UNUSEDPARM(banner1_private);

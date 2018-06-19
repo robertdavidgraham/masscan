@@ -53,6 +53,7 @@
     <ClCompile Include="..\src\proto-interactive.c" />
     <ClCompile Include="..\src\proto-memcached.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
+    <ClCompile Include="..\src\proto-ntlmssp.c" />
     <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
@@ -143,6 +144,7 @@
     <ClInclude Include="..\src\proto-interactive.h" />
     <ClInclude Include="..\src\proto-memcached.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
+    <ClInclude Include="..\src\proto-ntlmssp.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-pop3.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
@@ -238,7 +240,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -276,7 +278,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <EnablePREfast>true</EnablePREfast>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

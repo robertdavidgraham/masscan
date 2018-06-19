@@ -360,8 +360,8 @@ readscan_report(  unsigned ip,
         }
 
         banout_release(banout);
-    } else if (0 && app_proto == PROTO_SSL3) {
-        cndb_add(ip, data, data_length);
+    /*} else if (0 && app_proto == PROTO_SSL3) {
+        cndb_add(ip, data, data_length);*/
     } else if (app_proto == PROTO_VULN) {
         const char *name = cndb_lookup(ip);
         

@@ -14,7 +14,7 @@
 #include "main-globals.h"
 
 #include "rawsock-pcap.h"
-
+#include "unusedparm.h"
 #include <assert.h>
 #include <ctype.h>
 
@@ -478,6 +478,7 @@ rawsock_win_name(const char *ifname)
 void
 rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
 {
+    UNUSEDPARM(adapter_mac);
     if (adapter->ring) {
         /* PORTABILITY: don't do anything for PF_RING, because it's
          * actually done when we create the adapter, because we can't
@@ -625,6 +626,10 @@ rawsock_init_adapter(const char *adapter_name,
 {
     struct Adapter *adapter;
     char errbuf[PCAP_ERRBUF_SIZE];
+
+    /* BPF filter not supported on some platforms, so ignore this compiler
+     * warning when unused */
+    UNUSEDPARM(bpf_filter);
 
     adapter = (struct Adapter *)malloc(sizeof(*adapter));
     if (adapter == NULL)
