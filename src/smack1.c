@@ -111,6 +111,7 @@
 #include <time.h>
 #include <assert.h>
 
+
 #ifndef NOBENCHMARK
 #include "pixie-timer.h"
 #if defined(_MSC_VER)
@@ -119,6 +120,25 @@
 #include <sys/types.h>
 #include <machine/cpufunc.h>
 #define __rdtsc rdtsc
+#if (__ARM_ARCH >= 6)  // V6 is the earliest arch that has a standard cyclecount
+unsigned long long rdtsc(void)
+{
+  uint32_t pmccntr;
+  uint32_t pmuseren;
+  uint32_t pmcntenset;
+  // Read the user mode perf monitor counter access permissions.
+  asm volatile("mrc p15, 0, %0, c9, c14, 0" : "=r"(pmuseren));
+  if (pmuseren & 1) {  // Allows reading perfmon counters for user mode code.
+    asm volatile("mrc p15, 0, %0, c9, c12, 1" : "=r"(pmcntenset));
+    if (pmcntenset & 0x80000000ul) {  // Is it counting?
+      asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(pmccntr));
+      // The counter is set up to count every 64th cycle
+      return (unsigned long long)(pmccntr) * 64ULL; 
+    }
+  }
+  return 0;
+}
+#endif
 #elif defined (__llvm__)
 #if defined(i386) || defined(__i386__)
 #include <x86intrin.h>
