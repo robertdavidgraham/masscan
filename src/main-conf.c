@@ -322,6 +322,12 @@ masscan_save_state(struct Masscan *masscan)
 }
 
 
+void
+rangelist_add_callback(void *v, unsigned begin, unsigned end)
+{
+    rangelist_add_range(v, begin, end);
+}
+
 /*****************************************************************************
  * Read in ranges from a file
  *
@@ -421,7 +427,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
 
     }
 
-    ravl_enumerate(ravl, rangelist_add_range, ranges);
+    ravl_enumerate(ravl, rangelist_add_callback, ranges);
     
     ravl_free(ravl);
 
