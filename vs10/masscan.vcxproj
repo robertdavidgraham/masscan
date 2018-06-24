@@ -83,6 +83,7 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
+    <ClCompile Include="..\src\ranges-avl.c" />
     <ClCompile Include="..\src\ranges.c" />
     <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
@@ -163,6 +164,7 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
+    <ClInclude Include="..\src\ranges-avl.h" />
     <ClInclude Include="..\src\ranges.h" />
     <ClInclude Include="..\src\rawsock-pcap.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />

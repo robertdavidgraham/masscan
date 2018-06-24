@@ -1080,8 +1080,8 @@ smack_fixup_wildcards(struct SMACK *smack)
         for (j=0; j<pat->pattern_length; j++) {
             unsigned row = 0;
             unsigned offset = 0;
-            size_t row_size = (1 << smack->row_shift);
-             transition_t *table;
+            size_t row_size = ((size_t)1 << smack->row_shift);
+            transition_t *table;
             transition_t next_pattern;
             transition_t base_state = (smack->is_anchor_begin?1:0);
             size_t k;

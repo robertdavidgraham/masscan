@@ -297,6 +297,9 @@
     <ClCompile Include="..\src\proto-ntlmssp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ranges-avl.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -508,6 +511,9 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-ntlmssp.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges-avl.h">
+      <Filter>Source Files\crypto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
