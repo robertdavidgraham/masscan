@@ -916,6 +916,8 @@ what_to_string(enum TCP_What state)
 void
 LOGSEND(struct TCP_Control_Block *tcb, const char *what)
 {
+    if (tcb == NULL)
+        return;
     LOGip(5, tcb->ip_them, tcb->port_them, "=%s : --->> %s                  \n",
           state_to_string(tcb->tcpstate),
           what);
@@ -1364,6 +1366,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                         /* Resend the payload */
                         tcb->seqno_me -= len;
                         LOGSEND(tcb, "peer(payload) retransmit");
+                        
+                        if (tcb->payload) /* FIXME: kludge: should never be NULL< but somehow is */
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x18,
                                            tcb->payload + tcb->payload_length - len,

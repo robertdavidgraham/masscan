@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1106827120DF863100E612AB /* ranges-avl.c in Sources */ = {isa = PBXBuildFile; fileRef = 1106826F20DF863000E612AB /* ranges-avl.c */; };
 		110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
 		112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
@@ -109,6 +110,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1106826F20DF863000E612AB /* ranges-avl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "ranges-avl.c"; sourceTree = "<group>"; };
+		1106827020DF863000E612AB /* ranges-avl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ranges-avl.h"; sourceTree = "<group>"; };
 		110ED16520CA6A8300690C91 /* proto-spnego.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-spnego.h"; sourceTree = "<group>"; };
 		110ED16620CB0BC200690C91 /* proto-ntlmssp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ntlmssp.h"; sourceTree = "<group>"; };
 		110ED16720CB0BC200690C91 /* proto-ntlmssp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntlmssp.c"; sourceTree = "<group>"; };
@@ -501,6 +504,8 @@
 		11B360CD1F90174B0020F3A3 /* misc */ = {
 			isa = PBXGroup;
 			children = (
+				1106826F20DF863000E612AB /* ranges-avl.c */,
+				1106827020DF863000E612AB /* ranges-avl.h */,
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
@@ -606,6 +611,7 @@
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
 				11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */,
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,
+				1106827120DF863100E612AB /* ranges-avl.c in Sources */,
 				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
 				11A921F217DBCC7E00DDFD32 /* rawsock-pfring.c in Sources */,
