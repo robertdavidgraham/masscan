@@ -35,6 +35,14 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     UNUSEDPARM(out);
     //UNUSEDPARM(timestamp);
 
+    /* Trailing comma breaks some JSON parsers. We don't know precisely when
+     * we'll end, but we do know when we begin, so instead of appending
+     * a command to the record, we prepend it -- but not before first record */
+    if (out->is_first_record_seen)
+        fprintf(fp, ",\n");
+    else
+        out->is_first_record_seen = 1;
+    
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
@@ -47,7 +55,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 reason_string(reason, reason_buffer, sizeof(reason_buffer)),
                 ttl
             );
-    fprintf(fp, "},\n");
+    fprintf(fp, "}\n");
 
 
 }
@@ -101,6 +109,14 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ttl);
     //UNUSEDPARM(timestamp);
 
+    /* Trailing comma breaks some JSON parsers. We don't know precisely when
+     * we'll end, but we do know when we begin, so instead of appending
+     * a command to the record, we prepend it -- but not before first record */
+    if (out->is_first_record_seen)
+        fprintf(fp, ",\n");
+    else
+        out->is_first_record_seen = 1;
+    
     fprintf(fp, "{ ");
     fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
             (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
@@ -111,7 +127,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
             masscan_app_to_string(proto),
             normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
             );
-    fprintf(fp, "},\n");
+    fprintf(fp, "}\n");
 
     UNUSEDPARM(out);
 
