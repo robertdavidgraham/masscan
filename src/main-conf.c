@@ -322,11 +322,17 @@ masscan_save_state(struct Masscan *masscan)
 }
 
 
-void
+/*****************************************************************************
+ * Just a wrapper around rangelist_add_range() since in theory they can
+ * be different functions even though their prototypes are almost
+ * identical.
+ *****************************************************************************/
+static void
 rangelist_add_callback(void *v, unsigned begin, unsigned end)
 {
-    rangelist_add_range(v, begin, end);
+    rangelist_add_range((struct RangeList *)v, begin, end);
 }
+
 
 /*****************************************************************************
  * Read in ranges from a file
@@ -1475,6 +1481,21 @@ static int SET_shard(struct Masscan *masscan, const char *name, const char *valu
     return CONF_OK;
 }
 
+static int SET_output_stylesheet(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->output.stylesheet[0] || masscan->echo_all)
+            fprintf(masscan->echo, "stylesheet = %s\n", masscan->output.stylesheet);
+        return 0;
+    }
+    
+    if (masscan->output.format == 0)
+        masscan->output.format = Output_XML;
+    
+    strcpy_s(masscan->output.stylesheet, sizeof(masscan->output.stylesheet), value);
+    return CONF_OK;
+}
 
 
 
@@ -1515,7 +1536,7 @@ struct ConfigParameter config_parameters[] = {
     {"rotate-dir",      SET_rotate_directory,   0, {"output-rotate-dir", "rotate-directory", 0}},
     {"rotate-offset",   SET_rotate_offset,      0, {"output-rotate-offset", 0}},
     {"rotate-size",     SET_rotate_filesize,    0, {"output-rotate-filesize", "rotate-filesize", 0}},
-    
+    {"stylesheet",      SET_output_stylesheet},
     {"SPACE",           SET_space},
     {0}
 };
@@ -2070,10 +2091,6 @@ masscan_set_parameter(struct Masscan *masscan,
         ;
     } else if (EQUALS("no-stylesheet", name)) {
         masscan->output.stylesheet[0] = '\0';
-    } else if (EQUALS("stylesheet", name)) {
-        strcpy_s(masscan->output.stylesheet, 
-                 sizeof(masscan->output.stylesheet), 
-                 value);
     } else if (EQUALS("system-dns", name)) {
         fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
         exit(1);
@@ -2146,7 +2163,7 @@ is_singleton(const char *name)
         "osscan-limit", "osscan-guess",
         "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
-        "log-errors", "append-output", "webxml", "no-stylesheet",
+        "log-errors", "append-output", "webxml",
         "no-stylesheet", "heartbleed", "ticketbleed",
         "send-eth", "send-ip", "iflist",
         "nmap", "trace-packet", "pfring", "sendq",

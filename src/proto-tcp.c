@@ -913,7 +913,7 @@ what_to_string(enum TCP_What state)
 /***************************************************************************
  ***************************************************************************/
 
-void
+static void
 LOGSEND(struct TCP_Control_Block *tcb, const char *what)
 {
     if (tcb == NULL)

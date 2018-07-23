@@ -140,13 +140,15 @@ status_print(
                         );
     } else {
         if (is_tx_done) {
+            
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
+                        "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
                         x/1000.0,
                         percent_done,
                         (int)exiting,
                         total_synacks
                        );
+            
         } else {
             fprintf(stderr,
                 "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       \r",

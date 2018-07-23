@@ -84,6 +84,7 @@ time_t global_now;
 
 uint64_t usec_start;
 
+
 /***************************************************************************
  * We create a pair of transmit/receive threads for each network adapter.
  * This structure contains the parameters we send to each pair.
@@ -305,7 +306,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     throttler_start(throttler, masscan->max_rate/masscan->nic_count);
 
 infinite:
-
+    
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
      * ports */
@@ -484,6 +485,7 @@ infinite:
         uint64_t batch_size;
 
         for (k=0; k<1000; k++) {
+            
             /*
              * Only send a few packets at a time, throttled according to the max
              * --max-rate set by the user
@@ -558,7 +560,7 @@ receive_thread(void *v)
     parms->total_tcbs = status_tcb_count;
 
     LOG(1, "THREAD: recv: starting thread #%u\n", parms->nic_index);
-
+    
     /* Lock this thread to a CPU. Transmit threads are on even CPUs,
      * receive threads on odd CPUs */
     if (pixie_cpu_get_count() > 1) {
@@ -718,13 +720,12 @@ receive_thread(void *v)
                     &secs,
                     &usecs,
                     &px);
-
         if (err != 0) {
             if (tcpcon)
                 tcpcon_timeouts(tcpcon, (unsigned)time(0), 0);
             continue;
         }
-
+        
 
         /*
          * Do any TCP event timeouts based on the current timestamp from
@@ -968,6 +969,7 @@ receive_thread(void *v)
                         parsed.ip_ttl,
                         parsed.mac_src
                         );
+            
 
             /*
              * Send RST so other side isn't left hanging (only doing this in
@@ -987,7 +989,7 @@ receive_thread(void *v)
 
 
     LOG(1, "THREAD: recv: stopping thread #%u\n", parms->nic_index);
-
+    
     /*
      * cleanup
      */
@@ -1011,7 +1013,6 @@ end:
 
     /* Thread is about to exit */
     parms->done_receiving = 1;
-
 }
 
 
@@ -1033,8 +1034,14 @@ static void control_c_handler(int x)
         control_c_pressed = 1+x;
         is_tx_done = control_c_pressed;
     } else {
-        control_c_pressed_again = 1;
-        is_rx_done = control_c_pressed_again;
+        if (is_rx_done) {
+            fprintf(stderr, "\nERROR: threads not exiting %d\n", is_rx_done);
+            if (is_rx_done++ > 1)
+                exit(1);
+        } else {
+            control_c_pressed_again = 1;
+            is_rx_done = control_c_pressed_again;
+        }
     }
 
 }
@@ -1388,8 +1395,9 @@ main_scan(struct Masscan *masscan)
 
 
 
-        if (time(0) - now >= masscan->wait)
+        if (time(0) - now >= masscan->wait) {
             is_rx_done = 1;
+        }
 
         if (masscan->output.is_status_updates) {
             status_print(&status, min_index, range, rate,
