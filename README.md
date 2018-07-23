@@ -15,8 +15,7 @@ either use the `-S` option to use a separate IP address, or configure your
 operating system to firewall the ports that masscan uses.
 
 This tool is free, but consider funding it here:
-
-Bitcoin wallet address 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
+Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
 # Building

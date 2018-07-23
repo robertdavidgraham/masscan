@@ -14,7 +14,7 @@ xml_out_open(struct Output *out, FILE *fp)
 
     fprintf(fp, "<?xml version=\"1.0\"?>\r\n");
     fprintf(fp, "<!-- masscan v1.0 scan -->\r\n");
-    if (out->xml.stylesheet) {
+    if (out->xml.stylesheet && out->xml.stylesheet[0]) {
         fprintf(fp, "<?xml-stylesheet href=\"%s\" type=\"text/xsl\"?>\r\n",
             out->xml.stylesheet);
     }
