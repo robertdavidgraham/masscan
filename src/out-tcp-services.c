@@ -38,6 +38,7 @@ tcp_service_name(int port)
     
     return tcp_services[port] = strdup(result_buf.s_name);
 #else
+    {
     struct servent *result;
     
     result = getservbyport(htons((unsigned short)port), "tcp");
@@ -46,6 +47,7 @@ tcp_service_name(int port)
         return "unknown";
     
     return tcp_services[port] = strdup(result->s_name);
+    }
 #endif
 }
 
@@ -68,6 +70,7 @@ udp_service_name(int port)
     
     return udp_services[port] = strdup(result_buf.s_name);
 #else
+    {
     struct servent *result;
     
     result = getservbyport(htons((unsigned short)port), "udp");
@@ -76,5 +79,6 @@ udp_service_name(int port)
         return "unknown";
     
     return udp_services[port] = strdup(result->s_name);
+    }
 #endif
 }

@@ -37,6 +37,7 @@
     <ClCompile Include="..\src\out-ndjson.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
+    <ClCompile Include="..\src\out-tcp-services.c" />
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-unicornscan.c" />
     <ClCompile Include="..\src\out-xml.c" />
@@ -126,6 +127,7 @@
     <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
     <ClInclude Include="..\src\out-record.h" />
+    <ClInclude Include="..\src\out-tcp-services.h" />
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\packet-queue.h" />
     <ClInclude Include="..\src\pixie-backtrace.h" />
