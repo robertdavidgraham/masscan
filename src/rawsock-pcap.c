@@ -78,6 +78,27 @@ static void null_PCAP_CLOSE(void *hPcap)
     UNUSEDPARM(hPcap);
 }
 
+#ifdef STATICPCAP
+static pcap_t *(*null_PCAP_CREATE)(const char *source, char *errbuf);
+static int (*null_PCAP_SET_SNAPLEN)(pcap_t *p, int snaplen);
+static int (*null_PCAP_SET_PROMISC)(pcap_t *p, int promisc);
+static int (*null_PCAP_SET_TIMEOUT)(pcap_t *p, int to_ms);
+static int (*null_PCAP_SET_IMMEDIATE_MODE)(pcap_t *p, int immediate_mode);
+static int (*null_PCAP_SET_BUFFER_SIZE)(pcap_t *p, int buffer_size);
+static int (*null_PCAP_SET_RFMON)(pcap_t *p, int rfmon);
+static int (*null_PCAP_CAN_SET_RFMON)(pcap_t *p);
+static int (*null_PCAP_ACTIVATE)(pcap_t *p);
+#else
+static pcap_t *null_PCAP_CREATE(const char *source, char *errbuf) {return 0;}
+static int null_PCAP_SET_SNAPLEN(pcap_t *p, int snaplen) {return 0;}
+static int null_PCAP_SET_PROMISC(pcap_t *p, int promisc) {return 0;}
+static int null_PCAP_SET_TIMEOUT(pcap_t *p, int to_ms) {return 0;}
+static int null_PCAP_SET_IMMEDIATE_MODE(pcap_t *p, int immediate_mode)  {return 0;}
+static int null_PCAP_SET_BUFFER_SIZE(pcap_t *p, int buffer_size) {return 0;}
+static int null_PCAP_SET_RFMON(pcap_t *p, int rfmon) {return 0;}
+static int null_PCAP_CAN_SET_RFMON(pcap_t *p) {return 0;}
+static int null_PCAP_ACTIVATE(pcap_t *p) {return 0;}
+#endif
 
 static unsigned null_PCAP_DATALINK(void *hPcap)
 {
@@ -390,7 +411,16 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
 	DOLINK(PCAP_SENDQUEUE_DESTROY	, sendqueue_destroy);
 	DOLINK(PCAP_SENDQUEUE_QUEUE		, sendqueue_queue);
 
-    
+    DOLINK(PCAP_CREATE              , create);
+    DOLINK(PCAP_SET_SNAPLEN         , set_snaplen);
+    DOLINK(PCAP_SET_PROMISC         , set_promisc);
+    DOLINK(PCAP_SET_TIMEOUT         , set_timeout);
+    DOLINK(PCAP_SET_IMMEDIATE_MODE  , set_immediate_mode);
+    DOLINK(PCAP_SET_BUFFER_SIZE     , set_buffer_size);
+    DOLINK(PCAP_SET_RFMON           , set_rfmon);
+    DOLINK(PCAP_CAN_SET_RFMON       , can_set_rfmon);
+    DOLINK(PCAP_ACTIVATE            , activate);
+
     
     if (!pl->func_err)
         pl->is_available = 1;

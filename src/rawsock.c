@@ -752,12 +752,25 @@ rawsock_init_adapter(const char *adapter_name,
                         adapter_name+5,         /* interface name */
                         errbuf);
         } else {
+#if 0
             adapter->pcap = PCAP.open_live(
                         adapter_name,           /* interface name */
                         65536,                  /* max packet size */
                         8,                      /* promiscuous mode */
                         1000,                   /* read timeout in milliseconds */
                         errbuf);
+#else
+            /* We need to replace "pcap_open_live()" with "pcap_create()/pcap_set_XXX()/pcap_activate()" */
+            adapter->pcap = PCAP.create(adapter_name, errbuf);
+            if (adapter->pcap) {
+                PCAP.set_snaplen(adapter->pcap, 65536);
+                PCAP.set_promisc(adapter->pcap, 8);
+                PCAP.set_timeout(adapter->pcap, 1000);
+                PCAP.set_immediate_mode(adapter->pcap, 1);
+                PCAP.activate(adapter->pcap);
+            }
+
+#endif
         }
 
         if (adapter->pcap == NULL) {

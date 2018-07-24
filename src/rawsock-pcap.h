@@ -85,6 +85,26 @@ typedef const char *(*PCAP_DEV_DESCRIPTION)(const pcap_if_t *dev);
 typedef const pcap_if_t *(*PCAP_DEV_NEXT)(const pcap_if_t *dev);
 
 /*
+ pcap_open() replaced with a series of calls to:
+  p = pcap_create(device, errbuf);
+  pcap_set_snaplen(p, snaplen);
+  pcap_set_promisc(p, promisc);
+  pcap_set_timeout(p, to_ms);
+  pcap_activate(p);
+ */
+typedef pcap_t *(*PCAP_CREATE)(const char *source, char *errbuf);
+typedef int (*PCAP_SET_SNAPLEN)(pcap_t *p, int snaplen);
+typedef int (*PCAP_SET_PROMISC)(pcap_t *p, int promisc);
+typedef int (*PCAP_SET_TIMEOUT)(pcap_t *p, int to_ms);
+typedef int (*PCAP_SET_IMMEDIATE_MODE)(pcap_t *p, int immediate_mode);
+typedef int (*PCAP_SET_BUFFER_SIZE)(pcap_t *p, int buffer_size);
+typedef int (*PCAP_SET_RFMON)(pcap_t *p, int rfmon);
+typedef int (*PCAP_CAN_SET_RFMON)(pcap_t *p);
+typedef int (*PCAP_ACTIVATE)(pcap_t *p);
+
+
+
+/*
  * PORTABILITY: Windows supports the "sendq" feature, and is really slow
  * without this feature. It's not needed on Linux, so we just create
  * equivelent functions that do nothing
@@ -138,6 +158,16 @@ struct PcapFunctions {
 	PCAP_SENDQUEUE_TRANSMIT	sendqueue_transmit;
 	PCAP_SENDQUEUE_DESTROY	sendqueue_destroy;
 	PCAP_SENDQUEUE_QUEUE	sendqueue_queue;
+
+    PCAP_CREATE              create;
+    PCAP_SET_SNAPLEN         set_snaplen;
+    PCAP_SET_PROMISC         set_promisc;
+    PCAP_SET_TIMEOUT         set_timeout;
+    PCAP_SET_IMMEDIATE_MODE  set_immediate_mode;
+    PCAP_SET_BUFFER_SIZE     set_buffer_size;
+    PCAP_SET_RFMON           set_rfmon;
+    PCAP_CAN_SET_RFMON       can_set_rfmon;
+    PCAP_ACTIVATE            activate;
 
 };
 
