@@ -300,6 +300,9 @@
     <ClCompile Include="..\src\ranges-avl.c">
       <Filter>Source Files\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\out-tcp-services.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -514,6 +517,9 @@
     </ClInclude>
     <ClInclude Include="..\src\ranges-avl.h">
       <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\out-tcp-services.h">
+      <Filter>Source Files\output</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
