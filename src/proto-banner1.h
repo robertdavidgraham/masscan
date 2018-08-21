@@ -230,6 +230,10 @@ struct RDPSTUFF {
     } cc;
 };
 
+struct SSHSTUFF{
+    size_t packet_length;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -247,6 +251,7 @@ struct ProtocolState {
         struct MEMCACHEDSTUFF memcached;
         struct SMBSTUFF smb;
         struct RDPSTUFF rdp;
+        struct SSHSTUFF ssh;
     } sub;
 };
 
