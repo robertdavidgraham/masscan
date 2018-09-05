@@ -17,6 +17,8 @@
 #include "proto-vnc.h"
 #include "proto-memcached.h"
 #include "masscan-app.h"
+#include "scripting.h"
+#include "versioning.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -236,6 +238,23 @@ banner1_parse(
                              banout,
                              more);
         break;
+    case PROTO_SCRIPTING:
+        banner_scripting.parse(    banner1,
+                                   banner1->http_fields,
+                                   tcb_state,
+                                   px, length,
+                                   banout,
+                                   more);
+        break;
+    case PROTO_VERSIONING:
+        banner_versioning.parse(      banner1,
+                                   banner1->http_fields,
+                                   tcb_state,
+                                   px, length,
+                                   banout,
+                                   more);
+        break;
+
     default:
         fprintf(stderr, "banner1: internal error\n");
         break;
@@ -275,6 +294,28 @@ banner1_create(void)
                     patterns[i].is_anchored);
     smack_compile(b->smack);
 
+    /*
+     * [TODO] These need to be moved into the 'init' functions
+     */
+    b->payloads.tcp[80] = &banner_http;
+    b->payloads.tcp[8080] = &banner_http;
+    b->payloads.tcp[139] = (void*)&banner_smb0;
+    b->payloads.tcp[445] = (void*)&banner_smb1;
+    b->payloads.tcp[443] = (void*)&banner_ssl;   /* HTTP/s */
+    b->payloads.tcp[465] = (void*)&banner_ssl;   /* SMTP/s */
+    b->payloads.tcp[990] = (void*)&banner_ssl;   /* FTP/s */
+    b->payloads.tcp[991] = (void*)&banner_ssl;
+    b->payloads.tcp[992] = (void*)&banner_ssl;   /* Telnet/s */
+    b->payloads.tcp[993] = (void*)&banner_ssl;   /* IMAP4/s */
+    b->payloads.tcp[994] = (void*)&banner_ssl;
+    b->payloads.tcp[995] = (void*)&banner_ssl;   /* POP3/s */
+    b->payloads.tcp[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
+    b->payloads.tcp[2087] = (void*)&banner_ssl;  /* WHM - SSL */
+    b->payloads.tcp[2096] = (void*)&banner_ssl;  /* cPanel webmail - SSL */
+    b->payloads.tcp[8443] = (void*)&banner_ssl;  /* Plesk Control Panel - SSL */
+    b->payloads.tcp[9050] = (void*)&banner_ssl;  /* Tor */
+    b->payloads.tcp[8140] = (void*)&banner_ssl;  /* puppet */
+    b->payloads.tcp[11211] = (void*)&banner_memcached;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
@@ -291,28 +332,11 @@ banner1_create(void)
     banner_smb0.init(b);
     banner_smb1.init(b);
     banner_vnc.init(b);
-
-    b->tcp_payloads[80] = &banner_http;
-    b->tcp_payloads[8080] = &banner_http;
-    b->tcp_payloads[139] = (void*)&banner_smb0;
-    b->tcp_payloads[445] = (void*)&banner_smb1;
     
-    b->tcp_payloads[443] = (void*)&banner_ssl;   /* HTTP/s */
-    b->tcp_payloads[465] = (void*)&banner_ssl;   /* SMTP/s */
-    b->tcp_payloads[990] = (void*)&banner_ssl;   /* FTP/s */
-    b->tcp_payloads[991] = (void*)&banner_ssl;  
-    b->tcp_payloads[992] = (void*)&banner_ssl;   /* Telnet/s */
-    b->tcp_payloads[993] = (void*)&banner_ssl;   /* IMAP4/s */
-    b->tcp_payloads[994] = (void*)&banner_ssl;  
-    b->tcp_payloads[995] = (void*)&banner_ssl;   /* POP3/s */
-    b->tcp_payloads[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
-    b->tcp_payloads[2087] = (void*)&banner_ssl;  /* WHM - SSL */
-    b->tcp_payloads[2096] = (void*)&banner_ssl;  /* cPanel webmail - SSL */
-    b->tcp_payloads[8443] = (void*)&banner_ssl;  /* Plesk Control Panel - SSL */
-    b->tcp_payloads[9050] = (void*)&banner_ssl;  /* Tor */
-    b->tcp_payloads[8140] = (void*)&banner_ssl;  /* puppet */
+    /* scripting/versioning come after the rest */
+    banner_scripting.init(b);
+    banner_versioning.init(b);
 
-    b->tcp_payloads[11211] = (void*)&banner_memcached;
 
     return b;
 }

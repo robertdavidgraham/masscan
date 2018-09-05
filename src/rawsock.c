@@ -382,7 +382,7 @@ int rawsock_recv_packet(
 
         *length = hdr.caplen;
         *secs = (unsigned)hdr.ts.tv_sec;
-        *usecs = hdr.ts.tv_usec;
+        *usecs = (unsigned)hdr.ts.tv_usec;
     }
 
 

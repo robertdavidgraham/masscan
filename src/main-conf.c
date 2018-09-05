@@ -21,9 +21,10 @@
 #include "templ-port.h"
 #include "crypto-base64.h"
 #include "ranges-avl.h"
-#include "script.h"
+#include "vulncheck.h"
 #include "masscan-app.h"
 #include "unusedparm.h"
+#include "read-service-probes.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -32,7 +33,6 @@
 #endif
 
 static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
-static void masscan_set_parameter(struct Masscan *masscan, const char *name, const char *value);
 
 
 /***************************************************************************
@@ -1001,7 +1001,7 @@ static int SET_hello_string(struct Masscan *masscan, const char *name, const cha
     struct TcpCfgPayloads *pay;
 
     if (masscan->echo) {
-        for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
+        for (pay = masscan->payloads.tcp; pay; pay = pay->next) {
             fprintf(masscan->echo, "hello-string[%u] = %s\n",
                     pay->port, pay->payload_base64);
         }
@@ -1022,8 +1022,8 @@ static int SET_hello_string(struct Masscan *masscan, const char *name, const cha
     
     pay->payload_base64 = value2;
     pay->port = index;
-    pay->next = masscan->tcp_payloads;
-    masscan->tcp_payloads = pay;
+    pay->next = masscan->payloads.tcp;
+    masscan->payloads.tcp = pay;
     return CONF_OK;
 }
 
@@ -1071,6 +1071,41 @@ static int SET_noreset(struct Masscan *masscan, const char *name, const char *va
         return 0;
     }
     masscan->is_noreset = parseBoolean(value);
+    return CONF_OK;
+}
+
+static int SET_nmap_payloads(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    
+    if (masscan->echo) {
+        if ((masscan->payloads.nmap_payloads_filename && masscan->payloads.nmap_payloads_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "nmap-payloads = %s\n", masscan->payloads.nmap_payloads_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.nmap_payloads_filename)
+        free(masscan->payloads.nmap_payloads_filename);
+    masscan->payloads.nmap_payloads_filename = strdup(value);
+
+    return CONF_OK;
+}
+
+static int SET_nmap_service_probes(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    
+    if (masscan->echo) {
+        if ((masscan->payloads.nmap_service_probes_filename && masscan->payloads.nmap_service_probes_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "nmap-service-probes = %s\n", masscan->payloads.nmap_service_probes_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.nmap_service_probes_filename)
+        free(masscan->payloads.nmap_service_probes_filename);
+    masscan->payloads.nmap_service_probes_filename = strdup(value);
+    
+    
     return CONF_OK;
 }
 
@@ -1267,6 +1302,25 @@ static int SET_pcap_filename(struct Masscan *masscan, const char *name, const ch
     return CONF_OK;
 }
 
+static int SET_pcap_payloads(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if ((masscan->payloads.pcap_payloads_filename && masscan->payloads.pcap_payloads_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "pcap-payloads = %s\n", masscan->payloads.pcap_payloads_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.pcap_payloads_filename)
+        free(masscan->payloads.pcap_payloads_filename);
+    masscan->payloads.pcap_payloads_filename = strdup(value);
+    
+    /* file will be loaded in "masscan_load_database_files()" */
+    
+    return CONF_OK;
+}
+
+
 static int SET_randomize_hosts(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1421,6 +1475,26 @@ static int SET_rotate_filesize(struct Masscan *masscan, const char *name, const 
     
 }
 
+static int SET_script(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if ((masscan->scripting.name && masscan->scripting.name[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "script = %s\n", masscan->scripting.name);
+        return 0;
+    }
+    if (value && value[0])
+        masscan->is_scripting = 1;
+    else
+        masscan->is_scripting = 0;
+    
+    if (masscan->scripting.name)
+        free(masscan->scripting.name);
+    
+    masscan->scripting.name = strdup(value);
+    
+    return CONF_OK;
+}
 
 
 static int SET_seed(struct Masscan *masscan, const char *name, const char *value)
@@ -1518,7 +1592,10 @@ struct ConfigParameter config_parameters[] = {
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
     {"retries",         SET_retries,            0, {"retry", "max-retries", "max-retry", 0}},
     {"noreset",         SET_noreset,            F_BOOL},
+    {"nmap-payloads",   SET_nmap_payloads,      0, {"nmap-payload",0}},
+    {"nmap-service-probes",SET_nmap_service_probes, 0, {"nmap-service-probe",0}},
     {"pcap-filename",   SET_pcap_filename,      0, {"pcap",0}},
+    {"pcap-payloads",   SET_pcap_payloads,      0, {"pcap-payload",0}},
     {"hello",           SET_hello},
     {"hello-file",      SET_hello_file,         0, {"hello-filename",0}},
     {"hello-string",    SET_hello_string},
@@ -1537,6 +1614,7 @@ struct ConfigParameter config_parameters[] = {
     {"rotate-offset",   SET_rotate_offset,      0, {"output-rotate-offset", 0}},
     {"rotate-size",     SET_rotate_filesize,    0, {"output-rotate-filesize", "rotate-filesize", 0}},
     {"stylesheet",      SET_output_stylesheet},
+    {"script",          SET_script},
     {"SPACE",           SET_space},
     {0}
 };
@@ -1545,7 +1623,7 @@ struct ConfigParameter config_parameters[] = {
  * Called either from the "command-line" parser when it sees a --parm,
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
-static void
+void
 masscan_set_parameter(struct Masscan *masscan,
                       const char *name, const char *value)
 {
@@ -1960,22 +2038,6 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
-    } else if (EQUALS("pcap-payloads", name) || EQUALS("pcap-payload", name)) {
-        if (masscan->payloads == NULL)
-            masscan->payloads = payloads_create();
-        payloads_read_pcap(value, masscan->payloads);
-    } else if (EQUALS("nmap-payloads", name) || EQUALS("nmap-payload", name)) {
-        FILE *fp;
-        int err;
-        err = fopen_s(&fp, value, "rt");
-        if (err || fp == NULL) {
-            perror(value);
-        } else {
-            if (masscan->payloads == NULL)
-                masscan->payloads = payloads_create();
-            payloads_read_file(fp, value, masscan->payloads);
-            fclose(fp);
-        }
     } else if (EQUALS("offline", name)) {
         /* Run in "offline" mode where it thinks it's sending packets, but
          * it's not */
@@ -2034,7 +2096,7 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("resume", name)) {
         masscan_read_config_file(masscan, value);
         masscan_set_parameter(masscan, "output-append", "true");
-    } else if (EQUALS("script", name)) {
+    } else if (EQUALS("vuln", name)) {
         if (EQUALS("heartbleed", value)) {
             masscan_set_parameter(masscan, "heartbleed", "true");
             return;
@@ -2048,24 +2110,23 @@ masscan_set_parameter(struct Masscan *masscan,
             return;
         }
         
-        if (!script_lookup(value)) {
-            fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
-            fprintf(stderr, "  hint: most nmap scripts aren't supported\n");
-            fprintf(stderr, "  hint: use '--script list' to list available scripts\n");
+        if (!vulncheck_lookup(value)) {
+            fprintf(stderr, "FAIL: vuln check '%s' does not exist\n", value);
+            fprintf(stderr, "  hint: use '--vuln list' to list available scripts\n");
             exit(1);
         }
-        if (masscan->script.name != NULL) {
-            if (strcmp(masscan->script.name, value) == 0)
+        if (masscan->vuln_name != NULL) {
+            if (strcmp(masscan->vuln_name, value) == 0)
                 return; /* ok */
             else {
-                fprintf(stderr, "FAIL: only one script supported at a time\n");
-                fprintf(stderr, "  hint: '%s' is existing script, '%s' is new script\n",
-                        masscan->script.name, value);
+                fprintf(stderr, "FAIL: only one vuln check supported at a time\n");
+                fprintf(stderr, "  hint: '%s' is existing vuln check, '%s' is new vuln check\n",
+                        masscan->vuln_name, value);
                 exit(1);
             }
         }
         
-        masscan->script.name = script_lookup(value)->name;
+        masscan->vuln_name = vulncheck_lookup(value)->name;
     } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
         exit(1);
@@ -2227,6 +2288,58 @@ masscan_help()
 "about. I suggest you try it now:\n"
 " masscan -p1234 --echo\n");
     exit(1);
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+masscan_load_database_files(struct Masscan *masscan)
+{
+    const char *filename;
+    
+    /*
+     * "pcap-payloads"
+     */
+    filename = masscan->payloads.pcap_payloads_filename;
+    if (filename) {
+        if (masscan->payloads.udp == NULL)
+            masscan->payloads.udp = payloads_create();
+    
+        payloads_read_pcap(filename, masscan->payloads.udp);
+    }
+
+    /*
+     * "nmap-payloads"
+     */
+    filename = masscan->payloads.nmap_payloads_filename;
+    if (filename) {
+        FILE *fp;
+        int err;
+        
+        
+        err = fopen_s(&fp, filename, "rt");
+        if (err || fp == NULL) {
+            perror(filename);
+        } else {
+            if (masscan->payloads.udp == NULL)
+                masscan->payloads.udp = payloads_create();
+            
+            payloads_read_file(fp, filename, masscan->payloads.udp);
+            
+            fclose(fp);
+        }
+    }
+    
+    /*
+     * "nmap-service-probes"
+     */
+    filename = masscan->payloads.nmap_service_probes_filename;
+    if (filename) {
+        if (masscan->payloads.probes)
+            nmapserviceprobes_free(masscan->payloads.probes);
+        
+        masscan->payloads.probes = nmapserviceprobes_read_file(filename);
+    }
 }
 
 /***************************************************************************

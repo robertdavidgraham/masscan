@@ -31,7 +31,8 @@ enum ApplicationProtocol {
     PROTO_VNC_RFB,
     PROTO_SAFE,
     PROTO_MEMCACHED,
-    
+    PROTO_SCRIPTING,
+    PROTO_VERSIONING,
     
     
     PROTO_end_of_list /* must be last one */

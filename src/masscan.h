@@ -199,9 +199,10 @@ struct Masscan
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
     unsigned is_ticketbleed:1;  /* --ticketbleed, scan for this vuln */
-    unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
+    unsigned is_poodle_sslv3:1; /* --vuln poodle, scan for this vuln */
     unsigned is_hello_ssl:1;    /* --ssl, use SSL HELLO on all ports */
     unsigned is_hello_smbv1:1;  /* --smbv1, use SMBv1 hello, instead of v1/v2 hello */
+    unsigned is_scripting:1;    /* whether scripting is needed */
         
     /**
      * Wait forever for responses, instead of the default 10 seconds
@@ -365,9 +366,16 @@ struct Masscan
         unsigned timeout;
     } tcb;
 
-    struct NmapPayloads *payloads;
-    struct TcpCfgPayloads *tcp_payloads;
-
+    struct {
+        char *pcap_payloads_filename;
+        char *nmap_payloads_filename;
+        char *nmap_service_probes_filename;
+    
+        struct NmapPayloads *udp;
+        struct TcpCfgPayloads *tcp;
+        struct NmapServiceProbeList *probes;
+    } payloads;
+    
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
     unsigned tcp_connection_timeout;
@@ -407,13 +415,22 @@ struct Masscan
     
     /**
      * --script <name>
-     * The name of the internal script that we are going to use during the
-     * scan. The script is responsible for crafting packets and parsing
-     * the results
      */
     struct {
-        const char *name;
-    } script;
+        /* The name (filename) of the script to run */
+        char *name;
+        
+        /* The script VM */
+        struct lua_State *L;
+    } scripting;
+
+    
+    /**
+     * --vuln <name>
+     * The name of a vuln to check, like "poodle"
+     */
+    const char *vuln_name;
+
 };
 
 
@@ -425,10 +442,25 @@ void masscan_save_state(struct Masscan *masscan);
 void main_listscan(struct Masscan *masscan);
 
 /**
+ * Load databases, such as:
+ *  - nmap-payloads
+ *  - nmap-service-probes
+ *  - pcap-payloads
+ */
+void masscan_load_database_files(struct Masscan *masscan);
+
+/**
  * Pre-scan the command-line looking for options that may affect how
  * previous options are handled. This is a bit of a kludge, really.
  */
 int masscan_conf_contains(const char *x, int argc, char **argv);
+
+/**
+ * Called to set a <name=value> pair.
+ */
+void
+masscan_set_parameter(struct Masscan *masscan,
+                      const char *name, const char *value);
 
 
 

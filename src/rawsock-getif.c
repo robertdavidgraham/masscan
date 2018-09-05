@@ -44,7 +44,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 {
     int fd;
     int seq = (int)time(0);
-    int err;
+    size_t err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;
 
@@ -82,9 +82,9 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     rtm->rtm_addrs = RTA_DST | RTA_NETMASK | RTA_GATEWAY | RTA_IFP;
 
     err = write(fd, (char *)rtm, sizeof_buffer);
-    if (err < 0 || err != sizeof_buffer) {
+    if (err != sizeof_buffer) {
         perror("write(RTM_GET)");
-        printf("----%u %u\n", err, (unsigned)sizeof_buffer);
+        printf("----%u %u\n", (unsigned)err, (unsigned)sizeof_buffer);
         close(fd);
         free(rtm);
         return -1;

@@ -182,7 +182,7 @@ open_rotate(struct Output *out, const char *filename)
             sin.sin_addr.s_addr = htonl(out->redis.ip);
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
-            x = connect(fd, (struct sockaddr*)&sin, sizeof(sin));
+            x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
             if (x != 0) {
                 LOG(0, "redis: connect() failed\n");
                 perror("connect");

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 struct NmapPayloads;
-struct MassScript;
+struct MassVulnCheck;
 
 /**
  * Does a regression test of this module.
@@ -20,7 +20,7 @@ enum TemplateProtocol {
     Proto_ICMP_ping,
     Proto_ICMP_timestamp,
     Proto_ARP,
-    Proto_Script,
+    Proto_VulnCheck,
     //Proto_IP,
     //Proto_Custom,
     Proto_Count
@@ -55,7 +55,7 @@ struct TemplatePacket {
 };
 
 /**
- * We can run multiple types of scans (TCP, UDP, scripts, etc.) at the same
+ * We can run multiple types of scans (TCP, UDP, vulns, etc.) at the same
  * time. Therefore, instead of one packet prototype for all scans, we have
  * a set of prototypes/templates.
  */
@@ -63,7 +63,7 @@ struct TemplateSet
 {
     unsigned count;
     struct TemplatePacket pkts[Proto_Count];
-    struct MassScript *script;
+    struct MassVulnCheck *vulncheck;
     uint64_t entropy;
 };
 

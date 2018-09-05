@@ -1,4 +1,4 @@
-#include "script.h"
+#include "vulncheck.h"
 #include "templ-pkt.h"
 #include "unusedparm.h"
 
@@ -67,9 +67,9 @@ static unsigned char packet_template[] =
 
 /*****************************************************************************
  *****************************************************************************/
-struct MassScript script_ntp_monlist = {
-    "ntp-monlist",  /* name of this script, matches command-line name */
-    "U:123",        /* default ports this script should target */
+struct MassVulnCheck vuln_ntp_monlist = {
+    "ntp-monlist",  /* name of this vuln, matches command-line name */
+    "U:123",        /* default ports this vuln check should target */
     packet_template,
     sizeof(packet_template)-1,
     set_target

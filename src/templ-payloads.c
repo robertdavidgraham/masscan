@@ -675,7 +675,7 @@ payloads_read_file(FILE *fp, const char *filename,
                         filename, line_number);
                 goto end;
             }
-            source_port = strtoul(line, 0, 0);
+            source_port = (unsigned)strtoul(line, 0, 0);
             line[0] = '\0';
         }
 
@@ -729,6 +729,9 @@ payloads_create(void)
         exit(1);
     memset(payloads, 0, sizeof(*payloads));
 
+    /*
+     * For popular parts, include some hard-coded default UDP payloads
+     */
     for (i=0; hard_coded_payloads[i].length; i++) {
         struct Range range;
         struct RangeList list;

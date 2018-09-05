@@ -36,6 +36,8 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_VNC_RFB: return "vnc";
     case PROTO_SAFE:    return "safe";
     case PROTO_MEMCACHED: return "memcached";
+    case PROTO_SCRIPTING:      return "scripting";
+    case PROTO_VERSIONING:     return "versioning";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
@@ -76,6 +78,8 @@ masscan_string_to_app(const char *str)
         {"vnc",         PROTO_VNC_RFB},
         {"safe",        PROTO_SAFE},
         {"memcached",   PROTO_MEMCACHED},
+        {"scripting",   PROTO_SCRIPTING},
+        {"versioning",  PROTO_VERSIONING},
         {0,0}
     };
     size_t i;

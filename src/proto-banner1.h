@@ -21,6 +21,7 @@ typedef void (*BannerParser)(
               struct InteractiveData *more);
 struct Banner1
 {
+    struct lua_State *L;
     struct SMACK *smack;
     struct SMACK *http_fields;
     struct SMACK *html_fields;
@@ -35,7 +36,9 @@ struct Banner1
     unsigned is_ticketbleed:1;
     unsigned is_poodle_sslv3:1;
 
-    struct ProtocolParserStream *tcp_payloads[65536];
+    struct {
+        struct ProtocolParserStream *tcp[65536];
+    } payloads;
     
     BannerParser parser[PROTO_end_of_list];
 };
@@ -249,6 +252,16 @@ struct ProtocolParserStream {
         struct BannerOutput *banout,
         struct InteractiveData *more);
     void (*cleanup)(struct ProtocolState *stream_state);
+    void (*transmit_hello)(const struct Banner1 *banner1, struct InteractiveData *more);
+    
+    /* When multiple items are registered for a port. When one
+     * connection is closed, the next will be opened.*/
+    struct ProtocolParserStream *next;
+    
+    /*NOTE: the 'next' parameter should be the last one in this structure,
+     * because we statically initialize the rest of the members at compile
+     * time, and then use this last parameter to link up structures
+     * at runtime */
 };
 
 
@@ -262,6 +275,7 @@ struct Patterns {
 
 struct Banner1 *
 banner1_create(void);
+
 
 void
 banner1_destroy(struct Banner1 *b);

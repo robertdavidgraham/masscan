@@ -1802,7 +1802,8 @@ smb_parse_record(
 
 /*****************************************************************************
  *****************************************************************************/
-int
+#if 0
+static int
 negot_add_dialect(unsigned char *buf, size_t sizeof_buf, const char *dialect)
 {
     size_t nbt_length;
@@ -1833,6 +1834,7 @@ negot_add_dialect(unsigned char *buf, size_t sizeof_buf, const char *dialect)
     
     return 0;
 }
+#endif
 
 /*****************************************************************************
  *****************************************************************************/

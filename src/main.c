@@ -53,8 +53,10 @@
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "pixie-backtrace.h"
 #include "proto-sctp.h"
-#include "script.h"
+#include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
 #include "main-readrange.h"
+#include "scripting.h"
+#include "read-service-probes.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -603,6 +605,9 @@ receive_thread(void *v)
     if (masscan->is_banners) {
         struct TcpCfgPayloads *pay;
 
+        /*
+         * Create TCP connection table
+         */
         tcpcon = tcpcon_create_table(
             (size_t)((masscan->max_rate/5) / masscan->nic_count),
             parms->transmit_queue,
@@ -613,6 +618,16 @@ receive_thread(void *v)
             masscan->tcb.timeout,
             masscan->seed
             );
+        
+        /*
+         * Initialize TCP scripting
+         */
+        scripting_init_tcp(tcpcon, masscan->scripting.L);
+        
+        
+        /*
+         * Set some flags [kludge]
+         */
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
                 masscan->is_capture_html,
@@ -665,7 +680,7 @@ receive_thread(void *v)
                                  foo);
         }
         
-        for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
+        for (pay = masscan->payloads.tcp; pay; pay = pay->next) {
             char name[64];
             sprintf_s(name, sizeof(name), "hello-string[%u]", pay->port);
             tcpcon_set_parameter(   tcpcon, 
@@ -1065,28 +1080,28 @@ main_scan(struct Masscan *masscan)
     time_t now = time(0);
     struct Status status;
     uint64_t min_index = UINT64_MAX;
-    struct MassScript *script = NULL;
+    struct MassVulnCheck *vulncheck = NULL;
 
     memset(parms_array, 0, sizeof(parms_array));
 
     /*
-     * Script initialization
+     * Vuln check initialization
      */
-    if (masscan->script.name) {
+    if (masscan->vuln_name) {
         unsigned i;
 		unsigned is_error;
-        script = script_lookup(masscan->script.name);
+        vulncheck = vulncheck_lookup(masscan->vuln_name);
         
         /* If no ports specified on command-line, grab default ports */
         is_error = 0;
         if (rangelist_count(&masscan->ports) == 0)
-            rangelist_parse_ports(&masscan->ports, script->ports, &is_error, 0);
+            rangelist_parse_ports(&masscan->ports, vulncheck->ports, &is_error, 0);
         
-        /* Kludge: change normal port range to script range */
+        /* Kludge: change normal port range to vulncheck range */
         for (i=0; i<masscan->ports.count; i++) {
             struct Range *r = &masscan->ports.list[i];
-            r->begin = (r->begin&0xFFFF) | Templ_Script;
-            r->end = (r->end & 0xFFFF) | Templ_Script;
+            r->begin = (r->begin&0xFFFF) | Templ_VulnCheck;
+            r->end = (r->end & 0xFFFF) | Templ_VulnCheck;
         }
     }
     
@@ -1134,7 +1149,7 @@ main_scan(struct Masscan *masscan)
      * trim the nmap UDP payloads down to only those ports we are using. This
      * makes lookups faster at high packet rates.
      */
-    payloads_trim(masscan->payloads, &masscan->ports);
+    payloads_trim(masscan->payloads.udp, &masscan->ports);
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
@@ -1192,12 +1207,12 @@ main_scan(struct Masscan *masscan)
          * scanning. Then, we adjust the template with additional features,
          * such as the IP address and so on.
          */
-        parms->tmplset->script = script;
+        parms->tmplset->vulncheck = vulncheck;
         template_packet_init(
                     parms->tmplset,
                     parms->adapter_mac,
                     parms->router_mac,
-                    masscan->payloads,
+                    masscan->payloads.udp,
                     rawsock_datalink(masscan->nic[index].adapter),
                     masscan->seed);
 
@@ -1499,7 +1514,7 @@ int main(int argc, char *argv[])
     masscan->shard.one = 1;
     masscan->shard.of = 1;
     masscan->min_packet_size = 60;
-    masscan->payloads = payloads_create();
+    masscan->payloads.udp = payloads_create();
     strcpy_s(   masscan->output.rotate.directory,
                 sizeof(masscan->output.rotate.directory),
                 ".");
@@ -1533,7 +1548,18 @@ int main(int argc, char *argv[])
      * either options or a list of IPv4 address ranges.
      */
     masscan_command_line(masscan, argc, argv);
+    
+    /*
+     * Load database files like "nmap-payloads" and "nmap-service-probes"
+     */
+    masscan_load_database_files(masscan);
 
+    /*
+     * Load the scripting engine if needed and run those that were
+     * specified.
+     */
+    if (masscan->is_scripting)
+        scripting_init(masscan);
 
     /* We need to do a separate "raw socket" initialization step. This is
      * for Windows and PF_RING. */
@@ -1668,6 +1694,7 @@ int main(int argc, char *argv[])
             x += rte_ring_selftest();
             x += mainconf_selftest();
             x += zeroaccess_selftest();
+            x += nmapserviceprobes_selftest();
 
 
             if (x != 0) {

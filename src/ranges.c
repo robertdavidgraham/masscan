@@ -217,6 +217,18 @@ rangelist_remove_all(struct RangeList *tasks)
 /***************************************************************************
  ***************************************************************************/
 void
+rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
+{
+    unsigned i;
+    
+    for (i=0; i<list2->count; i++) {
+        rangelist_add_range(list1, list2->list[i].begin, list2->list[i].end);
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
 rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
 {
     unsigned i;

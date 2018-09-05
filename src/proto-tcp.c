@@ -27,6 +27,9 @@
 #include "crypto-base64.h"
 #include "proto-interactive.h"
 
+#include "scripting.h"
+#include "versioning.h"
+
 
 
 /***************************************************************************
@@ -66,6 +69,11 @@ struct TCP_Control_Block
     time_t when_created;
     const unsigned char *payload;
 
+    /*
+     * If Running a script, the thread object
+     */
+    struct ScriptingThread *scripting_thread;
+    
     struct BannerOutput banout;
 
     struct ProtocolState banner1_state;
@@ -90,6 +98,8 @@ struct TCP_ConnectionTable {
     struct Banner1 *banner1;
     OUTPUT_REPORT_BANNER report_banner;
     struct Output *out;
+    
+    struct ScriptingVM *scripting_vm;
 };
 
 enum {
@@ -249,7 +259,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         
         LOG(2, "HELLO: setting SSL hello message\n");
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
         
         return;
@@ -276,7 +286,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         tcpcon->banner1->is_heartbleed = 1;
 
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
 
         return;
@@ -292,7 +302,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         tcpcon->banner1->is_ticketbleed = 1;
 
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
 
         return;
@@ -313,7 +323,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         tcpcon->banner1->is_poodle_sslv3 = 1;
 
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
         
         return;
@@ -336,7 +346,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         }
         port = (unsigned)strtoul(p+1, 0, 0);
 
-        x = banner1->tcp_payloads[port];
+        x = banner1->payloads.tcp[port];
         if (x == NULL) {
             x = (struct ProtocolParserStream *)malloc(sizeof(*x));
             memset(x, 0, sizeof(*x));
@@ -347,7 +357,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         x->hello = malloc(value_length);
         x->hello_length = base64_decode((char*)x->hello, value_length, value, value_length);
 
-        banner1->tcp_payloads[port] = x;
+        banner1->payloads.tcp[port] = x;
     }
 
 }
@@ -366,6 +376,15 @@ tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     tcpcon->banner1->is_capture_html = is_capture_html;
     tcpcon->banner1->is_capture_heartbleed = is_capture_heartbleed;
     tcpcon->banner1->is_capture_ticketbleed = is_capture_ticketbleed;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
+{
+    tcpcon->banner1->L = L;
+    
+    banner_scripting.init(tcpcon->banner1);
 }
 
 /***************************************************************************
@@ -572,6 +591,10 @@ tcpcon_destroy_tcb(
     tcpcon_flush_banners(tcpcon, tcb);
     if (tcb->is_payload_dynamic && tcb->payload_length && tcb->payload)
         free((void*)tcb->payload);
+    
+    if (tcb->scripting_thread)
+        ; //scripting_thread_close(tcb->scripting_thread);
+    tcb->scripting_thread = 0;
     
     /* KLUDGE: this needs to be made more elegant */
     switch (tcb->banner1_state.app_proto) {
@@ -1055,34 +1078,49 @@ application(struct TCP_ConnectionTable *tcpcon,
     
     switch (tcb->established) {
         case App_Connect:
-            /*
-             * Wait 1 second for "server hello" (like SSH), and if that's
-             * not found, then transmit a "client hello"
-             */
-            assert(action == APP_CONNECTED);
-            LOGSEND(tcb, "+timeout");
-            timeouts_add( tcpcon->timeouts,
-                         tcb->timeout,
-                         offsetof(struct TCP_Control_Block, timeout),
-                         TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
-                         );
-            /* Start of connection */
-            tcb->tcpstate = STATE_ESTABLISHED_RECV;
-            tcb->established = App_ReceiveHello;
+            if (banner1->payloads.tcp[tcb->port_them] == &banner_scripting) {
+                //int x;
+                ; //tcb->scripting_thread = scripting_thread_new(tcpcon->scripting_vm);
+                ; //x = scripting_thread_run(tcb->scripting_thread);
+            } else {
+                /*
+                 * Wait 1 second for "server hello" (like SSH), and if that's
+                 * not found, then transmit a "client hello"
+                 */
+                assert(action == APP_CONNECTED);
+                LOGSEND(tcb, "+timeout");
+                timeouts_add( tcpcon->timeouts,
+                             tcb->timeout,
+                             offsetof(struct TCP_Control_Block, timeout),
+                             TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
+                             );
+                /* Start of connection */
+                tcb->tcpstate = STATE_ESTABLISHED_RECV;
+                tcb->established = App_ReceiveHello;
+            }
             break;
         case App_ReceiveHello:
             if (action == APP_RECV_TIMEOUT) {
-                /* if we have a "hello" message to send to the server,
-                 * then send it */
-                if (banner1->tcp_payloads[tcb->port_them]) {
-                    size_t x_len = 0;
-                    const unsigned char *x;
+                struct ProtocolParserStream *stream = banner1->payloads.tcp[tcb->port_them];
+                
+                if (stream) {
+                    struct InteractiveData more = {0};
                     unsigned ctrl = 0;
                     
-                    x_len = banner1->tcp_payloads[tcb->port_them]->hello_length;
-                    x = banner1->tcp_payloads[tcb->port_them]->hello;
-                    if (banner1->tcp_payloads[tcb->port_them] == &banner_ssl)
+                    if (stream->transmit_hello)
+                        stream->transmit_hello(banner1, &more);
+                    else {
+                        more.m_length = (unsigned)banner1->payloads.tcp[tcb->port_them]->hello_length;
+                        more.m_payload = banner1->payloads.tcp[tcb->port_them]->hello;
+                        more.is_payload_dynamic = 0;
+                    }
+                    
+                    /*
+                     * Kludge
+                     */
+                    if (banner1->payloads.tcp[tcb->port_them] == &banner_ssl) {
                         tcb->banner1_state.is_sent_sslhello = 1;
+                    }
                     
                     /*
                      * KLUDGE
@@ -1091,23 +1129,17 @@ application(struct TCP_ConnectionTable *tcpcon,
                         ctrl = CTRL_SMALL_WINDOW;
                     }
                     
-                    /* Send request. This actually doens't send the packet right
-                     * now, but instead queues up a packet that the transmit
-                     * thread will send soon. */
+                    /*
+                     * Queue up the packet to be sent
+                     */
+                    LOGip(4, tcb->ip_them, tcb->port_them, "sending payload %u bytes\n", more.m_length);
                     LOGSEND(tcb, "peer(payload)");
-                    tcpcon_send_packet(tcpcon, tcb,
-                                       0x18,
-                                       x, x_len, ctrl);
-                    LOGip(4, tcb->ip_them, tcb->port_them,
-                          "sending payload %u bytes\n",
-                          x_len);
-                    
-                    /* Increment our sequence number */
-                    tcb->seqno_me += (uint32_t)x_len;
-                    
-                    /* change our state to reflect that we are now waiting for
-                     * acknowledgement of the data we've sent */
+                    tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, ctrl);
+                    tcb->seqno_me += (uint32_t)more.m_length;
+                    tcb->is_payload_dynamic = more.is_payload_dynamic;
                     tcb->tcpstate = STATE_ESTABLISHED_SEND;
+                    
+                    //tcb->established = App_SendNext;
                 }
                 
                 /* Add a timeout so that we can resend the data in case it
@@ -1155,6 +1187,8 @@ application(struct TCP_ConnectionTable *tcpcon,
                     tcb->is_payload_dynamic = more.is_payload_dynamic;
                     tcb->tcpstate = STATE_ESTABLISHED_SEND;
                     tcb->established = App_SendNext;
+                    LOGip(4, tcb->ip_them, tcb->port_them, "sending payload %u bytes\n", more.m_length);
+                    
                 } else {
                     LOGSEND(tcb, "peer(ACK)");
                     tcpcon_send_packet(tcpcon, tcb,

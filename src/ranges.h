@@ -172,6 +172,13 @@ rangelist_parse_ports(  struct RangeList *ports,
 void
 rangelist_remove_all(struct RangeList *list);
 
+/**
+ * Merge two range lists
+ */
+void
+rangelist_merge(struct RangeList *list1, const struct RangeList *list2);
+
+
 
 /**
  * Creates an optimized enumerator for translating indexes into
