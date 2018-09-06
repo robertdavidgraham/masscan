@@ -21,6 +21,8 @@
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
 		11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
 		119968FC21388A3C00E82767 /* read-service-probes.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FB21388A3B00E82767 /* read-service-probes.c */; };
+		119969002141AB3600E82767 /* stub-pfring.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FE2141AB3600E82767 /* stub-pfring.c */; };
+		119969012141AB3600E82767 /* stub-pcap.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FF2141AB3600E82767 /* stub-pcap.c */; };
 		119AB2062051FFED008E4DDD /* proto-memcached.c in Sources */ = {isa = PBXBuildFile; fileRef = 119AB2042051FFED008E4DDD /* proto-memcached.c */; };
 		11A50CAE191C128F006D5802 /* out-json.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A50CAD191C128F006D5802 /* out-json.c */; };
 		11A773EB1881BFC700B135DE /* crypto-base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A773E91881BFC700B135DE /* crypto-base64.c */; };
@@ -60,7 +62,6 @@
 		11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */; };
 		11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */; };
 		11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */; };
-		11A921F217DBCC7E00DDFD32 /* rawsock-pfring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C317DBCC7E00DDFD32 /* rawsock-pfring.c */; };
 		11A921F317DBCC7E00DDFD32 /* rawsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C517DBCC7E00DDFD32 /* rawsock.c */; };
 		11A921F417DBCC7E00DDFD32 /* rte-ring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C717DBCC7E00DDFD32 /* rte-ring.c */; };
 		11A921F517DBCC7E00DDFD32 /* smack1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CA17DBCC7E00DDFD32 /* smack1.c */; };
@@ -89,7 +90,6 @@
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
 		11C936C31EDCE77F0023D32E /* in-filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936BF1EDCE77F0023D32E /* in-filter.c */; };
 		11C936C41EDCE77F0023D32E /* in-report.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C11EDCE77F0023D32E /* in-report.c */; };
-		11C936C71EDCE8B40023D32E /* rawsock-pcap.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C51EDCE8B40023D32E /* rawsock-pcap.c */; };
 		11DD363421067BD400CBE1DE /* out-tcp-services.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363321067BD300CBE1DE /* out-tcp-services.c */; };
 		11DD36382107DE9700CBE1DE /* stub-lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36362107DE9700CBE1DE /* stub-lua.c */; };
 		11DD363B2107DFEB00CBE1DE /* scripting.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363A2107DFEB00CBE1DE /* scripting.c */; };
@@ -148,6 +148,10 @@
 		116806EA1995D421005B0980 /* rawsock-adapter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-adapter.h"; sourceTree = "<group>"; };
 		119968FB21388A3B00E82767 /* read-service-probes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "read-service-probes.c"; sourceTree = "<group>"; };
 		119968FD21388A5300E82767 /* read-service-probes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "read-service-probes.h"; sourceTree = "<group>"; };
+		119968FE2141AB3600E82767 /* stub-pfring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stub-pfring.c"; sourceTree = "<group>"; };
+		119968FF2141AB3600E82767 /* stub-pcap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stub-pcap.c"; sourceTree = "<group>"; };
+		119969022141ABAC00E82767 /* stub-pfring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stub-pfring.h"; sourceTree = "<group>"; };
+		119969032141ABAC00E82767 /* stub-pcap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stub-pcap.h"; sourceTree = "<group>"; };
 		119AB2042051FFED008E4DDD /* proto-memcached.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-memcached.c"; sourceTree = "<group>"; };
 		119AB2052051FFED008E4DDD /* proto-memcached.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-memcached.h"; sourceTree = "<group>"; };
 		11A50CAD191C128F006D5802 /* out-json.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-json.c"; sourceTree = "<group>"; };
@@ -217,8 +221,6 @@
 		11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getroute.c"; sourceTree = "<group>"; };
 		11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-pcapfile.c"; sourceTree = "<group>"; };
 		11A921C217DBCC7E00DDFD32 /* rawsock-pcapfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-pcapfile.h"; sourceTree = "<group>"; };
-		11A921C317DBCC7E00DDFD32 /* rawsock-pfring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-pfring.c"; sourceTree = "<group>"; };
-		11A921C417DBCC7E00DDFD32 /* rawsock-pfring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-pfring.h"; sourceTree = "<group>"; };
 		11A921C517DBCC7E00DDFD32 /* rawsock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rawsock.c; sourceTree = "<group>"; };
 		11A921C617DBCC7E00DDFD32 /* rawsock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rawsock.h; sourceTree = "<group>"; };
 		11A921C717DBCC7E00DDFD32 /* rte-ring.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rte-ring.c"; sourceTree = "<group>"; };
@@ -273,8 +275,6 @@
 		11C936C01EDCE77F0023D32E /* in-filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-filter.h"; sourceTree = "<group>"; };
 		11C936C11EDCE77F0023D32E /* in-report.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-report.c"; sourceTree = "<group>"; };
 		11C936C21EDCE77F0023D32E /* in-report.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-report.h"; sourceTree = "<group>"; };
-		11C936C51EDCE8B40023D32E /* rawsock-pcap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-pcap.c"; sourceTree = "<group>"; };
-		11C936C61EDCE8B40023D32E /* rawsock-pcap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-pcap.h"; sourceTree = "<group>"; };
 		11DD363221067BD300CBE1DE /* out-tcp-services.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-tcp-services.h"; sourceTree = "<group>"; };
 		11DD363321067BD300CBE1DE /* out-tcp-services.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-tcp-services.c"; sourceTree = "<group>"; };
 		11DD36362107DE9700CBE1DE /* stub-lua.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stub-lua.c"; sourceTree = "<group>"; };
@@ -345,6 +345,10 @@
 		11B360C71F90166D0020F3A3 /* rawsock */ = {
 			isa = PBXGroup;
 			children = (
+				119969032141ABAC00E82767 /* stub-pcap.h */,
+				119969022141ABAC00E82767 /* stub-pfring.h */,
+				119968FF2141AB3600E82767 /* stub-pcap.c */,
+				119968FE2141AB3600E82767 /* stub-pfring.c */,
 				116806EA1995D421005B0980 /* rawsock-adapter.h */,
 				11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */,
 				11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */,
@@ -353,11 +357,7 @@
 				11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */,
 				11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */,
 				11A921C217DBCC7E00DDFD32 /* rawsock-pcapfile.h */,
-				11A921C317DBCC7E00DDFD32 /* rawsock-pfring.c */,
-				11A921C417DBCC7E00DDFD32 /* rawsock-pfring.h */,
 				11A921C517DBCC7E00DDFD32 /* rawsock.c */,
-				11C936C51EDCE8B40023D32E /* rawsock-pcap.c */,
-				11C936C61EDCE8B40023D32E /* rawsock-pcap.h */,
 			);
 			name = rawsock;
 			sourceTree = "<group>";
@@ -624,6 +624,7 @@
 				11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */,
 				11DD36412107E7ED00CBE1DE /* vulncheck-heartbleed.c in Sources */,
 				11A921D617DBCC7E00DDFD32 /* logger.c in Sources */,
+				119969002141AB3600E82767 /* stub-pfring.c in Sources */,
 				11A921D717DBCC7E00DDFD32 /* main-conf.c in Sources */,
 				11A921D817DBCC7E00DDFD32 /* main-dedup.c in Sources */,
 				11A921D917DBCC7E00DDFD32 /* main-initadapter.c in Sources */,
@@ -642,6 +643,7 @@
 				119968FC21388A3C00E82767 /* read-service-probes.c in Sources */,
 				11A921E417DBCC7E00DDFD32 /* proto-arp.c in Sources */,
 				11A921E517DBCC7E00DDFD32 /* proto-banner1.c in Sources */,
+				119969012141AB3600E82767 /* stub-pcap.c in Sources */,
 				11A921E617DBCC7E00DDFD32 /* proto-preprocess.c in Sources */,
 				11A921E717DBCC7E00DDFD32 /* proto-tcp.c in Sources */,
 				11A921E817DBCC7E00DDFD32 /* rand-blackrock.c in Sources */,
@@ -657,7 +659,6 @@
 				11DD36492108DCBB00CBE1DE /* versioning.c in Sources */,
 				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
-				11A921F217DBCC7E00DDFD32 /* rawsock-pfring.c in Sources */,
 				11A921F317DBCC7E00DDFD32 /* rawsock.c in Sources */,
 				11DD364B2108E0CB00CBE1DE /* scripting-banner.c in Sources */,
 				11A921F417DBCC7E00DDFD32 /* rte-ring.c in Sources */,
@@ -689,7 +690,6 @@
 				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
 				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
 				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
-				11C936C71EDCE8B40023D32E /* rawsock-pcap.c in Sources */,
 				11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */,
 				11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */,
 				11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */,

@@ -2,7 +2,7 @@
 #define TCP_PACKET_H
 #include <stdio.h>
 #include <stdint.h>
-struct NmapPayloads;
+struct PayloadsUDP;
 struct MassVulnCheck;
 
 /**
@@ -51,7 +51,7 @@ struct TemplatePacket {
     unsigned checksum_tcp;
     unsigned ip_id;
     enum TemplateProtocol proto;
-    struct NmapPayloads *payloads;
+    struct PayloadsUDP *payloads;
 };
 
 /**
@@ -97,7 +97,7 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads,
+    struct PayloadsUDP *payloads,
     int data_link,
     uint64_t entropy);
 

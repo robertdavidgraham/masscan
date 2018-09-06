@@ -515,7 +515,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
 
     UNUSEDPARM(seqno);
 
-    payloads_lookup(tmpl->payloads,
+    payloads_udp_lookup(tmpl->payloads,
                     port,
                     &px2,
                     &length2,
@@ -916,7 +916,7 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads,
+    struct PayloadsUDP *payloads,
     int data_link,
     uint64_t entropy)
 {

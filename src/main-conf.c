@@ -2303,7 +2303,7 @@ masscan_load_database_files(struct Masscan *masscan)
     filename = masscan->payloads.pcap_payloads_filename;
     if (filename) {
         if (masscan->payloads.udp == NULL)
-            masscan->payloads.udp = payloads_create();
+            masscan->payloads.udp = payloads_udp_create();
     
         payloads_read_pcap(filename, masscan->payloads.udp);
     }
@@ -2322,9 +2322,9 @@ masscan_load_database_files(struct Masscan *masscan)
             perror(filename);
         } else {
             if (masscan->payloads.udp == NULL)
-                masscan->payloads.udp = payloads_create();
+                masscan->payloads.udp = payloads_udp_create();
             
-            payloads_read_file(fp, filename, masscan->payloads.udp);
+            payloads_udp_readfile(fp, filename, masscan->payloads.udp);
             
             fclose(fp);
         }

@@ -31,7 +31,7 @@
 #pragma warning(disable:4115 4201)
 #include <winerror.h>
 #endif
-#include "rawsock-pcap.h"
+#include "stub-pcap.h"
 
 #ifdef WIN32
 #include <windows.h>

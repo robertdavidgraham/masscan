@@ -371,7 +371,7 @@ struct Masscan
         char *nmap_payloads_filename;
         char *nmap_service_probes_filename;
     
-        struct NmapPayloads *udp;
+        struct PayloadsUDP *udp;
         struct TcpCfgPayloads *tcp;
         struct NmapServiceProbeList *probes;
     } payloads;

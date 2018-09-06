@@ -37,7 +37,7 @@
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
-#include "rawsock-pcap.h"       /* dynamically load libpcap library */
+#include "stub-pcap.h"       /* dynamically load libpcap library */
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -1149,7 +1149,7 @@ main_scan(struct Masscan *masscan)
      * trim the nmap UDP payloads down to only those ports we are using. This
      * makes lookups faster at high packet rates.
      */
-    payloads_trim(masscan->payloads.udp, &masscan->ports);
+    payloads_udp_trim(masscan->payloads.udp, &masscan->ports);
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
@@ -1514,7 +1514,7 @@ int main(int argc, char *argv[])
     masscan->shard.one = 1;
     masscan->shard.of = 1;
     masscan->min_packet_size = 60;
-    masscan->payloads.udp = payloads_create();
+    masscan->payloads.udp = payloads_udp_create();
     strcpy_s(   masscan->output.rotate.directory,
                 sizeof(masscan->output.rotate.directory),
                 ".");
@@ -1684,7 +1684,7 @@ int main(int argc, char *argv[])
             x += siphash24_selftest();
             x += ntp_selftest();
             x += snmp_selftest();
-            x += payloads_selftest();
+            x += payloads_udp_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
             x += lcg_selftest();

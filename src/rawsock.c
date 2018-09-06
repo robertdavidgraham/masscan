@@ -9,11 +9,11 @@
 #include "logger.h"
 #include "main-ptrace.h"
 #include "string_s.h"
-#include "rawsock-pfring.h"
+#include "stub-pcap.h"
+#include "stub-pfring.h"
 #include "pixie-timer.h"
 #include "main-globals.h"
 
-#include "rawsock-pcap.h"
 #include "unusedparm.h"
 #include <assert.h>
 #include <ctype.h>

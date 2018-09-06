@@ -26,15 +26,16 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-struct Payload {
+struct PayloadUDP_Item {
     unsigned port;
     unsigned source_port; /* not used yet */
     unsigned length;
     unsigned xsum;
+    unsigned rarity;
     SET_COOKIE set_cookie;
     unsigned char buf[1];
 };
-struct Payload2 {
+struct PayloadUDP_Default {
     unsigned port;
     unsigned source_port;
     unsigned length;
@@ -44,14 +45,14 @@ struct Payload2 {
 
 };
 
-struct NmapPayloads {
+struct PayloadsUDP {
     unsigned count;
     size_t max;
-    struct Payload **list;
+    struct PayloadUDP_Item **list;
 };
 
 
-struct Payload2 hard_coded_payloads[] = {
+struct PayloadUDP_Default hard_coded_payloads[] = {
     /* ECHO protocol - echoes back whatever we send */
     {7, 65536, 12, 0, 0, "masscan-test 0x00000000"},
 
@@ -178,8 +179,8 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
  * If we have the port, return the payload
  ***************************************************************************/
 int
-payloads_lookup(
-        const struct NmapPayloads *payloads,
+payloads_udp_lookup(
+        const struct PayloadsUDP *payloads,
         unsigned port,
         const unsigned char **px,
         unsigned *length,
@@ -210,7 +211,7 @@ payloads_lookup(
 /***************************************************************************
  ***************************************************************************/
 void
-payloads_destroy(struct NmapPayloads *payloads)
+payloads_udp_destroy(struct PayloadsUDP *payloads)
 {
     unsigned i;
     if (payloads == NULL)
@@ -232,17 +233,17 @@ payloads_destroy(struct NmapPayloads *payloads)
  * faster, ideally looking up only zero or one rather than twenty.
  ***************************************************************************/
 void
-payloads_trim(struct NmapPayloads *payloads, const struct RangeList *target_ports)
+payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *target_ports)
 {
     unsigned i;
-    struct Payload **list2;
+    struct PayloadUDP_Item **list2;
     unsigned count2 = 0;
 
     /* Create a new list */
     if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
         exit(1); /* integer overflow */
     else
-    list2 = (struct Payload **)malloc(payloads->max * sizeof(list2[0]));
+    list2 = (struct PayloadUDP_Item **)malloc(payloads->max * sizeof(list2[0]));
     if (list2 == NULL)
         exit(1); /* out of memory */
 
@@ -443,14 +444,14 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
 
 /***************************************************************************
  ***************************************************************************/
-static unsigned
-payload_add(struct NmapPayloads *payloads,
+unsigned
+payloads_udp_add(struct PayloadsUDP *payloads,
             const unsigned char *buf, size_t length,
             struct RangeList *ports, unsigned source_port,
             SET_COOKIE set_cookie)
 {
     unsigned count = 1;
-    struct Payload *p;
+    struct PayloadUDP_Item *p;
     uint64_t port_count = rangelist_count(ports);
     uint64_t i;
 
@@ -458,11 +459,11 @@ payload_add(struct NmapPayloads *payloads,
         /* grow the list if we need to */
         if (payloads->count + 1 > payloads->max) {
             size_t new_max = payloads->max*2 + 1;
-            struct Payload **new_list;
+            struct PayloadUDP_Item **new_list;
 
             if (new_max >= SIZE_MAX/sizeof(new_list[0]))
                 exit(1); /* integer overflow */
-            new_list = (struct Payload**)malloc(new_max * sizeof(new_list[0]));
+            new_list = (struct PayloadUDP_Item**)malloc(new_max * sizeof(new_list[0]));
             if (new_list == NULL)
                 exit(1); /* out of memory */
 
@@ -473,7 +474,7 @@ payload_add(struct NmapPayloads *payloads,
         }
 
         /* allocate space for this record */
-        p = (struct Payload *)malloc(sizeof(p[0]) + length);
+        p = (struct PayloadUDP_Item *)malloc(sizeof(p[0]) + length);
         if (p == NULL)
             exit(1); /* out of memory */
 
@@ -518,7 +519,7 @@ payload_add(struct NmapPayloads *payloads,
  ***************************************************************************/
 void
 payloads_read_pcap(const char *filename,
-                   struct NmapPayloads *payloads)
+                   struct PayloadsUDP *payloads)
 {
     struct PcapFile *pcap;
     unsigned count = 0;
@@ -592,7 +593,7 @@ payloads_read_pcap(const char *filename,
          * Now we've completely parsed the record, so add it to our
          * list of payloads
          */
-        count += payload_add(   payloads,
+        count += payloads_udp_add(   payloads,
                                 buf + parsed.app_offset,
                                 parsed.app_length,
                                 ports,
@@ -609,8 +610,8 @@ payloads_read_pcap(const char *filename,
  * Called during processing of the "--nmap-payloads <filename>" directive.
  ***************************************************************************/
 void
-payloads_read_file(FILE *fp, const char *filename,
-                   struct NmapPayloads *payloads)
+payloads_udp_readfile(FILE *fp, const char *filename,
+                   struct PayloadsUDP *payloads)
 {
     char line[16384];
     unsigned line_number = 0;
@@ -683,7 +684,7 @@ payloads_read_file(FILE *fp, const char *filename,
          * Now we've completely parsed the record, so add it to our
          * list of payloads
          */
-        payload_add(payloads, buf, buf_length, ports, source_port, 0);
+        payloads_udp_add(payloads, buf, buf_length, ports, source_port, 0);
 
         rangelist_remove_all(ports);
     }
@@ -719,12 +720,12 @@ end:
 
 /***************************************************************************
  ***************************************************************************/
-struct NmapPayloads *
-payloads_create(void)
+struct PayloadsUDP *
+payloads_udp_create(void)
 {
     unsigned i;
-    struct NmapPayloads *payloads;
-    payloads = (struct NmapPayloads *)malloc(sizeof(*payloads));
+    struct PayloadsUDP *payloads;
+    payloads = (struct PayloadsUDP *)malloc(sizeof(*payloads));
     if (payloads == NULL)
         exit(1);
     memset(payloads, 0, sizeof(*payloads));
@@ -749,7 +750,7 @@ payloads_create(void)
 
         /* Add this to our real payloads. This will get overwritten
          * if the user adds their own with the same port */
-        payload_add(payloads,
+        payloads_udp_add(payloads,
                     (const unsigned char*)hard_coded_payloads[i].buf,
                     length,
                     &list,
@@ -763,7 +764,7 @@ payloads_create(void)
 /****************************************************************************
  ****************************************************************************/
 int
-payloads_selftest(void)
+payloads_udp_selftest(void)
 {
     unsigned char buf[1024];
     size_t buf_length;
