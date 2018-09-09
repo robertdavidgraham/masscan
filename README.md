@@ -150,11 +150,30 @@ Setting an `iptables` rule only lasts until the next reboot. You need to lookup 
 save the configuration depending upon your distro, such as using `iptables-save` 
 and/or `iptables-persistant`.
 
-On Mac OS X and BSD, it might look like this:
+On Mac OS X and BSD, there are similar steps. To find out the ranges to avoid,
+use a command like the following:
 
-	# sudo ipfw add 1 deny tcp from any to any 60000 in
-	# masscan 10.0.0.0/8 -p80 --banners --source-port 60000
-	
+    # sysctl net.inet.ip.portrange.first net.inet.ip.portrange.last
+
+On FreeBSD and older MacOS, use an `ipfw` command: 
+
+	# sudo ipfw add 1 deny tcp from any to any 40000 in
+	# masscan 10.0.0.0/8 -p80 --banners --source-port 40000
+
+On newer MacOS and OpenBSD, use the `pf` packet-filter utility. 
+Edit the file `/etc/pf.conf` to add a line like the following:
+
+    block in proto tcp from any to any port 40000
+    
+Then to enable the firewall, run the command:
+    
+    # pfctrl -E    
+
+If the firewall is already running, then either reboot or reload the rules
+with the following command:
+
+    # pfctl -f /etc/pf.conf
+
 Windows doesn't respond with RST packets, so neither of these techniques
 are necessary. However, masscan is still designed to work best using its
 own IP address, so you should run that way when possible, even when its
