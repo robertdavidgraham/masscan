@@ -115,6 +115,10 @@
 #include "pixie-timer.h"
 #if defined(_MSC_VER)
 #include <intrin.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#include <machine/cpufunc.h>
+#define __rdtsc rdtsc
 #elif defined(__llvm__)
 #include <x86intrin.h>
 #elif defined(__GNUC__)

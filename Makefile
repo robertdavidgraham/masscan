@@ -1,9 +1,9 @@
 #use llvm by default, GNU C otherwise
-CC=gcc
+CC=clang
 
 PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
-SYS := $(shell gcc -dumpmachine)
+SYS := $(shell $(CC) -dumpmachine)
 GITVER := $(shell git describe --tags)
 INSTALL_DATA := -pDm755
 
@@ -56,14 +56,14 @@ endif
 
 # OpenBSD
 ifneq (, $(findstring openbsd, $(SYS)))
-LIBS = -lm -pthread
+LIBS = -lm -lpthread
 INCLUDES = -I.
 FLAGS2 = 
 endif
 
 # FreeBSD
 ifneq (, $(findstring freebsd, $(SYS)))
-LIBS = -lm -pthread
+LIBS = -lm -lpthread
 INCLUDES = -I.
 FLAGS2 =
 endif
