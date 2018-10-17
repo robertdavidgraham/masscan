@@ -22,7 +22,7 @@ Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 On Debian/Ubuntu, it goes something like this:
 
-	$ sudo apt-get install git gcc make libpcap-dev
+	$ sudo apt-get install git gcc make libpcap-dev clang
 	$ git clone https://github.com/robertdavidgraham/masscan
 	$ cd masscan
 	$ make
