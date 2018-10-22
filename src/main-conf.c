@@ -32,6 +32,10 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#if defined(_MSC_VER)
+#define strdup _strdup
+#endif
+
 static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
 

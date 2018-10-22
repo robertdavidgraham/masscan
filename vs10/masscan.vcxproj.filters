@@ -28,11 +28,20 @@
     <Filter Include="Source Files\pixie">
       <UniqueIdentifier>{cbd42363-ae71-4e2d-9633-0cb518d5e447}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\scripts">
-      <UniqueIdentifier>{ba03c2ec-de65-4581-bef1-8e24f95a8580}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\crypto">
       <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stubs">
+      <UniqueIdentifier>{a481491e-ed05-4aeb-a49a-d8f071dc1409}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\scripting">
+      <UniqueIdentifier>{ba03c2ec-de65-4581-bef1-8e24f95a8580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\versioning">
+      <UniqueIdentifier>{09e28aca-e0bd-47a9-b983-5c9f38392d20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\vulncheck">
+      <UniqueIdentifier>{8ad0f675-466a-4fb9-bac6-6fa0c868aefb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -106,9 +115,6 @@
       <Filter>Source Files\rawsock</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rawsock-pcapfile.c">
-      <Filter>Source Files\rawsock</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rawsock-pfring.c">
       <Filter>Source Files\rawsock</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rawsock.c">
@@ -225,12 +231,6 @@
     <ClCompile Include="..\src\out-grepable.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\script.c">
-      <Filter>Source Files\scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\script-ntp-monlist.c">
-      <Filter>Source Files\scripts</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\proto-ntp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
@@ -276,15 +276,6 @@
     <ClCompile Include="..\src\in-report.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\script-heartbleed.c">
-      <Filter>Source Files\scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\script-sslv3.c">
-      <Filter>Source Files\scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rawsock-pcap.c">
-      <Filter>Source Files\rawsock</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\out-ndjson.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
@@ -302,6 +293,42 @@
     </ClCompile>
     <ClCompile Include="..\src\out-tcp-services.c">
       <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting-banner.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting-masscan.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-lua.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-pcap.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-pfring.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\versioning.c">
+      <Filter>Source Files\versioning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-heartbleed.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-ntp-monlist.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-sslv3.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\read-service-probes.c">
+      <Filter>Source Files\versioning</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -357,9 +384,6 @@
       <Filter>Source Files\rawsock</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rawsock-pcapfile.h">
-      <Filter>Source Files\rawsock</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\rawsock-pfring.h">
       <Filter>Source Files\rawsock</Filter>
     </ClInclude>
     <ClInclude Include="..\src\xring.h">
@@ -467,9 +491,6 @@
     <ClInclude Include="..\src\masscan-version.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\script.h">
-      <Filter>Source Files\scripts</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-ntp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
@@ -503,9 +524,6 @@
     <ClInclude Include="..\src\in-report.h">
       <Filter>Source Files\output</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\rawsock-pcap.h">
-      <Filter>Source Files\rawsock</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-memcached.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
@@ -520,6 +538,27 @@
     </ClInclude>
     <ClInclude Include="..\src\out-tcp-services.h">
       <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scripting.h">
+      <Filter>Source Files\scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-lua.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-pcap.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-pfring.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\versioning.h">
+      <Filter>Source Files\versioning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulncheck.h">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\read-service-probes.h">
+      <Filter>Source Files\versioning</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

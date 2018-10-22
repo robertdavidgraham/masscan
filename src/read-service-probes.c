@@ -1,10 +1,16 @@
 #include "read-service-probes.h"
 #include "templ-port.h"
+#include "unusedparm.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(WIN32)
+#pragma warning(disable:4996)
+#define strncasecmp _strnicmp
+#endif
 
 /*****************************************************************************
  * Translate string name into enumerated type
@@ -89,7 +95,7 @@ hexval(int c)
         case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
             return c - 'A' + 10;
         default:
-            return ~0;
+            return (unsigned)~0;
     }
 }
 
@@ -107,7 +113,8 @@ parse_ports(struct NmapServiceProbeList *list, const char *line, size_t offset, 
     unsigned is_error = 0;
     const char *p;
     struct RangeList ranges = {0};
-    
+
+    UNUSEDPARM(line_length);
     
     p = rangelist_parse_ports(&ranges, line + offset, &is_error, 0);
     
@@ -385,7 +392,7 @@ parse_probe(struct NmapServiceProbeList *list, const char *line, size_t offset, 
                     }
                     
                     /* parse those two hex digits */
-                    x[x_offset++] = hexval(line[offset+0])<< 4 | hexval(line[offset+1]);
+                    x[x_offset++] = (char)(hexval(line[offset+0])<< 4 | hexval(line[offset+1]));
                     offset += 2;
                     break;
             }
@@ -823,10 +830,9 @@ nmapserviceprobes_read_file(const char *filename)
     
     fclose(fp);
     result->filename = 0; /* name no longer valid after this point */
-    result->line_number = ~0; /* line number no longe valid after this point */
+    result->line_number = (unsigned)~0; /* line number no longer valid after this point */
     
     nmapserviceprobes_print(result, stdout);
-    exit(1);
     
     return result;
 }

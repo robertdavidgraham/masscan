@@ -822,7 +822,7 @@ smb1_parse_negotiate2(struct SMBSTUFF *smb, const unsigned char *px, size_t offs
     size_t original_offset = offset;
     unsigned state = smb->hdr.smb1.byte_state;
     
-    UNUSEDPARM(banout);
+    UNUSEDPARM(banout); UNUSEDPARM(px);
 
     if (max > offset + (smb->hdr.smb1.byte_count - smb->hdr.smb1.byte_offset))
         max = offset + (smb->hdr.smb1.byte_count - smb->hdr.smb1.byte_offset);
