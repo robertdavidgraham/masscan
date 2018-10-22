@@ -37,11 +37,11 @@ static int mass_setconfig(struct lua_State *L)
  ***************************************************************************/
 static int mass_gc(struct lua_State *L)
 {
-    struct MasscanWrapper *wrapper;
-    struct Masscan *masscan;
+    //struct MasscanWrapper *wrapper;
+    //struct Masscan *masscan;
 
-    wrapper = luaL_checkudata(L, 1, MASSCAN_CLASS);
-    masscan = wrapper->masscan;
+    //wrapper = luaL_checkudata(L, 1, MASSCAN_CLASS);
+    //masscan = wrapper->masscan;
 
     /* I'm hot sure what I should do here for shutting down this object,
      * but I'm registering a garbage collection function anyway */
