@@ -1,5 +1,5 @@
 #use llvm by default, GNU C otherwise
-CC=clang
+CC=cc
 
 PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
