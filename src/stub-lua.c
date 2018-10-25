@@ -4,7 +4,7 @@
 #if defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#pragma warning(disable: 4133 4113 4047)
+#pragma warning(disable: 4133 4113 4047 4054 4152)
 #else
 #include <dlfcn.h>
 #endif
@@ -61,7 +61,7 @@ int stublua_init(void)
 
 #if defined(WIN32)
 #define DOLINK(name) \
-    name = GetProcAddress(lib, #name); \
+    name = (void*)GetProcAddress(lib, #name); \
     if (name == NULL) fprintf(stderr, "liblua: %s: failed\n", #name);
 #else
 #define DOLINK(name) \
