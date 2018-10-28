@@ -21,6 +21,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_SNMP: return "snmp";
     case PROTO_NBTSTAT: return "nbtstat";
     case PROTO_SSL3:    return "ssl";
+    case PROTO_SMB:     return "smb";
     case PROTO_SMTP:    return "smtp";
     case PROTO_POP3:    return "pop";
     case PROTO_IMAP4:   return "imap";
@@ -31,8 +32,12 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_NTP:     return "ntp";
     case PROTO_VULN:    return "vuln";
     case PROTO_HEARTBLEED:    return "heartbleed";
+    case PROTO_TICKETBLEED:    return "ticketbleed";
     case PROTO_VNC_RFB: return "vnc";
     case PROTO_SAFE:    return "safe";
+    case PROTO_MEMCACHED: return "memcached";
+    case PROTO_SCRIPTING:      return "scripting";
+    case PROTO_VERSIONING:     return "versioning";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
@@ -59,17 +64,22 @@ masscan_string_to_app(const char *str)
         {"ssh2",    PROTO_SSH2},
         {"nbtstat", PROTO_NBTSTAT},
         {"ssl",     PROTO_SSL3},
+        {"smb",     PROTO_SMB},
         {"pop",     PROTO_POP3},
         {"imap",    PROTO_IMAP4},
         {"x509",    PROTO_X509_CERT},
-        {"zeroaccess", PROTO_UDP_ZEROACCESS},
-        {"title", PROTO_HTML_TITLE},
-        {"html", PROTO_HTML_FULL},
-        {"ntp", PROTO_NTP},
-        {"vuln", PROTO_VULN},
-        {"heartbleed", PROTO_HEARTBLEED},
-        {"vnc", PROTO_VNC_RFB},
-        {"safe",    PROTO_SAFE},
+        {"zeroaccess",  PROTO_UDP_ZEROACCESS},
+        {"title",       PROTO_HTML_TITLE},
+        {"html",        PROTO_HTML_FULL},
+        {"ntp",         PROTO_NTP},
+        {"vuln",        PROTO_VULN},
+        {"heartbleed",  PROTO_HEARTBLEED},
+        {"ticketbleed", PROTO_TICKETBLEED},
+        {"vnc",         PROTO_VNC_RFB},
+        {"safe",        PROTO_SAFE},
+        {"memcached",   PROTO_MEMCACHED},
+        {"scripting",   PROTO_SCRIPTING},
+        {"versioning",  PROTO_VERSIONING},
         {0,0}
     };
     size_t i;

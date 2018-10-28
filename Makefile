@@ -1,6 +1,14 @@
+ifneq (, $(shell which clang))
+CC = clang
+else ifneq (, $(shell which gcc))
+CC = gcc
+else
+CC = cc
+endif
+
 PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
-SYS := $(shell gcc -dumpmachine)
+SYS := $(shell $(CC) -dumpmachine)
 GITVER := $(shell git describe --tags)
 INSTALL_DATA := -pDm755
 
@@ -13,7 +21,11 @@ endif
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
-LIBS = -lpcap -lm -lrt -ldl -lpthread
+ifneq (, $(findstring musl, $(SYS)))
+LIBS = 
+else
+LIBS = -lm -lrt -ldl -lpthread
+endif
 INCLUDES =
 FLAGS2 = 
 endif
@@ -23,7 +35,7 @@ endif
 # my regularly regression-test environment. That means at any point
 # in time, something might be minorly broken in Mac OS X.
 ifneq (, $(findstring darwin, $(SYS)))
-LIBS = -lpcap -lm 
+LIBS = -lm 
 INCLUDES = -I.
 FLAGS2 = 
 INSTALL_DATA = -pm755
@@ -37,7 +49,7 @@ endif
 # intended environment, so it make break in the future.
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -Ivs10/include
-LIBS = -L vs10/lib -lwpcap -lIPHLPAPI -lWs2_32
+LIBS = -L vs10/lib -lIPHLPAPI -lWs2_32
 FLAGS2 = -march=i686
 endif
 
@@ -47,26 +59,24 @@ endif
 # head with a hammer and want to feel a different sort of pain.
 ifneq (, $(findstring cygwin, $(SYS)))
 INCLUDES = -I.
-LIBS = -lwpcap
+LIBS = 
 FLAGS2 = 
 endif
 
 # OpenBSD
 ifneq (, $(findstring openbsd, $(SYS)))
-LIBS = -lpcap -lm -pthread
+LIBS = -lm -lpthread
 INCLUDES = -I.
 FLAGS2 = 
 endif
 
 # FreeBSD
 ifneq (, $(findstring freebsd, $(SYS)))
-LIBS = -lpcap -lm -pthread
+LIBS = -lm -lpthread
 INCLUDES = -I.
 FLAGS2 =
 endif
 
-# this works on llvm or real gcc
-CC = gcc
 
 DEFINES = 
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
@@ -87,7 +97,7 @@ tmp/%.o: src/%.c src/*.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
-SRC = $(wildcard src/*.c)
+SRC = $(sort $(wildcard src/*.c))
 OBJ = $(addprefix tmp/, $(notdir $(addsuffix .o, $(basename $(SRC))))) 
 
 

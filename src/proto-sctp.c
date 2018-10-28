@@ -9,7 +9,7 @@
 #define CRC32C_POLY 0x1EDC6F41
 #define CRC32C(c,d) (c=(c>>8)^crc_c[(c^(d))&0xFF])
 
-static unsigned long  crc_c[256] =
+static unsigned   crc_c[256] =
 {
 0x00000000L, 0xF26B8303L, 0xE13B70F7L, 0x1350F3F4L,
 0xC79A971FL, 0x35F1141CL, 0x26A1E7E8L, 0xD4CA64EBL,

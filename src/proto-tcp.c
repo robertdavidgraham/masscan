@@ -20,11 +20,15 @@
 #include "proto-banner1.h"
 #include "proto-ssl.h"
 #include "proto-http.h"
+#include "proto-smb.h"
 #include "output.h"
 #include "string_s.h"
 #include "main-globals.h"
 #include "crypto-base64.h"
 #include "proto-interactive.h"
+
+#include "scripting.h"
+#include "versioning.h"
 
 
 
@@ -53,12 +57,23 @@ struct TCP_Control_Block
 
     unsigned char ttl;
     unsigned tcpstate:4;
+    
+    /* If the payload we've sent was dynamically allocated with
+     * malloc() from the heap, in which case we'll have to free()
+     * it. (Most payloads are static memory) */
+    unsigned is_payload_dynamic:1;
 
+    unsigned established;
 
     unsigned short payload_length;
     time_t when_created;
     const unsigned char *payload;
 
+    /*
+     * If Running a script, the thread object
+     */
+    struct ScriptingThread *scripting_thread;
+    
     struct BannerOutput banout;
 
     struct ProtocolState banner1_state;
@@ -83,13 +98,21 @@ struct TCP_ConnectionTable {
     struct Banner1 *banner1;
     OUTPUT_REPORT_BANNER report_banner;
     struct Output *out;
+    
+    struct ScriptingVM *scripting_vm;
 };
 
 enum {
     STATE_SYN_SENT,
-    STATE_READY_TO_SEND,
-    STATE_PAYLOAD_SENT,
-    STATE_WAITING_FOR_RESPONSE,
+    //STATE_SYN_RECEIVED,
+    STATE_ESTABLISHED_SEND, /* our own special state, can only send */
+    STATE_ESTABLISHED_RECV, /* our own special state, can only receive */
+    //STATE_CLOSE_WATI,
+    STATE_LAST_ACK,
+    STATE_FIN_WAIT1,
+    STATE_FIN_WAIT2,
+    STATE_CLOSING,
+    STATE_TIME_WAIT,
 };
 
 
@@ -229,6 +252,28 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
     }
 
     /*
+     * Force SSL processing on all ports
+     */
+    if (name_equals(name, "hello") && name_equals(value, "ssl")) {
+        unsigned i;
+        
+        LOG(2, "HELLO: setting SSL hello message\n");
+        for (i=0; i<65535; i++) {
+            banner1->payloads.tcp[i] = &banner_ssl;
+        }
+        
+        return;
+    }
+
+    /*
+     * Downgrade SMB hello from v1/v2 to use only v1
+     */
+    if (name_equals(name, "hello") && name_equals(value, "smbv1")) {
+        smb_set_hello_v1(&banner_smb1);        
+        return;
+    }
+
+    /*
      * 2014-04-08: scan for Neel Mehta's "heartbleed" bug
      */
     if (name_equals(name, "heartbleed")) {
@@ -241,7 +286,23 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         tcpcon->banner1->is_heartbleed = 1;
 
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
+        }
+
+        return;
+    }
+
+    if (name_equals(name, "ticketbleed")) {
+        unsigned i;
+
+        /* Change the hello message to including negotiating the use of 
+         * the "heartbeat" extension */
+        banner_ssl.hello = ssl_hello(ssl_hello_ticketbleed_template);
+        banner_ssl.hello_length = ssl_hello_size(banner_ssl.hello);
+        tcpcon->banner1->is_ticketbleed = 1;
+
+        for (i=0; i<65535; i++) {
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
 
         return;
@@ -262,7 +323,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         tcpcon->banner1->is_poodle_sslv3 = 1;
 
         for (i=0; i<65535; i++) {
-            banner1->tcp_payloads[i] = &banner_ssl;
+            banner1->payloads.tcp[i] = &banner_ssl;
         }
         
         return;
@@ -283,9 +344,9 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
             fprintf(stderr, "tcpcon: parmeter: expected array []: %s\n", name);
             exit(1);
         }
-        port = strtoul(p+1, 0, 0);
+        port = (unsigned)strtoul(p+1, 0, 0);
 
-        x = banner1->tcp_payloads[port];
+        x = banner1->payloads.tcp[port];
         if (x == NULL) {
             x = (struct ProtocolParserStream *)malloc(sizeof(*x));
             memset(x, 0, sizeof(*x));
@@ -296,7 +357,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         x->hello = malloc(value_length);
         x->hello_length = base64_decode((char*)x->hello, value_length, value, value_length);
 
-        banner1->tcp_payloads[port] = x;
+        banner1->payloads.tcp[port] = x;
     }
 
 }
@@ -308,11 +369,22 @@ void
 tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
     unsigned is_capture_html,
-    unsigned is_capture_heartbleed)
+    unsigned is_capture_heartbleed,
+	unsigned is_capture_ticketbleed)
 {
     tcpcon->banner1->is_capture_cert = is_capture_cert;
     tcpcon->banner1->is_capture_html = is_capture_html;
     tcpcon->banner1->is_capture_heartbleed = is_capture_heartbleed;
+    tcpcon->banner1->is_capture_ticketbleed = is_capture_ticketbleed;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
+{
+    tcpcon->banner1->L = L;
+    
+    banner_scripting.init(tcpcon->banner1);
 }
 
 /***************************************************************************
@@ -429,6 +501,42 @@ enum DestroyReason {
 };
 
 /***************************************************************************
+ * Flush all the banners asssociated with this TCP connection. This always
+ * called when TCB is destroyed. This may also be called earlier, such
+ * as when a FIN is received.
+ ***************************************************************************/
+static void
+tcpcon_flush_banners(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb)
+{
+    struct BannerOutput *banout;
+    
+    /* Go through and print all the banners. Some protocols have 
+     * multiple banners. For example, web servers have both
+     * HTTP and HTML banners, and SSL also has several 
+     * X.509 certificate banners */
+    for (banout = &tcb->banout; banout != NULL; banout = banout->next) {
+        if (banout->length && banout->protocol) {
+            tcpcon->report_banner(
+                                  tcpcon->out,
+                                  global_now,
+                                  tcb->ip_them,
+                                  6, /*TCP protocol*/
+                                  tcb->port_them,
+                                  banout->protocol & 0x0FFFFFFF,
+                                  tcb->ttl,
+                                  banout->banner,
+                                  banout->length);
+        }
+    }
+    
+    /*
+     * Free up all the banners.
+     */
+    banout_release(&tcb->banout);
+
+}
+
+/***************************************************************************
  * Destroy a TCP connection entry. We have to unlink both from the
  * TCB-table as well as the timeout-table.
  * Called from 
@@ -441,11 +549,8 @@ tcpcon_destroy_tcb(
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
-    struct BannerOutput *banout;
-
+    
     UNUSEDPARM(reason);
-
-//printf("." "tcb age = %u-sec, reason=%u                                   \n", time(0) - tcb->when_created, reason);
 
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
@@ -480,27 +585,23 @@ tcpcon_destroy_tcb(
 
     /*
      * Print out any banners associated with this TCP session. Most of the
-     * time, there'll only be one.
+     * time, there'll only be one. After printing them out, delete the
+     * banners.
      */
-    for (banout = &tcb->banout; banout != NULL; banout = banout->next) {
-        if (banout->length && banout->protocol) {
-            tcpcon->report_banner(
-                tcpcon->out,
-                global_now,
-                tcb->ip_them,
-                6, /*TCP protocol*/
-                tcb->port_them,
-                banout->protocol & 0x0FFFFFFF,
-                tcb->ttl,
-                banout->banner,
-                banout->length);
-        }
+    tcpcon_flush_banners(tcpcon, tcb);
+    if (tcb->is_payload_dynamic && tcb->payload_length && tcb->payload)
+        free((void*)tcb->payload);
+    
+    if (tcb->scripting_thread)
+        ; //scripting_thread_close(tcb->scripting_thread);
+    tcb->scripting_thread = 0;
+    
+    /* KLUDGE: this needs to be made more elegant */
+    switch (tcb->banner1_state.app_proto) {
+        case PROTO_SMB:
+            banner_smb1.cleanup(&tcb->banner1_state);
+            break;
     }
-
-    /*
-     * If there are multiple banners, then free the additional ones
-     */
-    banout_release(&tcb->banout);
 
     /*
      * Unlink this from the timeout system.
@@ -702,7 +803,7 @@ tcpcon_send_packet(
     if (ctrl & CTRL_SMALL_WINDOW) {
         tcp_set_window(response->px, response->length, 600);
     }
-    tcp_set_window(response->px, response->length, 600);
+    //tcp_set_window(response->px, response->length, 600);
 
     /* If we have payload, then:
      * 1. remember the payload so we can resend it
@@ -785,6 +886,71 @@ tcp_send_RST(
 }
 
 /***************************************************************************
+ * DEBUG: when printing debug messages (-d option), this prints a string
+ * for the given state.
+ ***************************************************************************/
+static const char *
+state_to_string(int state)
+{
+    static char buf[64];
+    switch (state) {
+            //STATE_SYN_RECEIVED,
+            //STATE_CLOSE_WATI,
+        case STATE_LAST_ACK:        return "LAST-ACK";
+        case STATE_FIN_WAIT1:       return "FIN-WAIT-1";
+        case STATE_FIN_WAIT2:       return "FIN-WAIT-2";
+        case STATE_CLOSING:         return "CLOSING";
+        case STATE_TIME_WAIT:       return "TIME-WAIT";
+        case STATE_SYN_SENT:        return "SYN_SENT";
+        case STATE_ESTABLISHED_SEND:return "ESTABLISHED_SEND";
+        case STATE_ESTABLISHED_RECV:return "ESTABLISHED_RECV";
+            
+        default:
+            sprintf_s(buf, sizeof(buf), "%d", state);
+            return buf;
+    }
+}
+
+/***************************************************************************
+ * DEBUG: when printing debug messages (-d option), this prints a string
+ * for the given state.
+ ***************************************************************************/
+static const char *
+what_to_string(enum TCP_What state)
+{
+    static char buf[64];
+    switch (state) {
+        case TCP_WHAT_TIMEOUT: return "TIMEOUT";
+        case TCP_WHAT_SYNACK: return "SYNACK";
+        case TCP_WHAT_RST: return "RST";
+        case TCP_WHAT_FIN: return "FIN";
+        case TCP_WHAT_ACK: return "ACK";
+        case TCP_WHAT_DATA: return "DATA";
+        default:
+            sprintf_s(buf, sizeof(buf), "%d", state);
+            return buf;
+    }
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+
+static void
+LOGSEND(struct TCP_Control_Block *tcb, const char *what)
+{
+    if (tcb == NULL)
+        return;
+    LOGip(5, tcb->ip_them, tcb->port_them, "=%s : --->> %s                  \n",
+          state_to_string(tcb->tcpstate),
+          what);
+}
+
+
+/***************************************************************************
+ * Sends a fake FIN when we've already closed our connection, on the
+ * assumption this will help the other side close their side more
+ * gracefully. Maybe we shoulid do a RST instead.
  ***************************************************************************/
 void
 tcpcon_send_FIN(
@@ -806,6 +972,7 @@ tcpcon_send_FIN(
     tcb.seqno_them = seqno_them + 1;
     tcb.ackno_them = ackno_them;
 
+    LOGSEND(&tcb, "peer(FIN) fake");
     tcpcon_send_packet(tcpcon, &tcb, 0x11, 0, 0, 0);
 }
 
@@ -815,7 +982,7 @@ tcpcon_send_FIN(
  * examples are SSH banners, FTP banners, or the response from HTTP
  * requests
  ***************************************************************************/
-static unsigned
+static size_t
 parse_banner(
     struct TCP_ConnectionTable *tcpcon,
     struct TCP_Control_Block *tcb,
@@ -832,61 +999,13 @@ parse_banner(
                                     payload_length,
                                     &tcb->banout,
                                     more);
-
-    if (tcb->banner1_state.state == STATE_DONE)
-        return STATE_DONE;
-    else if (tcb->banner1_state.is_done)
-        return STATE_DONE;
-    else
-        return 0;
+    return payload_length;
 }
 
 
 /***************************************************************************
- * DEBUG: when printing debug messages (-d option), this prints a string
- * for the given state.
  ***************************************************************************/
-static const char *
-state_to_string(int state)
-{
-    static char buf[64];
-    switch (state) {
-    case STATE_SYN_SENT: return "STATE_SYN_SENT";
-    case STATE_READY_TO_SEND: return "STATE_READY_TO_SEND";
-    case STATE_PAYLOAD_SENT: return "STATE_PAYLOAD_SENT";
-    case STATE_WAITING_FOR_RESPONSE: return "STATE_WAITING_FOR_RESPONSE";
-
-    default:
-        sprintf_s(buf, sizeof(buf), "%d", state);
-        return buf;
-    }
-}
-
-/***************************************************************************
- * DEBUG: when printing debug messages (-d option), this prints a string
- * for the given state.
- ***************************************************************************/
-static const char *
-what_to_string(int state)
-{
-    static char buf[64];
-    switch (state) {
-    case TCP_WHAT_NOTHING: return "TCP_WHAT_NOTHING";
-    case TCP_WHAT_TIMEOUT: return "TCP_WHAT_TIMEOUT";
-    case TCP_WHAT_SYNACK: return "TCP_WHAT_SYNACK";
-    case TCP_WHAT_RST: return "TCP_WHAT_RST";
-    case TCP_WHAT_FIN: return "TCP_WHAT_FIN";
-    case TCP_WHAT_ACK: return "TCP_WHAT_ACK";
-    case TCP_WHAT_DATA: return "TCP_WHAT_DATA";
-    default:
-        sprintf_s(buf, sizeof(buf), "%d", state);
-        return buf;
-    }
-}
-
-/***************************************************************************
- ***************************************************************************/
-static void
+static int
 handle_ack(
     struct TCP_Control_Block *tcb,
     uint32_t ackno)
@@ -900,7 +1019,7 @@ handle_ack(
 
     /* Normal: just discard repeats */
     if (ackno == tcb->ackno_them) {
-        return;
+        return 0;
     }
 
     /* Make sure this isn't a duplicate ACK from past
@@ -911,7 +1030,7 @@ handle_ack(
                 "old ackno = 0x%08x, this ackno = 0x%08x\n",
                 (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF,
                 tcb->ackno_me, ackno);
-        return;
+        return 0;
     }
 
     /* Make sure this isn't invalid ACK from the future
@@ -922,11 +1041,192 @@ handle_ack(
                 "my seqno = 0x%08x, their ackno = 0x%08x\n",
                 (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF,
                 tcb->seqno_me, ackno);
-        return;
+        return 0;
     }
 
     /* now that we've verified this is a good ACK, record this number */
     tcb->ackno_them = ackno;
+    
+    /* Mark that this was a good ack */
+    return 1;
+}
+
+enum AppAction {
+    APP_CONNECTED,
+    APP_RECV_TIMEOUT,
+    APP_RECV_PAYLOAD,
+    APP_SEND_SENT,
+};
+
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+application(struct TCP_ConnectionTable *tcpcon,
+                 struct TCP_Control_Block *tcb,
+                 enum AppAction action, const void *payload, size_t payload_length,
+                 unsigned secs, unsigned usecs)
+{
+    struct Banner1 *banner1 = tcpcon->banner1;
+    
+    enum {
+        App_Connect,
+        App_ReceiveHello,
+        App_ReceiveNext,
+        App_SendNext,
+    };
+    
+    switch (tcb->established) {
+        case App_Connect:
+            if (banner1->payloads.tcp[tcb->port_them] == &banner_scripting) {
+                //int x;
+                ; //tcb->scripting_thread = scripting_thread_new(tcpcon->scripting_vm);
+                ; //x = scripting_thread_run(tcb->scripting_thread);
+            } else {
+                /*
+                 * Wait 1 second for "server hello" (like SSH), and if that's
+                 * not found, then transmit a "client hello"
+                 */
+                assert(action == APP_CONNECTED);
+                LOGSEND(tcb, "+timeout");
+                timeouts_add( tcpcon->timeouts,
+                             tcb->timeout,
+                             offsetof(struct TCP_Control_Block, timeout),
+                             TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
+                             );
+                /* Start of connection */
+                tcb->tcpstate = STATE_ESTABLISHED_RECV;
+                tcb->established = App_ReceiveHello;
+            }
+            break;
+        case App_ReceiveHello:
+            if (action == APP_RECV_TIMEOUT) {
+                struct ProtocolParserStream *stream = banner1->payloads.tcp[tcb->port_them];
+                
+                if (stream) {
+                    struct InteractiveData more = {0};
+                    unsigned ctrl = 0;
+                    
+                    if (stream->transmit_hello)
+                        stream->transmit_hello(banner1, &more);
+                    else {
+                        more.m_length = (unsigned)banner1->payloads.tcp[tcb->port_them]->hello_length;
+                        more.m_payload = banner1->payloads.tcp[tcb->port_them]->hello;
+                        more.is_payload_dynamic = 0;
+                    }
+                    
+                    /*
+                     * Kludge
+                     */
+                    if (banner1->payloads.tcp[tcb->port_them] == &banner_ssl) {
+                        tcb->banner1_state.is_sent_sslhello = 1;
+                    }
+                    
+                    /*
+                     * KLUDGE
+                     */
+                    if (tcpcon->banner1->is_heartbleed) {
+                        ctrl = CTRL_SMALL_WINDOW;
+                    }
+                    
+                    /*
+                     * Queue up the packet to be sent
+                     */
+                    LOGip(4, tcb->ip_them, tcb->port_them, "sending payload %u bytes\n", more.m_length);
+                    LOGSEND(tcb, "peer(payload)");
+                    tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, ctrl);
+                    tcb->seqno_me += (uint32_t)more.m_length;
+                    tcb->is_payload_dynamic = more.is_payload_dynamic;
+                    tcb->tcpstate = STATE_ESTABLISHED_SEND;
+                    
+                    //tcb->established = App_SendNext;
+                }
+                
+                /* Add a timeout so that we can resend the data in case it
+                 * goes missing. Note that we put this back in the timeout
+                 * system regardless if we've sent data. */
+                LOGSEND(tcb, "+timeout");
+                timeouts_add(   tcpcon->timeouts,
+                             tcb->timeout,
+                             offsetof(struct TCP_Control_Block, timeout),
+                             TICKS_FROM_TV(secs+1,usecs)
+                             );
+                break;
+            } else if (action == APP_RECV_PAYLOAD) {
+                tcb->established = App_ReceiveNext;
+                /* fall through */
+            }
+            /* fall through */
+        case App_ReceiveNext:
+            if (action == APP_RECV_PAYLOAD) {
+                struct InteractiveData more = {0};
+                
+                /* [--banners]
+                 * This is an important part of the system, where the TCP
+                 * stack passes incoming packet payloads off to the application
+                 * layer protocol parsers. This is where, in Sockets API, you
+                 * might call the 'recv()' function.
+                 */
+                parse_banner(
+                                   tcpcon,
+                                   tcb,
+                                   payload,
+                                   payload_length,
+                                   &more);
+                
+                /* move their sequence number forward */
+                tcb->seqno_them += (unsigned)payload_length;
+                
+                /* acknowledge the bytes received */
+                if (more.m_length) {
+                    //printf("." "sending more data %u bytes\n", more.length);
+                    LOGSEND(tcb, "peer(ACK)");
+                    LOGSEND(tcb, "peer(payload)");
+                    tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, 0);
+                    tcb->seqno_me += (uint32_t)more.m_length;
+                    tcb->is_payload_dynamic = more.is_payload_dynamic;
+                    tcb->tcpstate = STATE_ESTABLISHED_SEND;
+                    tcb->established = App_SendNext;
+                    LOGip(4, tcb->ip_them, tcb->port_them, "sending payload %u bytes\n", more.m_length);
+                    
+                } else {
+                    LOGSEND(tcb, "peer(ACK)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x10,
+                                       0, 0, 0);
+                }
+                
+                if (more.is_closing) {
+                    /* Send FIN packet */
+                    LOGSEND(tcb, "peer(FIN)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x11,
+                                       0, 0, 0);
+                    tcb->seqno_me++;
+                    
+                    tcb->tcpstate = STATE_FIN_WAIT1;
+                    LOGSEND(tcb, "+timeout");
+
+                    timeouts_add(   tcpcon->timeouts,
+                                 tcb->timeout,
+                                 offsetof(struct TCP_Control_Block, timeout),
+                                 TICKS_FROM_TV(secs+1,usecs)
+                                 );
+                    //tcpcon_destroy_tcb(tcpcon, tcb, Reason_StateDone);
+                }
+            }
+            break;
+        case App_SendNext:
+            if (action == APP_SEND_SENT) {
+                tcb->tcpstate = STATE_ESTABLISHED_RECV;
+                tcb->established = App_ReceiveNext;
+            }
+            break;
+        default:
+            LOG(0, "TCP state error\n");
+            exit(1);
+            break;
+    }
 }
 
 
@@ -941,15 +1241,19 @@ handle_ack(
 void
 tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
               struct TCP_Control_Block *tcb,
-              int what, const void *vpayload, size_t payload_length,
+              int in_what, const void *vpayload, size_t payload_length,
               unsigned secs, unsigned usecs,
               unsigned seqno_them)
 {
+    enum TCP_What what = in_what;
     const unsigned char *payload = (const unsigned char *)vpayload;
-    struct Banner1 *banner1 = tcpcon->banner1;
 
     if (tcb == NULL)
         return;
+    
+    LOGip(5, tcb->ip_them, tcb->port_them, "=%s : %s                  \n",
+          state_to_string(tcb->tcpstate),
+          what_to_string(what));
 
     /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
@@ -957,6 +1261,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             LOGip(8, tcb->ip_them, tcb->port_them,
                 "%s                \n",
                 "CONNECTION TIMEOUT---");
+            LOGSEND(tcb, "peer(RST)");
             tcpcon_send_packet(tcpcon, tcb,
                 0x04,
                 0, 0, 0);
@@ -964,270 +1269,259 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             return;
         }
     }
-
-    LOGip(8, tcb->ip_them, tcb->port_them, "=%s : %s                  \n",
-            state_to_string(tcb->tcpstate),
-            what_to_string(what));
-
-    switch (tcb->tcpstate<<8 | what) {
-    case STATE_SYN_SENT<<8 | TCP_WHAT_SYNACK:
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_SYNACK:
-        /* This is where we respond to a SYN-ACK. Note that this can happen
-         * in two places. We immediately transition to the "ready" state,
-         * but if the other side doesn't receive our acknowledgement,
-         * then it'll send a duplicate SYN-ACK which we'll have to process
-         * in the "ready" state. That's okay, we'll simply reset our
-         * timers and try again.
-         */
-
-        /* Send "ACK" to acknowlege their "SYN-ACK" */
-        tcpcon_send_packet(tcpcon, tcb,
-                    0x10,
-                    0, 0, 0);
-
-        /* Change ourselves to the "ready" state.*/
-        tcb->tcpstate = STATE_READY_TO_SEND;
-
-        /*
-         * Wait 1 second for "server hello" (like SSH), and if that's
-         * not found, then transmit a "client hello"
-         */
-        timeouts_add(   tcpcon->timeouts,
-                        tcb->timeout,
-                        offsetof(struct TCP_Control_Block, timeout),
-                        TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
-                        );
-        break;
-
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_ACK:
-        /* There's actually nothing that goes on in this state. We are
-         * just waiting for the timer to expire. In the meanwhile,
-         * though, the other side is might acknowledge that we sent
-         * a SYN-ACK */
-
-        /* NOTE: the arg 'payload_length' was overloaded here to be the
-         * 'ackno' instead */
-        handle_ack( tcb, (uint32_t)payload_length);
-        break;
-
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_TIMEOUT:
-        /* if we have a "hello" message to send to the server,
-         * then send it */
-        if (banner1->tcp_payloads[tcb->port_them]) {
-            size_t x_len = 0;
-            const unsigned char *x;
-            unsigned ctrl = 0;
-
-            x_len = banner1->tcp_payloads[tcb->port_them]->hello_length;
-            x = banner1->tcp_payloads[tcb->port_them]->hello;
-            if (banner1->tcp_payloads[tcb->port_them] == &banner_ssl)
-                tcb->banner1_state.is_sent_sslhello = 1;
-
-            /*
-             * KLUDGE
-             */
-            if (tcpcon->banner1->is_heartbleed) {
-                ctrl = CTRL_SMALL_WINDOW;
-            }
-
-            /* Send request. This actually doens't send the packet right
-             * now, but instead queues up a packet that the transmit
-             * thread will send soon. */
-            tcpcon_send_packet(tcpcon, tcb,
-                0x18,
-                x, x_len, ctrl);
-            LOGip(4, tcb->ip_them, tcb->port_them,
-                "sending payload %u bytes\n",
-                x_len);
-
-            /* Increment our sequence number */
-            tcb->seqno_me += (uint32_t)x_len;
-
-            /* change our state to reflect that we are now waiting for
-             * acknowledgement of the data we've sent */
-            tcb->tcpstate = STATE_PAYLOAD_SENT;
-        }
-
-        /* Add a timeout so that we can resend the data in case it
-            * goes missing. Note that we put this back in the timeout
-            * system regardless if we've sent data. */
-        timeouts_add(   tcpcon->timeouts,
-                        tcb->timeout,
-                        offsetof(struct TCP_Control_Block, timeout),
-                        TICKS_FROM_TV(secs+1,usecs)
-                        );
-        break;
-
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_DATA:
-    case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_DATA:
-        {
-            unsigned err;
-            struct InteractiveData more;
-            more.payload = 0;
-            more.length =0;
-
-            if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
-                tcpcon_send_packet(tcpcon, tcb,
-                        0x10,
-                        0, 0, 0);
-                return;
-            }
-
-            while (seqno_them != tcb->seqno_them && payload_length) {
-                seqno_them++;
-                payload_length--;
-                payload++;
-            }
-
-            if (payload_length == 0) {
-                tcpcon_send_packet(tcpcon, tcb,
-                        0x10,
-                        0, 0, 0);
-                return;
-            }
-            
-
-            /* [--banners]
-             * This is an important part of the system, where the TCP
-             * stack passes incoming packet payloads off to the application
-             * layer protocol parsers. This is where, in Sockets API, you
-             * might call the 'recv()' function.
-             */
-            err = parse_banner(
-                        tcpcon,
-                        tcb,
-                        payload,
-                        payload_length,
-                        &more);
-
-            /* move their sequence number forward */
-            tcb->seqno_them += (unsigned)payload_length;
-            
-            /* acknowledge the bytes sent */
-            if (more.length) {
-                //printf("." "sending more data %u bytes\n", more.length);
-                tcpcon_send_packet(tcpcon, tcb, 0x18, more.payload, more.length, 0);
-                tcb->seqno_me += (uint32_t)more.length;
-            } else {
-                tcpcon_send_packet(tcpcon, tcb,
-                        0x10,
-                        0, 0, 0);
-            }
-
-            if (err == STATE_DONE) {
-                tcpcon_send_packet(tcpcon, tcb,
-                    0x11,
-                    0, 0, 0);
-                tcb->seqno_me++;
-                tcpcon_destroy_tcb(tcpcon, tcb, Reason_StateDone);
-            }
-        }
-        break;
-
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
-        tcpcon_send_packet(tcpcon, tcb,
-                    0x11, /*reset */
-                    0, 0, 0);
-        tcpcon_destroy_tcb(tcpcon, tcb, Reason_FIN);
-        break;
-
-   case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_SYNACK:
-       /* ignore duplciate SYN-ack */
-       break;
-
-   case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_ACK:
-        /* There's actually nothing that goes on in this state. We are just waiting
-         * for the timer to expire. In the meanwhile, though, the other side is
-         * might acknowledge that we sent a SYN-ACK */
-
-        /* NOTE: the arg 'payload_length' was overloaded here to be the
-         * 'ackno' instead */
-        handle_ack(tcb, (uint32_t)payload_length);
-
-        if (tcb->ackno_them - tcb->seqno_me == 0) {
-            /* Now wait for response */
-            tcb->tcpstate = STATE_WAITING_FOR_RESPONSE;
-            timeouts_add(   tcpcon->timeouts,
-                            tcb->timeout,
-                            offsetof(struct TCP_Control_Block, timeout),
-                            TICKS_FROM_TV(secs+10,usecs)
-                            );
-        } else {
-            /* Reset the timeout, waiting for more data to arrive */
-            timeouts_add(   tcpcon->timeouts,
-                            tcb->timeout,
-                            offsetof(struct TCP_Control_Block, timeout),
-                            TICKS_FROM_TV(secs+1,usecs)
-                            );
-
-        }
-        break;
-
-    case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_TIMEOUT:
-        {
-            uint32_t len;
-
-
-            len = tcb->seqno_me - tcb->ackno_them;
-
-            /* Resend the payload */
-            tcb->seqno_me -= len;
-            tcpcon_send_packet(tcpcon, tcb,
-                0x18,
-                tcb->payload + tcb->payload_length - len,
-                len, 0);
-            LOGip(4, tcb->ip_them, tcb->port_them,
-                "- re-sending payload %u bytes\n",
-                len);
-            tcb->seqno_me += len;
-
-
-            /*  */
-            timeouts_add(   tcpcon->timeouts,
-                            tcb->timeout,
-                            offsetof(struct TCP_Control_Block, timeout),
-                            TICKS_FROM_TV(secs+2,usecs)
-                         );
-        }
-        break;
-    case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_FIN:
-        /* ignore this, since they havne't acked our payload */
-        break;
-
-    case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_ACK:
-        handle_ack(tcb, (uint32_t)payload_length);
-        break;
-
-
-    case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_FIN:
-        tcb->seqno_them = seqno_them + (unsigned)payload_length + 1;
-        tcpcon_send_packet(tcpcon, tcb,
-            0x11,
-            0, 0, 0);
-        tcb->seqno_me++;
-        break;
     
-    case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_TIMEOUT:
-        if (tcb->when_created + tcpcon->timeout_connection < secs) {
-            tcpcon_send_packet(tcpcon, tcb,
-                0x04,
-                0, 0, 0);
-            tcpcon_destroy_tcb(tcpcon, tcb, Reason_Foo);
-        }
-        break;
-
-    case STATE_WAITING_FOR_RESPONSE<<8 | TCP_WHAT_RST:
-    case STATE_READY_TO_SEND<<8 | TCP_WHAT_RST:
-    case STATE_PAYLOAD_SENT<<8 | TCP_WHAT_RST:
+    if (what == TCP_WHAT_RST) {
+        LOGSEND(tcb, "tcb(destroy)");
         tcpcon_destroy_tcb(tcpcon, tcb, Reason_RST);
-        break;
-
-    default:
-        LOGip(3, tcb->ip_them, tcb->port_them, "tcb: unknown event %s : %s\n",
-            state_to_string(tcb->tcpstate),
-            what_to_string(what));
+        return;
     }
+    
+    
+    /*
+     *
+     *
+     *
+     *
+     *
+     *
+     */
+    switch (tcb->tcpstate) {
+            /* TODO: validate any SYNACK is real before sending it here
+             * to the state-machine, by validating that it's acking
+             * something */
+        case STATE_SYN_SENT:
+            switch (what) {
+                case TCP_WHAT_RST:
+                case TCP_WHAT_TIMEOUT:
+                //case TCP_WHAT_SYNACK:
+                case TCP_WHAT_FIN:
+                case TCP_WHAT_ACK:
+                case TCP_WHAT_DATA:
+                    break;
+                case TCP_WHAT_SYNACK:
+                    /* Send "ACK" to acknowlege their "SYN-ACK" */
+                    LOGSEND(tcb, "peer(ACK)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x10,
+                                       0, 0, 0);
+                    LOGSEND(tcb, "app(connected)");
+                    application(tcpcon, tcb, APP_CONNECTED, 0, 0, secs, usecs);
+                    break;
+                }
+            break;
+        case STATE_ESTABLISHED_SEND:
+        case STATE_ESTABLISHED_RECV:
+            switch (what) {
+                case TCP_WHAT_RST:
+                    break;
+                case TCP_WHAT_SYNACK:
+                    /* Send "ACK" to acknowlege their "SYN-ACK" */
+                    LOGSEND(tcb, "peer(ACK)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x10, /* ACK */
+                                       0, 0, 0);
+                    break;
+                case TCP_WHAT_FIN:
+                    if (tcb->tcpstate == STATE_ESTABLISHED_RECV) {
+                        tcb->seqno_them = seqno_them + 1;
+                        
+                        LOGSEND(tcb, "peer(FIN)");
+                        tcpcon_send_packet(tcpcon, tcb,
+                                           0x11, /* FIN-ACK */
+                                           0, 0, 0);
+                        tcb->seqno_me++;
+                        tcb->tcpstate = STATE_LAST_ACK;
+                    } else if (tcb->tcpstate == STATE_ESTABLISHED_RECV) {
+                        /* Do nothing, the same thing as if we received data
+                         * during the SENd state. The other side will send it
+                         * again after it has acknolwedged our data */
+                        ;
+                    }
+                    break;
+                case TCP_WHAT_ACK:
+                    /* There's actually nothing that goes on in this state. We are
+                     * just waiting for the timer to expire. In the meanwhile,
+                     * though, the other side is might acknowledge that we sent
+                     * a SYN-ACK */
+                     
+                    /* NOTE: the arg 'payload_length' was overloaded here to be the
+                     * 'ackno' instead */
+                    handle_ack( tcb, (uint32_t)payload_length);
+                    if (tcb->tcpstate == STATE_ESTABLISHED_SEND) {
+                        if (tcb->ackno_them - tcb->seqno_me == 0) {
+                            /* All the payload has been sent */
+                            if (tcb->is_payload_dynamic)
+                                free((void*)tcb->payload);
+                            tcb->payload = 0;
+                            tcb->payload_length = 0;
+                            tcb->is_payload_dynamic = 0;
+                            
+                            LOGSEND(tcb, "app(sent)");
+                            application(tcpcon, tcb, APP_SEND_SENT, 0, 0, secs, usecs);
+                            tcb->tcpstate = STATE_ESTABLISHED_RECV;
+                            LOGSEND(tcb, "+timeout");
+                            timeouts_add(   tcpcon->timeouts,
+                                         tcb->timeout,
+                                         offsetof(struct TCP_Control_Block, timeout),
+                                         TICKS_FROM_TV(secs+10,usecs)
+                                         );
+                        } else {
+                            /* Reset the timeout, waiting for more data to arrive */
+                            LOGSEND(tcb, "+timeout");
+                            timeouts_add(   tcpcon->timeouts,
+                                         tcb->timeout,
+                                         offsetof(struct TCP_Control_Block, timeout),
+                                         TICKS_FROM_TV(secs+1,usecs)
+                                         );
+                            
+                        }
+                    }
+                    break;
+                case TCP_WHAT_TIMEOUT:
+                    if (tcb->tcpstate == STATE_ESTABLISHED_RECV) {
+                        /* Didn't receive data in the expected timeframe. This is
+                         * often a normal condition, such as during the start
+                         * of a scanned connection, when we don't understand the
+                         * protocol and are simply waiting for anything the
+                         * server might send us.
+                         */
+                        LOGSEND(tcb, "app(timeout)");
+                        application(tcpcon, tcb, APP_RECV_TIMEOUT, 0, 0, secs, usecs);
+                    } else if (tcb->tcpstate == STATE_ESTABLISHED_SEND) {
+                        /*
+                         * We did not get a complete ACK of our sent data, so retransmit
+                         * it to the server
+                         */
+                        uint32_t len;
+                        
+                        
+                        len = tcb->seqno_me - tcb->ackno_them;
+                        
+                        /* Resend the payload */
+                        tcb->seqno_me -= len;
+                        LOGSEND(tcb, "peer(payload) retransmit");
+                        
+                        if (tcb->payload) /* FIXME: kludge: should never be NULL< but somehow is */
+                        tcpcon_send_packet(tcpcon, tcb,
+                                           0x18,
+                                           tcb->payload + tcb->payload_length - len,
+                                           len, 0);
+                        tcb->seqno_me += len;
+                        
+                        
+                        /* Now that we've resent the packet, register another
+                         * timeout in order to resend it yet again if not
+                         * acknolwedgeld. */
+                        LOGSEND(tcb, "+timeout");
+                        timeouts_add(tcpcon->timeouts,
+                                     tcb->timeout,
+                                     offsetof(struct TCP_Control_Block, timeout),
+                                     TICKS_FROM_TV(secs+2,usecs)
+                                     );
+                    }
+        
+                    break;
+                case TCP_WHAT_DATA:
+                    
+                    if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
+                        LOGSEND(tcb, "peer(ACK)");
+                        tcpcon_send_packet(tcpcon, tcb,
+                                           0x10,
+                                           0, 0, 0);
+                        return;
+                    }
+                    
+                    while (seqno_them != tcb->seqno_them && payload_length) {
+                        seqno_them++;
+                        payload_length--;
+                        payload++;
+                    }
+                    
+                    if (payload_length == 0) {
+                        LOGSEND(tcb, "peer(ACK)");
+                        tcpcon_send_packet(tcpcon, tcb,
+                                           0x10,
+                                           0, 0, 0);
+                        return;
+                    }
+                    
+                    LOGSEND(tcb, "app(payload)");
+                    application(tcpcon, tcb, APP_RECV_PAYLOAD, payload, payload_length, secs, usecs);
+                    break;
 
+            }
+            break;
+        case STATE_FIN_WAIT1:
+            switch (what) {
+                case TCP_WHAT_TIMEOUT:
+                    /* resend FIN packet */
+                    LOGSEND(tcb, "peer(FIN)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x11,
+                                       0, 0, 0);
+                    
+                    /* reset timeout */
+                    LOGSEND(tcb, "+timeout");
+                    timeouts_add(   tcpcon->timeouts,
+                                 tcb->timeout,
+                                 offsetof(struct TCP_Control_Block, timeout),
+                                 TICKS_FROM_TV(secs+1,usecs)
+                                 );
+                    break;
+                case TCP_WHAT_ACK:
+                    if (handle_ack( tcb, (uint32_t)payload_length)) {
+                        tcb->tcpstate = STATE_FIN_WAIT2;
+                        LOGSEND(tcb, "+timeout");
+                        timeouts_add(   tcpcon->timeouts,
+                                     tcb->timeout,
+                                     offsetof(struct TCP_Control_Block, timeout),
+                                     TICKS_FROM_TV(secs+5,usecs)
+                                     );
+                    }
+                    break;
+                case TCP_WHAT_FIN:
+                    break;
+                case TCP_WHAT_SYNACK:
+                case TCP_WHAT_RST:
+                case TCP_WHAT_DATA:
+                    break;
+            }
+            break;
+            
+        case STATE_FIN_WAIT2:
+        case STATE_TIME_WAIT:
+            switch (what) {
+                case TCP_WHAT_TIMEOUT:
+                    if (tcb->tcpstate == STATE_TIME_WAIT) {
+                        tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
+                        return;
+                    }
+                    break;
+                case TCP_WHAT_ACK:
+                    break;
+                case TCP_WHAT_FIN:
+                    tcb->seqno_them = seqno_them + 1;
+                    LOGSEND(tcb, "peer(ACK)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x10,
+                                       0, 0, 0);
+                    tcb->tcpstate = STATE_TIME_WAIT;
+                    LOGSEND(tcb, "+timeout");
+                    timeouts_add(   tcpcon->timeouts,
+                                 tcb->timeout,
+                                 offsetof(struct TCP_Control_Block, timeout),
+                                 TICKS_FROM_TV(secs+5,usecs)
+                                 );
+                    break;
+                case TCP_WHAT_SYNACK:
+                case TCP_WHAT_RST:
+                case TCP_WHAT_DATA:
+                    break;
+            }
+            break;
+
+        default:
+            LOG(1, "TCP-state: unknown state\n");
+    }
 }
 

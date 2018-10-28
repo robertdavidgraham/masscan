@@ -11,8 +11,9 @@
 
  ****************************************************************************/
 #include "proto-preprocess.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 #define ex32be(px)  (   *((unsigned char*)(px)+0)<<24 \
                     |   *((unsigned char*)(px)+1)<<16 \
@@ -58,6 +59,7 @@ preprocess_frame(const unsigned char *px, unsigned length, unsigned link_type,
     info->found = FOUND_NOTHING;
     info->found_offset = 0;
 
+    /* If not standard Ethernet, go do something else */
     if (link_type != 1)
         goto parse_linktype;
 
@@ -427,19 +429,54 @@ parse_linktype:
     case 1:     goto parse_ethernet;
     case 12:    goto parse_ipv4;
     case 0x69:  goto parse_wifi;
+    case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
     case 119:   goto parse_prism_header;
     case 127:   goto parse_radiotap_header;
     default:    return 0;
     }
-
+    
+parse_linux_sll:
     /*
-     +--------+--------+--------+--------+
-     |   hardware type |   protocol type |
-     +--------+--------+--------+--------+
-     | h-len  |  p-len |      opcode     |
-     +--------+--------+--------+--------+
-    */
-
+     +--------+--------+
+     |    packet type  |
+     +--------+--------+
+     |   ARPHRD_ type  |
+     +--------+--------+
+     |   addr length   |
+     +--------+--------+
+     |                 |
+     +  first 8 bytes  +
+     |     of the      |
+     +  hardware/MAC   +
+     |     address     |
+     +                 +
+     |                 |
+     +--------+--------+
+     |     ethertype   |
+     +--------+--------+
+     */
+    {
+        struct {
+            unsigned packet_type;
+            unsigned arp_type;
+            unsigned addr_length;
+            unsigned char mac_address[8];
+            unsigned ethertype;
+        } sll;
+        
+        VERIFY_REMAINING(16, FOUND_SLL);
+        
+        sll.packet_type = ex16be(px+offset+0);
+        sll.arp_type = ex16be(px+offset+2);
+        sll.addr_length = ex16be(px+offset+4);
+        memcpy(sll.mac_address, px+offset+6, 8);
+        sll.ethertype = ex16be(px+offset+14);
+   
+        offset += 16;
+        
+        goto parse_ethertype;
+    }
+    
 parse_arp:
     info->ip_version = 256;
     info->ip_offset = offset;

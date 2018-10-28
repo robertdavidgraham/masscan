@@ -80,7 +80,7 @@ static void doit4(register uint32_t *a,register long x,register long y,int64_t s
 
     i0 = i; y0 = y;
     while (i < B) {
-      pos = i; data = i;
+      pos = (uint32_t)i; data = (uint32_t)i;
       pos >>= 5; data &= 31;
       i += y; y += 30;
       bits = a[pos]; data = two[data];
@@ -118,7 +118,7 @@ static void doit6(register uint32_t *a,register long x,register long y,int64_t s
 
     i0 = i; y0 = y;
     while (i < B) {
-      pos = i; data = i;
+      pos = (uint32_t)i; data = (uint32_t)i;
       pos >>= 5; data &= 31;
       i += y; y += 30;
       bits = a[pos]; data = two[data];
@@ -158,7 +158,7 @@ static void doit12(register uint32_t *a,register long x,register long y,int64_t 
     i0 = i;
     y0 = y;
     while ((i >= 0) && (y < x)) {
-      pos = i; data = i;
+      pos = (uint32_t)i; data = (uint32_t)i;
       pos >>= 5; data &= 31;
       i -= y;
       y += 30;
@@ -195,7 +195,7 @@ static void squarefree1big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64_
     if (!(i & 1)) i += qq;
 
     if (i < B * 60) {
-      pos = i;
+      pos = (uint32_t)i;
       n = deltainverse[pos % 60];
       if (n >= 0) {
         pos /= 60;
@@ -264,7 +264,7 @@ static void squarefree49big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64
     if (!(i & 1)) i += qq;
 
     if (i < B * 60) {
-      pos = i;
+      pos = (uint32_t)i;
       n = deltainverse[pos % 60];
       if (n >= 0) {
         pos /= 60;

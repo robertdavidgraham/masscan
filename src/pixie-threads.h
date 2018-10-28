@@ -21,6 +21,8 @@ size_t pixie_begin_thread(void (*worker_thread)(void*),
                           unsigned flags,
                           void *worker_data);
 
+void pixie_thread_join(size_t thread_handle);
+
 void pixie_cpu_set_affinity(unsigned processor);
 void pixie_cpu_raise_priority(void);
 

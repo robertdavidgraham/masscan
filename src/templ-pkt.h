@@ -2,8 +2,8 @@
 #define TCP_PACKET_H
 #include <stdio.h>
 #include <stdint.h>
-struct NmapPayloads;
-struct MassScript;
+struct PayloadsUDP;
+struct MassVulnCheck;
 
 /**
  * Does a regression test of this module.
@@ -20,7 +20,7 @@ enum TemplateProtocol {
     Proto_ICMP_ping,
     Proto_ICMP_timestamp,
     Proto_ARP,
-    Proto_Script,
+    Proto_VulnCheck,
     //Proto_IP,
     //Proto_Custom,
     Proto_Count
@@ -51,11 +51,11 @@ struct TemplatePacket {
     unsigned checksum_tcp;
     unsigned ip_id;
     enum TemplateProtocol proto;
-    struct NmapPayloads *payloads;
+    struct PayloadsUDP *payloads;
 };
 
 /**
- * We can run multiple types of scans (TCP, UDP, scripts, etc.) at the same
+ * We can run multiple types of scans (TCP, UDP, vulns, etc.) at the same
  * time. Therefore, instead of one packet prototype for all scans, we have
  * a set of prototypes/templates.
  */
@@ -63,7 +63,7 @@ struct TemplateSet
 {
     unsigned count;
     struct TemplatePacket pkts[Proto_Count];
-    struct MassScript *script;
+    struct MassVulnCheck *vulncheck;
     uint64_t entropy;
 };
 
@@ -97,7 +97,7 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads,
+    struct PayloadsUDP *payloads,
     int data_link,
     uint64_t entropy);
 

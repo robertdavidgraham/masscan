@@ -25,6 +25,9 @@ masscan_initialize_adapter(
     char *ifname;
     char ifname2[256];
     unsigned adapter_ip = 0;
+    
+    if (masscan == NULL)
+        return -1;
 
     LOG(1, "initializing adapter\n");
 
@@ -35,7 +38,7 @@ masscan_initialize_adapter(
      * the best Interface to use. We do this by choosing the first
      * interface with a "default route" (aka. "gateway") defined
      */
-    if (masscan->nic[index].ifname && masscan->nic[index].ifname[0])
+    if (masscan->nic[index].ifname[0])
         ifname = masscan->nic[index].ifname;
     else {
         /* no adapter specified, so find a default one */

@@ -10,20 +10,20 @@ struct RangeList;
  *      0 on success, or postivie integer on failure.
  */
 int
-payloads_selftest(void);
+payloads_udp_selftest(void);
 
 /**
  * Create this module. Must be matched with the 'destroy()' function on exit
  */
-struct NmapPayloads *
-payloads_create(void);
+struct PayloadsUDP *
+payloads_udp_create(void);
 
 /**
  * Free the resources of an object created with a matching call to
  * 'payloads_create()'
  */
 void
-payloads_destroy(struct NmapPayloads *payloads);
+payloads_udp_destroy(struct PayloadsUDP *payloads);
 
 /**
  * Read payloads from an "nmap-payloads" formatted file. The caller is
@@ -31,21 +31,21 @@ payloads_destroy(struct NmapPayloads *payloads);
  * filename so that we can print helpful error messages.
  */
 void
-payloads_read_file(FILE *fp, const char *filename,
-                   struct NmapPayloads *payloads);
+payloads_udp_readfile(FILE *fp, const char *filename,
+                   struct PayloadsUDP *payloads);
 
 /**
  * Read payloads from a libpcap formatted file.
  */
 void
-payloads_read_pcap(const char *filename, struct NmapPayloads *payloads);
+payloads_read_pcap(const char *filename, struct PayloadsUDP *payloads);
 
 /**
  * Called to remove any payloads that aren't be used in the scan. This makes
  * lookups faster when generating packets.
  */
 void
-payloads_trim(struct NmapPayloads *payloadsd, const struct RangeList *ports);
+payloads_udp_trim(struct PayloadsUDP *payloadsd, const struct RangeList *ports);
 
 
 /**
@@ -81,8 +81,8 @@ typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length,
  *      packet for each transmission
  */
 int
-payloads_lookup(
-                const struct NmapPayloads *payloads,
+payloads_udp_lookup(
+                const struct PayloadsUDP *payloads,
                 unsigned port,
                 const unsigned char **px,
                 unsigned *length,

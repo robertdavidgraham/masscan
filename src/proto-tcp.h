@@ -8,7 +8,7 @@ struct Adapter;
 struct TCP_Control_Block;
 struct TemplatePacket;
 struct TCP_ConnectionTable;
-
+struct lua_State;
 
 #define TCP_SEQNO(px,i) (px[i+4]<<24|px[i+5]<<16|px[i+6]<<8|px[i+7])
 #define TCP_ACKNO(px,i) (px[i+8]<<24|px[i+9]<<16|px[i+10]<<8|px[i+11])
@@ -28,6 +28,8 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const char *name,
                         size_t value_length,
                         const void *value);
+
+void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L);
 
 /**
  * Create a TCP connection table (to store TCP control blocks) with
@@ -57,7 +59,8 @@ tcpcon_create_table(    size_t entry_count,
 void tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
     unsigned is_capture_html,
-    unsigned is_capture_heartbleed);
+    unsigned is_capture_heartbleed,
+	unsigned is_capture_ticketbleed);
 
 /**
  * Gracefully destroy a TCP connection table. This is the last chance for any
@@ -76,7 +79,6 @@ void
 tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usecs);
 
 enum TCP_What {
-    TCP_WHAT_NOTHING,
     TCP_WHAT_TIMEOUT,
     TCP_WHAT_SYNACK,
     TCP_WHAT_RST,

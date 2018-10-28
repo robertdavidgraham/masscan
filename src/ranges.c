@@ -92,7 +92,6 @@ range_combine(struct Range *lhs, struct Range rhs)
 void
 rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 {
-    unsigned i;
     struct Range range;
 
     range.begin = begin;
@@ -116,6 +115,9 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
         task->max = (unsigned)new_max;
     }
 
+#if 0
+    unsigned i;
+    
     /* See if the range overlaps any exist range already in the
      * list */
     for (i = 0; i < task->count; i++) {
@@ -134,11 +136,71 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
             break;
         }
     }
-
     /* Add to end of list */
     task->list[i].begin = begin;
     task->list[i].end = end;
     task->count++;
+
+#else
+    {
+        unsigned lo, hi, mid;
+        
+        lo = 0;
+        hi = task->count;
+        while (lo < hi) {
+            mid = lo + (hi - lo)/2;
+            if (range.end < task->list[mid].begin) {
+                /* This IP range comes BEFORE the current range */
+                hi = mid;
+            } else if (range.begin > task->list[mid].end) {
+                /* this IP range comes AFTER the current range */
+                lo = mid + 1;
+            } else
+                break;
+        }
+        
+        /* No matching range was found, so insert at this location */
+        mid = lo + (hi - lo)/2;
+        
+        /*
+         * If overlap, then combine it with the range at this point. Otherwise,
+         * insert it at this point.
+         */
+        if (mid < task->count && range_is_overlap(task->list[mid], range)) {
+            range_combine(&task->list[mid], range);
+        } else {
+            memmove(task->list+mid+1, task->list+mid, (task->count - mid) * sizeof(task->list[0]));
+            task->list[mid].begin = begin;
+            task->list[mid].end = end;
+            task->count++;
+        }
+        
+        /*
+         * If overlap with neighbors, then combine with neighbors
+         */
+        for (;;) {
+            unsigned is_neighbor_overlapped = 0;
+            if (mid > 0 && range_is_overlap(task->list[mid-1], task->list[mid])) {
+                range_combine(&task->list[mid-1], task->list[mid]);
+                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+                mid--;
+                is_neighbor_overlapped = 1;
+                task->count--;
+            }
+            if (mid+1 < task->count && range_is_overlap(task->list[mid], task->list[mid+1])) {
+                range_combine(&task->list[mid], task->list[mid+1]);
+                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+                is_neighbor_overlapped = 1;
+                task->count--;
+            }
+            if (!is_neighbor_overlapped)
+                break;
+        }
+        //debug_dump_ranges(task);
+        return;
+    }
+#endif
+
 }
 
 /***************************************************************************
@@ -149,6 +211,18 @@ rangelist_remove_all(struct RangeList *tasks)
     if (tasks->list) {
         free(tasks->list);
         memset(tasks, 0, sizeof(*tasks));
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
+{
+    unsigned i;
+    
+    for (i=0; i<list2->count; i++) {
+        rangelist_add_range(list1, list2->list[i].begin, list2->list[i].end);
     }
 }
 
@@ -598,15 +672,14 @@ regress_pick2()
  * handle multiple stuff on the same line
  ***************************************************************************/
 const char *
-rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error)
+rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error, unsigned proto_offset)
 {
     char *p = (char*)string;
-
+    
     *is_error = 0;
     while (*p) {
         unsigned port;
         unsigned end;
-        unsigned proto_offset = 0;
 
         /* skip whitespace */
         while (*p && isspace(*p & 0xFF))
@@ -643,11 +716,11 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
         if (!isdigit(p[0] & 0xFF))
             break;
 
-        port = strtoul(p, &p, 0);
+        port = (unsigned)strtoul(p, &p, 0);
         end = port;
         if (*p == '-') {
             p++;
-            end = strtoul(p, &p, 0);
+            end = (unsigned)strtoul(p, &p, 0);
         }
 
         if (port > 0xFFFF || end > 0xFFFF || end < port) {
@@ -791,7 +864,7 @@ ranges_selftest(void)
         unsigned is_error = 0;
         memset(task, 0, sizeof(task[0]));
 
-        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error);
+        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error, 0);
         if (task->count != 3 || is_error) {
             ERROR();
             return 1;

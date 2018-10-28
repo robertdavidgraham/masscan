@@ -392,7 +392,7 @@ snmp_parse(const unsigned char *px, uint64_t length,
             if (var_tag == 5)
                 continue; /* null */
 
-            snmp_banner(oid, oid_length, var_tag, var, var_length, banout);
+            snmp_banner(oid, (size_t)oid_length, var_tag, var, (size_t)var_length, banout);
         }
     }
 }
@@ -416,7 +416,7 @@ snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
     /* length */
     outer_length = asn1_length(px, length, &offset);
     if (length > outer_length + offset)
-        length = outer_length + offset;
+        length = (size_t)(outer_length + offset);
 
     /* Version */
     version = asn1_integer(px, length, &offset);
@@ -434,7 +434,7 @@ snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
         return 0;
     outer_length = asn1_length(px, length, &offset);
     if (length > outer_length + offset)
-        length = outer_length + offset;
+        length = (size_t)(outer_length + offset);
 
     /* Request ID */
     asn1_tag(px, length, &offset);
@@ -471,10 +471,10 @@ snmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno)
     return 0;
 }
 
-#define TWO_BYTE       ((~0)<<7)
-#define THREE_BYTE     ((~0)<<14)
-#define FOUR_BYTE      ((~0)<<21)
-#define FIVE_BYTE      ((~0)<<28)
+#define TWO_BYTE       ((unsigned long long)(~0)<<7)
+#define THREE_BYTE     ((unsigned long long)(~0)<<14)
+#define FOUR_BYTE      ((unsigned long long)(~0)<<21)
+#define FIVE_BYTE      ((unsigned long long)(~0)<<28)
 
 
 /****************************************************************************
@@ -503,14 +503,14 @@ convert_oid(unsigned char *dst, size_t sizeof_dst, const char *src)
 
     while (*src) {
         const char *next_src;
-        unsigned long id;
+        unsigned id;
         unsigned count;
         unsigned i;
 
         while (*src == '.')
             src++;
 
-        id = strtoul(src, (char**)&next_src, 0);
+        id = (unsigned)strtoul(src, (char**)&next_src, 0);
         if (src == next_src)
             break;
         else

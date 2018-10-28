@@ -2,6 +2,7 @@
 #include "masscan.h"
 #include "masscan-version.h"
 #include "masscan-status.h"
+#include "out-tcp-services.h"
 #include "templ-port.h"
 #include "string_s.h"
 
@@ -60,6 +61,8 @@ print_port_list(const struct RangeList *ports, int type, FILE *fp)
     }
 }
 
+extern const char *debug_recv_status;
+
 /****************************************************************************
  * This function doesn't really "open" the file. Instead, the purpose of
  * this function is to initialize the file by printing header information.
@@ -71,6 +74,7 @@ grepable_out_open(struct Output *out, FILE *fp)
     struct tm tm;
     unsigned count;
 
+    
     gmtime_s(&tm, &out->when_scan_started);
 
     //Tue Jan 21 20:23:22 2014
@@ -130,11 +134,19 @@ static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
+    const char *service;
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(reason);
     UNUSEDPARM(ttl);
 
+    if (ip_proto == 6)
+        service = tcp_service_name(port);
+    else if (ip_proto == 17)
+        service = udp_service_name(port);
+    else
+        service = "";
+    
     fprintf(fp, "Host: %u.%u.%u.%u ()",
                     (unsigned char)(ip>>24),
                     (unsigned char)(ip>>16),
@@ -146,7 +158,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
                 status_string(status),      //"open", "closed"
                 name_from_ip_proto(ip_proto),  //"tcp", "udp", "sctp"
                 "", //owner
-                "", //service
+                service, //service
                 "", //SunRPC info
                 "" //Version info
                 );

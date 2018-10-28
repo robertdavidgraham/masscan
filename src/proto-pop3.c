@@ -40,15 +40,16 @@ pop3_parse(  const struct Banner1 *banner1,
         switch (state) {
             case 0: case 1: case 2:
                 banout_append_char(banout, PROTO_POP3, px[i]);
-                if ("+OK"[state] != px[i])
-                    state = STATE_DONE;
-                else
+                if ("+OK"[state] != px[i]) {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                } else
                     state++;
                 break;
             case 3:
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "CAPA\r\n", 6);
+                    tcp_transmit(more, "CAPA\r\n", 6, 0);
                     state++;
                 }
                 break;
@@ -60,7 +61,8 @@ pop3_parse(  const struct Banner1 *banner1,
                 else if (px[i] == '+')
                     state++;
                 else {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                 }
                 break;
             case 5:
@@ -68,16 +70,20 @@ pop3_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == 'O')
                     state++;
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 6:
             case 206:
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == 'K')
                     state += 2; /* oops, I had too many states here */
-                else
-                    state = STATE_DONE;
+                else {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             case 8:
                 if (px[i] == '\r')
@@ -102,7 +108,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     continue;
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "STLS\r\n", 6);
+                    tcp_transmit(more, "STLS\r\n", 6, 0);
                     state = 204;
                 } else {
                     state = 8;
@@ -122,8 +128,8 @@ pop3_parse(  const struct Banner1 *banner1,
                     pstate->port = (unsigned short)port;
                     state = 0;
                     
-                    more->payload = banner_ssl.hello;
-                    more->length = (unsigned)banner_ssl.hello_length;
+                    tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
+                    
                     break;
                 }
                 break;
@@ -132,8 +138,10 @@ pop3_parse(  const struct Banner1 *banner1,
                 if (px[i] == '\r')
                     continue;
                 banout_append_char(banout, PROTO_POP3, px[i]);
-                if (px[i] == '\n')
-                    state = STATE_DONE;
+                if (px[i] == '\n') {
+                    state = 0xffffffff;
+                    tcp_close(more);
+                }
                 break;
             default:
                 i = (unsigned)length;

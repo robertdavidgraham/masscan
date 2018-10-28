@@ -66,7 +66,8 @@ smtp_parse(  const struct Banner1 *banner1,
             case 202:
             case 203:
                 if (!isdigit(px[i]&0xFF)) {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                 } else {
                     smtp->code *= 10;
                     smtp->code += (px[i] - '0');
@@ -86,7 +87,8 @@ smtp_parse(  const struct Banner1 *banner1,
                     state++;
                     banout_append_char(banout, PROTO_SMTP, px[i]);
                 } else {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                 }
                 break;
             case 5:
@@ -94,8 +96,7 @@ smtp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (smtp->is_last) {
-                        more->payload = "EHLO masscan\r\n";
-                        more->length = 14;
+                        tcp_transmit(more, "EHLO masscan\r\n", 14, 0);
                         state = 100;
                         banout_append_char(banout, PROTO_SMTP, px[i]);
                     } else {
@@ -103,7 +104,8 @@ smtp_parse(  const struct Banner1 *banner1,
                         state = 0;
                     }
                 } else if (px[i] == '\0' || !isprint(px[i])) {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                     continue;
                 } else {
                     banout_append_char(banout, PROTO_SMTP, px[i]);
@@ -114,8 +116,7 @@ smtp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (smtp->is_last) {
-                        more->payload = "STARTTLS\r\n";
-                        more->length = 10;
+                        tcp_transmit(more, "STARTTLS\r\n", 10, 0);
                         state = 200;
                         banout_append_char(banout, PROTO_SMTP, px[i]);
                     } else {
@@ -123,7 +124,8 @@ smtp_parse(  const struct Banner1 *banner1,
                         state = 100;
                     }
                 } else if (px[i] == '\0' || !isprint(px[i])) {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                     continue;
                 } else {
                     banout_append_char(banout, PROTO_SMTP, px[i]);
@@ -144,14 +146,15 @@ smtp_parse(  const struct Banner1 *banner1,
                         pstate->port = (unsigned short)port;
                         state = 0;
                         
-                        more->payload = banner_ssl.hello;
-                        more->length = (unsigned)banner_ssl.hello_length;
+                        tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
                         
                     } else {
-                        state = STATE_DONE;
+                        state = 0xffffffff;
+                        tcp_close(more);
                     }
                 } else if (px[i] == '\0' || !isprint(px[i])) {
-                    state = STATE_DONE;
+                    state = 0xffffffff;
+                    tcp_close(more);
                     continue;
                 } else {
                     banout_append_char(banout, PROTO_SMTP, px[i]);

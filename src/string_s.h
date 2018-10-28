@@ -56,7 +56,7 @@
 const char *strerror_x(int x);
 
 #if defined(_MSC_VER) && (_MSC_VER == 1900)
-/*Visual Studio 2050*/
+/*Visual Studio 2015*/
 # include <stdio.h>
 # include <string.h>
 # define strcasecmp     _stricmp
@@ -69,6 +69,18 @@ const char *strerror_x(int x);
 
 #elif defined(_MSC_VER) && (_MSC_VER == 1800)
 /*Visual Studio 2013*/
+# include <stdio.h>
+# include <string.h>
+# define strcasecmp     _stricmp
+# define memcasecmp     _memicmp
+# ifndef PRIu64
+#  define PRIu64 "llu"
+#  define PRId64 "lld"
+#  define PRIx64 "llx"
+# endif
+
+#elif defined(_MSC_VER) && (_MSC_VER == 1700)
+/*Visual Studio 2012*/
 # include <stdio.h>
 # include <string.h>
 # define strcasecmp     _stricmp

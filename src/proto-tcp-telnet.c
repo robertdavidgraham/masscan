@@ -1,5 +1,6 @@
 #include "proto-tcp-telnet.h"
 #include "proto-banner1.h"
+#include "proto-interactive.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include <ctype.h>
@@ -28,7 +29,8 @@ telnet_parse(  const struct Banner1 *banner1,
         if (px[i] == '\r')
             continue;
         if (px[i] == '\n' || px[i] == '\0' || !isprint(px[i])) {
-            state = STATE_DONE;
+            state++;
+            tcp_close(more);
             continue;
         }
         banout_append_char(banout, PROTO_SSH2, px[i]);

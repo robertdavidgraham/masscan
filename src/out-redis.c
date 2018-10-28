@@ -155,13 +155,13 @@ redis_out_open(struct Output *out, FILE *fp)
 
     UNUSEDPARM(out);
 
-    count = send(fd, "PING\r\n", 6, 0);
+    count = send((SOCKET)fd, "PING\r\n", 6, 0);
     if (count != 6) {
         LOG(0, "redis: send(ping) failed\n");
         exit(1);
     }
 
-    count = recv_line(fd, line, sizeof(line));
+    count = recv_line((SOCKET)fd, line, sizeof(line));
     if (count != 7 && memcmp(line, "+PONG\r\n", 7) != 0) {
         LOG(0, "redis: unexpected response from redis server: %s\n", line);
         exit(1);
@@ -179,13 +179,13 @@ redis_out_close(struct Output *out, FILE *fp)
 
     UNUSEDPARM(out);
 
-    count = send(fd, "PING\r\n", 6, 0);
+    count = send((SOCKET)fd, "PING\r\n", 6, 0);
     if (count != 6) {
         LOG(0, "redis: send(ping) failed\n");
         exit(1);
     }
 
-    count = recv_line(fd, line, sizeof(line));
+    count = recv_line((SOCKET)fd, line, sizeof(line));
     if (count != 7 && memcmp(line, "+PONG\r\n", 7) != 0) {
         LOG(0, "redis: unexpected response from redis server: %s\n", line);
         exit(1);
@@ -235,7 +235,7 @@ myvalue
             (unsigned)strlen(ip_string), ip_string
             );
 
-    count = send(fd, line, (int)strlen(line), 0);
+    count = send((SOCKET)fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");
         exit(1);
@@ -255,7 +255,7 @@ myvalue
             (unsigned)strlen(ip_string), ip_string,
             (unsigned)strlen(port_string), port_string);
 
-    count = send(fd, line, (int)strlen(line), 0);
+    count = send((SOCKET)fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");
         exit(1);
@@ -280,14 +280,14 @@ myvalue
             (unsigned)strlen(values), values
             );
 
-    count = send(fd, line, (int)strlen(line), 0);
+    count = send((SOCKET)fd, line, (int)strlen(line), 0);
     if (count != strlen(line)) {
         LOG(0, "redis: error sending data\n");
         exit(1);
     }
     out->redis.outstanding++;
 
-    clean_response_queue(out, fd);
+    clean_response_queue(out, (SOCKET)fd);
 
 }
 

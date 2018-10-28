@@ -47,6 +47,9 @@ struct CertDecode {
     struct {
         unsigned type;
     } subject;
+
+    unsigned child_state;
+    unsigned brother_state;
     
     /**
      * This union contains the intermediate/partial values as we are decoding

@@ -222,6 +222,9 @@ parse_server_hello(
 
     case SESSION_LENGTH:
         remaining = px[i];
+		if (banner1->is_ticketbleed && remaining > 16) {
+			banout_append(  banout, PROTO_VULN, "SSL[ticketbleed] ", 17);
+		}
         DROPDOWN(i,length,state);
 
     case SESSION_ID:
@@ -369,7 +372,8 @@ parse_server_cert(
         void *banner1_private,
         struct ProtocolState *pstate,
         const unsigned char *px, size_t length,
-        struct BannerOutput *banout)
+        struct BannerOutput *banout,
+        struct InteractiveData *more)
 {
     struct SSL_SERVER_CERT *data = &pstate->sub.ssl.x.server_cert;
     unsigned state = data->state;
@@ -461,7 +465,7 @@ parse_server_cert(
                 state = CLEN0;
                 if (remaining == 0) {
                     if (!banner1->is_heartbleed)
-                        pstate->is_done = 1;
+                        tcp_close(more);
                 }
             }
         }
@@ -568,8 +572,7 @@ parse_handshake(
             static const char heartbleed_request[] = 
                 "\x15\x03\x02\x00\x02\x01\x80"
                 "\x18\x03\x02\x00\x03\x01" "\x40\x00";
-            more->payload = heartbleed_request;
-            more->length = sizeof(heartbleed_request)-1;
+            tcp_transmit(more, heartbleed_request, sizeof(heartbleed_request)-1, 0);
         }
         DROPDOWN(i,length,state);
 
@@ -614,7 +617,8 @@ parse_handshake(
                                       banner1_private,
                                       pstate,
                                       px+i, len,
-                                      banout);
+                                      banout,
+                                      more);
                     break;
             }
 

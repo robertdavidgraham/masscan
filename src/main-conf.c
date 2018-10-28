@@ -20,11 +20,24 @@
 #include "templ-payloads.h"
 #include "templ-port.h"
 #include "crypto-base64.h"
-#include "script.h"
+#include "ranges-avl.h"
+#include "vulncheck.h"
 #include "masscan-app.h"
-
+#include "unusedparm.h"
+#include "read-service-probes.h"
 #include <ctype.h>
 #include <limits.h>
+
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
+
+#if defined(_MSC_VER)
+#define strdup _strdup
+#endif
+
+static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -175,10 +188,10 @@ print_nmap_help(void)
 "  --ttl <val>: Set IP time-to-live field\n"
 "  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
 "OUTPUT:\n"
-"  --output-format <format>: Sets output to binary/list/unicornscan/json/grepable/xml\n"
+"  --output-format <format>: Sets output to binary/list/unicornscan/json/ndjson/grepable/xml\n"
 "  --output-file <file>: Write scan results to file. If --output-format is\n"
 "     not given default is xml\n"
-"  -oL/-oJ/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/Grepable/Binary/XML/Unicornscan format,\n"
+"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan format,\n"
 "     respectively, to the given filename. Shortcut for\n"
 "     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
@@ -236,15 +249,17 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     else
         sprintf_s(zzz, sizeof(zzz), "[%u]", i);
 
-    fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
-    if (masscan->nic[i].src.ip.first == masscan->nic[i].src.ip.last)
+    if (masscan->nic[i].ifname && masscan->nic[i].ifname[0])
+        fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
+    
+    if (masscan->nic[i].src.ip.first+1 == masscan->nic[i].src.ip.last)
         fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
             (masscan->nic[i].src.ip.first>>24)&0xFF,
             (masscan->nic[i].src.ip.first>>16)&0xFF,
             (masscan->nic[i].src.ip.first>> 8)&0xFF,
             (masscan->nic[i].src.ip.first>> 0)&0xFF
             );
-    else
+    else if (masscan->nic[i].src.ip.first+1 < masscan->nic[i].src.ip.last)
         fprintf(fp, "adapter-ip%s = %u.%u.%u.%u-%u.%u.%u.%u\n", zzz,
             (masscan->nic[i].src.ip.first>>24)&0xFF,
             (masscan->nic[i].src.ip.first>>16)&0xFF,
@@ -256,13 +271,14 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
             (masscan->nic[i].src.ip.last>> 0)&0xFF
             );
 
-    fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
-            masscan->nic[i].my_mac[0],
-            masscan->nic[i].my_mac[1],
-            masscan->nic[i].my_mac[2],
-            masscan->nic[i].my_mac[3],
-            masscan->nic[i].my_mac[4],
-            masscan->nic[i].my_mac[5]);
+    if (masscan->nic[i].my_mac_count)
+        fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+                masscan->nic[i].my_mac[0],
+                masscan->nic[i].my_mac[1],
+                masscan->nic[i].my_mac[2],
+                masscan->nic[i].my_mac[3],
+                masscan->nic[i].my_mac[4],
+                masscan->nic[i].my_mac[5]);
     if (masscan->nic[i].router_ip) {
         fprintf(fp, "router-ip%s = %u.%u.%u.%u\n", zzz,
             (masscan->nic[i].router_ip>>24)&0xFF,
@@ -270,8 +286,8 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
             (masscan->nic[i].router_ip>> 8)&0xFF,
             (masscan->nic[i].router_ip>> 0)&0xFF
             );
-    } else
-    fprintf(fp, "router-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
+    } else if (memcmp(masscan->nic[i].router_mac, "\0\0\0\0\0\0", 6) != 0)
+        fprintf(fp, "router-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,
             masscan->nic[i].router_mac[0],
             masscan->nic[i].router_mac[1],
             masscan->nic[i].router_mac[2],
@@ -281,162 +297,6 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
 
 }
 
-/***************************************************************************
- * Prints the current configuration to the command-line then exits.
- * Use#1: create a template file of all setable parameters.
- * Use#2: make sure your configuration was interpreted correctly.
- ***************************************************************************/
-static void
-masscan_echo(struct Masscan *masscan, FILE *fp)
-{
-    unsigned i;
-
-    fprintf(fp, "rate = %10.2f\n", masscan->max_rate);
-    fprintf(fp, "randomize-hosts = true\n");
-    fprintf(fp, "seed = %" PRIu64 "\n", masscan->seed);
-    fprintf(fp, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
-    if (masscan->is_banners)
-        fprintf(fp, "banners = true\n");
-
-    fprintf(fp, "# ADAPTER SETTINGS\n");
-    if (masscan->nic_count == 0)
-        masscan_echo_nic(masscan, fp, 0);
-    else {
-        for (i=0; i<masscan->nic_count; i++)
-            masscan_echo_nic(masscan, fp, i);
-    }
-
-
-    /*
-     * Output information
-     */
-    fprintf(fp, "# OUTPUT/REPORTING SETTINGS\n");
-    switch (masscan->output.format) {
-    case Output_Interactive:fprintf(fp, "output-format = interactive\n"); break;
-    case Output_List:       fprintf(fp, "output-format = list\n"); break;
-    case Output_Unicornscan:fprintf(fp, "output-format = unicornscan\n"); break;
-    case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
-    case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
-    case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
-    case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
-    case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
-    case Output_None:       fprintf(fp, "output-format = none\n"); break;
-    case Output_Redis:
-        fprintf(fp, "output-format = redis\n");
-        fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
-            (unsigned char)(masscan->redis.ip>>24),
-            (unsigned char)(masscan->redis.ip>>16),
-            (unsigned char)(masscan->redis.ip>> 8),
-            (unsigned char)(masscan->redis.ip>> 0),
-            masscan->redis.port);
-        break;
-
-    default:
-        fprintf(fp, "output-format = unknown(%u)\n", masscan->output.format);
-        break;
-    }
-    fprintf(fp, "show = %s,%s,%s\n",
-            masscan->output.is_show_open?"open":"",
-            masscan->output.is_show_closed?"closed":"",
-            masscan->output.is_show_host?"host":""
-            );
-    if (!masscan->output.is_show_open)
-        fprintf(fp, "noshow = open\n");
-    fprintf(fp, "output-filename = %s\n", masscan->output.filename);
-    if (masscan->output.is_append)
-        fprintf(fp, "output-append = true\n");
-    fprintf(fp, "rotate = %u\n", masscan->output.rotate.timeout);
-    fprintf(fp, "rotate-dir = %s\n", masscan->output.rotate.directory);
-    fprintf(fp, "rotate-offset = %u\n", masscan->output.rotate.offset);
-    fprintf(fp, "rotate-filesize = %" PRIu64 "\n", masscan->output.rotate.filesize);
-    fprintf(fp, "pcap = %s\n", masscan->pcap_filename);
-
-    /*
-     * Targets
-     */
-
-    for (i=0; i<masscan->ports.count; i++) {
-	struct Range range = masscan->ports.list[i];
-	if ( (range.begin == range.end) && (range.begin == Templ_ICMP_echo) )
-		{
-		fprintf(fp,"ping = true\n");
-		break;
-		}
-    }
-
-    fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
-    fprintf(fp, "ports = ");
-    for (i=0; i<masscan->ports.count; i++) {
-        struct Range range = masscan->ports.list[i];
-        if (range.begin == range.end)
-            fprintf(fp, "%u", range.begin);
-        else
-            fprintf(fp, "%u-%u", range.begin, range.end);
-        if (i+1 < masscan->ports.count)
-            fprintf(fp, ",");
-    }
-    fprintf(fp, "\n");
-    for (i=0; i<masscan->targets.count; i++) {
-        struct Range range = masscan->targets.list[i];
-        fprintf(fp, "range = ");
-        fprintf(fp, "%u.%u.%u.%u",
-            (range.begin>>24)&0xFF,
-            (range.begin>>16)&0xFF,
-            (range.begin>> 8)&0xFF,
-            (range.begin>> 0)&0xFF
-            );
-        if (range.begin != range.end) {
-            unsigned cidr_bits = count_cidr_bits(range);
-
-            if (cidr_bits) {
-                fprintf(fp, "/%u", cidr_bits);
-            } else
-            fprintf(fp, "-%u.%u.%u.%u",
-                (range.end>>24)&0xFF,
-                (range.end>>16)&0xFF,
-                (range.end>> 8)&0xFF,
-                (range.end>> 0)&0xFF
-                );
-        }
-        fprintf(fp, "\n");
-    }
-
-    fprintf(fp, "\n");
-    if (masscan->http_user_agent)
-        fprintf(    fp,
-                "http-user-agent = %.*s\n",
-                masscan->http_user_agent_length,
-                masscan->http_user_agent);
-
-    for (i=0; i<sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); i++) {
-        if (masscan->http_headers[i].header_name == 0)
-            continue;
-        fprintf(    fp,
-                    "http-header[%s] = %.*s\n",
-                    masscan->http_headers[i].header_name,
-                    masscan->http_headers[i].header_value_length,
-                masscan->http_headers[i].header_value);
-    }
-
-
-    fprintf(fp, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
-    fprintf(fp, "%scapture = html\n", masscan->is_capture_html?"":"no");
-    fprintf(fp, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
-
-    /*
-     *  TCP payloads
-     */
-    fprintf(fp, "\n");
-    fprintf(fp, "min-packet = %u\n", masscan->min_packet_size);
-
-    {
-        struct TcpCfgPayloads *pay;
-        for (pay = masscan->tcp_payloads; pay; pay = pay->next) {
-            fprintf(fp, "hello-string[%u] = %s\n",
-                pay->port, pay->payload_base64);
-        }
-    }
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -459,12 +319,22 @@ masscan_save_state(struct Masscan *masscan)
         return;
     }
 
-    fprintf(fp, "\n# resume information\n");
-    fprintf(fp, "resume-index = %" PRIu64 "\n", masscan->resume.index);
-
-    masscan_echo(masscan, fp);
+    
+    masscan_echo(masscan, fp, 0);
 
     fclose(fp);
+}
+
+
+/*****************************************************************************
+ * Just a wrapper around rangelist_add_range() since in theory they can
+ * be different functions even though their prototypes are almost
+ * identical.
+ *****************************************************************************/
+static void
+rangelist_add_callback(void *v, unsigned begin, unsigned end)
+{
+    rangelist_add_range((struct RangeList *)v, begin, end);
 }
 
 
@@ -485,6 +355,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
     FILE *fp;
     errno_t err;
     unsigned line_number = 0;
+    struct RavlNode *ravl = ravl_create();
 
 
     err = fopen_s(&fp, filename, "rt");
@@ -559,11 +430,16 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
                         filename, line_number, offset, i, address);
                 exit(1);
             } else {
-                rangelist_add_range(ranges, range.begin, range.end);
+                //rangelist_add_range(ranges, range.begin, range.end);
+                ravl = ravl_insert(range.begin, range.end, ravl);
             }
         }
 
     }
+
+    ravl_enumerate(ravl, rangelist_add_callback, ranges);
+    
+    ravl_free(ravl);
 
     fclose(fp);
 }
@@ -629,6 +505,41 @@ parseInt(const char *str)
         str++;
     }
     return result;
+}
+
+static unsigned
+parseBoolean(const char *str)
+{
+    if (str == NULL || str[0] == 0)
+        return 1;
+    if (isdigit(str[0])) {
+        if (strtoul(str,0,0) == 0)
+            return 0;
+        else
+            return 1;
+    }
+    switch (str[0]) {
+    case 't':
+    case 'T':
+        return 1;
+    case 'f':
+    case 'F':
+        return 0;
+    case 'o':
+    case 'O':
+        if (str[1] == 'f' || str[1] == 'F')
+            return 0;
+        else
+            return 1;
+        break;
+    case 'Y':
+    case 'y':
+        return 1;
+    case 'n':
+    case 'N':
+        return 0;
+    }
+    return 1;
 }
 
 /***************************************************************************
@@ -823,11 +734,900 @@ ARRAY(const char *rhs)
     return (unsigned)parseInt(p);
 }
 
+static void
+config_top_ports(struct Masscan *masscan, unsigned n)
+{
+    unsigned i;
+    static const unsigned short top_tcp_ports[] = {
+        1,3,4,6,7,9,13,17,19,20,21,22,23,24,25,26,30,32,33,37,42,43,49,53,70,
+        79,80,81,82,83,84,85,88,89,90,99,100,106,109,110,111,113,119,125,135,
+        139,143,144,146,161,163,179,199,211,212,222,254,255,256,259,264,280,
+        301,306,311,340,366,389,406,407,416,417,425,427,443,444,445,458,464,
+        465,481,497,500,512,513,514,515,524,541,543,544,545,548,554,555,563,
+        587,593,616,617,625,631,636,646,648,666,667,668,683,687,691,700,705,
+        711,714,720,722,726,749,765,777,783,787,800,801,808,843,873,880,888,
+        898,900,901,902,903,911,912,981,987,990,992,993,995,999,1000,1001,
+        1002,1007,1009,1010,1011,1021,1022,1023,1024,1025,1026,1027,1028,
+        1029,1030,1031,1032,1033,1034,1035,1036,1037,1038,1039,1040,1041,
+        1042,1043,1044,1045,1046,1047,1048,1049,1050,1051,1052,1053,1054,
+        1055,1056,1057,1058,1059,1060,1061,1062,1063,1064,1065,1066,1067,
+        1068,1069,1070,1071,1072,1073,1074,1075,1076,1077,1078,1079,1080,
+        1081,1082,1083,1084,1085,1086,1087,1088,1089,1090,1091,1092,1093,
+        1094,1095,1096,1097,1098,1099,1100,1102,1104,1105,1106,1107,1108,
+        1110,1111,1112,1113,1114,1117,1119,1121,1122,1123,1124,1126,1130,
+        1131,1132,1137,1138,1141,1145,1147,1148,1149,1151,1152,1154,1163,
+        1164,1165,1166,1169,1174,1175,1183,1185,1186,1187,1192,1198,1199,
+        1201,1213,1216,1217,1218,1233,1234,1236,1244,1247,1248,1259,1271,
+        1272,1277,1287,1296,1300,1301,1309,1310,1311,1322,1328,1334,1352,
+        1417,1433,1434,1443,1455,1461,1494,1500,1501,1503,1521,1524,1533,
+        1556,1580,1583,1594,1600,1641,1658,1666,1687,1688,1700,1717,1718,
+        1719,1720,1721,1723,1755,1761,1782,1783,1801,1805,1812,1839,1840,
+        1862,1863,1864,1875,1900,1914,1935,1947,1971,1972,1974,1984,1998,
+        1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2013,
+        2020,2021,2022,2030,2033,2034,2035,2038,2040,2041,2042,2043,2045,
+        2046,2047,2048,2049,2065,2068,2099,2100,2103,2105,2106,2107,2111,
+        2119,2121,2126,2135,2144,2160,2161,2170,2179,2190,2191,2196,2200,
+        2222,2251,2260,2288,2301,2323,2366,2381,2382,2383,2393,2394,2399,
+        2401,2492,2500,2522,2525,2557,2601,2602,2604,2605,2607,2608,2638,
+        2701,2702,2710,2717,2718,2725,2800,2809,2811,2869,2875,2909,2910,
+        2920,2967,2968,2998,3000,3001,3003,3005,3006,3007,3011,3013,3017,
+        3030,3031,3052,3071,3077,3128,3168,3211,3221,3260,3261,3268,3269,
+        3283,3300,3301,3306,3322,3323,3324,3325,3333,3351,3367,3369,3370,
+        3371,3372,3389,3390,3404,3476,3493,3517,3527,3546,3551,3580,3659,
+        3689,3690,3703,3737,3766,3784,3800,3801,3809,3814,3826,3827,3828,
+        3851,3869,3871,3878,3880,3889,3905,3914,3918,3920,3945,3971,3986,
+        3995,3998,4000,4001,4002,4003,4004,4005,4006,4045,4111,4125,4126,
+        4129,4224,4242,4279,4321,4343,4443,4444,4445,4446,4449,4550,4567,
+        4662,4848,4899,4900,4998,5000,5001,5002,5003,5004,5009,5030,5033,
+        5050,5051,5054,5060,5061,5080,5087,5100,5101,5102,5120,5190,5200,
+        5214,5221,5222,5225,5226,5269,5280,5298,5357,5405,5414,5431,5432,
+        5440,5500,5510,5544,5550,5555,5560,5566,5631,5633,5666,5678,5679,
+        5718,5730,5800,5801,5802,5810,5811,5815,5822,5825,5850,5859,5862,
+        5877,5900,5901,5902,5903,5904,5906,5907,5910,5911,5915,5922,5925,
+        5950,5952,5959,5960,5961,5962,5963,5987,5988,5989,5998,5999,6000,
+        6001,6002,6003,6004,6005,6006,6007,6009,6025,6059,6100,6101,6106,
+        6112,6123,6129,6156,6346,6389,6502,6510,6543,6547,6565,6566,6567,
+        6580,6646,6666,6667,6668,6669,6689,6692,6699,6779,6788,6789,6792,
+        6839,6881,6901,6969,7000,7001,7002,7004,7007,7019,7025,7070,7100,
+        7103,7106,7200,7201,7402,7435,7443,7496,7512,7625,7627,7676,7741,
+        7777,7778,7800,7911,7920,7921,7937,7938,7999,8000,8001,8002,8007,
+        8008,8009,8010,8011,8021,8022,8031,8042,8045,8080,8081,8082,8083,
+        8084,8085,8086,8087,8088,8089,8090,8093,8099,8100,8180,8181,8192,
+        8193,8194,8200,8222,8254,8290,8291,8292,8300,8333,8383,8400,8402,
+        8443,8500,8600,8649,8651,8652,8654,8701,8800,8873,8888,8899,8994,
+        9000,9001,9002,9003,9009,9010,9011,9040,9050,9071,9080,9081,9090,
+        9091,9099,9100,9101,9102,9103,9110,9111,9200,9207,9220,9290,9415,
+        9418,9485,9500,9502,9503,9535,9575,9593,9594,9595,9618,9666,9876,
+        9877,9878,9898,9900,9917,9929,9943,9944,9968,9998,9999,10000,10001,
+        10002,10003,10004,10009,10010,10012,10024,10025,10082,10180,10215,
+        10243,10566,10616,10617,10621,10626,10628,10629,10778,11110,11111,
+        11967,12000,12174,12265,12345,13456,13722,13782,13783,14000,14238,
+        14441,14442,15000,15002,15003,15004,15660,15742,16000,16001,16012,
+        16016,16018,16080,16113,16992,16993,17877,17988,18040,18101,18988,
+        19101,19283,19315,19350,19780,19801,19842,20000,20005,20031,20221,
+        20222,20828,21571,22939,23502,24444,24800,25734,25735,26214,27000,
+        27352,27353,27355,27356,27715,28201,30000,30718,30951,31038,31337,
+        32768,32769,32770,32771,32772,32773,32774,32775,32776,32777,32778,
+        32779,32780,32781,32782,32783,32784,32785,33354,33899,34571,34572,
+        34573,35500,38292,40193,40911,41511,42510,44176,44442,44443,44501,
+        45100,48080,49152,49153,49154,49155,49156,49157,49158,49159,49160,
+        49161,49163,49165,49167,49175,49176,49400,49999,50000,50001,50002,
+        50003,50006,50300,50389,50500,50636,50800,51103,51493,52673,52822,
+        52848,52869,54045,54328,55055,55056,55555,55600,56737,56738,57294,
+        57797,58080,60020,60443,61532,61900,62078,63331,64623,64680,65000,
+        65129,65389};
+    struct RangeList *ports = &masscan->ports;
+
+    if (masscan->scan_type.tcp) {
+        for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
+            rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+    }
+    if (masscan->scan_type.udp) {
+        for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
+            rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static int
+isInteger(const char *value)
+{
+    size_t i;
+    
+    if (value == NULL)
+        return 0;
+    
+    for (i=0; value[i]; i++)
+        if (!isdigit(value[i]&0xFF))
+            return 0;
+    return 1;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+typedef int (*SET_PARAMETER)(struct Masscan *masscan, const char *name, const char *value);
+enum {CONF_OK, CONF_WARN, CONF_ERR};
+
+static int SET_arpscan(struct Masscan *masscan, const char *name, const char *value)
+{
+    struct Range range;
+
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
+
+    if (masscan->echo) {
+        if (masscan->scan_type.arp || masscan->echo_all)
+            fprintf(masscan->echo, "arpscan = %s\n", masscan->scan_type.arp?"true":"false");
+        return 0;
+    }
+    range.begin = Templ_ARP;
+    range.end = Templ_ARP;
+    rangelist_add_range(&masscan->ports, range.begin, range.end);
+    masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
+    masscan->scan_type.arp = 1;
+    LOG(5, "--arpscan\n");
+    return CONF_OK;
+}
+
+static int SET_banners(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->is_banners || masscan->echo_all)
+            fprintf(masscan->echo, "banners = %s\n", masscan->is_banners?"true":"false");
+       return 0;
+    }
+    masscan->is_banners = parseBoolean(value);
+    return CONF_OK;
+}
+
+static int SET_capture(struct Masscan *masscan, const char *name, const char *value)
+{
+    if (masscan->echo) {
+        if (!masscan->is_capture_cert || masscan->echo_all)
+            fprintf(masscan->echo, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
+        if (masscan->is_capture_html || masscan->echo_all)
+            fprintf(masscan->echo, "%scapture = html\n", masscan->is_capture_html?"":"no");
+        if (masscan->is_capture_heartbleed || masscan->echo_all)
+            fprintf(masscan->echo, "%scapture = heartbleed\n", masscan->is_capture_heartbleed?"":"no");
+        if (masscan->is_capture_ticketbleed || masscan->echo_all)
+            fprintf(masscan->echo, "%scapture = ticketbleed\n", masscan->is_capture_ticketbleed?"":"no");
+        return 0;
+    }
+    if (EQUALS("capture", name)) {
+        if (EQUALS("cert", value))
+            masscan->is_capture_cert = 1;
+        else if (EQUALS("html", value))
+            masscan->is_capture_html = 1;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 1;
+        else if (EQUALS("ticketbleed", value))
+            masscan->is_capture_ticketbleed = 1;
+        else {
+            fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
+            return CONF_ERR;
+        }
+    } else if (EQUALS("nocapture", name)) {
+        if (EQUALS("cert", value))
+            masscan->is_capture_cert = 0;
+        else if (EQUALS("html", value))
+            masscan->is_capture_html = 0;
+        else if (EQUALS("heartbleed", value))
+            masscan->is_capture_heartbleed = 0;
+        else if (EQUALS("ticketbleed", value))
+            masscan->is_capture_ticketbleed = 0;
+        else {
+            fprintf(stderr, "FAIL: %s: unknown nocapture type\n", value);
+            return CONF_ERR;
+        }
+    }
+    return CONF_OK;
+}
+
+static int SET_hello(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->is_hello_ssl) {
+            fprintf(masscan->echo, "hello = ssl\n");
+        }
+        if (masscan->is_hello_smbv1) {
+            fprintf(masscan->echo, "hello = smbv1\n");
+        }
+        return 0;
+    }
+    if (EQUALS("ssl", value))
+        masscan->is_hello_ssl = 1;
+    else if (EQUALS("smbv1", value))
+        masscan->is_hello_smbv1 = 1;
+    else {
+        fprintf(stderr, "FAIL: %s: unknown hello type\n", value);
+        return CONF_ERR;
+    }
+    return CONF_OK;
+}
+
+static int SET_hello_file(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned index;
+    FILE *fp;
+    int x;
+    char buf[16384];
+    char buf2[16384];
+    size_t bytes_read;
+    size_t bytes_encoded;
+    char foo[64];
+
+    if (masscan->echo) {
+        //Echoed as a string "hello-string" that was originally read
+        //from a file, not the "hello-filename"
+        return 0;
+    }
+    
+    index = ARRAY(name);
+    if (index >= 65536) {
+        fprintf(stderr, "%s: bad index\n", name);
+        return CONF_ERR;
+    }
+
+    /* When connecting via TCP, send this file */
+    x = fopen_s(&fp, value, "rb");
+    if (x != 0) {
+        LOG(0, "[FAILED] could not read hello file\n");
+        perror(value);
+        return CONF_ERR;
+    }
+    
+    bytes_read = fread(buf, 1, sizeof(buf), fp);
+    if (bytes_read == 0) {
+        LOG(0, "[FAILED] could not read hello file\n");
+        perror(value);
+        fclose(fp);
+        return CONF_ERR;
+    }
+    fclose(fp);
+    
+    bytes_encoded = base64_encode(buf2, sizeof(buf2)-1, buf, bytes_read);
+    buf2[bytes_encoded] = '\0';
+    
+    sprintf_s(foo, sizeof(foo), "hello-string[%u]", (unsigned)index);
+    
+    masscan_set_parameter(masscan, foo, buf2);
+
+    return CONF_OK;
+}
+
+static int SET_hello_string(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned index;
+    char *value2;
+    struct TcpCfgPayloads *pay;
+
+    if (masscan->echo) {
+        for (pay = masscan->payloads.tcp; pay; pay = pay->next) {
+            fprintf(masscan->echo, "hello-string[%u] = %s\n",
+                    pay->port, pay->payload_base64);
+        }
+        return 0;
+    }
+    
+    index = ARRAY(name);
+    if (index >= 65536) {
+        fprintf(stderr, "%s: bad index\n", name);
+        exit(1);
+    }
+
+    
+    value2 = (char*)malloc(strlen(value)+1);
+    memcpy(value2, value, strlen(value)+1);
+    
+    pay = (struct TcpCfgPayloads *)malloc(sizeof(*pay));
+    
+    pay->payload_base64 = value2;
+    pay->port = index;
+    pay->next = masscan->payloads.tcp;
+    masscan->payloads.tcp = pay;
+    return CONF_OK;
+}
+
+static int SET_hello_timeout(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->tcp_hello_timeout || masscan->echo_all)
+            fprintf(masscan->echo, "hello-timeout = %u\n", masscan->tcp_hello_timeout);
+        return 0;
+    }
+    masscan->tcp_hello_timeout = (unsigned)parseInt(value);
+    return CONF_OK;
+}
+
+static int SET_min_packet(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->min_packet_size != 60 || masscan->echo_all)
+            fprintf(masscan->echo, "min-packet = %u\n", masscan->min_packet_size);
+        return 0;
+    }
+    masscan->min_packet_size = (unsigned)parseInt(value);
+    return CONF_OK;
+}
+
+
+static int SET_nobanners(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        return 0;
+    }
+    masscan->is_banners = !parseBoolean(value);
+    return CONF_OK;
+}
+
+static int SET_noreset(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->is_noreset || masscan->echo_all)
+            fprintf(masscan->echo, "noreset = %s\n", masscan->is_noreset?"true":"false");
+        return 0;
+    }
+    masscan->is_noreset = parseBoolean(value);
+    return CONF_OK;
+}
+
+static int SET_nmap_payloads(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    
+    if (masscan->echo) {
+        if ((masscan->payloads.nmap_payloads_filename && masscan->payloads.nmap_payloads_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "nmap-payloads = %s\n", masscan->payloads.nmap_payloads_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.nmap_payloads_filename)
+        free(masscan->payloads.nmap_payloads_filename);
+    masscan->payloads.nmap_payloads_filename = strdup(value);
+
+    return CONF_OK;
+}
+
+static int SET_nmap_service_probes(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    
+    if (masscan->echo) {
+        if ((masscan->payloads.nmap_service_probes_filename && masscan->payloads.nmap_service_probes_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "nmap-service-probes = %s\n", masscan->payloads.nmap_service_probes_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.nmap_service_probes_filename)
+        free(masscan->payloads.nmap_service_probes_filename);
+    masscan->payloads.nmap_service_probes_filename = strdup(value);
+    
+    
+    return CONF_OK;
+}
+
+static int SET_output_append(struct Masscan *masscan, const char *name, const char *value)
+{
+    if (masscan->echo) {
+        if (masscan->output.is_append || masscan->echo_all)
+            fprintf(masscan->echo, "output-append = %s\n",
+                    masscan->output.is_append?"true":"false");
+        return 0;
+    }
+    if (EQUALS("overwrite", name) || !parseBoolean(value))
+        masscan->output.is_append = 0;
+    else
+        masscan->output.is_append = 1;
+    return CONF_OK;
+}
+
+static int SET_output_filename(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->output.filename[0] || masscan->echo_all)
+            fprintf(masscan->echo, "output-filename = %s\n", masscan->output.filename);
+        return 0;
+    }
+    if (masscan->output.format == 0)
+        masscan->output.format = Output_XML; /*TODO: Why is the default XML?*/
+    strcpy_s(masscan->output.filename,
+             sizeof(masscan->output.filename),
+             value);
+    return CONF_OK;
+}
+
+static int SET_output_format(struct Masscan *masscan, const char *name, const char *value)
+{
+    enum OutputFormat x = 0;
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        FILE *fp = masscan->echo;
+        switch (masscan->output.format) {
+            case Output_Default:    if (masscan->echo_all) fprintf(fp, "output-format = interactive\n"); break;
+            case Output_Interactive:fprintf(fp, "output-format = interactive\n"); break;
+            case Output_List:       fprintf(fp, "output-format = list\n"); break;
+            case Output_Unicornscan:fprintf(fp, "output-format = unicornscan\n"); break;
+            case Output_XML:        fprintf(fp, "output-format = xml\n"); break;
+            case Output_Binary:     fprintf(fp, "output-format = binary\n"); break;
+            case Output_Grepable:   fprintf(fp, "output-format = grepable\n"); break;
+            case Output_JSON:       fprintf(fp, "output-format = json\n"); break;
+            case Output_NDJSON:     fprintf(fp, "output-format = ndjson\n"); break;
+            case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
+            case Output_None:       fprintf(fp, "output-format = none\n"); break;
+            case Output_Redis:
+                fprintf(fp, "output-format = redis\n");
+                fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
+                        (unsigned char)(masscan->redis.ip>>24),
+                        (unsigned char)(masscan->redis.ip>>16),
+                        (unsigned char)(masscan->redis.ip>> 8),
+                        (unsigned char)(masscan->redis.ip>> 0),
+                        masscan->redis.port);
+                break;
+                
+            default:
+                fprintf(fp, "output-format = unknown(%u)\n", masscan->output.format);
+                break;
+        }
+        return 0;
+    }
+    if (EQUALS("unknown(0)", value))        x = Output_Interactive;
+    else if (EQUALS("interactive", value))  x = Output_Interactive;
+    else if (EQUALS("list", value))         x = Output_List;
+    else if (EQUALS("unicornscan", value))  x = Output_Unicornscan;
+    else if (EQUALS("xml", value))          x = Output_XML;
+    else if (EQUALS("binary", value))       x = Output_Binary;
+    else if (EQUALS("greppable", value))    x = Output_Grepable;
+    else if (EQUALS("grepable", value))     x = Output_Grepable;
+    else if (EQUALS("json", value))         x = Output_JSON;
+    else if (EQUALS("ndjson", value))       x = Output_NDJSON;
+    else if (EQUALS("certs", value))        x = Output_Certs;
+    else if (EQUALS("none", value))         x = Output_None;
+    else if (EQUALS("redis", value))        x = Output_Redis;
+    else {
+        LOG(0, "FAIL: unknown output-format: %s\n", value);
+        LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
+        return CONF_ERR;
+    }
+    masscan->output.format = x;
+
+    return CONF_OK;
+}
+
+static int SET_output_noshow(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->echo_all) {
+            fprintf(masscan->echo, "output-noshow = %s%s%s\n",
+                    (!masscan->output.is_show_open)?"open,":"",
+                    (!masscan->output.is_show_closed)?"closed,":"",
+                    (!masscan->output.is_show_host)?"host,":""
+                    );
+        }
+        return 0;
+    }
+    for (;;) {
+        const char *val2 = value;
+        unsigned val2_len = INDEX_OF(val2, ',');
+        if (val2_len == 0)
+            break;
+        if (EQUALSx("open", val2, val2_len))
+            masscan->output.is_show_open = 0;
+        else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
+            masscan->output.is_show_closed = 0;
+        else if (EQUALSx("open", val2, val2_len))
+            masscan->output.is_show_host = 0;
+        else if (EQUALSx("all",val2,val2_len)) {
+            masscan->output.is_show_open = 0;
+            masscan->output.is_show_host = 0;
+            masscan->output.is_show_closed = 0;
+        }
+        else {
+            LOG(0, "FAIL: unknown 'noshow' spec: %.*s\n", val2_len, val2);
+            exit(1);
+        }
+        value += val2_len;
+        while (*value == ',')
+            value++;
+    }
+    return CONF_OK;
+}
+
+static int SET_output_show(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->echo_all) {
+            fprintf(masscan->echo, "output-show = %s%s%s\n",
+                    masscan->output.is_show_open?"open,":"",
+                    masscan->output.is_show_closed?"closed,":"",
+                    masscan->output.is_show_host?"host,":""
+                    );
+        }
+        return 0;
+    }
+    for (;;) {
+        const char *val2 = value;
+        unsigned val2_len = INDEX_OF(val2, ',');
+        if (val2_len == 0)
+            break;
+        if (EQUALSx("open", val2, val2_len))
+            masscan->output.is_show_open = 1;
+        else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
+            masscan->output.is_show_closed = 1;
+        else if (EQUALSx("open", val2, val2_len))
+            masscan->output.is_show_host = 1;
+        else if (EQUALSx("all",val2,val2_len)) {
+            masscan->output.is_show_open = 1;
+            masscan->output.is_show_host = 1;
+            masscan->output.is_show_closed = 1;
+        }
+        else {
+            LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
+            exit(1);
+        }
+        value += val2_len;
+        while (*value == ',')
+            value++;
+    }
+    return CONF_OK;
+}
+static int SET_output_show_open(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
+    if (masscan->echo) {
+        return 0;
+    }
+    /* "open" "open-only" */
+    masscan->output.is_show_open = 1;
+    masscan->output.is_show_closed = 0;
+    masscan->output.is_show_host = 0;
+    return CONF_OK;
+}
+static int SET_pcap_filename(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->pcap_filename && masscan->pcap_filename[0])
+            fprintf(masscan->echo, "pcap-filename = %s\n", masscan->pcap_filename);
+        return 0;
+    }
+    if (value)
+        strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
+    return CONF_OK;
+}
+
+static int SET_pcap_payloads(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if ((masscan->payloads.pcap_payloads_filename && masscan->payloads.pcap_payloads_filename[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "pcap-payloads = %s\n", masscan->payloads.pcap_payloads_filename);
+        return 0;
+    }
+    
+    if (masscan->payloads.pcap_payloads_filename)
+        free(masscan->payloads.pcap_payloads_filename);
+    masscan->payloads.pcap_payloads_filename = strdup(value);
+    
+    /* file will be loaded in "masscan_load_database_files()" */
+    
+    return CONF_OK;
+}
+
+
+static int SET_randomize_hosts(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
+    if (masscan->echo) {
+        //fprintf(masscan->echo, "randomize-hosts = true\n");
+        return 0;
+    }
+    return CONF_OK;
+}
+
+
+static int SET_rate(struct Masscan *masscan, const char *name, const char *value)
+{
+    double rate = 0.0;
+    double point = 10.0;
+    unsigned i;
+    
+    if (masscan->echo) {
+        fprintf(masscan->echo, "rate = %-10.2f\n", masscan->max_rate);
+        return 0;
+    }
+    
+    for (i=0; value[i] && value[i] != '.'; i++) {
+        char c = value[i];
+        if (c < '0' || '9' < c) {
+            fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n", name, value);
+            return CONF_ERR;
+        }
+        rate = rate * 10.0 + (c - '0');
+    }
+    
+    if (value[i] == '.') {
+        i++;
+        while (value[i]) {
+            char c = value[i];
+            if (c < '0' || '9' < c) {
+                fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n",
+                        name, value);
+                return CONF_ERR;
+            }
+            rate += (c - '0')/point;
+            point /= 10.0;
+            value++;
+        }
+    }
+    
+    masscan->max_rate = rate;
+    return CONF_OK;
+}
+
+static int SET_resume_count(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->resume.count || masscan->echo_all) {
+            fprintf(masscan->echo, "resume-count = %" PRIu64 "\n", masscan->resume.count);
+        }
+        return 0;
+    }
+    masscan->resume.count = parseInt(value);
+    return CONF_OK;
+}
+
+static int SET_resume_index(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->resume.index  || masscan->echo_all) {
+            fprintf(masscan->echo, "\n# resume information\n");
+            fprintf(masscan->echo, "resume-index = %" PRIu64 "\n", masscan->resume.index);
+        }
+        return 0;
+    }
+    masscan->resume.index = parseInt(value);
+    return CONF_OK;
+}
+
+static int SET_retries(struct Masscan *masscan, const char *name, const char *value)
+{
+    uint64_t x;
+    
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->retries || masscan->echo_all)
+            fprintf(masscan->echo, "retries = %u\n", masscan->retries);
+        return 0;
+    }
+    x = strtoul(value, 0, 0);
+    if (x >= 1000) {
+        fprintf(stderr, "FAIL: retries=<n>: expected number less than 1000\n");
+        return CONF_ERR;
+    }
+    masscan->retries = (unsigned)x;
+    return CONF_OK;
+    
+}
+
+static int SET_rotate_time(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->output.rotate.timeout || masscan->echo_all)
+            fprintf(masscan->echo, "rotate = %u\n", masscan->output.rotate.timeout);
+        return 0;
+    }
+    masscan->output.rotate.timeout = (unsigned)parseTime(value);
+    return CONF_OK;
+}
+static int SET_rotate_directory(struct Masscan *masscan, const char *name, const char *value)
+{
+    char *p;
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (memcmp(masscan->output.rotate.directory, ".",2) != 0 || masscan->echo_all) {
+            fprintf(masscan->echo, "rotate-dir = %s\n", masscan->output.rotate.directory);
+        }
+        return 0;
+    }
+    strcpy_s(   masscan->output.rotate.directory,
+             sizeof(masscan->output.rotate.directory),
+             value);
+    /* strip trailing slashes */
+    p = masscan->output.rotate.directory;
+    while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
+        p[strlen(p)-1] = '\0';
+    return CONF_OK;
+}
+static int SET_rotate_offset(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    /* Time offset, otherwise output files are aligned to nearest time
+     * interval, e.g. at the start of the hour for "hourly" */
+    if (masscan->echo) {
+        if (masscan->output.rotate.offset || masscan->echo_all)
+            fprintf(masscan->echo, "rotate-offset = %u\n", masscan->output.rotate.offset);
+        return 0;
+    }
+    masscan->output.rotate.offset = (unsigned)parseTime(value);
+    return CONF_OK;
+}
+static int SET_rotate_filesize(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->output.rotate.filesize || masscan->echo_all)
+            fprintf(masscan->echo, "rotate-size = %" PRIu64 "\n", masscan->output.rotate.filesize);
+        return 0;
+    }
+    masscan->output.rotate.filesize = parseSize(value);
+    return CONF_OK;
+    
+}
+
+static int SET_script(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if ((masscan->scripting.name && masscan->scripting.name[0]) || masscan->echo_all)
+            fprintf(masscan->echo, "script = %s\n", masscan->scripting.name);
+        return 0;
+    }
+    if (value && value[0])
+        masscan->is_scripting = 1;
+    else
+        masscan->is_scripting = 0;
+    
+    if (masscan->scripting.name)
+        free(masscan->scripting.name);
+    
+    masscan->scripting.name = strdup(value);
+    
+    return CONF_OK;
+}
+
+
+static int SET_seed(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        fprintf(masscan->echo, "seed = %" PRIu64 "\n", masscan->seed);
+        return 0;
+    }
+    if (EQUALS("time", value))
+        masscan->seed = time(0);
+    else
+        masscan->seed = parseInt(value);
+    return CONF_OK;
+}
+
+static int SET_space(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    UNUSEDPARM(value);
+    if (masscan->echo) {
+        fprintf(masscan->echo, "\n");
+        return 0;
+    }
+    return CONF_OK;
+}
+
+static int SET_shard(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned one = 0;
+    unsigned of = 0;
+
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if ((masscan->shard.one != 1 && masscan->shard.of != 1)  || masscan->echo_all)
+            fprintf(masscan->echo, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
+        return 0;
+    }
+    while (isdigit(*value))
+        one = one*10 + (*(value++)) - '0';
+    while (ispunct(*value))
+        value++;
+    while (isdigit(*value))
+        of = of*10 + (*(value++)) - '0';
+    
+    if (one < 1) {
+        LOG(0, "FAIL: shard index can't be zero\n");
+        LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
+        return CONF_ERR;
+    }
+    if (one > of) {
+        LOG(0, "FAIL: shard spec is wrong\n");
+        LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
+        return CONF_ERR;
+    }
+    masscan->shard.one = one;
+    masscan->shard.of = of;
+    return CONF_OK;
+}
+
+static int SET_output_stylesheet(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->output.stylesheet[0] || masscan->echo_all)
+            fprintf(masscan->echo, "stylesheet = %s\n", masscan->output.stylesheet);
+        return 0;
+    }
+    
+    if (masscan->output.format == 0)
+        masscan->output.format = Output_XML;
+    
+    strcpy_s(masscan->output.stylesheet, sizeof(masscan->output.stylesheet), value);
+    return CONF_OK;
+}
+
+
+
+struct ConfigParameter {
+    const char *name;
+    SET_PARAMETER set;
+    unsigned flags;
+    const char *alts[6];
+};
+enum {F_NONE, F_BOOL};
+struct ConfigParameter config_parameters[] = {
+    {"resume-index",    SET_resume_index},
+    {"resume-count",    SET_resume_count},
+    {"seed",            SET_seed},
+    {"arpscan",         SET_arpscan,            F_BOOL, {"arp",0}},
+    {"randomize-hosts", SET_randomize_hosts,    F_BOOL},
+    {"rate",            SET_rate,               0, {"max-rate",0}},
+    {"shard",           SET_shard,              0, {"shards",0}},
+    {"banners",         SET_banners,            F_BOOL, {"banner",0}},
+    {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
+    {"retries",         SET_retries,            0, {"retry", "max-retries", "max-retry", 0}},
+    {"noreset",         SET_noreset,            F_BOOL},
+    {"nmap-payloads",   SET_nmap_payloads,      0, {"nmap-payload",0}},
+    {"nmap-service-probes",SET_nmap_service_probes, 0, {"nmap-service-probe",0}},
+    {"pcap-filename",   SET_pcap_filename,      0, {"pcap",0}},
+    {"pcap-payloads",   SET_pcap_payloads,      0, {"pcap-payload",0}},
+    {"hello",           SET_hello},
+    {"hello-file",      SET_hello_file,         0, {"hello-filename",0}},
+    {"hello-string",    SET_hello_string},
+    {"hello-timeout",   SET_hello_timeout},
+    {"min-packet",      SET_min_packet,         0, {"min-pkt",0}},
+    {"capture",         SET_capture},
+    {"SPACE",           SET_space},
+    {"output-filename", SET_output_filename,    0, {"output-file",0}},
+    {"output-format",   SET_output_format},
+    {"output-show",     SET_output_show,        0, {"output-status", "show",0}},
+    {"output-noshow",   SET_output_noshow,      0, {"noshow",0}},
+    {"output-show-open",SET_output_show_open,   F_BOOL, {"open", "open-only", 0}},
+    {"output-append",   SET_output_append,      0, {"append-output",0}},
+    {"rotate",          SET_rotate_time,        0, {"output-rotate", "rotate-output", "rotate-time", 0}},
+    {"rotate-dir",      SET_rotate_directory,   0, {"output-rotate-dir", "rotate-directory", 0}},
+    {"rotate-offset",   SET_rotate_offset,      0, {"output-rotate-offset", 0}},
+    {"rotate-size",     SET_rotate_filesize,    0, {"output-rotate-filesize", "rotate-filesize", 0}},
+    {"stylesheet",      SET_output_stylesheet},
+    {"script",          SET_script},
+    {"SPACE",           SET_space},
+    {0}
+};
+
 /***************************************************************************
  * Called either from the "command-line" parser when it sees a --parm,
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
-static void
+void
 masscan_set_parameter(struct Masscan *masscan,
                       const char *name, const char *value)
 {
@@ -836,7 +1636,36 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "%s: bad index\n", name);
         exit(1);
     }
+    
+    /*
+     * NEW:
+     * Go through configured list of parameters
+     */
+    {
+        size_t i;
+        
+        for (i=0; config_parameters[i].name; i++) {
+            if (EQUALS(config_parameters[i].name, name)) {
+                config_parameters[i].set(masscan, name, value);
+                return;
+            } else {
+                size_t j;
+                for (j=0; config_parameters[i].alts[j]; j++) {
+                    if (EQUALS(config_parameters[i].alts[j], name)) {
+                        config_parameters[i].set(masscan, name, value);
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
+    /*
+     * OLD:
+     * Configure the old parameters, the ones we don't have in the new config
+     * system yet (see the NEW part above).
+     * TODO: transition all these old params to the new system
+     */
     if (EQUALS("conf", name) || EQUALS("config", name)) {
         masscan_read_config_file(masscan, value);
     } else if (EQUALS("adapter", name) || EQUALS("if", name) || EQUALS("interface", name)) {
@@ -877,7 +1706,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         masscan->nic[index].src.ip.first = range.begin;
         masscan->nic[index].src.ip.last = range.end;
-        masscan->nic[index].src.ip.range = (uint64_t)range.end - range.begin + 1;
+        masscan->nic[index].src.ip.range = range.end - range.begin + 1;
     } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)
                || EQUALS("src-port", name)) {
         /* Send packets FROM this port number */
@@ -885,7 +1714,7 @@ masscan_set_parameter(struct Masscan *masscan,
         struct RangeList ports;
         memset(&ports, 0, sizeof(ports));
 
-        rangelist_parse_ports(&ports, value, &is_error);
+        rangelist_parse_ports(&ports, value, &is_error, 0);
 
         /* Check if there was an error in parsing */
         if (is_error) {
@@ -896,8 +1725,8 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Only allow one range of ports */
         if (ports.count != 1) {
-            LOG(0, "FAIL: only one source port range may be specified: %s\n",
-                    name);
+            LOG(0, "FAIL: only one '%s' range may be specified, found %u ranges\n",
+                    name, ports.count);
             exit(1);
         }
 
@@ -961,44 +1790,29 @@ masscan_set_parameter(struct Masscan *masscan,
 
         masscan->nic[index].router_ip = range.begin;
     }
-    else if (EQUALS("rate", name) || EQUALS("max-rate", name) ) {
-        double rate = 0.0;
-        double point = 10.0;
-        unsigned i;
-
-        for (i=0; value[i] && value[i] != '.'; i++) {
-            char c = value[i];
-            if (c < '0' || '9' < c) {
-                fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n", name, value);
-                return;
-            }
-            rate = rate * 10.0 + (c - '0');
-        }
-
-        if (value[i] == '.') {
-            i++;
-            while (value[i]) {
-                char c = value[i];
-                if (c < '0' || '9' < c) {
-                    fprintf(stderr, "CONF: non-digit in rate spec: %s=%s\n",
-                            name, value);
-                    return;
-                }
-                rate += (c - '0')/point;
-                point /= 10.0;
-                value++;
-            }
-        }
-
-        masscan->max_rate = rate;
-
+    else if (EQUALS("udp-ports", name) || EQUALS("udp-port", name)) {
+        unsigned is_error = 0;
+        masscan->scan_type.udp = 1;
+        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
+    }
+    else if (EQUALS("tcp-ports", name) || EQUALS("tcp-port", name)) {
+        unsigned is_error = 0;
+        masscan->scan_type.tcp = 1;
+        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_TCP);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     }
     else if (EQUALS("ports", name) || EQUALS("port", name)
              || EQUALS("dst-port", name) || EQUALS("dest-port", name)
              || EQUALS("destination-port", name)
              || EQUALS("target-port", name)) {
         unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->ports, value, &is_error);
+        if (masscan->scan_type.udp)
+            rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+        else
+            rangelist_parse_ports(&masscan->ports, value, &is_error, 0);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
@@ -1016,57 +1830,26 @@ masscan_set_parameter(struct Masscan *masscan,
             fprintf(stderr, "err\n");
             exit(1);
         }
-    }
-    else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
+    } else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->exclude_port, value, &is_error);
+        rangelist_parse_ports(&masscan->exclude_port, value, &is_error, 0);
         if (is_error) {
             LOG(0, "FAIL: bad exclude port: %s\n", value);
             exit(1);
         }
-    } else if (EQUALS("arp", name) || EQUALS("arpscan", name)) {
-        /* Add ICMP ping request */
-        struct Range range;
-        range.begin = Templ_ARP;
-        range.end = Templ_ARP;
-        rangelist_add_range(&masscan->ports, range.begin, range.end);
-        masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
-        masscan->is_arp = 1; /* needs additional flag */
-        LOG(5, "--arpscan\n");
     } else if (EQUALS("bpf", name)) {
         size_t len = strlen(value) + 1;
         if (masscan->bpf_filter)
             free(masscan->bpf_filter);
         masscan->bpf_filter = (char*)malloc(len);
         memcpy(masscan->bpf_filter, value, len);
-    } else if (EQUALS("capture", name)) {
-        if (EQUALS("cert", value))
-            masscan->is_capture_cert = 1;
-        else if (EQUALS("html", value))
-            masscan->is_capture_html = 1;
-        else if (EQUALS("heartbleed", value))
-            masscan->is_capture_heartbleed = 1;
-        else {
-            fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
-            exit(1);
-        }
-    } else if (EQUALS("nocapture", name)) {
-        if (EQUALS("cert", value))
-            masscan->is_capture_cert = 0;
-        else if (EQUALS("html", value))
-            masscan->is_capture_html = 0;
-        else if (EQUALS("heartbleed", value))
-            masscan->is_capture_heartbleed = 0;
-        else {
-            fprintf(stderr, "FAIL: %s: unknown capture type\n", value);
-            exit(1);
-        }
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
         struct Range range;
         range.begin = Templ_ICMP_echo;
         range.end = Templ_ICMP_echo;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
+        masscan->scan_type.ping = 1;
         LOG(5, "--ping\n");
     } else if (EQUALS("range", name) || EQUALS("ranges", name)
                || EQUALS("ip", name) || EQUALS("ipv4", name)
@@ -1125,31 +1908,20 @@ masscan_set_parameter(struct Masscan *masscan,
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
-    } else if (EQUALS("append-output", name) || EQUALS("output-append", name)) {
-        if (EQUALS("overwrite", name))
-            masscan->output.is_append = 0;
-        else
-            masscan->output.is_append = 1;
     } else if (EQUALS("badsum", name)) {
         masscan->nmap.badsum = 1;
     } else if (EQUALS("banner1", name)) {
         banner1_test(value);
         exit(1);
-    } else if (EQUALS("banners", name) || EQUALS("banner", name)) {
-        masscan->is_banners = 1;
-    } else if (EQUALS("nobanners", name) || EQUALS("nobanner", name)) {
-        masscan->is_banners = 0;
     } else if (EQUALS("blackrock-rounds", name)) {
         masscan->blackrock_rounds = (unsigned)parseInt(value);
     } else if (EQUALS("connection-timeout", name) || EQUALS("tcp-timeout", name)) {
-        /* The timeout for "banners" TCP connections */
+        /* The timeout for banners TCP connections */
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
-    } else if (EQUALS("hello-timeout", name)) {
-        masscan->tcp_hello_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
         strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
-        unsigned x = strtoul(value, 0, 0);
+        unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 1514 - 14 - 40) {
             fprintf(stderr, "error: %s=<n>: expected number less than 1500\n", name);
         } else {
@@ -1163,8 +1935,8 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): unsupported: DNS lookups too synchronous\n",
                 name);
         exit(1);
-    } else if (EQUALS("echo", name)) {
-        masscan_echo(masscan, stdout);
+    } else if (EQUALS("echo", name) || EQUALS("echo-all", name)) {
+        masscan_echo(masscan, stdout, EQUALS("echo-all", name));
         exit(0);
     } else if (EQUALS("excludefile", name)) {
         unsigned count1 = masscan->exclude_ip.count;
@@ -1180,51 +1952,11 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan_set_parameter(masscan, "no-capture", "cert");
         masscan_set_parameter(masscan, "no-capture", "heartbleed");
         masscan_set_parameter(masscan, "banners", "true");
-    } else if (EQUALS("hello-file", name)) {
-        /* When connecting via TCP, send this file */
-        FILE *fp;
-        int x;
-        char buf[16384];
-        char buf2[16384];
-        size_t bytes_read;
-        size_t bytes_encoded;
-        char foo[64];
-
-        x = fopen_s(&fp, value, "rb");
-        if (x != 0) {
-            LOG(0, "[FAILED] could not read hello file\n");
-            perror(value);
-            exit(1);
-        }
-
-        bytes_read = fread(buf, 1, sizeof(buf), fp);
-        if (bytes_read == 0) {
-            LOG(0, "[FAILED] could not read hello file\n");
-            perror(value);
-            fclose(fp);
-            exit(1);
-        }
-        fclose(fp);
-
-        bytes_encoded = base64_encode(buf2, sizeof(buf2)-1, buf, bytes_read);
-        buf2[bytes_encoded] = '\0';
-
-        sprintf_s(foo, sizeof(foo), "hello-string[%u]", (unsigned)index);
-
-        masscan_set_parameter(masscan, foo, buf2);
-    } else if (EQUALS("hello-string", name)) {
-        char *value2;
-        struct TcpCfgPayloads *pay;
-
-        value2 = (char*)malloc(strlen(value)+1);
-        memcpy(value2, value, strlen(value)+1);
-
-        pay = (struct TcpCfgPayloads *)malloc(sizeof(*pay));
-        
-        pay->payload_base64 = value2;
-        pay->port = index;
-        pay->next = masscan->tcp_payloads;
-        masscan->tcp_payloads = pay;
+    } else if (EQUALS("ticketbleed", name)) {
+        masscan->is_ticketbleed = 1;
+        masscan_set_parameter(masscan, "no-capture", "cert");
+        masscan_set_parameter(masscan, "no-capture", "ticketbleed");
+        masscan_set_parameter(masscan, "banners", "true");
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
@@ -1274,24 +2006,24 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
         ranges_from_file(&masscan->targets, value);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     } else if (EQUALS("infinite", name)) {
         masscan->is_infinite = 1;
     } else if (EQUALS("interactive", name)) {
         masscan->output.is_interactive = 1;
     } else if (EQUALS("nointeractive", name)) {
         masscan->output.is_interactive = 0;
+    } else if (EQUALS("status", name)) {
+        masscan->output.is_status_updates = 1;
+    } else if (EQUALS("nostatus", name)) {
+        masscan->output.is_status_updates = 0;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
     } else if (EQUALS("log-errors", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
-    } else if (EQUALS("min-packet", name) || EQUALS("min-pkt", name)) {
-        masscan->min_packet_size = (unsigned)parseInt(value);
-    } else if (EQUALS("max-retries", name)) {
-        masscan_set_parameter(masscan, "retries", value);
-    } else if (EQUALS("max-rate", name)) {
-        masscan_set_parameter(masscan, "rate", value);
     } else if (EQUALS("min-hostgroup", name) || EQUALS("max-hostgroup", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we randomize all the groups!\n", name);
         exit(1);
@@ -1310,106 +2042,16 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
-    } else if (EQUALS("pcap-payloads", name) || EQUALS("pcap-payload", name)) {
-        if (masscan->payloads == NULL)
-            masscan->payloads = payloads_create();
-        payloads_read_pcap(value, masscan->payloads);
-    } else if (EQUALS("nmap-payloads", name) || EQUALS("nmap-payload", name)) {
-        FILE *fp;
-        int err;
-        err = fopen_s(&fp, value, "rt");
-        if (err || fp == NULL) {
-            perror(value);
-        } else {
-            if (masscan->payloads == NULL)
-                masscan->payloads = payloads_create();
-            payloads_read_file(fp, value, masscan->payloads);
-            fclose(fp);
-        }
     } else if (EQUALS("offline", name)) {
         /* Run in "offline" mode where it thinks it's sending packets, but
          * it's not */
         masscan->is_offline = 1;
-    } else if (EQUALS("open", name) || EQUALS("open-only", name)) {
-        masscan->output.is_show_open = 1;
-        masscan->output.is_show_closed = 0;
-        masscan->output.is_show_host = 0;
-    } else if (EQUALS("output-status", name) || EQUALS("show", name)) {
-        for (;;) {
-            const char *val2 = value;
-            unsigned val2_len = INDEX_OF(val2, ',');
-            if (val2_len == 0)
-                break;
-            if (EQUALSx("open", val2, val2_len))
-                masscan->output.is_show_open = 1;
-            else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
-                masscan->output.is_show_closed = 1;
-            else if (EQUALSx("open", val2, val2_len))
-                masscan->output.is_show_host = 1;
-            else {
-                LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
-                exit(1);
-            }
-            value += val2_len;
-            while (*value == ',')
-                value++;
-        }
-    } else if (EQUALS("noshow", name)) {
-        for (;;) {
-            const char *val2 = value;
-            unsigned val2_len = INDEX_OF(val2, ',');
-            if (val2_len == 0)
-                break;
-            if (EQUALSx("open", val2, val2_len))
-                masscan->output.is_show_open = 0;
-            else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
-                masscan->output.is_show_closed = 0;
-            else if (EQUALSx("open", val2, val2_len))
-                masscan->output.is_show_host = 0;
-            else {
-                LOG(0, "FAIL: unknown 'show' spec: %.*s\n", val2_len, val2);
-                exit(1);
-            }
-            value += val2_len;
-            while (*value == ',')
-                value++;
-        }
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
     } else if (EQUALS("osscan-guess", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
-    } else if (EQUALS("output-format", name)) {
-        enum OutputFormat x = 0;
-        if (EQUALS("unknown(0)", value)) {
-            x = Output_Interactive;
-        }
-        else if (EQUALS("interactive", value))  x = Output_Interactive;
-        else if (EQUALS("list", value))         x = Output_List;
-        else if (EQUALS("unicornscan", value))  x = Output_Unicornscan;
-        else if (EQUALS("xml", value))          x = Output_XML;
-        else if (EQUALS("binary", value))       x = Output_Binary;
-        else if (EQUALS("greppable", value))    x = Output_Grepable;
-        else if (EQUALS("grepable", value))     x = Output_Grepable;
-        else if (EQUALS("json", value))         x = Output_JSON;
-        else if (EQUALS("certs", value))        x = Output_Certs;
-        else if (EQUALS("none", value))         x = Output_None;
-        else if (EQUALS("redis", value))        x = Output_Redis;
-        else {
-            LOG(0, "FAIL: unknown output-format: %s\n", value);
-            LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
-            exit(1);
-        }
-        masscan->output.format = x;
-    } else if (EQUALS("output-filename", name) || EQUALS("output-file", name)) {
-        if (masscan->output.format == 0)
-            masscan->output.format = Output_XML;
-        strcpy_s(masscan->output.filename,
-                 sizeof(masscan->output.filename), 
-                 value);
-    } else if (EQUALS("pcap", name)) {
-        strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
     } else if (EQUALS("packet-trace", name) || EQUALS("trace-packet", name)) {
         masscan->nmap.packet_trace = 1;
     } else if (EQUALS("privileged", name) || EQUALS("unprivileged", name)) {
@@ -1420,9 +2062,6 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("port-ratio", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
-    } else if (EQUALS("randomize-hosts", name)) {
-        /* already do that */
-        ;
     } else if (EQUALS("readrange", name) || EQUALS("readranges", name)) {
         masscan->op = Operation_ReadRange;
     } else if (EQUALS("reason", name)) {
@@ -1441,8 +2080,8 @@ masscan_set_parameter(struct Masscan *masscan,
         if (offset < max_offset) {
             while (offset < max_offset && isspace(value[offset]))
                 offset++;
-            if (offset+1 < max_offset && value[offset] == ';' && isdigit(value[offset+1]&0xFF)) {
-                port = strtoul(value+offset+1, 0, 0);
+            if (offset+1 < max_offset && value[offset] == ':' && isdigit(value[offset+1]&0xFF)) {
+                port = (unsigned)strtoul(value+offset+1, 0, 0);
                 if (port > 65535 || port == 0) {
                     LOG(0, "FAIL: bad redis port: %s\n", value+offset+1);
                     exit(1);
@@ -1461,37 +2100,12 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("resume", name)) {
         masscan_read_config_file(masscan, value);
         masscan_set_parameter(masscan, "output-append", "true");
-    } else if (EQUALS("resume-index", name)) {
-        masscan->resume.index = parseInt(value);
-    } else if (EQUALS("resume-count", name)) {
-        masscan->resume.count = parseInt(value);
-    } else if (EQUALS("retries", name) || EQUALS("retry", name)) {
-        unsigned x = strtoul(value, 0, 0);
-        if (x >= 1000) {
-            fprintf(stderr, "error: retries=<n>: expected number less than 1000\n");
-        } else {
-            masscan->retries = x;
-        }
-    } else if (EQUALS("rotate-output", name) || EQUALS("rotate", name) 
-        || EQUALS("ouput-rotate", name) || EQUALS("rotate-time", name) ) {
-        masscan->output.rotate.timeout = (unsigned)parseTime(value);
-    } else if (EQUALS("rotate-offset", name) || EQUALS("ouput-rotate-offset", name)) {
-        masscan->output.rotate.offset = (unsigned)parseTime(value);
-    } else if (EQUALS("rotate-size", name) || EQUALS("rotate-filesize", name)) {
-        masscan->output.rotate.filesize = parseSize(value);
-    } else if (EQUALS("rotate-dir", name) || EQUALS("rotate-directory", name) || EQUALS("ouput-rotate-dir", name)) {
-        char *p;
-        strcpy_s(   masscan->output.rotate.directory,
-                    sizeof(masscan->output.rotate.directory),
-                    value);
-
-        /* strip trailing slashes */
-        p = masscan->output.rotate.directory;
-        while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
-            p[strlen(p)-1] = '\0';
-    } else if (EQUALS("script", name)) {
+    } else if (EQUALS("vuln", name)) {
         if (EQUALS("heartbleed", value)) {
             masscan_set_parameter(masscan, "heartbleed", "true");
+            return;
+		} else if (EQUALS("ticketbleed", value)) {
+            masscan_set_parameter(masscan, "ticketbleed", "true");
             return;
         } else if (EQUALS("poodle", value) || EQUALS("sslv3", value)) {
             masscan->is_poodle_sslv3 = 1;
@@ -1500,35 +2114,29 @@ masscan_set_parameter(struct Masscan *masscan,
             return;
         }
         
-        if (!script_lookup(value)) {
-            fprintf(stderr, "FAIL: script '%s' does not exist\n", value);
-            fprintf(stderr, "  hint: most nmap scripts aren't supported\n");
-            fprintf(stderr, "  hint: use '--script list' to list available scripts\n");
+        if (!vulncheck_lookup(value)) {
+            fprintf(stderr, "FAIL: vuln check '%s' does not exist\n", value);
+            fprintf(stderr, "  hint: use '--vuln list' to list available scripts\n");
             exit(1);
         }
-        if (masscan->script.name != NULL) {
-            if (strcmp(masscan->script.name, value) == 0)
+        if (masscan->vuln_name != NULL) {
+            if (strcmp(masscan->vuln_name, value) == 0)
                 return; /* ok */
             else {
-                fprintf(stderr, "FAIL: only one script supported at a time\n");
-                fprintf(stderr, "  hint: '%s' is existing script, '%s' is new script\n",
-                        masscan->script.name, value);
+                fprintf(stderr, "FAIL: only one vuln check supported at a time\n");
+                fprintf(stderr, "  hint: '%s' is existing vuln check, '%s' is new vuln check\n",
+                        masscan->vuln_name, value);
                 exit(1);
             }
         }
         
-        masscan->script.name = script_lookup(value)->name;
+        masscan->vuln_name = vulncheck_lookup(value)->name;
     } else if (EQUALS("scan-delay", name) || EQUALS("max-scan-delay", name)) {
         fprintf(stderr, "nmap(%s): unsupported: we do timing VASTLY differently!\n", name);
         exit(1);
     } else if (EQUALS("scanflags", name)) {
         fprintf(stderr, "nmap(%s): TCP scan flags not yet supported\n", name);
         exit(1);
-    } else if (EQUALS("seed", name)) {
-        if (EQUALS("time", value))
-            masscan->seed = time(0);
-        else
-            masscan->seed = parseInt(value);
     } else if (EQUALS("sendq", name) || EQUALS("sendqueue", name)) {
         masscan->is_sendq = 1;
     } else if (EQUALS("send-eth", name)) {
@@ -1544,43 +2152,19 @@ masscan_set_parameter(struct Masscan *masscan,
         return;
     } else if (EQUALS("source-port", name) || EQUALS("sourceport", name)) {
         masscan_set_parameter(masscan, "adapter-port", value);
-    } else if (EQUALS("shard", name) || EQUALS("shards", name)) {
-        unsigned one = 0;
-        unsigned of = 0;
-
-        while (isdigit(*value))
-            one = one*10 + (*(value++)) - '0';
-        while (ispunct(*value))
-            value++;
-        while (isdigit(*value))
-            of = of*10 + (*(value++)) - '0';
-
-        if (one < 1) {
-            LOG(0, "FAIL: shard index can't be zero\n");
-            LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
-            exit(1);
-        }
-        if (one > of) {
-            LOG(0, "FAIL: shard spec is wrong\n");
-            LOG(0, "hint   it goes like 1/4 2/4 3/4 4/4\n");
-            exit(1);
-        }
-
-        masscan->shard.one = one;
-        masscan->shard.of = of;
-
+    } else if (EQUALS("nobacktrace", name) || EQUALS("backtrace", name)) {
+        ;
     } else if (EQUALS("no-stylesheet", name)) {
         masscan->output.stylesheet[0] = '\0';
-    } else if (EQUALS("stylesheet", name)) {
-        strcpy_s(masscan->output.stylesheet, 
-                 sizeof(masscan->output.stylesheet), 
-                 value);
     } else if (EQUALS("system-dns", name)) {
         fprintf(stderr, "nmap(%s): DNS lookups will never be supported by this code\n", name);
         exit(1);
     } else if (EQUALS("top-ports", name)) {
-        fprintf(stderr, "nmap(%s): unsupported\n", name);
-        exit(1);
+        unsigned n = (unsigned)parseInt(value);
+        if (!isInteger(value))
+            n = 100;
+        LOG(2, "top-ports = %u\n", n);
+        masscan->top_ports = n;
     } else if (EQUALS("traceroute", name)) {
         fprintf(stderr, "nmap(%s): unsupported\n", name);
         exit(1);
@@ -1591,7 +2175,7 @@ masscan_set_parameter(struct Masscan *masscan,
         if (EQUALS("csv", value))
             masscan->is_test_csv = 0;
     } else if (EQUALS("ttl", name)) {
-        unsigned x = strtoul(value, 0, 0);
+        unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 256) {
             fprintf(stderr, "error: %s=<n>: expected number less than 256\n", name);
         } else {
@@ -1624,6 +2208,7 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan_set_parameter(masscan, "stylesheet", "http://nmap.org/svn/docs/nmap.xsl");
     } else {
         fprintf(stderr, "CONF: unknown config option: %s=%s\n", name, value);
+        exit(1);
     }
 }
 
@@ -1635,7 +2220,7 @@ static int
 is_singleton(const char *name)
 {
     static const char *singletons[] = {
-        "echo", "selftest", "self-test", "regress",
+        "echo", "echo-all", "selftest", "self-test", "regress",
         "benchmark",
         "system-dns", "traceroute", "version",
         "version-light",
@@ -1643,13 +2228,12 @@ is_singleton(const char *name)
         "osscan-limit", "osscan-guess",
         "badsum", "reason", "open", "open-only",
         "packet-trace", "release-memory",
-        "log-errors", "append-output", "webxml", "no-stylesheet",
-        "no-stylesheet", "heartbleed",
-        "send-eth", "send-ip", "iflist", "randomize-hosts",
+        "log-errors", "append-output", "webxml",
+        "no-stylesheet", "heartbleed", "ticketbleed",
+        "send-eth", "send-ip", "iflist",
         "nmap", "trace-packet", "pfring", "sendq",
-        "banners", "banner", "nobanners", "nobanner",
-        "offline", "ping", "ping-sweep",
-        "arp",  "infinite", "interactive",
+        "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
+        "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
     size_t i;
@@ -1658,6 +2242,20 @@ is_singleton(const char *name)
         if (EQUALS(singletons[i], name))
             return 1;
     }
+    
+    for (i=0; config_parameters[i].name; i++) {
+        if (EQUALS(config_parameters[i].name, name)) {
+            return (config_parameters[i].flags & F_BOOL) == F_BOOL;
+        } else {
+            size_t j;
+            for (j=0; config_parameters[i].alts[j]; j++) {
+                if (EQUALS(config_parameters[i].alts[j], name)) {
+                    return (config_parameters[i].flags & F_BOOL) == F_BOOL;
+                }
+            }
+        }
+    }
+    
     return 0;
 }
 
@@ -1697,6 +2295,58 @@ masscan_help()
 }
 
 /***************************************************************************
+ ***************************************************************************/
+void
+masscan_load_database_files(struct Masscan *masscan)
+{
+    const char *filename;
+    
+    /*
+     * "pcap-payloads"
+     */
+    filename = masscan->payloads.pcap_payloads_filename;
+    if (filename) {
+        if (masscan->payloads.udp == NULL)
+            masscan->payloads.udp = payloads_udp_create();
+    
+        payloads_read_pcap(filename, masscan->payloads.udp);
+    }
+
+    /*
+     * "nmap-payloads"
+     */
+    filename = masscan->payloads.nmap_payloads_filename;
+    if (filename) {
+        FILE *fp;
+        int err;
+        
+        
+        err = fopen_s(&fp, filename, "rt");
+        if (err || fp == NULL) {
+            perror(filename);
+        } else {
+            if (masscan->payloads.udp == NULL)
+                masscan->payloads.udp = payloads_udp_create();
+            
+            payloads_udp_readfile(fp, filename, masscan->payloads.udp);
+            
+            fclose(fp);
+        }
+    }
+    
+    /*
+     * "nmap-service-probes"
+     */
+    filename = masscan->payloads.nmap_service_probes_filename;
+    if (filename) {
+        if (masscan->payloads.probes)
+            nmapserviceprobes_free(masscan->payloads.probes);
+        
+        masscan->payloads.probes = nmapserviceprobes_read_file(filename);
+    }
+}
+
+/***************************************************************************
  * Read the configuration from the command-line.
  * Called by 'main()' when starting up.
  ***************************************************************************/
@@ -1715,6 +2365,21 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
         if (argv[i][0] == '-' && argv[i][1] == '-') {
             if (strcmp(argv[i], "--help") == 0) {
                 masscan_help();
+            } else if (EQUALS("top-ports", argv[i]+2)) {
+                /* special handling here since the following parameter
+                 * is optional */
+                const char *value = "1000";
+                unsigned n;
+                
+                /* Only consume the next parameter if it's a number,
+                 * otherwise default to 10000 */
+                if (i+1 < argc && isInteger(argv[i+1])) {
+                    value = argv[++i];
+                }
+                n = (unsigned)parseInt(value);
+                LOG(2, "top-ports = %u\n", n);
+                masscan->top_ports = n;
+               
             } else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;
@@ -1859,6 +2524,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 case 'B':
                     masscan->output.format = Output_Binary;
                     break;
+                case 'D':
+                    masscan->output.format = Output_NDJSON;
+                    break;
                 case 'J':
                     masscan->output.format = Output_JSON;
                     break;
@@ -1911,7 +2579,10 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     arg = argv[i]+2;
                 else
                     arg = argv[++i];
-                masscan_set_parameter(masscan, "ports", arg);
+                if (i >= argc || arg[0] == 0) { // if string is empty
+                    fprintf(stderr, "%s: empty parameter\n", argv[i]);
+                } else
+                    masscan_set_parameter(masscan, "ports", arg);
                 break;
             case 'P':
                 switch (argv[i][2]) {
@@ -1967,12 +2638,14 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                         fprintf(stderr, "nmap(%s): IP proto scan not yet supported\n", argv[i]);
                         exit(1);
                     case 'S': /* TCP SYN scan - THIS IS WHAT WE DO! */
+                        masscan->scan_type.tcp = 1;
                         break;
                     case 'T': /* TCP connect scan */
                         fprintf(stderr, "nmap(%s): connect() is too synchronous for cool kids\n", argv[i]);
-                        fprintf(stderr, "WARNING: doing SYN scan anyway\n");
+                        fprintf(stderr, "WARNING: doing SYN scan (-sS) anyway, ignoring (-sT)\n");
                         break;
                     case 'U': /* UDP scan */
+                        masscan->scan_type.udp = 1;
                         break;
                     case 'V':
                         fprintf(stderr, "nmap(%s): unlikely this will be supported\n", argv[i]);
@@ -1986,8 +2659,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     case 'Y':
                         break;
                     case 'Z':
-                        fprintf(stderr, "nmap(%s): SCTP scan not yet supported\n", argv[i]);
-                        exit(1);
+                        masscan->scan_type.sctp = 1;
+                        break;
                     default:
                         fprintf(stderr, "nmap(%s): unsupported option\n", argv[i]);
                         exit(1);
@@ -2042,7 +2715,149 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          */
         masscan_set_parameter(masscan, "range", argv[i]);
     }
+    
+    /*
+     * If no other "scan type" found, then default to TCP
+     */
+    if (masscan->scan_type.udp == 0 && masscan->scan_type.sctp == 0
+        && masscan->scan_type.ping == 0 && masscan->scan_type.arp == 0)
+        masscan->scan_type.tcp = 1;
+    
+    /*
+     * If "top-ports" specified, then add all those ports. This may be in
+     * addition to any other ports
+     */
+    if (masscan->top_ports) {
+        config_top_ports(masscan, masscan->top_ports);
+    }
 }
+
+/***************************************************************************
+ * Prints the current configuration to the command-line then exits.
+ * Use#1: create a template file of all setable parameters.
+ * Use#2: make sure your configuration was interpreted correctly.
+ ***************************************************************************/
+static void
+masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
+{
+    unsigned i;
+    unsigned l = 0;
+    
+    /*
+     * NEW:
+     * Print all configuration parameters
+     */
+    masscan->echo = fp;
+    masscan->echo_all = is_echo_all;
+    for (i=0; config_parameters[i].name; i++) {
+        config_parameters[i].set(masscan, 0, 0);
+    }
+    masscan->echo = 0;
+    masscan->echo_all = 0;
+    
+    /*
+     * OLD:
+     * Things here below are the old way of echoing parameters.
+     * TODO: cleanup this code, replacing with the new way.
+     */
+    if (masscan->nic_count == 0)
+        masscan_echo_nic(masscan, fp, 0);
+    else {
+        for (i=0; i<masscan->nic_count; i++)
+            masscan_echo_nic(masscan, fp, i);
+    }
+    
+    
+    /*
+     * Targets
+     */
+    fprintf(fp, "# TARGET SELECTION (IP, PORTS, EXCLUDES)\n");
+    fprintf(fp, "ports = ");
+    /* Disable comma generation for the first element */
+    l = 0;
+    for (i=0; i<masscan->ports.count; i++) {
+        struct Range range = masscan->ports.list[i];
+        do {
+            struct Range rrange = range;
+            unsigned done = 0;
+            if (l)
+                fprintf(fp, ",");
+            l = 1;
+            if (rrange.begin >= Templ_ICMP_echo) {
+                rrange.begin -= Templ_ICMP_echo;
+                rrange.end -= Templ_ICMP_echo;
+                fprintf(fp,"I:");
+                done = 1;
+            } else if (rrange.begin >= Templ_SCTP) {
+                rrange.begin -= Templ_SCTP;
+                rrange.end -= Templ_SCTP;
+                fprintf(fp,"S:");
+                range.begin = Templ_ICMP_echo;
+            } else if (rrange.begin >= Templ_UDP) {
+                rrange.begin -= Templ_UDP;
+                rrange.end -= Templ_UDP;
+                fprintf(fp,"U:");
+                range.begin = Templ_SCTP;
+            } else
+                range.begin = Templ_UDP;
+            rrange.end = min(rrange.end, 65535);
+            if (rrange.begin == rrange.end)
+                fprintf(fp, "%u", rrange.begin);
+            else
+                fprintf(fp, "%u-%u", rrange.begin, rrange.end);
+            if (done)
+                break;
+        } while (range.begin <= range.end);
+    }
+    fprintf(fp, "\n");
+    for (i=0; i<masscan->targets.count; i++) {
+        struct Range range = masscan->targets.list[i];
+        fprintf(fp, "range = ");
+        fprintf(fp, "%u.%u.%u.%u",
+                (range.begin>>24)&0xFF,
+                (range.begin>>16)&0xFF,
+                (range.begin>> 8)&0xFF,
+                (range.begin>> 0)&0xFF
+                );
+        if (range.begin != range.end) {
+            unsigned cidr_bits = count_cidr_bits(range);
+            
+            if (cidr_bits) {
+                fprintf(fp, "/%u", cidr_bits);
+            } else
+                fprintf(fp, "-%u.%u.%u.%u",
+                        (range.end>>24)&0xFF,
+                        (range.end>>16)&0xFF,
+                        (range.end>> 8)&0xFF,
+                        (range.end>> 0)&0xFF
+                        );
+        }
+        fprintf(fp, "\n");
+    }
+    
+    fprintf(fp, "\n");
+    if (masscan->http_user_agent)
+        fprintf(    fp,
+                "http-user-agent = %.*s\n",
+                masscan->http_user_agent_length,
+                masscan->http_user_agent);
+    
+    for (i=0; i<sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); i++) {
+        if (masscan->http_headers[i].header_name == 0)
+            continue;
+        fprintf(    fp,
+                "http-header[%s] = %.*s\n",
+                masscan->http_headers[i].header_name,
+                masscan->http_headers[i].header_value_length,
+                masscan->http_headers[i].header_value);
+    }
+    
+    
+    
+    
+    
+}
+
 
 /***************************************************************************
  * remove leading/trailing whitespace

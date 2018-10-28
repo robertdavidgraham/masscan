@@ -17,7 +17,7 @@
 #include "templ-payloads.h"
 #include "syn-cookie.h"
 #include "unusedparm.h"
-#include "script.h"
+#include "vulncheck.h"
 
 #include <assert.h>
 #include <string.h>
@@ -515,7 +515,7 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
 
     UNUSEDPARM(seqno);
 
-    payloads_lookup(tmpl->payloads,
+    payloads_udp_lookup(tmpl->payloads,
                     port,
                     &px2,
                     &length2,
@@ -595,8 +595,8 @@ template_set_target(
         px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
         px[27] = (unsigned char)((ip_them >>  0) & 0xFF);
         return;
-    } else if (port_them == Templ_Script) {
-        tmpl = &tmplset->pkts[Proto_Script];
+    } else if (port_them == Templ_VulnCheck) {
+        tmpl = &tmplset->pkts[Proto_VulnCheck];
         port_them &= 0xFFFF;
     } else {
         return;
@@ -748,8 +748,8 @@ template_set_target(
             px[offset_tcp+2] = (unsigned char)(xsum >>  8);
             px[offset_tcp+3] = (unsigned char)(xsum >>  0);
         break;
-    case Proto_Script:
-            tmplset->script->set_target(tmpl,
+    case Proto_VulnCheck:
+            tmplset->vulncheck->set_target(tmpl,
                                      ip_them, port_them,
                                      ip_me, port_me,
                                      seqno,
@@ -916,7 +916,7 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct NmapPayloads *payloads,
+    struct PayloadsUDP *payloads,
     int data_link,
     uint64_t entropy)
 {
@@ -972,12 +972,12 @@ template_packet_init(
                     data_link);
     templset->count++;
 
-    /* [Script] */
-    if (templset->script) {
-        _template_init( &templset->pkts[Proto_Script],
+    /* [VulnCheck] */
+    if (templset->vulncheck) {
+        _template_init( &templset->pkts[Proto_VulnCheck],
                        source_mac, router_mac,
-                       templset->script->packet,
-                       templset->script->packet_length,
+                       templset->vulncheck->packet,
+                       templset->vulncheck->packet_length,
                        data_link);
         templset->count++;
     }

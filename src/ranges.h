@@ -161,7 +161,9 @@ unsigned rangelist_pick(const struct RangeList *targets, uint64_t i);
 const char *
 rangelist_parse_ports(  struct RangeList *ports,
                         const char *string,
-                        unsigned *is_error);
+                        unsigned *is_error,
+                        unsigned proto_offset
+                      );
 
 
 /**
@@ -169,6 +171,13 @@ rangelist_parse_ports(  struct RangeList *ports,
  */
 void
 rangelist_remove_all(struct RangeList *list);
+
+/**
+ * Merge two range lists
+ */
+void
+rangelist_merge(struct RangeList *list1, const struct RangeList *list2);
+
 
 
 /**

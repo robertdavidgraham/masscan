@@ -60,6 +60,12 @@ struct Output
      * the file header until we've actually go something to write
      */
     unsigned is_virgin_file:1;
+    
+    /**
+     * used by json output to test if the first record has been seen, in order
+     * to determine if it needs a , comma before the record
+     */
+    unsigned is_first_record_seen:1;
 
     struct {
         time_t next;
@@ -125,6 +131,7 @@ extern const struct OutputType text_output;
 extern const struct OutputType unicornscan_output;
 extern const struct OutputType xml_output;
 extern const struct OutputType json_output;
+extern const struct OutputType ndjson_output;
 extern const struct OutputType certs_output;
 extern const struct OutputType binary_output;
 extern const struct OutputType null_output;

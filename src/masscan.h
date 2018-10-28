@@ -42,11 +42,13 @@ enum Operation {
  * outputing simultaneously.
  */
 enum OutputFormat {
+    Output_Default      = 0x0000,
     Output_Interactive  = 0x0001,   /* --interactive, print to cmdline */
     Output_List         = 0x0002,
     Output_Binary       = 0x0004,   /* -oB, "binary", the primary format */
     Output_XML          = 0x0008,   /* -oX, "xml" */
     Output_JSON         = 0x0010,   /* -oJ, "json" */
+    Output_NDJSON       = 0x0011,   /* -oD, "ndjson" */
     Output_Nmap         = 0x0020,
     Output_ScriptKiddie = 0x0040,
     Output_Grepable     = 0x0080,   /* -oG, "grepable" */
@@ -94,6 +96,26 @@ struct Masscan
      * which can be other things, like "Operation_SelfTest"
      */
     enum Operation op;
+    
+    struct {
+        unsigned tcp:1;
+        unsigned udp:1;
+        unsigned sctp:1;
+        unsigned ping:1; /* --ping, ICMP echo */
+        unsigned arp:1; /* --arp, local ARP scan */
+    } scan_type;
+    
+    /**
+     * After scan type has been configured, add these ports
+     */
+    unsigned top_ports;
+    
+    /**
+     * Temporary file to echo parameters to, used for saving configuration
+     * to a file
+     */
+    FILE *echo;
+    unsigned echo_all;
 
     /**
      * One or more network adapters that we'll use for scanning. Each adapter
@@ -109,7 +131,7 @@ struct Masscan
         unsigned char router_mac[6];
         unsigned router_ip;
         int link_type; /* libpcap definitions */
-        unsigned char my_mac_count;
+        unsigned char my_mac_count; /*is there a MAC address? */
         unsigned vlan_id;
         unsigned is_vlan:1;
     } nic[8];
@@ -166,18 +188,22 @@ struct Masscan
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
     unsigned is_offline:1;      /* --offline */
-    unsigned is_arp:1;          /* --arp */
+    unsigned is_noreset:1;      /* --noreset, don't transmit RST */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
     unsigned is_capture_cert:1; /* --capture cert */
     unsigned is_capture_html:1; /* --capture html */
     unsigned is_capture_heartbleed:1; /* --capture heartbleed */
+    unsigned is_capture_ticketbleed:1; /* --capture ticket */
     unsigned is_test_csv:1;     /* (temporary testing feature) */
     unsigned is_infinite:1;     /* -infinite */
     unsigned is_readscan:1;     /* --readscan, Operation_Readscan */
     unsigned is_heartbleed:1;   /* --heartbleed, scan for this vuln */
-    unsigned is_poodle_sslv3:1; /* --script poodle, scan for this vuln */
+    unsigned is_ticketbleed:1;  /* --ticketbleed, scan for this vuln */
+    unsigned is_poodle_sslv3:1; /* --vuln poodle, scan for this vuln */
+    unsigned is_hello_ssl:1;    /* --ssl, use SSL HELLO on all ports */
+    unsigned is_hello_smbv1:1;  /* --smbv1, use SMBv1 hello, instead of v1/v2 hello */
+    unsigned is_scripting:1;    /* whether scripting is needed */
         
-
     /**
      * Wait forever for responses, instead of the default 10 seconds
      */
@@ -237,7 +263,7 @@ struct Masscan
         
         /**
          * --output-format
-         * Examples are "xml", "binary", "json", "grepable", and so on.
+         * Examples are "xml", "binary", "json", "ndjson", "grepable", and so on.
          */
         enum OutputFormat format;
         
@@ -295,6 +321,11 @@ struct Masscan
          */
         unsigned is_interactive:1;
         
+        /**
+        * Print state updates
+        */
+        unsigned is_status_updates:1;
+
         struct {
             /**
              * When we should rotate output into the target directory
@@ -335,9 +366,16 @@ struct Masscan
         unsigned timeout;
     } tcb;
 
-    struct NmapPayloads *payloads;
-    struct TcpCfgPayloads *tcp_payloads;
-
+    struct {
+        char *pcap_payloads_filename;
+        char *nmap_payloads_filename;
+        char *nmap_service_probes_filename;
+    
+        struct PayloadsUDP *udp;
+        struct TcpCfgPayloads *tcp;
+        struct NmapServiceProbeList *probes;
+    } payloads;
+    
     unsigned char *http_user_agent;
     unsigned http_user_agent_length;
     unsigned tcp_connection_timeout;
@@ -377,13 +415,22 @@ struct Masscan
     
     /**
      * --script <name>
-     * The name of the internal script that we are going to use during the
-     * scan. The script is responsible for crafting packets and parsing
-     * the results
      */
     struct {
-        const char *name;
-    } script;
+        /* The name (filename) of the script to run */
+        char *name;
+        
+        /* The script VM */
+        struct lua_State *L;
+    } scripting;
+
+    
+    /**
+     * --vuln <name>
+     * The name of a vuln to check, like "poodle"
+     */
+    const char *vuln_name;
+
 };
 
 
@@ -395,10 +442,25 @@ void masscan_save_state(struct Masscan *masscan);
 void main_listscan(struct Masscan *masscan);
 
 /**
+ * Load databases, such as:
+ *  - nmap-payloads
+ *  - nmap-service-probes
+ *  - pcap-payloads
+ */
+void masscan_load_database_files(struct Masscan *masscan);
+
+/**
  * Pre-scan the command-line looking for options that may affect how
  * previous options are handled. This is a bit of a kludge, really.
  */
 int masscan_conf_contains(const char *x, int argc, char **argv);
+
+/**
+ * Called to set a <name=value> pair.
+ */
+void
+masscan_set_parameter(struct Masscan *masscan,
+                      const char *name, const char *value);
 
 
 

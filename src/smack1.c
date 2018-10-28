@@ -115,6 +115,12 @@
 #include "pixie-timer.h"
 #if defined(_MSC_VER)
 #include <intrin.h>
+#elif defined(__FreeBSD__)
+#include <sys/types.h>
+#include <machine/cpufunc.h>
+#define __rdtsc rdtsc
+#elif defined(__llvm__)
+#include <x86intrin.h>
 #elif defined(__GNUC__)
 static __inline__ unsigned long long __rdtsc(void)
 {
@@ -210,6 +216,8 @@ struct SmackPattern
     unsigned                is_anchor_end:1;
 
     unsigned                is_snmp_hack:1;
+    
+    unsigned                is_wildcards:1;
 };
 
 
@@ -671,6 +679,7 @@ smack_add_pattern(
     pat->is_anchor_begin = ((flags & SMACK_ANCHOR_BEGIN) > 0);
     pat->is_anchor_end = ((flags & SMACK_ANCHOR_END) > 0);
     pat->is_snmp_hack = ((flags & SMACK_SNMP_HACK) > 0);
+    pat->is_wildcards = ((flags & SMACK_WILDCARDS) > 0);
     pat->id = id;
     pat->pattern = make_copy_of_pattern(pattern, pattern_length, smack->is_nocase);
     if (pat->is_anchor_begin)
@@ -966,12 +975,12 @@ smack_stage4_make_final_table(struct SMACK *smack)
      * Allocate table:
      * rows*columns
      */
-    table = (transition_t*)malloc(sizeof(transition_t*) * row_count * column_count);
+    table = malloc(sizeof(transition_t) * row_count * column_count);
     if (table == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(table, 0, sizeof(transition_t*) * row_count * column_count);
+    memset(table, 0, sizeof(transition_t) * row_count * column_count);
 
 
     for (row=0; row<row_count; row++) {
@@ -1049,6 +1058,59 @@ smack_stage3_sort(struct SMACK *smack)
 }
 
 /****************************************************************************
+ *
+ * KLUDGE KLUDGE KLUDGE KLUDGE KLUDGE
+ *
+ * This function currently only works in a very narrow case, for the SMB
+ * parser, where all the patterns are "anchored" and none overlap with the
+ * the SMB patterns. This allows us to modify existing states with the
+ * the wildcards, without adding new states. Do do this right we need
+ * to duplicate states in order to track wildcards
+ ****************************************************************************/
+static void
+smack_fixup_wildcards(struct SMACK *smack)
+{
+    size_t i;
+    
+    for (i=0; i<smack->m_pattern_count; i++) {
+        size_t j;
+        struct SmackPattern *pat = smack->m_pattern_list[i];
+        
+        /* skip patterns that aren't wildcards */
+        if (!pat->is_wildcards)
+            continue;
+        
+        /* find the state leading up to the wilcard * character */
+        for (j=0; j<pat->pattern_length; j++) {
+            unsigned row = 0;
+            unsigned offset = 0;
+            size_t row_size = ((size_t)1 << smack->row_shift);
+            transition_t *table;
+            transition_t next_pattern;
+            transition_t base_state = (smack->is_anchor_begin?1:0);
+            size_t k;
+            
+            /* Skip non-wildcard characters */
+            if (pat->pattern[j] != '*')
+                continue;
+            
+            /* find the current 'row' */
+            while (offset < j)
+                smack_search_next(smack, &row, pat->pattern, &offset, (unsigned)j);
+            
+            row = row & 0xFFFFFF;
+            table = smack->table + (row << smack->row_shift);
+            next_pattern = table[smack->char_to_symbol['*']];
+            
+            for (k=0; k<row_size; k++) {
+                if (table[k] == base_state)
+                    table[k] = next_pattern;
+            }
+        }
+    }
+
+}
+/****************************************************************************
  ****************************************************************************/
 void
 smack_compile(struct SMACK *smack)
@@ -1104,12 +1166,18 @@ smack_compile(struct SMACK *smack)
         swap_rows(smack, BASE_STATE, UNANCHORED_STATE);
     }
 
+    /* prettify table for debugging */
     smack_stage3_sort(smack);
 
     /*
      * Build the final table we use for evaluation
      */
     smack_stage4_make_final_table(smack);
+    
+    /*
+     * Fixup the wildcard states
+     */
+    smack_fixup_wildcards(smack);
 
     /*
      * Get rid of the original pattern tables, since we no longer need them.

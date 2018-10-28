@@ -34,8 +34,10 @@
     <ClCompile Include="..\src\out-certs.c" />
     <ClCompile Include="..\src\out-grepable.c" />
     <ClCompile Include="..\src\out-json.c" />
+    <ClCompile Include="..\src\out-ndjson.c" />
     <ClCompile Include="..\src\out-null.c" />
     <ClCompile Include="..\src\out-redis.c" />
+    <ClCompile Include="..\src\out-tcp-services.c" />
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-unicornscan.c" />
     <ClCompile Include="..\src\out-xml.c" />
@@ -50,10 +52,13 @@
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-imap4.c" />
     <ClCompile Include="..\src\proto-interactive.c" />
+    <ClCompile Include="..\src\proto-memcached.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
+    <ClCompile Include="..\src\proto-ntlmssp.c" />
     <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
+    <ClCompile Include="..\src\proto-smb.c" />
     <ClCompile Include="..\src\proto-smtp.c" />
     <ClCompile Include="..\src\proto-snmp.c" />
     <ClCompile Include="..\src\proto-ssh.c" />
@@ -79,6 +84,7 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
+    <ClCompile Include="..\src\ranges-avl.c" />
     <ClCompile Include="..\src\ranges.c" />
     <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
@@ -86,20 +92,27 @@
     <ClCompile Include="..\src\rawsock-getmac.c" />
     <ClCompile Include="..\src\rawsock-getroute.c" />
     <ClCompile Include="..\src\rawsock-pcapfile.c" />
-    <ClCompile Include="..\src\rawsock-pfring.c" />
     <ClCompile Include="..\src\rawsock.c" />
+    <ClCompile Include="..\src\read-service-probes.c" />
     <ClCompile Include="..\src\rte-ring.c" />
-    <ClCompile Include="..\src\script-heartbleed.c" />
-    <ClCompile Include="..\src\script-ntp-monlist.c" />
-    <ClCompile Include="..\src\script-sslv3.c" />
-    <ClCompile Include="..\src\script.c" />
+    <ClCompile Include="..\src\scripting-banner.c" />
+    <ClCompile Include="..\src\scripting-masscan.c" />
+    <ClCompile Include="..\src\scripting.c" />
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\string_s.c" />
+    <ClCompile Include="..\src\stub-lua.c" />
+    <ClCompile Include="..\src\stub-pcap.c" />
+    <ClCompile Include="..\src\stub-pfring.c" />
     <ClCompile Include="..\src\syn-cookie.c" />
     <ClCompile Include="..\src\templ-payloads.c" />
     <ClCompile Include="..\src\templ-pkt.c" />
+    <ClCompile Include="..\src\versioning.c" />
+    <ClCompile Include="..\src\vulncheck-heartbleed.c" />
+    <ClCompile Include="..\src\vulncheck-ntp-monlist.c" />
+    <ClCompile Include="..\src\vulncheck-sslv3.c" />
+    <ClCompile Include="..\src\vulncheck.c" />
     <ClCompile Include="..\src\xring.c" />
   </ItemGroup>
   <ItemGroup>
@@ -120,6 +133,7 @@
     <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
     <ClInclude Include="..\src\out-record.h" />
+    <ClInclude Include="..\src\out-tcp-services.h" />
     <ClInclude Include="..\src\output.h" />
     <ClInclude Include="..\src\packet-queue.h" />
     <ClInclude Include="..\src\pixie-backtrace.h" />
@@ -137,11 +151,14 @@
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-imap4.h" />
     <ClInclude Include="..\src\proto-interactive.h" />
+    <ClInclude Include="..\src\proto-memcached.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
+    <ClInclude Include="..\src\proto-ntlmssp.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
     <ClInclude Include="..\src\proto-pop3.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-sctp.h" />
+    <ClInclude Include="..\src\proto-smb.h" />
     <ClInclude Include="..\src\proto-smtp.h" />
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
@@ -155,19 +172,25 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
+    <ClInclude Include="..\src\ranges-avl.h" />
     <ClInclude Include="..\src\ranges.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
-    <ClInclude Include="..\src\rawsock-pfring.h" />
     <ClInclude Include="..\src\rawsock.h" />
+    <ClInclude Include="..\src\read-service-probes.h" />
     <ClInclude Include="..\src\rte-ring.h" />
-    <ClInclude Include="..\src\script.h" />
+    <ClInclude Include="..\src\scripting.h" />
     <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\string_s.h" />
+    <ClInclude Include="..\src\stub-lua.h" />
+    <ClInclude Include="..\src\stub-pcap.h" />
+    <ClInclude Include="..\src\stub-pfring.h" />
     <ClInclude Include="..\src\syn-cookie.h" />
     <ClInclude Include="..\src\templ-payloads.h" />
     <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\versioning.h" />
+    <ClInclude Include="..\src\vulncheck.h" />
     <ClInclude Include="..\src\xring.h" />
   </ItemGroup>
   <ItemGroup>
@@ -225,11 +248,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)\..\tmp\</IntDir>
     <OutDir>$(SolutionDir)\..\bin\</OutDir>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -249,11 +274,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>false</EnablePREfast>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lib;</AdditionalLibraryDirectories>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -264,12 +292,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>lib\x64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>setargv.obj;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <Profile>true</Profile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

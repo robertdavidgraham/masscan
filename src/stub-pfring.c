@@ -6,7 +6,7 @@
     BEFORE installing and building PF_RING.
 
 */
-#include "rawsock-pfring.h"
+#include "stub-pfring.h"
 #include "string_s.h"
 #include "logger.h"
 

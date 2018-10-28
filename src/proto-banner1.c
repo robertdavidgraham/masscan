@@ -8,13 +8,17 @@
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
+#include "proto-smb.h"
 #include "proto-ssh.h"
 #include "proto-ftp.h"
 #include "proto-smtp.h"
 #include "proto-imap4.h"
 #include "proto-pop3.h"
 #include "proto-vnc.h"
+#include "proto-memcached.h"
 #include "masscan-app.h"
+#include "scripting.h"
+#include "versioning.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +27,18 @@
 
 
 struct Patterns patterns[] = {
+    {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
+    {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
+    
+    {"\x82\x00\x00\x00", 4, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Positive Session Response */
+    
+    {"\x83\x00\x00\x01\x80", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening on called name */
+    {"\x83\x00\x00\x01\x81", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening for calling name */
+    {"\x83\x00\x00\x01\x82", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name not present */
+    {"\x83\x00\x00\x01\x83", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name present, but insufficient resources */
+    {"\x83\x00\x00\x01\x8f", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Unspecified error */
+
+    /* ...the remainder can be in any order */
     {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN},
     {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN},
     {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN},
@@ -30,6 +46,7 @@ struct Patterns patterns[] = {
     {"220 ",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 1},
     {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN},
     {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN},
+    {"521 ",        4, PROTO_SMTP, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
     {"\x16\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
@@ -49,6 +66,7 @@ struct Patterns patterns[] = {
     {"RFB 004.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Intel AMT KVM */
     {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
     {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
+    {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN}, /* memcached stat response */
     {0,0}
 };
 
@@ -139,7 +157,7 @@ banner1_parse(
                              banout,
                              more);
             break;
-        case PROTO_SMTP:
+    case PROTO_SMTP:
             banner_smtp.parse(   banner1,
                               banner1->http_fields,
                               tcb_state,
@@ -195,6 +213,15 @@ banner1_parse(
                         banout,
                         more);
         break;
+    case PROTO_SMB:
+        banner_smb1.parse(
+                        banner1,
+                        banner1->http_fields,
+                        tcb_state,
+                        px, length,
+                        banout,
+                        more);
+        break;
     case PROTO_VNC_RFB:
         banner_vnc.parse(    banner1,
                              banner1->http_fields,
@@ -203,6 +230,31 @@ banner1_parse(
                              banout,
                              more);
         break;
+    case PROTO_MEMCACHED:
+        banner_memcached.parse(    banner1,
+                             banner1->http_fields,
+                             tcb_state,
+                             px, length,
+                             banout,
+                             more);
+        break;
+    case PROTO_SCRIPTING:
+        banner_scripting.parse(    banner1,
+                                   banner1->http_fields,
+                                   tcb_state,
+                                   px, length,
+                                   banout,
+                                   more);
+        break;
+    case PROTO_VERSIONING:
+        banner_versioning.parse(      banner1,
+                                   banner1->http_fields,
+                                   tcb_state,
+                                   px, length,
+                                   banout,
+                                   more);
+        break;
+
     default:
         fprintf(stderr, "banner1: internal error\n");
         break;
@@ -228,7 +280,9 @@ banner1_create(void)
     memset(b, 0, sizeof(*b));
 
     /*
-     * These patterns match the start of the TCP stream
+     * This creates a pattern-matching blob for heuristically determining
+     * a protocol that runs on wrong ports, such as how FTP servers
+     * often respond with "220 " or VNC servers respond with "RFB".
      */
     b->smack = smack_create("banner1", SMACK_CASE_INSENSITIVE);
     for (i=0; patterns[i].pattern; i++)
@@ -240,26 +294,48 @@ banner1_create(void)
                     patterns[i].is_anchored);
     smack_compile(b->smack);
 
+    /*
+     * [TODO] These need to be moved into the 'init' functions
+     */
+    b->payloads.tcp[80] = &banner_http;
+    b->payloads.tcp[8080] = &banner_http;
+    b->payloads.tcp[139] = (void*)&banner_smb0;
+    b->payloads.tcp[445] = (void*)&banner_smb1;
+    b->payloads.tcp[443] = (void*)&banner_ssl;   /* HTTP/s */
+    b->payloads.tcp[465] = (void*)&banner_ssl;   /* SMTP/s */
+    b->payloads.tcp[990] = (void*)&banner_ssl;   /* FTP/s */
+    b->payloads.tcp[991] = (void*)&banner_ssl;
+    b->payloads.tcp[992] = (void*)&banner_ssl;   /* Telnet/s */
+    b->payloads.tcp[993] = (void*)&banner_ssl;   /* IMAP4/s */
+    b->payloads.tcp[994] = (void*)&banner_ssl;
+    b->payloads.tcp[995] = (void*)&banner_ssl;   /* POP3/s */
+    b->payloads.tcp[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
+    b->payloads.tcp[2087] = (void*)&banner_ssl;  /* WHM - SSL */
+    b->payloads.tcp[2096] = (void*)&banner_ssl;  /* cPanel webmail - SSL */
+    b->payloads.tcp[8443] = (void*)&banner_ssl;  /* Plesk Control Panel - SSL */
+    b->payloads.tcp[9050] = (void*)&banner_ssl;  /* Tor */
+    b->payloads.tcp[8140] = (void*)&banner_ssl;  /* puppet */
+    b->payloads.tcp[11211] = (void*)&banner_memcached;
 
+    /* 
+     * This goes down the list of all the TCP protocol handlers and initializes
+     * them.
+     */
+    banner_ftp.init(b);
     banner_http.init(b);
-
-    b->tcp_payloads[80] = &banner_http;
-    b->tcp_payloads[8080] = &banner_http;
+    banner_imap4.init(b);
+    banner_memcached.init(b);
+    banner_pop3.init(b);
+    banner_smtp.init(b);
+    banner_ssh.init(b);
+    banner_ssl.init(b);
+    banner_smb0.init(b);
+    banner_smb1.init(b);
+    banner_vnc.init(b);
     
-    b->tcp_payloads[443] = (void*)&banner_ssl;   /* HTTP/s */
-    b->tcp_payloads[465] = (void*)&banner_ssl;   /* SMTP/s */
-    b->tcp_payloads[990] = (void*)&banner_ssl;   /* FTP/s */
-    b->tcp_payloads[991] = (void*)&banner_ssl;  
-    b->tcp_payloads[992] = (void*)&banner_ssl;   /* Telnet/s */
-    b->tcp_payloads[993] = (void*)&banner_ssl;   /* IMAP4/s */
-    b->tcp_payloads[994] = (void*)&banner_ssl;  
-    b->tcp_payloads[995] = (void*)&banner_ssl;   /* POP3/s */
-    b->tcp_payloads[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
-    b->tcp_payloads[2087] = (void*)&banner_ssl;  /* WHM - SSL */
-    b->tcp_payloads[2096] = (void*)&banner_ssl;  /* cPanel webmail - SSL */
-    b->tcp_payloads[8443] = (void*)&banner_ssl;  /* Plesk Control Panel - SSL */
-    b->tcp_payloads[9050] = (void*)&banner_ssl;  /* Tor */
-    b->tcp_payloads[8140] = (void*)&banner_ssl;  /* puppet */
+    /* scripting/versioning come after the rest */
+    banner_scripting.init(b);
+    banner_versioning.init(b);
 
 
     return b;
@@ -424,7 +500,13 @@ banner1_selftest()
             fprintf(stderr, "SSL banner: selftest failed\n");
             return 1;
         }
-
+        
+        x = banner_smb1.selftest();
+        if (x) {
+            fprintf(stderr, "SMB banner: selftest failed\n");
+            return 1;
+        }
+        
         x = banner_http.selftest();
         if (x) {
             fprintf(stderr, "HTTP banner: selftest failed\n");

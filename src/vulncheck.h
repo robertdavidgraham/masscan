@@ -1,9 +1,9 @@
-#ifndef SCRIPT_H
-#define SCRIPT_H
+#ifndef VULNCHECK_H
+#define VULNCHECK_H
 #include <stdio.h>
 struct TemplatePacket;
 
-struct MassScript
+struct MassVulnCheck
 {
     const char *name;
     
@@ -41,13 +41,13 @@ struct MassScript
 };
 
 /**
- * Lookup the script based on the name
+ * Lookup the vuln based on the name
  * @param name
- *      The name of the script.
+ *      The name of the vuln to check.
  * @return
- *      The desired script if found, NULL if the script doesn't exist
+ *      The desired vuln check if found, NULL if the vuln check doesn't exist
  */
-struct MassScript *
-script_lookup(const char *name);
+struct MassVulnCheck *
+vulncheck_lookup(const char *name);
 
 #endif

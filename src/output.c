@@ -46,6 +46,7 @@
 #include <ctype.h>
 #include <string.h>
 
+
 /*****************************************************************************
  *****************************************************************************/
 static int64_t ftell_x(FILE *fp)
@@ -181,7 +182,7 @@ open_rotate(struct Output *out, const char *filename)
             sin.sin_addr.s_addr = htonl(out->redis.ip);
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
-            x = connect(fd, (struct sockaddr*)&sin, sizeof(sin));
+            x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
             if (x != 0) {
                 LOG(0, "redis: connect() failed\n");
                 perror("connect");
@@ -206,7 +207,7 @@ open_rotate(struct Output *out, const char *filename)
             fprintf(stderr, "out: could not open file for %s\n",
                     is_append?"appending":"writing");
             perror(filename);
-            control_c_pressed = 1;
+            is_tx_done = 1;
             return NULL;
         }
     }
@@ -308,14 +309,15 @@ duplicate_string(const char *str)
         length = strlen(str);
 
     /* Allocate memory for the string */
-    result = (char*)malloc(length + 1);
+    result = malloc(length + 1);
     if (result == 0) {
         fprintf(stderr, "output: out of memory error\n");
         exit(1);
     }
 
     /* Copy the string */
-    memcpy(result, str, length+1);
+    if (str)
+        memcpy(result, str, length+1);
     result[length] = '\0';
 
     return result;
@@ -432,6 +434,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_JSON:
         out->funcs = &json_output;
         break;
+    case Output_NDJSON:
+        out->funcs = &ndjson_output;
+        break;
     case Output_Certs:
         out->funcs = &certs_output;
         break;
@@ -512,7 +517,7 @@ output_do_rotate(struct Output *out, int is_closing)
     int err;
 
     /* Don't do anything if there is no file */
-    if (out->fp == NULL)
+    if (out == NULL || out->fp == NULL)
         return NULL;
 
     /* Make sure that all output has been flushed to the file */
@@ -537,7 +542,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen(filename)
                             + 1  /* - */
                             + 1; /* nul */
-    new_filename = (char*)malloc(new_filename_size);
+    new_filename = malloc(new_filename_size);
     if (new_filename == NULL) {
         LOG(0, "rotate: out of memory error\n");
         return out->fp;
@@ -550,6 +555,7 @@ output_do_rotate(struct Output *out, int is_closing)
         err = localtime_s(&tm, &out->rotate.last);
     }
     if (err != 0) {
+        free(new_filename);
         perror("gmtime(): file rotation ended");
         return out->fp;
     }
@@ -666,11 +672,21 @@ oui_from_mac(const unsigned char mac[6])
 {
     unsigned oui = mac[0]<<16 | mac[1]<<8 | mac[2];
     switch (oui) {
+    case 0x001075: return "Seagate";
+    case 0x001e06: return "Odroid";
+    case 0x3497f6: return "Asus";
+    case 0x38f73d: return "Amzon";
+    case 0x60a44c: return "Asus";
+    case 0x6c72e7: return "Apple";
+    case 0x9003b7: return "Parrot";
     case 0x94dbc9: return "Azurewave";
+    case 0xb827eb: return "Raspberry Pi";
+    case 0xacbc32: return "Apple";
     case 0x404a03: return "Zyxel";
     case 0x000c29: return "VMware";
     case 0x002590: return "Supermicro";
     case 0xc0c1c0: return "Cisco-Linksys";
+    case 0xc05627: return "Belkin";
     case 0x2c27d7: return "HP";
     case 0x001132: return "Synology";
     case 0x0022b0: return "D-Link";
@@ -819,7 +835,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     }
 
     /*
-     * Now do the actual output, whether it be XML, binary, JSON, Redis,
+     * Now do the actual output, whether it be XML, binary, JSON, ndjson, Redis,
      * and so on.
      */
     out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
@@ -894,7 +910,7 @@ output_report_banner(struct Output *out, time_t now,
     }
 
     /*
-     * Now do the actual output, whether it be XML, binary, JSON, Redis,
+     * Now do the actual output, whether it be XML, binary, JSON, ndjson, Redis,
      * and so on.
      */
     out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, ttl, px, length);
