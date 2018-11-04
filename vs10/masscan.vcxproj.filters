@@ -288,9 +288,6 @@
     <ClCompile Include="..\src\proto-ntlmssp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ranges-avl.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\out-tcp-services.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
@@ -329,6 +326,12 @@
     </ClCompile>
     <ClCompile Include="..\src\read-service-probes.c">
       <Filter>Source Files\versioning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges6.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\reallocarray_s.c">
+      <Filter>Source Files\misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -533,9 +536,6 @@
     <ClInclude Include="..\src\proto-ntlmssp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ranges-avl.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\out-tcp-services.h">
       <Filter>Source Files\output</Filter>
     </ClInclude>
@@ -559,6 +559,12 @@
     </ClInclude>
     <ClInclude Include="..\src\read-service-probes.h">
       <Filter>Source Files\versioning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges6.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\reallocarray_s.h">
+      <Filter>Source Files\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

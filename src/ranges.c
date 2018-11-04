@@ -2,6 +2,7 @@
     for tracking IP/port ranges
 */
 #include "ranges.h"
+#include "reallocarray_s.h"
 #include "templ-port.h"
 
 #include <assert.h>
@@ -19,29 +20,16 @@
 /***************************************************************************
  ***************************************************************************/
 int
-rangelist_is_contains(const struct RangeList *task, unsigned number)
+rangelist_is_contains(const struct RangeList *targets, unsigned number)
 {
     unsigned i;
-    for (i=0; i<task->count; i++) {
-        struct Range *range = &task->list[i];
+    for (i=0; i<targets->count; i++) {
+        struct Range *range = &targets->list[i];
 
         if (range->begin <= number && number <= range->end)
             return 1;
     }
     return 0;
-}
-
-/***************************************************************************
- * ???
- ***************************************************************************/
-static void
-todo_remove_at(struct RangeList *task, unsigned index)
-{
-    memmove(&task->list[index],
-            &task->list[index+1],
-            (task->count - index) * sizeof(task->list[index])
-            );
-    task->count--;
 }
 
 
@@ -85,12 +73,64 @@ range_combine(struct Range *lhs, struct Range rhs)
         lhs->end = rhs.end;
 }
 
+int range_compare(const void *lhs, const void *rhs)
+{
+    struct Range *left = (struct Range *)lhs;
+    struct Range *right = (struct Range *)rhs;
+
+    if (left->begin < right->begin)
+        return -1;
+    else if (left->begin > right->begin)
+        return 1;
+    else
+        return 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+rangelist_remove_at(struct RangeList *targets, size_t index)
+{
+    memmove(&targets->list[index],
+            &targets->list[index+1],
+            (targets->count - index) * sizeof(targets->list[index])
+            );
+    targets->count--;
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+void
+rangelist_sort(struct RangeList *targets)
+{
+    size_t i;
+
+    if (targets->count == 0)
+        return;
+
+    /* First, sort the list */
+    qsort(  targets->list,              /* the array to sort */
+            targets->count,             /* number of elements to sort */
+            sizeof(targets->list[0]),   /* size of element */
+            range_compare);
+
+    /* Second, combine all overlapping ranges*/
+    for (i=0; i<targets->count; i++) {
+        while (i+1<targets->count && range_is_overlap(targets->list[i], targets->list[i+1])) {
+            range_combine(&targets->list[i], targets->list[i+1]);
+            rangelist_remove_at(targets, i+1);
+        }
+    }
+
+    targets->is_sorted = 1;
+}
 
 /***************************************************************************
  * Add the IPv4 range to our list of ranges.
  ***************************************************************************/
 void
-rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
+rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
 {
     struct Range range;
 
@@ -98,61 +138,72 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
     range.end = end;
 
     /* auto-expand the list if necessary */
-    if (task->count + 1 >= task->max) {
-        size_t new_max = (size_t)task->max * 2 + 1;
-        struct Range *new_list;
-
-        if (new_max >= SIZE_MAX/sizeof(*new_list))
-            exit(1); /* integer overflow */
-        new_list = (struct Range *)malloc(sizeof(*new_list) * new_max);
-        if (new_list == NULL)
-            exit(1); /* out of memory */
-
-        memcpy(new_list, task->list, task->count * sizeof(*new_list));
-        if (task->list)
-            free(task->list);
-        task->list = new_list;
-        task->max = (unsigned)new_max;
+    if (targets->count + 1 >= targets->max) {
+        targets->max = targets->max * 2 + 1;
+        targets->list = reallocarray_s(targets->list, targets->max, sizeof(targets->list[0]));
     }
+
+    /* If empty list, then add this one */
+    if (targets->count == 0) {
+        targets->list[0] = range;
+        targets->count++;
+        targets->is_sorted = 1;
+        return;
+    }
+
+    /* If new range overlaps the last range in the list, then combine it
+     * rather than appending it. This is an optimization for the fact that
+     * we often read in sequential addresses */
+    if (range_is_overlap(targets->list[targets->count], range)) {
+        range_combine(&targets->list[targets->count], range);
+    }
+
+    /* append to the end of our list */
+    targets->list[targets->count] = range;
+    targets->count++;
+    targets->is_sorted = 0;
+    return;
+
 
 #if 0
     unsigned i;
     
     /* See if the range overlaps any exist range already in the
      * list */
-    for (i = 0; i < task->count; i++) {
-        if (range_is_overlap(task->list[i], range)) {
-            range_combine(&range, task->list[i]);
-            todo_remove_at(task, i);
-            rangelist_add_range(task, range.begin, range.end);
+    for (i = 0; i < targets->count; i++) {
+        if (range_is_overla(targets->list[i], range)) {
+            range_combine(&range, targets->list[i]);
+            todo_remove_at(targets, i);
+            rangelist_add_range(targets, range.begin, range.end);
             return;
         }
     }
 
     /* Find a spot to insert in sorted order */
-    for (i = 0; i < task->count; i++) {
-        if (range.begin < task->list[i].begin) {
-            memmove(task->list+i+1, task->list+i, (task->count - i) * sizeof(task->list[0]));
+    for (i = 0; i < targets->count; i++) {
+        if (range.begin < targets->list[i].begin) {
+            memmove(targets->list+i+1, targets->list+i, (targets->count - i) * sizeof(targets->list[0]));
             break;
         }
     }
     /* Add to end of list */
-    task->list[i].begin = begin;
-    task->list[i].end = end;
-    task->count++;
+    targets->list[i].begin = begin;
+    targets->list[i].end = end;
+    targets->count++;
 
-#else
+#endif
+#if 0
     {
         unsigned lo, hi, mid;
         
         lo = 0;
-        hi = task->count;
+        hi = targets->count;
         while (lo < hi) {
             mid = lo + (hi - lo)/2;
-            if (range.end < task->list[mid].begin) {
+            if (range.end < targets->list[mid].begin) {
                 /* This IP range comes BEFORE the current range */
                 hi = mid;
-            } else if (range.begin > task->list[mid].end) {
+            } else if (range.begin > targets->list[mid].end) {
                 /* this IP range comes AFTER the current range */
                 lo = mid + 1;
             } else
@@ -166,13 +217,13 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
          * If overlap, then combine it with the range at this point. Otherwise,
          * insert it at this point.
          */
-        if (mid < task->count && range_is_overlap(task->list[mid], range)) {
-            range_combine(&task->list[mid], range);
+        if (mid < targets->count && range_is_overlap(targets->list[mid], range)) {
+            range_combine(&targets->list[mid], range);
         } else {
-            memmove(task->list+mid+1, task->list+mid, (task->count - mid) * sizeof(task->list[0]));
-            task->list[mid].begin = begin;
-            task->list[mid].end = end;
-            task->count++;
+            memmove(targets->list+mid+1, targets->list+mid, (targets->count - mid) * sizeof(targets->list[0]));
+            targets->list[mid].begin = begin;
+            targets->list[mid].end = end;
+            targets->count++;
         }
         
         /*
@@ -180,23 +231,23 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
          */
         for (;;) {
             unsigned is_neighbor_overlapped = 0;
-            if (mid > 0 && range_is_overlap(task->list[mid-1], task->list[mid])) {
-                range_combine(&task->list[mid-1], task->list[mid]);
-                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+            if (mid > 0 && range_is_overlap(targets->list[mid-1], targets->list[mid])) {
+                range_combine(&targets->list[mid-1], targets->list[mid]);
+                memmove(targets->list+mid, targets->list+mid+1, (targets->count - mid) * sizeof(targets->list[0]));
                 mid--;
                 is_neighbor_overlapped = 1;
-                task->count--;
+                targets->count--;
             }
-            if (mid+1 < task->count && range_is_overlap(task->list[mid], task->list[mid+1])) {
-                range_combine(&task->list[mid], task->list[mid+1]);
-                memmove(task->list+mid, task->list+mid+1, (task->count - mid) * sizeof(task->list[0]));
+            if (mid+1 < targets->count && range_is_overlap(targets->list[mid], targets->list[mid+1])) {
+                range_combine(&targets->list[mid], targets->list[mid+1]);
+                memmove(targets->list+mid, targets->list+mid+1, (targets->count - mid) * sizeof(targets->list[0]));
                 is_neighbor_overlapped = 1;
-                task->count--;
+                targets->count--;
             }
             if (!is_neighbor_overlapped)
                 break;
         }
-        //debug_dump_ranges(task);
+        //debug_dump_ranges(targets);
         return;
     }
 #endif
@@ -206,12 +257,13 @@ rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end)
 /***************************************************************************
  ***************************************************************************/
 void
-rangelist_remove_all(struct RangeList *tasks)
+rangelist_remove_all(struct RangeList *targets)
 {
-    if (tasks->list) {
-        free(tasks->list);
-        memset(tasks, 0, sizeof(*tasks));
-    }
+    if (targets->list)
+        free(targets->list);
+    if (targets->picker)
+        free(targets->picker);
+    memset(targets, 0, sizeof(*targets));
 }
 
 /***************************************************************************
@@ -224,12 +276,13 @@ rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
     for (i=0; i<list2->count; i++) {
         rangelist_add_range(list1, list2->list[i].begin, list2->list[i].end);
     }
+    rangelist_sort(list1);
 }
 
 /***************************************************************************
  ***************************************************************************/
 void
-rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
+rangelist_remove_range(struct RangeList *targets, unsigned begin, unsigned end)
 {
     unsigned i;
     struct Range x;
@@ -239,42 +292,42 @@ rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
 
     /* See if the range overlaps any exist range already in the
      * list */
-    for (i = 0; i < task->count; i++) {
-        if (!range_is_overlap(task->list[i], x))
+    for (i = 0; i < targets->count; i++) {
+        if (!range_is_overlap(targets->list[i], x))
             continue;
 
         /* If the removal-range wholly covers the range, delete
          * it completely */
-        if (begin <= task->list[i].begin && end >= task->list[i].end) {
-            todo_remove_at(task, i);
+        if (begin <= targets->list[i].begin && end >= targets->list[i].end) {
+            rangelist_remove_at(targets, i);
             i--;
             continue;
         }
 
         /* If the removal-range bisects the target-rage, truncate
          * the lower end and add a new high-end */
-        if (begin > task->list[i].begin && end < task->list[i].end) {
+        if (begin > targets->list[i].begin && end < targets->list[i].end) {
             struct Range newrange;
 
             newrange.begin = end+1;
-            newrange.end = task->list[i].end;
+            newrange.end = targets->list[i].end;
 
 
-            task->list[i].end = begin-1;
+            targets->list[i].end = begin-1;
 
-            rangelist_add_range(task, newrange.begin, newrange.end);
+            rangelist_add_range(targets, newrange.begin, newrange.end);
             i--;
             continue;
         }
 
         /* If overlap on the lower side */
-        if (end >= task->list[i].begin && end < task->list[i].end) {
-            task->list[i].begin = end+1;
+        if (end >= targets->list[i].begin && end < targets->list[i].end) {
+            targets->list[i].begin = end+1;
         }
 
         /* If overlap on the upper side */
-        if (begin > task->list[i].begin && begin <= task->list[i].end) {
-             task->list[i].end = begin-1;
+        if (begin > targets->list[i].begin && begin <= targets->list[i].end) {
+             targets->list[i].end = begin-1;
         }
 
         //assert(!"impossible");
@@ -282,14 +335,14 @@ rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end)
 }
 
 static void
-rangelist_add_range2(struct RangeList *task, struct Range range)
+rangelist_add_range2(struct RangeList *targets, struct Range range)
 {
-    rangelist_add_range(task, range.begin, range.end);
+    rangelist_add_range(targets, range.begin, range.end);
 }
 void
-rangelist_remove_range2(struct RangeList *task, struct Range range)
+rangelist_remove_range2(struct RangeList *targets, struct Range range)
 {
-    rangelist_remove_range(task, range.begin, range.end);
+    rangelist_remove_range(targets, range.begin, range.end);
 }
 
 
@@ -467,6 +520,9 @@ end:
 
 
 /***************************************************************************
+ * Apply the exclude ranges, which means removing everything from "targets"
+ * that's also in "exclude". This can make the target list even bigger
+ * as individually excluded address chop up large ranges.
  ***************************************************************************/
 uint64_t
 rangelist_exclude(  struct RangeList *targets,
@@ -481,6 +537,9 @@ rangelist_exclude(  struct RangeList *targets,
         rangelist_remove_range(targets, range.begin, range.end);
     }
     
+    /* Since chopping up large ranges can split ranges, this can
+     * grow the list so we need to re-sort it */
+    rangelist_sort(targets);
     return count;
 }
 
@@ -509,8 +568,8 @@ rangelist_count(const struct RangeList *targets)
  * once we start adding in a lot of "exclude ranges", the address space
  * will get fragmented, and the linear search will take too long.
  ***************************************************************************/
-unsigned
-rangelist_pick(const struct RangeList *targets, uint64_t index)
+static unsigned
+rangelist_pick_linearsearch(const struct RangeList *targets, uint64_t index)
 {
     unsigned i;
 
@@ -526,53 +585,24 @@ rangelist_pick(const struct RangeList *targets, uint64_t index)
     return 0;
 }
 
-
-/***************************************************************************
- * The normal "pick" function is a linear search, which is slow when there
- * are a lot of ranges. Therefore, the "pick2" creates sort of binary
- * search that'll be a lot faster. We choose "binary search" because
- * it's the most cache-efficient, having the least overhead to fit within
- * the cache.
- ***************************************************************************/
-unsigned *
-rangelist_pick2_create(struct RangeList *targets)
-{
-    unsigned *picker;
-    unsigned i;
-    unsigned total = 0;
-
-    if (((size_t)targets->count) >= (size_t)(SIZE_MAX/sizeof(*picker)))
-        exit(1); /* integer overflow */
-    else
-    picker = (unsigned *)malloc(targets->count * sizeof(*picker));
-    if (picker == NULL)
-        exit(1); /* out of memory */
-
-    for (i=0; i<targets->count; i++) {
-        picker[i] = total;
-        total += targets->list[i].end - targets->list[i].begin + 1;
-    }
-    return picker;
-}
-
-/***************************************************************************
- ***************************************************************************/
-void
-rangelist_pick2_destroy(unsigned *picker)
-{
-    if (picker)
-        free(picker);
-}
-
 /***************************************************************************
  ***************************************************************************/
 unsigned
-rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned *picker)
+rangelist_pick(const struct RangeList *targets, uint64_t index)
 {
     unsigned maxmax = targets->count;
     unsigned min = 0;
     unsigned max = targets->count;
     unsigned mid;
+    const unsigned *picker = targets->picker;
+
+    assert(targets->is_sorted);
+
+    if (picker == NULL) {
+        /* optimization wasn't done */
+        return rangelist_pick_linearsearch(targets, index);
+    }
+
 
     for (;;) {
         mid = min + (max-min)/2;
@@ -591,6 +621,43 @@ rangelist_pick2(const struct RangeList *targets, uint64_t index, const unsigned 
 
     return (unsigned)(targets->list[mid].begin + (index - picker[mid]));
 }
+
+
+/***************************************************************************
+ * The normal "pick" function is a linear search, which is slow when there
+ * are a lot of ranges. Therefore, the "pick2" creates sort of binary
+ * search that'll be a lot faster. We choose "binary search" because
+ * it's the most cache-efficient, having the least overhead to fit within
+ * the cache.
+ ***************************************************************************/
+void
+rangelist_optimize(struct RangeList *targets)
+{
+    unsigned *picker;
+    unsigned i;
+    unsigned total = 0;
+
+    if (!targets->is_sorted)
+        rangelist_sort(targets);
+
+    if (targets->picker)
+        free(targets->picker);
+
+    if (((size_t)targets->count) >= (size_t)(SIZE_MAX/sizeof(*picker)))
+        exit(1); /* integer overflow */
+    picker = (unsigned *)malloc(targets->count * sizeof(*picker));
+    if (picker == NULL)
+        exit(1); /* out of memory */
+
+    for (i=0; i<targets->count; i++) {
+        picker[i] = total;
+        total += targets->list[i].end - targets->list[i].begin + 1;
+    }
+    
+    targets->picker = picker;
+}
+
+
 
 /***************************************************************************
  * Provide my own rand() simply to avoid static-analysis warning me that
@@ -623,9 +690,8 @@ regress_pick2()
         unsigned num_targets;
         unsigned begin = 0;
         unsigned end;
-        struct RangeList targets[1];
-        struct RangeList duplicate[1];
-        unsigned *picker;
+        struct RangeList targets[1] = {{0}};
+        struct RangeList duplicate[1] = {{0}};
         unsigned range;
 
 
@@ -640,19 +706,21 @@ regress_pick2()
 
             rangelist_add_range(targets, begin, end);
         }
+        rangelist_sort(targets);
         range = (unsigned)rangelist_count(targets);
 
-        /* Create a "picker" */
-        picker = rangelist_pick2_create(targets);
+        /* Optimize for faster 'picking' addresses from an index */
+        rangelist_optimize(targets);
 
         /* Duplicate the targetlist using the picker */
         memset(duplicate, 0, sizeof(duplicate[0]));
         for (j=0; j<range; j++) {
             unsigned x;
 
-            x = rangelist_pick2(targets, j, picker);
+            x = rangelist_pick(targets, j);
             rangelist_add_range(duplicate, x, x);
         }
+        rangelist_sort(duplicate);
 
         /* at this point, the two range lists shouild be identical */
         REGRESS(targets->count == duplicate->count);
@@ -660,7 +728,6 @@ regress_pick2()
 
         rangelist_remove_all(targets);
         rangelist_remove_all(duplicate);
-        rangelist_pick2_destroy(picker);
     }
 
     return 0;
@@ -747,11 +814,11 @@ int
 ranges_selftest(void)
 {
     struct Range r;
-    struct RangeList task[1];
+    struct RangeList targets[1] = {{0}};
 
     REGRESS(regress_pick2() == 0);
 
-    memset(task, 0, sizeof(task[0]));
+    memset(targets, 0, sizeof(targets[0]));
 #define ERROR() fprintf(stderr, "selftest: failed %s:%u\n", __FILE__, __LINE__);
 
     /* test for the /0 CIDR block, since we'll be using that a lot to scan the entire
@@ -793,86 +860,97 @@ ranges_selftest(void)
     }
 
 
-    rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/24", 0, 0));
-    rangelist_add_range2(task, range_parse_ipv4("10.0.1.10-10.0.1.19", 0, 0));
-    rangelist_add_range2(task, range_parse_ipv4("10.0.1.20-10.0.1.30", 0, 0));
-    rangelist_add_range2(task, range_parse_ipv4("10.0.0.0-10.0.1.12", 0, 0));
+    rangelist_add_range2(targets, range_parse_ipv4("10.0.0.0/24", 0, 0));
+    rangelist_add_range2(targets, range_parse_ipv4("10.0.1.10-10.0.1.19", 0, 0));
+    rangelist_add_range2(targets, range_parse_ipv4("10.0.1.20-10.0.1.30", 0, 0));
+    rangelist_add_range2(targets, range_parse_ipv4("10.0.0.0-10.0.1.12", 0, 0));
+    rangelist_sort(targets);
 
-    if (task->count != 1) {
-        fprintf(stderr, "count = %u\n", task->count);
+    if (targets->count != 1) {
+        fprintf(stderr, "count = %u\n", targets->count);
         ERROR();
         return 1;
     }
-    if (task->list[0].begin != 0x0a000000 || task->list[0].end != 0x0a000100+30) {
-        fprintf(stderr, "r.begin = 0x%08x r.end = 0x%08x\n", task->list[0].begin, task->list[0].end);
+    if (targets->list[0].begin != 0x0a000000 || targets->list[0].end != 0x0a000100+30) {
+        fprintf(stderr, "r.begin = 0x%08x r.end = 0x%08x\n", targets->list[0].begin, targets->list[0].end);
         ERROR();
         return 1;
     }
+
+    rangelist_remove_all(targets);
 
     /*
      * Test removal
      */
-    memset(task, 0, sizeof(task[0]));
+    memset(targets, 0, sizeof(targets[0]));
 
-    rangelist_add_range2(task, range_parse_ipv4("10.0.0.0/8", 0, 0));
+    rangelist_add_range2(targets, range_parse_ipv4("10.0.0.0/8", 0, 0));
+    rangelist_sort(targets);
 
     /* These removals shouldn't change anything */
-    rangelist_remove_range2(task, range_parse_ipv4("9.255.255.255", 0, 0));
-    rangelist_remove_range2(task, range_parse_ipv4("11.0.0.0/16", 0, 0));
-    rangelist_remove_range2(task, range_parse_ipv4("192.168.0.0/16", 0, 0));
-    if (task->count != 1
-        || task->list->begin != 0x0a000000
-        || task->list->end != 0x0aFFFFFF) {
+    rangelist_remove_range2(targets, range_parse_ipv4("9.255.255.255", 0, 0));
+    rangelist_remove_range2(targets, range_parse_ipv4("11.0.0.0/16", 0, 0));
+    rangelist_remove_range2(targets, range_parse_ipv4("192.168.0.0/16", 0, 0));
+    rangelist_sort(targets);
+
+    if (targets->count != 1
+        || targets->list->begin != 0x0a000000
+        || targets->list->end != 0x0aFFFFFF) {
         ERROR();
         return 1;
     }
 
     /* These removals should remove a bit from the edges */
-    rangelist_remove_range2(task, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
-    rangelist_remove_range2(task, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
-    if (task->count != 1
-        || task->list->begin != 0x0a000001
-        || task->list->end != 0x0aFFFFFE) {
+    rangelist_remove_range2(targets, range_parse_ipv4("1.0.0.0-10.0.0.0", 0, 0));
+    rangelist_remove_range2(targets, range_parse_ipv4("10.255.255.255-11.0.0.0", 0, 0));
+    rangelist_sort(targets);
+    if (targets->count != 1
+        || targets->list->begin != 0x0a000001
+        || targets->list->end != 0x0aFFFFFE) {
         ERROR();
         return 1;
     }
 
 
     /* remove things from the middle */
-    rangelist_remove_range2(task, range_parse_ipv4("10.10.0.0/16", 0, 0));
-    rangelist_remove_range2(task, range_parse_ipv4("10.20.0.0/16", 0, 0));
-    if (task->count != 3) {
+    rangelist_remove_range2(targets, range_parse_ipv4("10.10.0.0/16", 0, 0));
+    rangelist_remove_range2(targets, range_parse_ipv4("10.20.0.0/16", 0, 0));
+    rangelist_sort(targets);
+    if (targets->count != 3) {
         ERROR();
         return 1;
     }
 
-    rangelist_remove_range2(task, range_parse_ipv4("10.12.0.0/16", 0, 0));
-    if (task->count != 4) {
+    rangelist_remove_range2(targets, range_parse_ipv4("10.12.0.0/16", 0, 0));
+    rangelist_sort(targets);
+    if (targets->count != 4) {
         ERROR();
         return 1;
     }
 
-    rangelist_remove_range2(task, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
-    if (task->count != 3) {
+    rangelist_remove_range2(targets, range_parse_ipv4("10.10.10.10-10.12.12.12", 0, 0));
+    rangelist_sort(targets);
+    if (targets->count != 3) {
         ERROR();
         return 1;
     }
-
+    rangelist_remove_all(targets);
 
     /* test ports */
     {
         unsigned is_error = 0;
-        memset(task, 0, sizeof(task[0]));
+        memset(targets, 0, sizeof(targets[0]));
 
-        rangelist_parse_ports(task, "80,1000-2000,1234,4444", &is_error, 0);
-        if (task->count != 3 || is_error) {
+        rangelist_parse_ports(targets, "80,1000-2000,1234,4444", &is_error, 0);
+        rangelist_sort(targets);
+        if (targets->count != 3 || is_error) {
             ERROR();
             return 1;
         }
 
-        if (task->list[0].begin != 80 || task->list[0].end != 80 ||
-            task->list[1].begin != 1000 || task->list[1].end != 2000 ||
-            task->list[2].begin != 4444 || task->list[2].end != 4444) {
+        if (targets->list[0].begin != 80 || targets->list[0].end != 80 ||
+            targets->list[1].begin != 1000 || targets->list[1].end != 2000 ||
+            targets->list[2].begin != 4444 || targets->list[2].end != 4444) {
             ERROR();
             return 1;
         }

@@ -125,15 +125,6 @@ struct ThreadPair {
     unsigned nic_index;
 
     /**
-     * This is an optimized binary-search when looking up IP addresses
-     * based on the index. When scanning the entire Internet, the target
-     * list is broken into thousands of subranges as we exclude certain
-     * ranges. Doing a lookup for each IP address is slow, so this 'picker'
-     * system speeds it up.
-     */
-    unsigned *picker;
-
-    /**
      * A copy of the master 'index' variable. This is just advisory for
      * other threads, to tell them how far we've gotten.
      */
@@ -273,7 +264,6 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t count_ips = rangelist_count(&masscan->targets);
     struct Throttler *throttler = parms->throttler;
     struct TemplateSet pkt_template = templ_copy(parms->tmplset);
-    unsigned *picker = parms->picker;
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
     unsigned increment = (masscan->shard.of-1) + masscan->nic_count;
@@ -385,7 +375,7 @@ infinite:
                 while (xXx >= range)
                     xXx -= range;
             xXx = blackrock_shuffle(&blackrock,  xXx);
-            ip_them = rangelist_pick2(&masscan->targets, xXx % count_ips, picker);
+            ip_them = rangelist_pick(&masscan->targets, xXx % count_ips);
             port_them = rangelist_pick(&masscan->ports, xXx / count_ips);
 
             /*
@@ -1076,7 +1066,6 @@ main_scan(struct Masscan *masscan)
     uint64_t count_ports;
     uint64_t range;
     unsigned index;
-    unsigned *picker;
     time_t now = time(0);
     struct Status status;
     uint64_t min_index = UINT64_MAX;
@@ -1154,8 +1143,9 @@ main_scan(struct Masscan *masscan)
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
      * our --excludefile will chop up our pristine 0.0.0.0/0 range into
-     * hundreds of subranges. This scans through them faster. */
-    picker = rangelist_pick2_create(&masscan->targets);
+     * hundreds of subranges. This allows us to grab addresses faster. */
+    rangelist_optimize(&masscan->targets);
+    rangelist_optimize(&masscan->ports);
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
   __AFL_INIT();
@@ -1170,7 +1160,6 @@ main_scan(struct Masscan *masscan)
 
         parms->masscan = masscan;
         parms->nic_index = index;
-        parms->picker = picker;
         parms->my_index = masscan->resume.index;
         parms->done_transmitting = 0;
         parms->done_receiving = 0;
@@ -1462,7 +1451,6 @@ main_scan(struct Masscan *masscan)
      * Now cleanup everything
      */
     status_finish(&status);
-    rangelist_pick2_destroy(picker);
 
     if (!masscan->output.is_status_updates) {
         uint64_t usec_now = pixie_gettime();

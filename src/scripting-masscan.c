@@ -1,6 +1,7 @@
 #include "masscan.h"
 #include "scripting.h"
 #include "stub-lua.h"
+#include "unusedparm.h"
 
 #define MASSCAN_CLASS "Masscan Class"
 
@@ -39,6 +40,8 @@ static int mass_gc(struct lua_State *L)
 {
     //struct MasscanWrapper *wrapper;
     //struct Masscan *masscan;
+
+    UNUSEDPARM(L);
 
     //wrapper = luaL_checkudata(L, 1, MASSCAN_CLASS);
     //masscan = wrapper->masscan;

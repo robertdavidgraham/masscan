@@ -1,4 +1,5 @@
 #include "read-service-probes.h"
+#include "reallocarray_s.h"
 #include "templ-port.h"
 #include "unusedparm.h"
 
@@ -251,10 +252,7 @@ parse_probe(struct NmapServiceProbeList *list, const char *line, size_t offset, 
     memset(probe, 0, sizeof(*probe));
     if (list->count + 1 >= list->max) {
         list->max = list->max * 2 + 1;
-        if (list->list == NULL)
-            list->list = malloc(sizeof(list->list[0]) * list->max);
-        else
-            list->list = realloc(list->list, sizeof(list->list[0]) * list->max);
+        list->list = reallocarray_s(list->list, sizeof(list->list[0]), list->max);
     }
     list->list[list->count++] = probe;
     
@@ -658,7 +656,7 @@ parse_line(struct NmapServiceProbeList *list, const char *line)
     size_t line_length;
     size_t offset;
     enum SvcP_RecordType type;
-    struct RangeList ranges;
+    struct RangeList ranges = {0};
     struct NmapServiceProbe *probe;
     
     

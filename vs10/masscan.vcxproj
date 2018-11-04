@@ -84,8 +84,8 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
-    <ClCompile Include="..\src\ranges-avl.c" />
     <ClCompile Include="..\src\ranges.c" />
+    <ClCompile Include="..\src\ranges6.c" />
     <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
@@ -94,6 +94,7 @@
     <ClCompile Include="..\src\rawsock-pcapfile.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\read-service-probes.c" />
+    <ClCompile Include="..\src\reallocarray_s.c" />
     <ClCompile Include="..\src\rte-ring.c" />
     <ClCompile Include="..\src\scripting-banner.c" />
     <ClCompile Include="..\src\scripting-masscan.c" />
@@ -172,11 +173,12 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
-    <ClInclude Include="..\src\ranges-avl.h" />
     <ClInclude Include="..\src\ranges.h" />
+    <ClInclude Include="..\src\ranges6.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\read-service-probes.h" />
+    <ClInclude Include="..\src\reallocarray_s.h" />
     <ClInclude Include="..\src\rte-ring.h" />
     <ClInclude Include="..\src\scripting.h" />
     <ClInclude Include="..\src\siphash24.h" />

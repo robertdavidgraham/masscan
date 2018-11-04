@@ -20,7 +20,6 @@
 #include "templ-payloads.h"
 #include "templ-port.h"
 #include "crypto-base64.h"
-#include "ranges-avl.h"
 #include "vulncheck.h"
 #include "masscan-app.h"
 #include "unusedparm.h"
@@ -249,7 +248,7 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     else
         sprintf_s(zzz, sizeof(zzz), "[%u]", i);
 
-    if (masscan->nic[i].ifname && masscan->nic[i].ifname[0])
+    if (masscan->nic[i].ifname[0])
         fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
     
     if (masscan->nic[i].src.ip.first+1 == masscan->nic[i].src.ip.last)
@@ -326,17 +325,6 @@ masscan_save_state(struct Masscan *masscan)
 }
 
 
-/*****************************************************************************
- * Just a wrapper around rangelist_add_range() since in theory they can
- * be different functions even though their prototypes are almost
- * identical.
- *****************************************************************************/
-static void
-rangelist_add_callback(void *v, unsigned begin, unsigned end)
-{
-    rangelist_add_range((struct RangeList *)v, begin, end);
-}
-
 
 /*****************************************************************************
  * Read in ranges from a file
@@ -355,8 +343,6 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
     FILE *fp;
     errno_t err;
     unsigned line_number = 0;
-    struct RavlNode *ravl = ravl_create();
-
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
@@ -430,18 +416,16 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
                         filename, line_number, offset, i, address);
                 exit(1);
             } else {
-                //rangelist_add_range(ranges, range.begin, range.end);
-                ravl = ravl_insert(range.begin, range.end, ravl);
+                rangelist_add_range(ranges, range.begin, range.end);
             }
         }
-
     }
 
-    ravl_enumerate(ravl, rangelist_add_callback, ranges);
-    
-    ravl_free(ravl);
-
     fclose(fp);
+
+    /* Target list must be sorted every time it's been changed, 
+     * before it can be used */
+    rangelist_sort(ranges);
 }
 
 /***************************************************************************
@@ -826,6 +810,9 @@ config_top_ports(struct Masscan *masscan, unsigned n)
         for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
             rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
     }
+
+    /* Targets must be sorted after every change, before being used */
+    rangelist_sort(ports);
 }
 
 /***************************************************************************
@@ -864,6 +851,7 @@ static int SET_arpscan(struct Masscan *masscan, const char *name, const char *va
     range.begin = Templ_ARP;
     range.end = Templ_ARP;
     rangelist_add_range(&masscan->ports, range.begin, range.end);
+    rangelist_sort(&masscan->ports);
     masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
     masscan->scan_type.arp = 1;
     LOG(5, "--arpscan\n");
@@ -1297,7 +1285,7 @@ static int SET_pcap_filename(struct Masscan *masscan, const char *name, const ch
 {
     UNUSEDPARM(name);
     if (masscan->echo) {
-        if (masscan->pcap_filename && masscan->pcap_filename[0])
+        if (masscan->pcap_filename[0])
             fprintf(masscan->echo, "pcap-filename = %s\n", masscan->pcap_filename);
         return 0;
     }
@@ -1711,7 +1699,7 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("src-port", name)) {
         /* Send packets FROM this port number */
         unsigned is_error = 0;
-        struct RangeList ports;
+        struct RangeList ports = {0};
         memset(&ports, 0, sizeof(ports));
 
         rangelist_parse_ports(&ports, value, &is_error, 0);
@@ -1823,9 +1811,10 @@ masscan_set_parameter(struct Masscan *masscan,
         
         app = masscan_string_to_app(value);
         
-        if (app)
+        if (app) {
             rangelist_add_range(&masscan->banner_types, app, app);
-        else {
+            rangelist_sort(&masscan->banner_types);
+        } else {
             LOG(0, "FAIL: bad banner app: %s\n", value);
             fprintf(stderr, "err\n");
             exit(1);
@@ -1849,6 +1838,7 @@ masscan_set_parameter(struct Masscan *masscan,
         range.begin = Templ_ICMP_echo;
         range.end = Templ_ICMP_echo;
         rangelist_add_range(&masscan->ports, range.begin, range.end);
+        rangelist_sort(&masscan->ports);
         masscan->scan_type.ping = 1;
         LOG(5, "--ping\n");
     } else if (EQUALS("range", name) || EQUALS("ranges", name)
@@ -2715,7 +2705,15 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
          */
         masscan_set_parameter(masscan, "range", argv[i]);
     }
-    
+
+    /*
+     * Targets must be sorted
+     */
+    rangelist_sort(&masscan->targets);
+    rangelist_sort(&masscan->ports);
+    rangelist_sort(&masscan->exclude_ip);
+    rangelist_sort(&masscan->exclude_port);
+
     /*
      * If no other "scan type" found, then default to TCP
      */

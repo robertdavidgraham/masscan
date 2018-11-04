@@ -543,8 +543,8 @@ payloads_read_pcap(const char *filename,
         unsigned captured_length;
         unsigned char buf[65536];
         struct PreprocessedInfo parsed;
-        struct RangeList ports[1];
-        struct Range range[1];
+        struct RangeList ports[1] = {{0}};
+        struct Range range[1] = {{0}};
 
         /*
          * Read the next packet from the capture file
@@ -622,7 +622,7 @@ payloads_udp_readfile(FILE *fp, const char *filename,
     for (;;) {
         unsigned is_error = 0;
         const char *p;
-        struct RangeList ports[1];
+        struct RangeList ports[1] = {{0}};
         unsigned source_port = 0x10000;
         unsigned char buf[1500];
         size_t buf_length = 0;
@@ -734,15 +734,16 @@ payloads_udp_create(void)
      * For popular parts, include some hard-coded default UDP payloads
      */
     for (i=0; hard_coded_payloads[i].length; i++) {
-        struct Range range;
-        struct RangeList list;
+        //struct Range range;
+        struct RangeList list = {0};
         unsigned length;
 
         /* Kludge: create a pseudo-rangelist to hold the one port */
-        list.list = &range;
+        /*list.list = &range;
         list.count = 1;
         range.begin = hard_coded_payloads[i].port;
-        range.end = range.begin;
+        range.end = range.begin;*/
+        rangelist_add_range(&list, hard_coded_payloads[i].port, hard_coded_payloads[i].port);
 
         length = hard_coded_payloads[i].length;
         if (length == 0xFFFFFFFF)
@@ -756,6 +757,8 @@ payloads_udp_create(void)
                     &list,
                     hard_coded_payloads[i].source_port,
                     hard_coded_payloads[i].set_cookie);
+
+        rangelist_remove_all(&list);
     }
     return payloads;
 }
