@@ -119,9 +119,7 @@
 #include <sys/types.h>
 #include <machine/cpufunc.h>
 #define __rdtsc rdtsc
-#elif defined(__llvm__)
-#include <x86intrin.h>
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__llvm__)
 static __inline__ unsigned long long __rdtsc(void)
 {
 #if defined(i386) || defined(__i386__)
