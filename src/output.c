@@ -452,6 +452,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_None:
         out->funcs = &null_output;
         break;
+    case Output_Bitmap:
+        out->funcs = &bitmap_output;
+        break;
     default:
         out->funcs = &null_output;
         break;

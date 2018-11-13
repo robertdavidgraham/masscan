@@ -190,7 +190,7 @@ print_nmap_help(void)
 "  --output-format <format>: Sets output to binary/list/unicornscan/json/ndjson/grepable/xml\n"
 "  --output-file <file>: Write scan results to file. If --output-format is\n"
 "     not given default is xml\n"
-"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan format,\n"
+"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU/-oM <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan/Bitmap format,\n"
 "     respectively, to the given filename. Shortcut for\n"
 "     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
@@ -1150,6 +1150,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
             case Output_NDJSON:     fprintf(fp, "output-format = ndjson\n"); break;
             case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
             case Output_None:       fprintf(fp, "output-format = none\n"); break;
+            case Output_Bitmap:     fprintf(fp, "output-format = bitmap\n"); break;
             case Output_Redis:
                 fprintf(fp, "output-format = redis\n");
                 fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
@@ -1179,6 +1180,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
     else if (EQUALS("certs", value))        x = Output_Certs;
     else if (EQUALS("none", value))         x = Output_None;
     else if (EQUALS("redis", value))        x = Output_Redis;
+    else if (EQUALS("bitmap", value))       x = Output_Bitmap;
     else {
         LOG(0, "FAIL: unknown output-format: %s\n", value);
         LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
@@ -2546,6 +2548,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'U':
                     masscan_set_parameter(masscan, "output-format", "unicornscan");
+                    break;
+                case 'M':
+                    masscan->output.format = Output_Bitmap;
                     break;
                 default:
                     fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);
