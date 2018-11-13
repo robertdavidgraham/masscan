@@ -4,7 +4,7 @@
 #include "out-record.h"
 #include "string_s.h"
 
-static uint64_t bitmap_buffer_size = 0x100000000 / 8;
+static size_t bitmap_buffer_size = 0x100000000 / 8;
 static uint64_t * bitmap_buffer;
 
 /****************************************************************************
