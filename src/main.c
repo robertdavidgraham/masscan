@@ -241,6 +241,17 @@ get_sources(const struct Masscan *masscan,
     *src_port_mask = src->port.last - src->port.first;
 }
 
+typedef struct Bucket {
+  int started;
+  uint32_t firstIp;
+  uint32_t firstSeq;
+  uint32_t preIp;
+  uint32_t preSeq;
+  uint32_t curIp;
+  uint32_t curSeq;
+  uint32_t histgram[16384 * 1024];
+} Bucket;
+
 /***************************************************************************
  * This thread spews packets as fast as it can
  *
@@ -319,6 +330,9 @@ infinite:
     end += retries * rate;
 
 
+    Bucket * buckets = malloc (sizeof(Bucket) * 256);
+    memset(buckets, 0, sizeof(Bucket) * 256);
+
     /* -----------------
      * the main loop
      * -----------------*/
@@ -341,8 +355,8 @@ infinite:
          * then "batch_size" will get decremented to zero, and we won't be
          * able to transmit SYN packets.
          */
-        flush_packets(adapter, parms->packet_buffers, parms->transmit_queue,
-                        &packets_sent, &batch_size);
+        // flush_packets(adapter, parms->packet_buffers, parms->transmit_queue,
+        //                 &packets_sent, &batch_size);
 
 
         /*
@@ -402,17 +416,35 @@ infinite:
              *  be a "raw" transmit that bypasses the kernel, meaning
              *  we can call this function millions of times a second.
              */
-            rawsock_send_probe(
-                    adapter,
-                    ip_them, port_them,
-                    ip_me, port_me,
-                    (unsigned)cookie,
-                    !batch_size, /* flush queue on last packet in batch */
-                    &pkt_template
-                    );
+            // rawsock_send_probe(
+            //         adapter,
+            //         ip_them, port_them,
+            //         ip_me, port_me,
+            //         (unsigned)cookie,
+            //         !batch_size, /* flush queue on last packet in batch */
+            //         &pkt_template
+            //         );
             batch_size--;
             packets_sent++;
             (*status_syn_count)++;
+
+            int index = (ip_them & 0xFF000000) >> 24;
+            if (!buckets[index].started) {
+              buckets[index].firstIp = ip_them;
+              buckets[index].firstSeq = i;
+              buckets[index].preIp = ip_them;
+              buckets[index].preSeq = i;
+              buckets[index].started = 1;
+            } else {
+              buckets[index].preIp = buckets[index].curIp;
+              buckets[index].preSeq = buckets[index].curSeq;
+              buckets[index].curIp = ip_them;
+              buckets[index].curSeq = i;
+              buckets[index].histgram[buckets[index].curSeq - buckets[index].preSeq]++;
+              if (index == 0) {
+                fprintf(stderr, "%u\n", buckets[index].curSeq - buckets[index].preSeq);
+              }
+            }
 
             /*
              * SEQUENTIALLY INCREMENT THROUGH THE RANGE
@@ -426,6 +458,10 @@ infinite:
             if (r == 0) {
                 i += increment; /* <------ increment by 1 normally, more with shards/nics */
                 r = retries + 1;
+            }
+
+            if (i >= end) {
+              is_tx_done = 1;
             }
 
         } /* end of batch */
@@ -443,6 +479,24 @@ infinite:
         }
     }
 
+    printf("histograms:");
+    for (int i = 0; i < 1; i++) {
+      printf("bucket %d:\n", i);
+      printf ("\tfirstIp: %u\n", buckets[i].firstIp);
+      printf ("\tfirstSeq: %u\n", buckets[i].firstSeq);
+      printf ("\tcurIp: %u\n", buckets[i].curIp);
+      printf ("\tcurSeq: %u\n", buckets[i].curSeq);
+      printf ("\thistogram: ");
+      for (int j = 0; j < 16384 * 1024; j++) {
+        if (buckets[i].histgram[j] != 0) {
+          printf("(%d, %d) ", j, buckets[i].histgram[j]);
+        }
+      }
+      printf("\n");
+    }
+    printf("histograms done.");
+    free(buckets);
+
     /*
      * --infinite
      *  For load testing, go around and do this again
@@ -459,7 +513,7 @@ infinite:
      * so there may be some packets that we've queueud but not yet transmitted.
      * This call makes sure they are transmitted.
      */
-    rawsock_flush(adapter);
+    // rawsock_flush(adapter);
 
     /*
      * Wait until the receive thread realizes the scan is over
@@ -1269,7 +1323,7 @@ main_scan(struct Masscan *masscan)
          * Start the MATCHING receive thread. Transmit and receive threads
          * come in matching pairs.
          */
-        parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
+        // parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
 
     }
 
@@ -1416,7 +1470,7 @@ main_scan(struct Masscan *masscan)
 
             }
 
-            pixie_mssleep(250);
+            // pixie_mssleep(250);
 
             if (transmit_count < masscan->nic_count)
                 continue;
