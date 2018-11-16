@@ -4,22 +4,30 @@
 #include "out-record.h"
 #include "string_s.h"
 
-static size_t bitmap_buffer_size = 0x100000000 / 8;
-static uint64_t * bitmap_buffer;
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <stdatomic.h>
+#include <sys/mman.h>
+
+#define BITMAP_SIZE 512 * 1024 * 1024
+
+static atomic_uint_fast64_t *bmp;
 
 /****************************************************************************
  ****************************************************************************/
 static void
 bitmap_out_open(struct Output *out, FILE *fp)
 {
-    UNUSEDPARM(out);
-    UNUSEDPARM(fp);
-    bitmap_buffer = (uint64_t *) malloc(bitmap_buffer_size);
-    if (bitmap_buffer == NULL) {
-      perror("malloc");
-      exit(1);
+    void *addr;
+
+    if ((addr = mmap(NULL, BITMAP_SIZE, PROT_WRITE, MAP_FILE | MAP_SHARED, fileno(fp), 0)) == MAP_FAILED) {
+        perror("mmap");
+        exit(1);
     }
-    memset(bitmap_buffer, 0, bitmap_buffer_size);
+
+    bmp = (atomic_uint_fast64_t *)addr;
+
     out->rotate.bytes_written += 0;
 }
 
@@ -31,13 +39,6 @@ bitmap_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
     UNUSEDPARM(fp);
-    if (fp) {
-      if (fwrite(bitmap_buffer, bitmap_buffer_size, 1, fp) == 1) {
-        fflush(fp);
-        out->rotate.bytes_written += bitmap_buffer_size;
-      }
-    }
-    free(bitmap_buffer);
 }
 
 /****************************************************************************
@@ -50,14 +51,15 @@ bitmap_out_status(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(fp);
     UNUSEDPARM(timestamp);
     UNUSEDPARM(status);
-    UNUSEDPARM(ip);
     UNUSEDPARM(ip_proto);
     UNUSEDPARM(port);
     UNUSEDPARM(reason);
     UNUSEDPARM(ttl);
 
-    uint64_t l = 1ULL << (ip % 64);
-    bitmap_buffer[ip / 64] |= l;
+    uint64_t idx = ip / 64;
+    uint64_t pos = 1ULL << (ip % 64);
+
+    atomic_fetch_or(&bmp[idx], pos);
 
     out->rotate.bytes_written += 0;
 }
@@ -71,7 +73,6 @@ bitmap_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         enum ApplicationProtocol proto, unsigned ttl,
         const unsigned char *px, unsigned length)
 {
-    UNUSEDPARM(out);
     UNUSEDPARM(fp);
     UNUSEDPARM(timestamp);
     UNUSEDPARM(ip);
