@@ -57,7 +57,7 @@ pixie_fopen_shareable(FILE **in_fp, const char *filename, unsigned is_append)
     }
 
 #else
-    fp = fopen(filename, is_append?"a":"w");
+    fp = fopen(filename, is_append?"a+":"w+");
     if (fp == NULL)
         return errno;
 #endif
