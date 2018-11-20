@@ -29,7 +29,7 @@ bitmap_out_open(struct Output *out, FILE *fp)
 
     g_bmp = (atomic_uint_fast64_t *)addr;
 
-    init_stats(&stats, STATS_NAME);
+    init_stats(&g_stats, STATS_NAME);
 
     out->rotate.bytes_written += 0;
 }
