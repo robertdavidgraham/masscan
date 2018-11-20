@@ -3,6 +3,7 @@
 #include "masscan-status.h"
 #include "out-record.h"
 #include "string_s.h"
+#include "stats.h"
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -11,11 +12,6 @@
 #include <sys/mman.h>
 
 #define BITMAP_SIZE 512 * 1024 * 1024
-
-typedef struct stats_st {
-    atomic_int_fast64_t sent;
-    atomic_int_fast64_t recv;
-} stats_t;
 
 static atomic_uint_fast64_t *g_bmp;
 static stats_t *stats;
@@ -26,13 +22,6 @@ static void
 bitmap_out_open(struct Output *out, FILE *fp)
 {
     void *addr;
-    int stats_fd;
-
-    if ((stats_fd = open("stats", O_RDWR, S_IRUSR | S_IWUSR)) == -1) {
-        perror("open");
-        exit(1);
-    }
-
     if ((addr = mmap(NULL, BITMAP_SIZE, PROT_WRITE, MAP_FILE | MAP_SHARED, fileno(fp), 0)) == MAP_FAILED) {
         perror("mmap");
         exit(1);
@@ -40,12 +29,7 @@ bitmap_out_open(struct Output *out, FILE *fp)
 
     g_bmp = (atomic_uint_fast64_t *)addr;
 
-    if ((addr = mmap(NULL, sizeof(stats_t), PROT_WRITE, MAP_FILE | MAP_SHARED, stats_fd, 0)) == MAP_FAILED) {
-        perror("mmap");
-        exit(1);
-    }
-
-    stats = (stats_t *)addr;
+    init_stats(&stats, STATS_NAME);
 
     out->rotate.bytes_written += 0;
 }

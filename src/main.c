@@ -57,6 +57,7 @@
 #include "main-readrange.h"
 #include "scripting.h"
 #include "read-service-probes.h"
+#include "stats.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -323,6 +324,10 @@ infinite:
      * the main loop
      * -----------------*/
     LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
+
+    stats_t *stats;
+    init_stats(&stats, STATS_NAME);
+
     for (i=start; i<end; ) {
         uint64_t batch_size;
 
@@ -412,6 +417,7 @@ infinite:
                     );
             batch_size--;
             packets_sent++;
+            atomic_fetch_add(&stats->sent, 1);
             (*status_syn_count)++;
 
             /*
