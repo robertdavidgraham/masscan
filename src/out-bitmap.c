@@ -63,7 +63,7 @@ bitmap_out_status(struct Output *out, FILE *fp, time_t timestamp,
     uint64_t pos = 1ULL << (ip % 64);
 
     atomic_fetch_or(&g_bmp[idx], pos);
-    atomic_fetch_add(&stats->recv, 1);
+    atomic_fetch_add(&g_stats->recv, 1);
 
     out->rotate.bytes_written += 0;
 }
