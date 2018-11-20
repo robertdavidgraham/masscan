@@ -6,7 +6,7 @@
 #include "stats.h"
 
 void
-init_stats(stats_t **s, const char *name)
+init_stats(stats_t **s, const char *filename)
 {
     int stats_fd;
     void *addr;
