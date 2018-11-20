@@ -11,7 +11,7 @@ init_stats(stats_t **s, const char *filename)
     int stats_fd;
     void *addr;
 
-    if ((stats_fd = open(name, O_RDWR, S_IRUSR | S_IWUSR)) == -1) {
+    if ((stats_fd = open(filename, O_RDWR, S_IRUSR | S_IWUSR)) == -1) {
         perror("open");
         exit(1);
     }
