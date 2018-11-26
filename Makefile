@@ -24,7 +24,7 @@ ifneq (, $(findstring linux, $(SYS)))
 ifneq (, $(findstring musl, $(SYS)))
 LIBS = 
 else
-LIBS = -lm -lrt -ldl -lpthread
+LIBS = -lm -lrt -ldl -lpthread -lpcap
 endif
 INCLUDES =
 FLAGS2 = 
@@ -78,7 +78,7 @@ FLAGS2 =
 endif
 
 
-DEFINES = 
+DEFINES = -DSTATICPCAP
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
 .SUFFIXES: .c .cpp
 

@@ -242,9 +242,6 @@ static int null_PCAP_SETDIRECTION(pcap_t *p, pcap_direction_t d)
 }
 static const char *null_PCAP_DATALINK_VAL_TO_NAME(int dlt)
 {
-#ifdef STATICPCAP
-    return pcap_datalink_val_toName(dlt);
-#endif
 	my_null(1, dlt);
     return 0;
 }
