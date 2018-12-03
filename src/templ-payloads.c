@@ -624,7 +624,7 @@ payloads_udp_readfile(FILE *fp, const char *filename,
         const char *p;
         struct RangeList ports[1] = {{0}};
         unsigned source_port = 0x10000;
-        unsigned char buf[1500];
+        unsigned char buf[1500] = {0};
         size_t buf_length = 0;
 
         memset(ports, 0, sizeof(ports[0]));
@@ -684,7 +684,8 @@ payloads_udp_readfile(FILE *fp, const char *filename,
          * Now we've completely parsed the record, so add it to our
          * list of payloads
          */
-        payloads_udp_add(payloads, buf, buf_length, ports, source_port, 0);
+		if (buf_length)
+			payloads_udp_add(payloads, buf, buf_length, ports, source_port, 0);
 
         rangelist_remove_all(ports);
     }
