@@ -596,6 +596,8 @@ rangelist_pick(const struct RangeList *targets, uint64_t index)
     unsigned mid;
     const unsigned *picker = targets->picker;
 
+    if (!targets->is_sorted)
+        rangelist_sort(targets);
     assert(targets->is_sorted);
 
     if (picker == NULL) {
