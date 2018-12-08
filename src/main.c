@@ -280,6 +280,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     if (!masscan->targets.is_sorted)
         rangelist_sort(&masscan->targets);
+    if (!masscan->ports.is_sorted)
+        rangelist_sort(&masscan->ports);
 
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
