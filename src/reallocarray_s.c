@@ -11,7 +11,7 @@ reallocarray_s(void *p, size_t count, size_t size)
     
     if (count >= MAXNUM || size >= MAXNUM) {
         if (size != 0 && count >= SIZE_MAX/size)
-            return realloc(p, SIZE_MAX); /* should trigger error */
+            return realloc(p, SIZE_MAX/2); /* should trigger error */
     }
 
     return realloc(p, count * size);

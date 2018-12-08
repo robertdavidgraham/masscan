@@ -636,6 +636,8 @@ rangelist_optimize(struct RangeList *targets)
     unsigned *picker;
     unsigned i;
     unsigned total = 0;
+    unsigned bit_count = 0;
+    size_t count = targets->count;
 
     if (!targets->is_sorted)
         rangelist_sort(targets);
@@ -643,18 +645,25 @@ rangelist_optimize(struct RangeList *targets)
     if (targets->picker)
         free(targets->picker);
 
-    if (((size_t)targets->count) >= (size_t)(SIZE_MAX/sizeof(*picker)))
-        exit(1); /* integer overflow */
-    picker = (unsigned *)malloc(targets->count * sizeof(*picker));
-    if (picker == NULL)
-        exit(1); /* out of memory */
+    picker = reallocarray_s(NULL, targets->count, sizeof(*picker));
 
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;
     }
-    
     targets->picker = picker;
+
+
+    for (;;) {
+        count >>= 1;
+        bit_count++;
+        if (count == 0)
+            break;
+    }
+
+    targets->picker_mask = (1 << bit_count) - 1;
+
+    
 }
 
 

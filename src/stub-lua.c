@@ -9,6 +9,10 @@
 #include <dlfcn.h>
 #endif
 
+#if defined(__GNUC__)
+/* Disable MinGW warnings for Windows */
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
 
 
 int stublua_init(void)

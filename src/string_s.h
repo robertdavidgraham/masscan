@@ -96,10 +96,12 @@ errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 # define vsprintf_s     vsnprintf
  int memcasecmp(const void *lhs, const void *rhs, int length);
  typedef int errno_t;
+#if !defined(WIN32) /* mingw */
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src);
 errno_t localtime_s(struct tm* _tm, const time_t *time);
 errno_t gmtime_s(struct tm* _tm, const time_t *time);
+#endif
 #undef strerror
 
 #else

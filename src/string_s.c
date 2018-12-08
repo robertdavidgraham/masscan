@@ -15,7 +15,7 @@
 /**
  * fopen_s
  */
-#if defined(__GNUC__) || _MSC_VER == 1200
+#if !defined(WIN32) || _MSC_VER == 1200
 errno_t fopen_s(FILE **pFile, const char *filename, const char *mode)
 {
     if (pFile == NULL || filename == NULL || mode == NULL)
@@ -47,7 +47,7 @@ memcasecmp(const void *lhs, const void *rhs, int length)
 /**
  * strcpy
  */
-#ifdef __GNUC__
+#if !defined(WIN32)
 errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src)
 {
     size_t i;
@@ -78,6 +78,9 @@ errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src)
 
     return 0;
 }
+#endif
+
+#ifdef __GNUC__
 
 errno_t localtime_s(struct tm* _tm, const time_t *time)
 {

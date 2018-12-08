@@ -278,6 +278,9 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
 
+    if (!masscan->targets.is_sorted)
+        rangelist_sort(&masscan->targets);
+
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
      * sending */

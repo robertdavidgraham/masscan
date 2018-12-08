@@ -20,6 +20,8 @@ struct RangeList
     unsigned count;
     unsigned max;
     unsigned *picker;
+    unsigned *picker_hash;
+    unsigned picker_mask;
     unsigned is_sorted:1;
 };
 
