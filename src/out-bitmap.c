@@ -79,7 +79,6 @@ bitmap_out_banner(struct Output *out, FILE *fp, time_t timestamp,
 {
     UNUSEDPARM(fp);
     UNUSEDPARM(timestamp);
-    UNUSEDPARM(ip);
     UNUSEDPARM(ip_proto);
     UNUSEDPARM(port);
     UNUSEDPARM(proto);
@@ -87,7 +86,12 @@ bitmap_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(px);
     UNUSEDPARM(length);
 
-    // Not used for bitmap so far
+    uint64_t idx = ip / 64;
+    uint64_t pos = 1ULL << (ip % 64);
+
+    atomic_fetch_or(&g_bmp[idx], pos);
+    atomic_fetch_add(&g_stats->recv, 1);
+
     out->rotate.bytes_written += 0;
 }
 
@@ -96,11 +100,9 @@ bitmap_out_banner(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 const struct OutputType bitmap_output = {
     "bitmap",
-    0,
+    NULL,
     bitmap_out_open,
     bitmap_out_close,
     bitmap_out_status,
     bitmap_out_banner,
 };
-
-
