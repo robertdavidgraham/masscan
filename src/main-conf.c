@@ -1916,8 +1916,8 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
                || EQUALS("destination-ip", name)
                || EQUALS("target-ip", name)) {
-        if (strlen(value) > 4 && !strcmp(&value[strlen(value) - 4], ".bmp")) {
-          LOG(5, "Input from bmp: %s\n", value);
+        if (strlen(value) > 4 && !strncmp(&value[strlen(value) - 4], ".bmp", 4)) {
+          printf("Input from bitmap: %s\n", value);
           ranges_from_bitmap(&masscan->targets, value);
         } else {
           const char *ranges = value;
