@@ -26,10 +26,6 @@
 #include "read-service-probes.h"
 #include <ctype.h>
 #include <limits.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <stdatomic.h>
 #include <sys/mman.h>
 
 #ifndef min
