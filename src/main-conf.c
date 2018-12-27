@@ -463,7 +463,7 @@ ranges_from_bitmap(struct RangeList *ranges, const char *filename)
       uint64_t idx = ip / 64;
       uint64_t isSet = (1ULL << (ip % 64)) & ((uint64_t*)addr)[idx];
       if (isSet) {
-        if (prev == 0xFFFFFFFFFFFFFFFF || prev + 1 < ip) {
+        if (prev == 0xFFFFFFFFFFFFFFFF || (prev + 1) < ip) {
           if (prev != 0xFFFFFFFFFFFFFFFF) {
             range.end = prev;
             if (range.end >= range.begin) {
@@ -477,6 +477,13 @@ ranges_from_bitmap(struct RangeList *ranges, const char *filename)
         prev = ip;
       }
       ip++;
+    }
+    // Add the last one
+    range.end = prev;
+    if (range.end >= range.begin) {
+      rangelist_add_range(ranges, range.begin, range.end);
+    } else {
+      printf("invalid range: %u - %u\n", range.begin, range.end);
     }
 
     munmap(addr, BITMAP_SIZE);
