@@ -40,6 +40,8 @@
 #define strdup _strdup
 #endif
 
+#define BITMAP_SIZE 512 * 1024 * 1024
+
 static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
 
@@ -439,18 +441,13 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
 static void
 ranges_from_bitmap(struct RangeList *ranges, const char *filename)
 {
-
-#define BITMAP_SIZE 512 * 1024 * 1024
-
     FILE *fp;
     errno_t err;
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
         perror(filename);
-        exit(1); /* HARD EXIT: because if it's an exclusion file, we don't
-                  * want to continue. We don't want ANY chance of
-                  * accidentally scanning somebody */
+        exit(1); /* HARD EXIT as no input targets to be scanned.*/
     }
 
     void *addr;
@@ -469,8 +466,11 @@ ranges_from_bitmap(struct RangeList *ranges, const char *filename)
         if (prev == 0xFFFFFFFFFFFFFFFF || prev + 1 < ip) {
           if (prev != 0xFFFFFFFFFFFFFFFF) {
             range.end = prev;
-            rangelist_add_range(ranges, range.begin, range.end);
-            // printf("range: %ld - %ld\n", range.begin, range.end);
+            if (range.end >= range.begin) {
+              rangelist_add_range(ranges, range.begin, range.end);
+            } else {
+              printf("invalid range: %u - %u\n", range.begin, range.end);
+            }
           }
           range.begin = ip;
         }
