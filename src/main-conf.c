@@ -26,6 +26,7 @@
 #include "read-service-probes.h"
 #include <ctype.h>
 #include <limits.h>
+#include <sys/mman.h>
 
 #ifndef min
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -34,6 +35,8 @@
 #if defined(_MSC_VER)
 #define strdup _strdup
 #endif
+
+#define BITMAP_SIZE 512 * 1024 * 1024
 
 static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
@@ -427,6 +430,67 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
      * before it can be used */
     rangelist_sort(ranges);
 }
+
+/*****************************************************************************
+ * Read in ranges from bmp
+ *****************************************************************************/
+static void
+ranges_from_bitmap(struct RangeList *ranges, const char *filename)
+{
+    FILE *fp;
+    errno_t err;
+
+    err = fopen_s(&fp, filename, "rt");
+    if (err) {
+        perror(filename);
+        exit(1); /* HARD EXIT as no input targets to be scanned.*/
+    }
+
+    void *addr;
+    if ((addr = mmap(NULL, BITMAP_SIZE, PROT_READ, MAP_PRIVATE, fileno(fp), 0)) == MAP_FAILED) {
+        perror("ranges_from_bitmap: mmap");
+        exit(1);
+    }
+
+    struct Range range;
+    uint64_t prev = 0xFFFFFFFFFFFFFFFF;
+    uint64_t ip = 0;
+    while (ip < 0x100000000ULL) {
+      uint64_t idx = ip / 64;
+      uint64_t isSet = (1ULL << (ip % 64)) & ((uint64_t*)addr)[idx];
+      if (isSet) {
+        if (prev == 0xFFFFFFFFFFFFFFFF || (prev + 1) < ip) {
+          if (prev != 0xFFFFFFFFFFFFFFFF) {
+            range.end = prev;
+            if (range.end >= range.begin) {
+              rangelist_add_range(ranges, range.begin, range.end);
+            } else {
+              printf("invalid range: %u - %u\n", range.begin, range.end);
+            }
+          }
+          range.begin = ip;
+        }
+        prev = ip;
+      }
+      ip++;
+    }
+    // Add the last one
+    range.end = prev;
+    if (range.end >= range.begin) {
+      rangelist_add_range(ranges, range.begin, range.end);
+    } else {
+      printf("invalid range: %u - %u\n", range.begin, range.end);
+    }
+
+    munmap(addr, BITMAP_SIZE);
+    fclose(fp);
+
+    /* Target list must be sorted every time it's been changed,
+     * before it can be used */
+    rangelist_sort(ranges);
+    printf("ranges length = %llu\n", rangelist_count(ranges));
+}
+
 
 /***************************************************************************
  ***************************************************************************/
@@ -1848,25 +1912,30 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
                || EQUALS("destination-ip", name)
                || EQUALS("target-ip", name)) {
-        const char *ranges = value;
-        unsigned offset = 0;
-        unsigned max_offset = (unsigned)strlen(ranges);
+        if (strlen(value) > 4 && !strncmp(&value[strlen(value) - 4], ".bmp", 4)) {
+          printf("Input from bitmap: %s\n", value);
+          ranges_from_bitmap(&masscan->targets, value);
+        } else {
+          const char *ranges = value;
+          unsigned offset = 0;
+          unsigned max_offset = (unsigned)strlen(ranges);
 
-        for (;;) {
-            struct Range range;
+          for (;;) {
+              struct Range range;
 
-            range = range_parse_ipv4(ranges, &offset, max_offset);
-            if (range.end < range.begin) {
-                fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
-                break;
-            }
+              range = range_parse_ipv4(ranges, &offset, max_offset);
+              if (range.end < range.begin) {
+                  fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
+                  break;
+              }
 
-            rangelist_add_range(&masscan->targets, range.begin, range.end);
+              rangelist_add_range(&masscan->targets, range.begin, range.end);
 
-            if (offset >= max_offset || ranges[offset] != ',')
-                break;
-            else
-                offset++; /* skip comma */
+              if (offset >= max_offset || ranges[offset] != ',')
+                  break;
+              else
+                  offset++; /* skip comma */
+          }
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
