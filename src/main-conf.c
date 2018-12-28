@@ -488,7 +488,6 @@ ranges_from_bitmap(struct RangeList *ranges, const char *filename)
     /* Target list must be sorted every time it's been changed,
      * before it can be used */
     rangelist_sort(ranges);
-    printf("ranges length = %llu\n", rangelist_count(ranges));
 }
 
 
@@ -1912,30 +1911,25 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
                || EQUALS("destination-ip", name)
                || EQUALS("target-ip", name)) {
-        if (strlen(value) > 4 && !strncmp(&value[strlen(value) - 4], ".bmp", 4)) {
-          printf("Input from bitmap: %s\n", value);
-          ranges_from_bitmap(&masscan->targets, value);
-        } else {
-          const char *ranges = value;
-          unsigned offset = 0;
-          unsigned max_offset = (unsigned)strlen(ranges);
+        const char *ranges = value;
+        unsigned offset = 0;
+        unsigned max_offset = (unsigned)strlen(ranges);
 
-          for (;;) {
-              struct Range range;
+        for (;;) {
+            struct Range range;
 
-              range = range_parse_ipv4(ranges, &offset, max_offset);
-              if (range.end < range.begin) {
-                  fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
-                  break;
-              }
+            range = range_parse_ipv4(ranges, &offset, max_offset);
+            if (range.end < range.begin) {
+                fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
+                break;
+            }
 
-              rangelist_add_range(&masscan->targets, range.begin, range.end);
+            rangelist_add_range(&masscan->targets, range.begin, range.end);
 
-              if (offset >= max_offset || ranges[offset] != ',')
-                  break;
-              else
-                  offset++; /* skip comma */
-          }
+            if (offset >= max_offset || ranges[offset] != ',')
+                break;
+            else
+                offset++; /* skip comma */
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
@@ -2066,7 +2060,15 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
-        ranges_from_file(&masscan->targets, value);
+        if (strlen(value) > 4 && !strncmp(&value[strlen(value) - 4], ".bmp", 4)) {
+          printf("Input from bitmap: %s\n", value);
+          ranges_from_bitmap(&masscan->targets, value);
+          printf("ranges length = %llu\n", rangelist_count(&masscan->targets));
+        } else {
+          printf("Input from txt: %s\n", value);
+          ranges_from_file(&masscan->targets, value);
+          printf("ranges length = %llu\n", rangelist_count(&masscan->targets));
+        }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     } else if (EQUALS("infinite", name)) {
