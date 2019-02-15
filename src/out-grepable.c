@@ -147,7 +147,9 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     else
         service = "";
     
-    fprintf(fp, "Host: %u.%u.%u.%u ()",
+	fprintf(fp, "Timestamp: %lu", timestamp);     
+	
+    fprintf(fp, "\tHost: %u.%u.%u.%u ()",
                     (unsigned char)(ip>>24),
                     (unsigned char)(ip>>16),
                     (unsigned char)(ip>> 8),
