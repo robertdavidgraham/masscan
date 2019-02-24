@@ -47,7 +47,7 @@ getFILETIMEoffset(void)
 }
 
 int
-clock_gettime(int X, struct timeval *tv)
+_clock_gettime(int X, struct timeval *tv)
 {
     LARGE_INTEGER           t;
     FILETIME            f;
@@ -92,7 +92,7 @@ uint64_t
 pixie_gettime(void)
 {
     //struct timeval tv;
-    //clock_gettime(0, &tv);
+    //_clock_gettime(0, &tv);
 
     uint64_t time1 = 0, freq = 0;
     double seconds;
@@ -182,12 +182,12 @@ pixie_gettime(void)
     struct timespec tv;
 
 #ifdef CLOCK_MONOTONIC_RAW
-    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
+    x = _clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
 #else
-    x = clock_gettime(CLOCK_MONOTONIC, &tv);
+    x = _clock_gettime(CLOCK_MONOTONIC, &tv);
 #endif
     if (x != 0) {
-        printf("clock_gettime() err %d\n", errno);
+        printf("_clock_gettime() err %d\n", errno);
     }
 
     return tv.tv_sec * 1000000 + tv.tv_nsec/1000;
@@ -199,12 +199,12 @@ pixie_nanotime(void)
     struct timespec tv;
 
 #ifdef CLOCK_MONOTONIC_RAW
-    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
+    x = _clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
 #else
-    x = clock_gettime(CLOCK_MONOTONIC, &tv);
+    x = _clock_gettime(CLOCK_MONOTONIC, &tv);
 #endif
     if (x != 0) {
-        printf("clock_gettime() err %d\n", errno);
+        printf("_clock_gettime() err %d\n", errno);
     }
 
     return tv.tv_sec * 1000000000 + tv.tv_nsec;
