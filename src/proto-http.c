@@ -5,6 +5,7 @@
 #include "unusedparm.h"
 #include "string_s.h"
 #include "masscan-app.h"
+#include "util-malloc.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -57,7 +58,7 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
     unsigned is_newline_seen = 0;
     unsigned field_name_len = (unsigned)strlen(field_name);
 
-    hdr2 = (unsigned char *)malloc(header_length + field_value_len + 1 + 2);
+    hdr2 = MALLOC(header_length + field_value_len + 1 + 2);
 
     memcpy(hdr2, hdr1, header_length);
 
@@ -190,7 +191,7 @@ http_init(struct Banner1 *b)
                           html_fields[i].is_anchored);
     smack_compile(b->html_fields);
 
-    banner_http.hello = (unsigned char*)malloc(banner_http.hello_length);
+    banner_http.hello = MALLOC(banner_http.hello_length);
     memcpy((char*)banner_http.hello, http_hello, banner_http.hello_length);
 
     return b->http_fields;

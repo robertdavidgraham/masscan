@@ -25,6 +25,7 @@
 */
 #include "event-timeout.h"
 #include "logger.h"
+#include "util-malloc.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,11 +70,8 @@ timeouts_create(uint64_t timestamp)
     /*
      * Allocate memory and initialize it to zero
      */
-    timeouts = (struct Timeouts *)malloc(sizeof(*timeouts));
-    if (timeouts == NULL)
-        exit(1);
-    memset(timeouts, 0, sizeof(*timeouts));
-
+    timeouts = CALLOC(1, sizeof(*timeouts));
+    
     /*
      * We just mask off the low order bits to determine wrap. I'm using
      * a variable here because one of these days I'm going to make

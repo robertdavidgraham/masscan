@@ -1,5 +1,5 @@
 #include "read-service-probes.h"
-#include "reallocarray_s.h"
+#include "util-malloc.h"
 #include "templ-port.h"
 #include "unusedparm.h"
 
@@ -176,7 +176,7 @@ parse_name(const char *line, size_t *r_offset, size_t line_length)
         (*r_offset)++;
     
     /* allocate result string */
-    result = malloc(name_length+1);
+    result = MALLOC(name_length+1);
     memcpy(result, line + name_offset, name_length+1);
     result[name_length] = '\0';
     
@@ -212,10 +212,9 @@ parse_fallback(struct NmapServiceProbeList *list, const char *line, size_t offse
         }
         
         /* Alocate a record */
-        fallback = malloc(sizeof(*fallback));
-        memset(fallback, 0, sizeof(*fallback));
+        fallback = CALLOC(1, sizeof(*fallback));
         
-        fallback->name = malloc(name_length+1);
+        fallback->name = MALLOC(name_length+1);
         memcpy(fallback->name, line+name_offset, name_length+1);
         fallback->name[name_length] = '\0';
         
@@ -248,11 +247,10 @@ parse_probe(struct NmapServiceProbeList *list, const char *line, size_t offset, 
      * We have a new 'Probe', so append a blank record to the end of
      * our list
      */
-    probe = malloc(sizeof(*probe));
-    memset(probe, 0, sizeof(*probe));
+    probe = CALLOC(1, sizeof(*probe));
     if (list->count + 1 >= list->max) {
         list->max = list->max * 2 + 1;
-        list->list = reallocarray_s(list->list, sizeof(list->list[0]), list->max);
+        list->list = REALLOCARRAY(list->list, sizeof(list->list[0]), list->max);
     }
     list->list[list->count++] = probe;
     
@@ -317,8 +315,7 @@ parse_probe(struct NmapServiceProbeList *list, const char *line, size_t offset, 
         /* allocate a buffer at least as long as the remainder of the line. This is
          * probably too large, but cannot be too small. It's okay if we waste a
          * few characters. */
-        x = malloc(line_length - offset + 1);
-        memset(x, 0, line_length - offset + 1);
+        x = CALLOC(1, line_length - offset + 1);
         probe->hellostring = x;
         
         /* Grab all the characters until the next delimiter, translating escaped
@@ -438,8 +435,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
     struct ServiceProbeMatch *match;
     
     
-    match = malloc(sizeof(*match));
-    memset(match, 0, sizeof(*match));
+    match = CALLOC(1, sizeof(*match));
     
     /*
      * <servicename>
@@ -487,7 +483,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             offset++;
         
         /* add regex pattern to record */
-        match->regex = malloc(regex_length  + 1);
+        match->regex = MALLOC(regex_length  + 1);
         memcpy(match->regex, line+regex_offset, regex_length + 1);
         match->regex[regex_length] = '\0';
         
@@ -609,11 +605,9 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             struct ServiceVersionInfo **r_v;
             
             
-            v = malloc(sizeof(*v));
-            memset(v, 0, sizeof(*v));
-            
+            v = CALLOC(1, sizeof(*v));
             v->type = type;
-            v->value = malloc(value_length + 1);
+            v->value = MALLOC(value_length + 1);
             memcpy(v->value, line+value_offset, value_length+1);
             v->value[value_length] = '\0';
             v->is_a = is_a;
@@ -784,8 +778,7 @@ nmapserviceprobes_new(const char *filename)
 {
     struct NmapServiceProbeList *result;
     
-    result = malloc(sizeof(*result));
-    memset(result, 0, sizeof(*result));
+    result = CALLOC(1, sizeof(*result));
     result->filename = filename;
 
     return result;

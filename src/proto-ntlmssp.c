@@ -2,6 +2,7 @@
 #include "masscan-app.h"
 #include "proto-banout.h"
 #include "string_s.h"
+#include "util-malloc.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -120,7 +121,7 @@ ntlmssp_decode(struct NtlmsspDecode *x,
     /* See if we have a fragment, in which case we need to allocate a buffer
      * to contain it */
     if (x->offset == 0 && x->length > length) {
-        x->buf = malloc(x->length);
+        x->buf = MALLOC(x->length);
         memcpy(x->buf, px, length);
         x->offset = (unsigned)length;
         return;

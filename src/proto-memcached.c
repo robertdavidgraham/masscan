@@ -14,6 +14,7 @@
 #include "proto-udp.h"
 #include "syn-cookie.h"
 #include "templ-port.h"
+#include "util-malloc.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
@@ -238,7 +239,7 @@ memcached_init(struct Banner1 *b)
         size_t len;
 
         len = strlen(memcached_responses[i].pattern);
-        tmp = malloc(len + 2);
+        tmp = MALLOC(len + 2);
         memcpy(tmp, memcached_responses[i].pattern, len);
         tmp[len+1] = '\0';
 
@@ -268,7 +269,7 @@ memcached_init(struct Banner1 *b)
         size_t len;
 
         len = strlen(memcached_stats[i].pattern);
-        tmp = malloc(len + 2);
+        tmp = MALLOC(len + 2);
         memcpy(tmp, memcached_stats[i].pattern, len);
         tmp[len+1] = '\0';
 

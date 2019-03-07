@@ -1,5 +1,6 @@
 #include "proto-interactive.h"
 #include "unusedparm.h"
+#include "util-malloc.h"
 #include <stdlib.h>
 
 /*
@@ -14,7 +15,7 @@ tcp_transmit_alloc(struct InteractiveData *more, size_t length)
      * memory pools instead of heap malloc(), which will use this parameter */
     UNUSEDPARM(more);
 
-    return malloc(length);
+    return MALLOC(length);
 }
 
 void

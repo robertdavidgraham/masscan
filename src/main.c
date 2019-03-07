@@ -57,6 +57,7 @@
 #include "main-readrange.h"
 #include "scripting.h"
 #include "read-service-probes.h"
+#include "util-malloc.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -278,15 +279,10 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
 
-    if (!masscan->targets.is_sorted)
-        rangelist_sort(&masscan->targets);
-    if (!masscan->ports.is_sorted)
-        rangelist_sort(&masscan->ports);
-
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
      * sending */
-    status_syn_count = (uint64_t*)malloc(sizeof(uint64_t));
+    status_syn_count = MALLOC(sizeof(uint64_t));
     *status_syn_count = 0;
     parms->total_syns = status_syn_count;
 
@@ -548,11 +544,11 @@ receive_thread(void *v)
     uint64_t entropy = masscan->seed;
 
     /* some status variables */
-    status_synack_count = (uint64_t*)malloc(sizeof(uint64_t));
+    status_synack_count = MALLOC(sizeof(uint64_t));
     *status_synack_count = 0;
     parms->total_synacks = status_synack_count;
 
-    status_tcb_count = (uint64_t*)malloc(sizeof(uint64_t));
+    status_tcb_count = MALLOC(sizeof(uint64_t));
     *status_tcb_count = 0;
     parms->total_tcbs = status_tcb_count;
 
@@ -1250,9 +1246,7 @@ main_scan(struct Masscan *masscan)
             for (i=0; i<BUFFER_COUNT-1; i++) {
                 struct PacketBuffer *p;
 
-                p = (struct PacketBuffer *)malloc(sizeof(*p));
-                if (p == NULL)
-                    exit(1);
+                p = MALLOC(sizeof(*p));
                 err = rte_ring_sp_enqueue(parms->packet_buffers, p);
                 if (err) {
                     /* I dunno why but I can't queue all 256 packets, just 255 */

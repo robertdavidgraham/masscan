@@ -20,6 +20,7 @@
 #include "proto-memcached.h"
 #include "proto-ntp.h"
 #include "proto-dns.h"
+#include "util-malloc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -240,12 +241,7 @@ payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *target_p
     unsigned count2 = 0;
 
     /* Create a new list */
-    if (payloads->max >= SIZE_MAX/sizeof(list2[0]))
-        exit(1); /* integer overflow */
-    else
-    list2 = (struct PayloadUDP_Item **)malloc(payloads->max * sizeof(list2[0]));
-    if (list2 == NULL)
-        exit(1); /* out of memory */
+    list2 = REALLOCARRAY(0, payloads->max, sizeof(list2[0]));
 
     /* Add to the new list any used ports */
     for (i=0; i<payloads->count; i++) {
@@ -444,7 +440,7 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
 
 /***************************************************************************
  ***************************************************************************/
-unsigned
+static unsigned
 payloads_udp_add(struct PayloadsUDP *payloads,
             const unsigned char *buf, size_t length,
             struct RangeList *ports, unsigned source_port,
@@ -459,25 +455,12 @@ payloads_udp_add(struct PayloadsUDP *payloads,
         /* grow the list if we need to */
         if (payloads->count + 1 > payloads->max) {
             size_t new_max = payloads->max*2 + 1;
-            struct PayloadUDP_Item **new_list;
-
-            if (new_max >= SIZE_MAX/sizeof(new_list[0]))
-                exit(1); /* integer overflow */
-            new_list = (struct PayloadUDP_Item**)malloc(new_max * sizeof(new_list[0]));
-            if (new_list == NULL)
-                exit(1); /* out of memory */
-
-            memcpy(new_list, payloads->list, payloads->count * sizeof(new_list[0]));
-            free(payloads->list);
-            payloads->list = new_list;
+            payloads->list = REALLOCARRAY(payloads->list, new_max, sizeof(payloads->list[0]));
             payloads->max = new_max;
         }
 
         /* allocate space for this record */
-        p = (struct PayloadUDP_Item *)malloc(sizeof(p[0]) + length);
-        if (p == NULL)
-            exit(1); /* out of memory */
-
+        p = MALLOC(sizeof(p[0]) + length);
         p->port = rangelist_pick(ports, i);
         p->source_port = source_port;
         p->length = (unsigned)length;
@@ -725,11 +708,9 @@ payloads_udp_create(void)
 {
     unsigned i;
     struct PayloadsUDP *payloads;
-    payloads = (struct PayloadsUDP *)malloc(sizeof(*payloads));
-    if (payloads == NULL)
-        exit(1);
-    memset(payloads, 0, sizeof(*payloads));
-
+    
+    payloads = CALLOC(1, sizeof(*payloads));
+    
     /*
      * For popular parts, include some hard-coded default UDP payloads
      */

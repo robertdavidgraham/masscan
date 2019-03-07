@@ -93,7 +93,7 @@ range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
  *      The length of the line, in other words, the max value of inout_offset.
  */
 struct Range6 
-range6_parse_ip(const char *line, unsigned *inout_offset, unsigned max);
+range6_parse(const char *line, unsigned *inout_offset, unsigned max);
 
 
 /**
@@ -183,7 +183,7 @@ range6list_optimize(struct Range6List *targets);
  *      0 if the regression test succeeds, or a positive value on failure
  */
 int
-range6list_selftest(void);
+ranges6_selftest(void);
 
 
 #endif

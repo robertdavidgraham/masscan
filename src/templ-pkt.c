@@ -18,7 +18,7 @@
 #include "syn-cookie.h"
 #include "unusedparm.h"
 #include "vulncheck.h"
-
+#include "util-malloc.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -350,7 +350,7 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
     for (i=0; i<templset->count; i++) {
         const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->packet = (unsigned char*)malloc(p2->length);
+        p2->packet = MALLOC(p2->length);
         memcpy(p2->packet, p1->packet, p2->length);
     }
 
@@ -790,9 +790,7 @@ _template_init(
     memset(tmpl, 0, sizeof(*tmpl));
     tmpl->length = (unsigned)packet_size;
 
-    tmpl->packet = (unsigned char *)malloc(2048);
-    if (tmpl->packet == NULL)
-        exit(1);
+    tmpl->packet = MALLOC(2048);
     memcpy(tmpl->packet, packet_bytes, tmpl->length);
     px = tmpl->packet;
 
@@ -1063,7 +1061,7 @@ template_set_vlan(struct TemplateSet *tmplset, unsigned vlan)
         if (tmpl->length < 14)
             continue;
         
-        px = (unsigned char*)malloc(tmpl->length + 4);
+        px = MALLOC(tmpl->length + 4);
         memcpy(px, tmpl->packet, 12);
         memcpy(px+16, tmpl->packet+12, tmpl->length - 12);
         

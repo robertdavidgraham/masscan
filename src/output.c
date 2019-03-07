@@ -41,6 +41,7 @@
 #include "main-globals.h"
 #include "pixie-file.h"
 #include "pixie-sockets.h"
+#include "util-malloc.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -309,11 +310,8 @@ duplicate_string(const char *str)
         length = strlen(str);
 
     /* Allocate memory for the string */
-    result = malloc(length + 1);
-    if (result == 0) {
-        fprintf(stderr, "output: out of memory error\n");
-        exit(1);
-    }
+    result = MALLOC(length + 1);
+    
 
     /* Copy the string */
     if (str)
@@ -354,11 +352,8 @@ indexed_filename(const char *filename, unsigned index)
         ext = len;
 
     /* allocate memory */
-    new_filename = (char*)malloc(new_length);
-    if (new_filename == NULL) {
-        fprintf(stderr, "output: out of memory\n");
-        exit(1);
-    }
+    new_filename = MALLOC(new_length);
+    
 
     /* format the new name */
     sprintf_s(new_filename, new_length, "%.*s.%02u%s",
@@ -382,10 +377,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     unsigned i;
 
     /* allocate/initialize memory */
-    out = (struct Output *)malloc(sizeof(*out));
-    if (out == NULL)
-        return NULL;
-    memset(out, 0, sizeof(*out));
+    out = CALLOC(1, sizeof(*out));
     out->masscan = masscan;
     out->when_scan_started = time(0);
     out->is_virgin_file = 1;
@@ -542,11 +534,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen(filename)
                             + 1  /* - */
                             + 1; /* nul */
-    new_filename = malloc(new_filename_size);
-    if (new_filename == NULL) {
-        LOG(0, "rotate: out of memory error\n");
-        return out->fp;
-    }
+    new_filename = MALLOC(new_filename_size);
 
     /* Get the proper timestamp for the file */
     if (out->is_gmt) {

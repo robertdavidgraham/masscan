@@ -24,6 +24,7 @@
 #include "masscan-app.h"
 #include "unusedparm.h"
 #include "read-service-probes.h"
+#include "util-malloc.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -1007,10 +1008,9 @@ static int SET_hello_string(struct Masscan *masscan, const char *name, const cha
     }
 
     
-    value2 = (char*)malloc(strlen(value)+1);
-    memcpy(value2, value, strlen(value)+1);
-    
-    pay = (struct TcpCfgPayloads *)malloc(sizeof(*pay));
+    value2 = STRDUP(value);
+
+    pay = MALLOC(sizeof(*pay));
     
     pay->payload_base64 = value2;
     pay->port = index;
@@ -1830,7 +1830,7 @@ masscan_set_parameter(struct Masscan *masscan,
         size_t len = strlen(value) + 1;
         if (masscan->bpf_filter)
             free(masscan->bpf_filter);
-        masscan->bpf_filter = (char*)malloc(len);
+        masscan->bpf_filter = MALLOC(len);
         memcpy(masscan->bpf_filter, value, len);
     } else if (EQUALS("ping", name) || EQUALS("ping-sweep", name)) {
         /* Add ICMP ping request */
@@ -1954,7 +1954,7 @@ masscan_set_parameter(struct Masscan *masscan,
         if (masscan->http_user_agent)
             free(masscan->http_user_agent);
         masscan->http_user_agent_length = (unsigned)strlen(value);
-        masscan->http_user_agent = (unsigned char *)malloc(masscan->http_user_agent_length+1);
+        masscan->http_user_agent = MALLOC(masscan->http_user_agent_length+1);
         memcpy( masscan->http_user_agent,
                 value,
                 masscan->http_user_agent_length+1
@@ -1967,7 +1967,7 @@ masscan_set_parameter(struct Masscan *masscan,
         unsigned char *newvalue;
 
         /* allocate new value */
-        newvalue = (unsigned char*)malloc(value_length+1);
+        newvalue = MALLOC(value_length+1);
         memcpy(newvalue, value, value_length+1);
         newvalue[value_length] = '\0';
 
@@ -1978,7 +1978,7 @@ masscan_set_parameter(struct Masscan *masscan,
         name_length = (unsigned)strlen(name);
         while (name_length && ispunct(name[name_length-1]))
             name_length--;
-        newname = (char*)malloc(name_length+1);
+        newname = MALLOC(name_length+1);
         memcpy(newname, name, name_length+1);
         newname[name_length] = '\0';
 

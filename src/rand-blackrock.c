@@ -49,6 +49,7 @@
 */
 #include "rand-blackrock.h"
 #include "pixie-timer.h"
+#include "util-malloc.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -302,11 +303,8 @@ blackrock_verify(struct BlackRock *br, uint64_t max)
     uint64_t range = br->range;
 
     /* Allocate a list of 1-byte counters */
-    list = (unsigned char *)malloc((size_t)((range<max)?range:max));
-    if (list == NULL)
-        exit(1);
-    memset(list, 0, (size_t)((range<max)?range:max));
-
+    list = CALLOC(1, (size_t)((range<max)?range:max));
+    
     /* For all numbers in the range, verify increment the counter for the
      * the output. */
     for (i=0; i<range; i++) {

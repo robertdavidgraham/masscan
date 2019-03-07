@@ -79,7 +79,7 @@ endif
 
 
 DEFINES = 
-CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
+CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O2
 .SUFFIXES: .c .cpp
 
 all: bin/masscan 

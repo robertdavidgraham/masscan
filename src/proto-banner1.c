@@ -19,6 +19,7 @@
 #include "masscan-app.h"
 #include "scripting.h"
 #include "versioning.h"
+#include "util-malloc.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -274,10 +275,8 @@ banner1_create(void)
     struct Banner1 *b;
     unsigned i;
 
-    b = (struct Banner1 *)malloc(sizeof(*b));
-    if (b == NULL)
-        exit(1);
-    memset(b, 0, sizeof(*b));
+    b = CALLOC(1, sizeof(*b));
+    
 
     /*
      * This creates a pattern-matching blob for heuristically determining

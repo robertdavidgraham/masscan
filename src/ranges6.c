@@ -2,7 +2,7 @@
     for tracking IP/port ranges
 */
 #include "ranges6.h"
-#include "reallocarray_s.h"
+#include "util-malloc.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -41,7 +41,8 @@ static uint64_t DIFF(const ipv6address lhs, const ipv6address rhs)
         return lhs.lo - rhs.lo;
 }
 
-static int LESS(const ipv6address lhs, const ipv6address rhs)
+static int
+LESS(const ipv6address lhs, const ipv6address rhs)
 {
     if (lhs.hi < rhs.hi)
         return 1;
@@ -51,7 +52,8 @@ static int LESS(const ipv6address lhs, const ipv6address rhs)
         return 0;
 }
 
-static int LESSEQ(const ipv6address lhs, const ipv6address rhs)
+static int
+LESSEQ(const ipv6address lhs, const ipv6address rhs)
 {
     if (lhs.hi <= rhs.hi)
         return 1;
@@ -61,12 +63,14 @@ static int LESSEQ(const ipv6address lhs, const ipv6address rhs)
         return 0;
 }
 
-int EQUALS(const ipv6address lhs, const ipv6address rhs)
+/*static int
+EQUALS(const ipv6address lhs, const ipv6address rhs)
 {
     return lhs.hi == rhs.hi && lhs.lo == rhs.lo;
-}
+}*/
 
-static ipv6address MINUS_ONE(const ipv6address ip)
+static ipv6address
+MINUS_ONE(const ipv6address ip)
 {
     ipv6address result;
     
@@ -181,7 +185,7 @@ range6list_add_range(struct Range6List *targets, const ipv6address begin, const 
         /* double the size of the array */
         targets->max = targets->max * 2 + 1;
 
-        targets->list = reallocarray_s(targets->list, targets->max, sizeof(targets->list[0]));
+        targets->list = REALLOCARRAY(targets->list, targets->max, sizeof(targets->list[0]));
     }
 
     {
@@ -320,11 +324,11 @@ range6list_remove_range(struct Range6List *targets, const ipv6address begin, con
     }
 }
 
-void
+/*void
 range6list_add_range2(struct Range6List *targets, struct Range6 range)
 {
     range6list_add_range(targets, range.begin, range.end);
-}
+}*/
 void
 range6list_remove_range2(struct Range6List *targets, struct Range6 range)
 {
@@ -372,7 +376,7 @@ parse_ipv6(const char *buf, unsigned *offset, size_t length, ipv6address *ip)
 	unsigned elision_offset = (unsigned)~0;
 	unsigned d = 0;
     //unsigned prefix_length = 128;
-    unsigned address[16];
+    unsigned char address[16];
 
     /* If no /CIDR spec is found, assume 128-bits for IPv6 addresses */
     //prefix_length = 128;
@@ -441,7 +445,7 @@ parse_ipv6(const char *buf, unsigned *offset, size_t length, ipv6address *ip)
 		/* Or, see if we have reached the trailing ']' character */
 		if (i < length && is_bracket_seen && buf[i] == ']') {
 			i++; /* skip ']' */
-			is_bracket_seen = false;
+			//is_bracket_seen = false;
 			break;
 		}
 
@@ -503,7 +507,7 @@ parse_ipv6(const char *buf, unsigned *offset, size_t length, ipv6address *ip)
     }
 #endif
 
-    ip->hi =    ((uint64_t)address[0] << 56ULL)
+    ip->hi =    (((uint64_t)address[0]) << 56ULL)
                     | ((uint64_t)address[1] << 48ULL)
                     | ((uint64_t)address[2] << 40ULL)
                     | ((uint64_t)address[3] << 32ULL)

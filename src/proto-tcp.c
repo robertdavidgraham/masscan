@@ -26,7 +26,7 @@
 #include "main-globals.h"
 #include "crypto-base64.h"
 #include "proto-interactive.h"
-
+#include "util-malloc.h"
 #include "scripting.h"
 #include "versioning.h"
 
@@ -348,13 +348,11 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
         x = banner1->payloads.tcp[port];
         if (x == NULL) {
-            x = (struct ProtocolParserStream *)malloc(sizeof(*x));
-            memset(x, 0, sizeof(*x));
-
+            x = CALLOC(1, sizeof(*x));
             x->name = "(allocated)";
         }
 
-        x->hello = malloc(value_length);
+        x->hello = MALLOC(value_length);
         x->hello_length = base64_decode((char*)x->hello, value_length, value, value_length);
 
         banner1->payloads.tcp[port] = x;
@@ -406,10 +404,7 @@ tcpcon_create_table(    size_t entry_count,
     //printf("\nsizeof(TCB) = %u\n\n", (unsigned)sizeof(struct TCP_Control_Block));
     
     
-    tcpcon = (struct TCP_ConnectionTable *)malloc(sizeof(*tcpcon));
-    if (tcpcon == NULL)
-        exit(1);
-    memset(tcpcon, 0, sizeof(*tcpcon));
+    tcpcon = CALLOC(1, sizeof(*tcpcon));
     tcpcon->timeout_connection = connection_timeout;
     if (tcpcon->timeout_connection == 0)
         tcpcon->timeout_connection = 30; /* half a minute before destroying tcb */
@@ -438,8 +433,7 @@ tcpcon_create_table(    size_t entry_count,
     /* Create the table. If we can't allocate enough memory, then shrink
      * the desired size of the table */
     while (tcpcon->entries == 0) {
-        tcpcon->entries = (struct TCP_Control_Block**)
-                            malloc(entry_count * sizeof(*tcpcon->entries));
+        tcpcon->entries = malloc(entry_count * sizeof(*tcpcon->entries));
         if (tcpcon->entries == NULL) {
             entry_count >>= 1;
         }
@@ -688,11 +682,7 @@ tcpcon_create_tcb(
             tcb = tcpcon->freed_list;
             tcpcon->freed_list = tcb->next;
         } else {
-            tcb = (struct TCP_Control_Block*)malloc(sizeof(*tcb));
-            if (tcb == NULL) {
-                fprintf(stderr, "tcb: out of memory\n");
-                exit(1);
-            }
+            tcb = MALLOC(sizeof(*tcb));
         }
         memset(tcb, 0, sizeof(*tcb));
         tcb->next = tcpcon->entries[index & tcpcon->mask];

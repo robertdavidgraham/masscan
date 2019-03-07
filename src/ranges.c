@@ -2,7 +2,7 @@
     for tracking IP/port ranges
 */
 #include "ranges.h"
-#include "reallocarray_s.h"
+#include "util-malloc.h"
 #include "templ-port.h"
 
 #include <assert.h>
@@ -73,7 +73,11 @@ range_combine(struct Range *lhs, struct Range rhs)
         lhs->end = rhs.end;
 }
 
-int range_compare(const void *lhs, const void *rhs)
+/***************************************************************************
+ * Callback for qsort() for comparing two ranges
+ ***************************************************************************/
+static int
+range_compare(const void *lhs, const void *rhs)
 {
     struct Range *left = (struct Range *)lhs;
     struct Range *right = (struct Range *)rhs;
@@ -140,7 +144,7 @@ rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
     /* auto-expand the list if necessary */
     if (targets->count + 1 >= targets->max) {
         targets->max = targets->max * 2 + 1;
-        targets->list = reallocarray_s(targets->list, targets->max, sizeof(targets->list[0]));
+        targets->list = REALLOCARRAY(targets->list, targets->max, sizeof(targets->list[0]));
     }
 
     /* If empty list, then add this one */
@@ -597,7 +601,7 @@ rangelist_pick(const struct RangeList *targets, uint64_t index)
     const unsigned *picker = targets->picker;
 
     if (!targets->is_sorted)
-        rangelist_sort(targets);
+        rangelist_sort((struct RangeList *)targets);
     assert(targets->is_sorted);
 
     if (picker == NULL) {
@@ -647,7 +651,7 @@ rangelist_optimize(struct RangeList *targets)
     if (targets->picker)
         free(targets->picker);
 
-    picker = reallocarray_s(NULL, targets->count, sizeof(*picker));
+    picker = REALLOCARRAY(NULL, targets->count, sizeof(*picker));
 
     for (i=0; i<targets->count; i++) {
         picker[i] = total;

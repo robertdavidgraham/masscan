@@ -15,6 +15,7 @@
 #include "main-globals.h"
 
 #include "unusedparm.h"
+#include "util-malloc.h"
 #include <assert.h>
 #include <ctype.h>
 
@@ -631,10 +632,7 @@ rawsock_init_adapter(const char *adapter_name,
      * warning when unused */
     UNUSEDPARM(bpf_filter);
 
-    adapter = (struct Adapter *)malloc(sizeof(*adapter));
-    if (adapter == NULL)
-        exit(1);
-    memset(adapter, 0, sizeof(*adapter));
+    adapter = CALLOC(1, sizeof(*adapter));
     adapter->is_packet_trace = is_packet_trace;
     adapter->pt_start = 1.0 * pixie_gettime() / 1000000.0;
 
