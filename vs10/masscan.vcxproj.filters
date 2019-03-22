@@ -502,7 +502,11 @@
     </ClInclude>
     <ClInclude Include="..\src\main-readrange.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
+    <ClInclude Include="..\src\util-malloc.h">
+      <Filter>Source Files</Filter>
+    <ClInclude Include="..\src\util-malloc.c">
+      <Filter>Source Files</Filter>
+     </ClInclude>
     <ClInclude Include="..\src\proto-interactive.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
