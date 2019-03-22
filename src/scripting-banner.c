@@ -16,6 +16,7 @@
 #include "ranges.h" /*parse port ranges*/
 #include "syn-cookie.h"
 #include "templ-port.h"
+#include "unusedparm.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
@@ -25,6 +26,7 @@
 static void
 scripting_transmit_hello(const struct Banner1 *banner1, struct InteractiveData *more)
 {
+    UNUSEDPARM(banner1); UNUSEDPARM(more);
     LOG(0, "SCRIPTING: HELLO\n");
 }
 
@@ -45,7 +47,10 @@ scripting_tcp_parse(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
     UNUSEDPARM(more);
-    
+    UNUSEDPARM(banout);
+    UNUSEDPARM(px);
+    UNUSEDPARM(length);
+
     pstate->state = state;
 }
 

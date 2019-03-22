@@ -4,6 +4,7 @@
 #include "proto-x509.h"
 #include "proto-banout.h"
 #include "smack.h"
+#include "util-malloc.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -54,13 +55,12 @@ cndb_add(unsigned ip, const unsigned char *name, size_t name_length)
         return;
     
     if (db == NULL) {
-        db = malloc(sizeof(*db));
-        memset(db, 0, sizeof(*db));
+        db = CALLOC(1, sizeof(*db));
     }
         
-    entry = malloc(sizeof(*entry));
+    entry = MALLOC(sizeof(*entry));
     entry->ip =ip;
-    entry->name = malloc(name_length+1);
+    entry->name = MALLOC(name_length+1);
     memcpy(entry->name, name, name_length+1);
     entry->name[name_length] = '\0';
     entry->next = db->entries[ip&0xFFFF];
@@ -335,7 +335,7 @@ readscan_report(  unsigned ip,
 
 
     if (app_proto == PROTO_X509_CERT) {
-        unsigned char *der = malloc(data_length);
+        unsigned char *der = MALLOC(data_length);
         struct CertDecode x;
         size_t der_length;
         struct BannerOutput banout[1];

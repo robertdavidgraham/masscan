@@ -37,6 +37,9 @@ versioning_tcp_parse(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
     UNUSEDPARM(more);
+    UNUSEDPARM(px);
+    UNUSEDPARM(length);
+    UNUSEDPARM(banout);
     
     pstate->state = state;
 }

@@ -1,7 +1,18 @@
 #define LUAAPI
 #include "stub-lua.h"
-#include <dlfcn.h>
 
+#if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#pragma warning(disable: 4133 4113 4047)
+#else
+#include <dlfcn.h>
+#endif
+
+#if defined(__GNUC__)
+/* Disable MinGW warnings for Windows */
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+#endif
 
 
 int stublua_init(void)
@@ -34,7 +45,11 @@ int stublua_init(void)
 #endif
         unsigned i;
         for (i=0; possible_names[i]; i++) {
+#if defined(WIN32)
+            lib = LoadLibraryA(possible_names[i]);
+#else
             lib = dlopen(possible_names[i], RTLD_LAZY);
+#endif
             if (lib) {
                 break;
             } else {
@@ -47,10 +62,16 @@ int stublua_init(void)
             fprintf(stderr, "    HINT: you must install Lua library\n");
         }
     }
-    
+
+#if defined(WIN32)
+#define DOLINK(name) \
+    name = GetProcAddress(lib, #name); \
+    if (name == NULL) fprintf(stderr, "liblua: %s: failed\n", #name);
+#else
 #define DOLINK(name) \
     name = dlsym(lib, #name); \
     if (name == NULL) fprintf(stderr, "liblua: %s: failed\n", #name);
+#endif
     
     DOLINK(lua_version);
     

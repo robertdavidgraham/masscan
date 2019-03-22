@@ -27,13 +27,17 @@
 */
 #include "logger.h"
 
-#if _MSC_VER==1200
+#if defined(_MSC_VER)
 #pragma warning(disable:4115 4201)
-#include <winerror.h>
+#pragma warning(disable:4100) /* unreferenced formal parameter */
+//#include <winerror.h>
 #endif
+
 #include "stub-pcap.h"
 
+
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
 #include <dlfcn.h>

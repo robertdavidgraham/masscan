@@ -51,6 +51,7 @@
 #include "masscan-app.h"
 #include "siphash24.h"
 #include "string_s.h"
+#include "util-malloc.h"
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
@@ -1135,7 +1136,7 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
     size_t offset2;
     
     /* Increase space by 2 for additional cipherspec */
-    px = realloc(templ, ssl_hello_size(templ) + 2);
+    px = REALLOC(templ, ssl_hello_size(templ) + 2);
     
     /* parse the lengths */
     len1 = px[3] << 8 | px[4];
@@ -1235,7 +1236,7 @@ ssl_hello(const void *templ)
     size_t template_size = (px[3]<<8 | px[4]) + 5;
     
     /* allocate memory for that size and copy */
-    px = malloc(template_size);
+    px = MALLOC(template_size);
     memcpy(px, templ, template_size);
     
     /* set the new timestamp and randomize buffer */

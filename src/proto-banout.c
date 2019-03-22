@@ -12,6 +12,7 @@
     banner for the same connection.
 */
 #include "proto-banner1.h"
+#include "util-malloc.h"
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
@@ -242,8 +243,7 @@ banout_new_proto(struct BannerOutput *banout, unsigned proto)
         return banout;
     }
 
-    p = (struct BannerOutput *)malloc(sizeof(*p));
-    memset(p, 0, sizeof(*p));
+    p = CALLOC(1, sizeof(*p));
     p->protocol = proto;
     p->max_length = sizeof(p->banner);
     p->next = banout->next;
@@ -260,10 +260,8 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
     struct BannerOutput *n;
 
     /* Double the space */
-    n = (struct BannerOutput *)malloc(  offsetof(struct BannerOutput, banner)
-                                        + 2 * p->max_length);
-    if (n == NULL)
-        exit(1);
+    n = MALLOC(  offsetof(struct BannerOutput, banner)
+                 + 2 * p->max_length);
 
     /* Copy the old structure */
     memcpy(n, p, offsetof(struct BannerOutput, banner) + p->max_length);

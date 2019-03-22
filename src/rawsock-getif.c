@@ -5,9 +5,10 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "string_s.h"
-
 #include "ranges.h" /*for parsing IPv4 addresses */
+#include "string_s.h"
+#include "util-malloc.h"
+
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <unistd.h>
@@ -54,10 +55,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
      * structure followed by an array of "sockaddr" structures.
      */
     sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
-    rtm = (struct rt_msghdr *)malloc(sizeof_buffer);
-    if (rtm == NULL)
-        exit(1);
-
+    rtm = MALLOC(sizeof_buffer);
 
     /*
      * Create a socket for querying the kernel

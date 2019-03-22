@@ -19,6 +19,7 @@
     speed.
  ***************************************************************************/
 #include "ranges-avl.h"
+#include "util-malloc.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -131,7 +132,7 @@ struct RavlNode *
 ravl_insert(unsigned ip_begin, unsigned ip_end, struct RavlNode *node)
 {
     if (node == NULL) {
-        node = malloc(sizeof(struct RavlNode));
+        node = MALLOC(sizeof(struct RavlNode));
         node->ip_begin = ip_begin;
         node->ip_end = ip_end;
         node->height = 0;

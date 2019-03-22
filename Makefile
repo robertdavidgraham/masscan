@@ -1,5 +1,10 @@
-#use llvm by default, GNU C otherwise
-CC=clang
+ifneq (, $(shell which clang))
+CC = clang
+else ifneq (, $(shell which gcc))
+CC = gcc
+else
+CC = cc
+endif
 
 PREFIX ?= /usr
 BINDIR ?= $(PREFIX)/bin
@@ -16,7 +21,11 @@ endif
 # environment where things likely will work -- as well as anything
 # works on the bajillion of different Linux environments
 ifneq (, $(findstring linux, $(SYS)))
+ifneq (, $(findstring musl, $(SYS)))
+LIBS = 
+else
 LIBS = -lm -lrt -ldl -lpthread
+endif
 INCLUDES =
 FLAGS2 = 
 endif
@@ -70,7 +79,7 @@ endif
 
 
 DEFINES = 
-CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O3
+CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O2
 .SUFFIXES: .c .cpp
 
 all: bin/masscan 

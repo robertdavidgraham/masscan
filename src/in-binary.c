@@ -11,6 +11,7 @@
 #include "string_s.h"
 #include "in-filter.h"
 #include "in-report.h"
+#include "util-malloc.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -298,11 +299,7 @@ parse_file(struct Output *out, const char *filename,
     int x;
 
     /* Allocate a buffer of up to one megabyte per record */
-    buf = (unsigned char *)malloc(BUF_MAX);
-    if (buf == NULL) {
-        fprintf(stderr, "memory allocation failure\n");
-        goto end;
-    }
+    buf = MALLOC(BUF_MAX);
 
     /* Open the file */
     x = fopen_s(&fp, filename, "rb");

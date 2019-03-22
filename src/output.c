@@ -41,6 +41,7 @@
 #include "main-globals.h"
 #include "pixie-file.h"
 #include "pixie-sockets.h"
+#include "util-malloc.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -309,11 +310,8 @@ duplicate_string(const char *str)
         length = strlen(str);
 
     /* Allocate memory for the string */
-    result = malloc(length + 1);
-    if (result == 0) {
-        fprintf(stderr, "output: out of memory error\n");
-        exit(1);
-    }
+    result = MALLOC(length + 1);
+    
 
     /* Copy the string */
     if (str)
@@ -354,11 +352,8 @@ indexed_filename(const char *filename, unsigned index)
         ext = len;
 
     /* allocate memory */
-    new_filename = (char*)malloc(new_length);
-    if (new_filename == NULL) {
-        fprintf(stderr, "output: out of memory\n");
-        exit(1);
-    }
+    new_filename = MALLOC(new_length);
+    
 
     /* format the new name */
     sprintf_s(new_filename, new_length, "%.*s.%02u%s",
@@ -382,10 +377,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     unsigned i;
 
     /* allocate/initialize memory */
-    out = (struct Output *)malloc(sizeof(*out));
-    if (out == NULL)
-        return NULL;
-    memset(out, 0, sizeof(*out));
+    out = CALLOC(1, sizeof(*out));
     out->masscan = masscan;
     out->when_scan_started = time(0);
     out->is_virgin_file = 1;
@@ -542,11 +534,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen(filename)
                             + 1  /* - */
                             + 1; /* nul */
-    new_filename = malloc(new_filename_size);
-    if (new_filename == NULL) {
-        LOG(0, "rotate: out of memory error\n");
-        return out->fp;
-    }
+    new_filename = MALLOC(new_filename_size);
 
     /* Get the proper timestamp for the file */
     if (out->is_gmt) {
@@ -672,31 +660,37 @@ oui_from_mac(const unsigned char mac[6])
 {
     unsigned oui = mac[0]<<16 | mac[1]<<8 | mac[2];
     switch (oui) {
+    case 0x0001c0: return "Compulab";
+    case 0x000732: return "Aaeon";
+    case 0x000c29: return "VMware";
     case 0x001075: return "Seagate";
+    case 0x001132: return "Synology";
+    case 0x022618: return "Asus";
+    case 0x0022b0: return "D-Link";
+    case 0x00236c: return "Apple";
+    case 0x0016CB: return "Apple";
     case 0x001e06: return "Odroid";
+    case 0x001ff3: return "Apple";
+    case 0x002590: return "Supermicro";
+    case 0x08cc68: return "Cisco";
+    case 0x0C9D92: return "Asus";
+    case 0x244CE3: return "Amazon";
+    case 0x2c27d7: return "HP";
     case 0x3497f6: return "Asus";
-    case 0x38f73d: return "Amzon";
+    case 0x38f73d: return "Amazon";
+    case 0x404a03: return "Zyxel";
+    case 0x4C9EFF: return "Zyxel";
+    case 0x5855CA: return "Apple";
     case 0x60a44c: return "Asus";
     case 0x6c72e7: return "Apple";
     case 0x9003b7: return "Parrot";
     case 0x94dbc9: return "Azurewave";
-    case 0xb827eb: return "Raspberry Pi";
     case 0xacbc32: return "Apple";
-    case 0x404a03: return "Zyxel";
-    case 0x000c29: return "VMware";
-    case 0x002590: return "Supermicro";
-    case 0xc0c1c0: return "Cisco-Linksys";
+    case 0xb827eb: return "Raspberry Pi";
     case 0xc05627: return "Belkin";
-    case 0x2c27d7: return "HP";
-    case 0x001132: return "Synology";
-    case 0x0022b0: return "D-Link";
-    case 0x0001c0: return "Compulab";
-    case 0x00236c: return "Apple";
-    case 0x0016cb: return "Apple";
-    case 0x08cc68: return "Cisco";
-    case 0x022618: return "Asustek"; /* */
-
-
+    case 0xc0c1c0: return "Cisco-Linksys";
+    case 0xDCA4CA: return "Apple";
+    case 0xe4956e: return "[random]";
     default: return "";
     }
 }

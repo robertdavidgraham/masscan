@@ -1,81 +1,87 @@
-#ifndef RANGES_H
-#define RANGES_H
+/*
+    List of IPv6 ranges.
+
+    Sames as the "ranges.h" module, but for IPv6 instead of IPv4.
+*/
+#ifndef RANGES6_H
+#define RANGES6_H
+#include <stdio.h>
 #include <stdint.h>
 
+typedef struct {uint64_t hi; uint64_t lo;} ipv6address;
+
 /**
- * A range of either IP addresses or ports
+ * A range of IPv6 ranges.
+ * Inclusive, so [n..m] includes both 'n' and 'm'.
  */
-struct Range
+struct Range6
 {
-    unsigned begin;
-    unsigned end; /* inclusive, so [n..m] includes both 'n' and 'm' */
+    ipv6address begin;
+    ipv6address end; 
 };
 
 /**
  * An array of ranges in sorted order
  */
-struct RangeList
+struct Range6List
 {
-    struct Range *list;
-    unsigned count;
-    unsigned max;
-    unsigned *picker;
-    unsigned *picker_hash;
-    unsigned picker_mask;
-    unsigned is_sorted:1;
+    struct Range6 *list;
+    size_t count;
+    size_t max;
+    uint64_t *picker;
 };
 
 /**
- * Adds the given range to the task list. The given range can be a duplicate
+ * Adds the given range to the targets list. The given range can be a duplicate
  * or overlap with an existing range, which will get combined with existing
  * ranges. 
- * @param task
- *      A list of ranges of either IPv4 addresses or port numbers.
+ * @param targets
+ *      A list of IPv6 ranges.
  * @param begin
  *      The first address of the range that'll be added.
  * @param end
  *      The last address (inclusive) of the range that'll be added.
  */
 void
-rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
+range6list_add_range(struct Range6List *targets, const ipv6address begin, const ipv6address end);
 
 /**
  * Removes the given range from the target list. The input range doesn't
  * have to exist, or can partial overlap with existing ranges.
- * @param task
- *      A list of ranges of either IPv4 addresses or port numbers.
+ * @param targets
+ *      A list of IPv6 ranges.
  * @param begin
  *      The first address of the range that'll be removed.
  * @param end
  *      The last address of the range that'll be removed (inclusive).
  */
 void
-rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end);
+range6list_remove_range(struct Range6List *targets, const ipv6address begin, const ipv6address end);
 
 /**
  * Same as 'rangelist_remove_range()', except the input is a range
  * structure instead of a start/stop numbers.
  */
 void
-rangelist_remove_range2(struct RangeList *task, struct Range range);
+range6list_remove_range2(struct Range6List *targets, struct Range6 range);
 
 /**
- * Returns 'true' is the indicated port or IP address is in one of the task
+ * Returns 'true' if the indicated IPv6 address is in one of the target
  * ranges.
- * @param task
- *      A list of ranges of either IPv4 addresses or port numbers.
- * @param number
- *      Either an IPv4 address or a TCP/UDP port number.
+ * @param targets
+ *      A list of IPv6 ranges
+ * @param ip
+ *      An IPv6 address that might in be in the list of ranges
  * @return 
  *      'true' if the ranges contain the item, or 'false' otherwise
  */
 int
-rangelist_is_contains(const struct RangeList *task, unsigned number);
+range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
 
 
 /**
- * Parses IPv4 addresses out of a string. A number of formats are allowed,
- * either an individual IPv4 address, a CIDR spec, or a start/stop address.
+ * Parses IPv6 addresses out of a string. A number of formats are allowed,
+ * either an individual IPv6 address, a CIDR spec, or a start/stop address.
  * @param line
  *      A line of text, probably read from a configuration file, or a string
  *      probably input from the command line. It doesn't need to be nul
@@ -86,8 +92,8 @@ rangelist_is_contains(const struct RangeList *task, unsigned number);
  * @param max
  *      The length of the line, in other words, the max value of inout_offset.
  */
-struct Range 
-range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
+struct Range6 
+range6_parse(const char *line, unsigned *inout_offset, unsigned max);
 
 
 /**
@@ -105,12 +111,12 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
  *      the total number of IP addresses or ports removed.
  */
 uint64_t
-rangelist_exclude(  struct RangeList *targets,
-              const struct RangeList *excludes);
+range6list_exclude( struct Range6List *targets,
+                    const struct Range6List *excludes);
 
 
 /**
- * Counts the total number of IP addresses or ports in the target list. This
+ * Counts the total number of IPv6 addresses in the target list. This
  * iterates over all the ranges in the table, summing up the count within
  * each range.
  * @param targets
@@ -119,7 +125,7 @@ rangelist_exclude(  struct RangeList *targets,
  *      The total number of address or ports.
  */
 uint64_t
-rangelist_count(const struct RangeList *targets);
+range6list_count(const struct Range6List *targets);
 
 /**
  * Given an index in a continous range of [0...count], pick a corresponding
@@ -144,47 +150,22 @@ rangelist_count(const struct RangeList *targets);
  * @return
  *      an IP address or port corresponding to this index.
  */
-unsigned
-rangelist_pick(const struct RangeList *targets, uint64_t i);
+ipv6address
+range6list_pick(const struct Range6List *targets, uint64_t index);
 
-
-/**
- * Given a string like "80,8080,20-25,U:161", parse it into a structure
- * containing a list of port ranges.
- *
- * @param ports
- *      The array of port ranges that's produced by this parsing function.
- *      This structure will be used by the transmit thread when sending
- *      probes to a target IP address.
- * @param string
- *      A string from either the command-line or configuration file
- *      in the nmap "ports" format.
- * @param is_error
- *      Set to zero is no error occurred while parsing the string, or
- *      set to a non-zero value if an error was found.
- * @return
- *      the pointer in the string where the parsing ended, so that additional
- *      things can be contained in the string, such as comments
- */
-const char *
-rangelist_parse_ports(  struct RangeList *ports,
-                        const char *string,
-                        unsigned *is_error,
-                        unsigned proto_offset
-                      );
 
 
 /**
  * Remove all the ranges in the range list.
  */
 void
-rangelist_remove_all(struct RangeList *list);
+range6list_remove_all(struct Range6List *list);
 
 /**
  * Merge two range lists
  */
 void
-rangelist_merge(struct RangeList *list1, const struct RangeList *list2);
+range6list_merge(struct Range6List *list1, const struct Range6List *list2);
 
 
 /**
@@ -194,11 +175,7 @@ rangelist_merge(struct RangeList *list1, const struct RangeList *list2);
  * algorithm may be chosen.
  */
 void
-rangelist_optimize(struct RangeList *targets);
-
-void
-rangelist_sort(struct RangeList *targets);
-
+range6list_optimize(struct Range6List *targets);
 
 /**
  * Does a regression test of this module
@@ -206,7 +183,7 @@ rangelist_sort(struct RangeList *targets);
  *      0 if the regression test succeeds, or a positive value on failure
  */
 int
-ranges_selftest(void);
+ranges6_selftest(void);
 
 
 #endif
