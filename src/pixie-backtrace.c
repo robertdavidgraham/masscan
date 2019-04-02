@@ -86,7 +86,7 @@ pixie_backtrace_init(const char *self)
     if (x == -1)
         snprintf(global_self, sizeof(global_self), "%s", self);
 
-	signal(SIGSEGV, handle_segfault);
+    signal(SIGSEGV, handle_segfault);
 }
 #elif defined(__MINGW32__)
 
