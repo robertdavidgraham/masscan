@@ -19,6 +19,10 @@
 #include "pixie-timer.h"
 #include "packet-queue.h"
 
+#if defined(__linux__)
+#include <netpacket/packet.h>
+#endif
+
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
 struct ARP_IncomingRequest
@@ -107,7 +111,7 @@ arp_resolve_sync(struct Adapter *adapter,
      *  ARPing, just return immediately. In other words, there's nothing
      *  here to ARP
      */
-    if (rawsock_datalink(adapter) == 12) {
+    if (adapter->is_iplayer) {
         memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }

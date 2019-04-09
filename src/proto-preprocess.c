@@ -456,6 +456,10 @@ parse_linux_sll:
      +--------+--------+
      */
     {
+/*
+ * sll is not used, so we don't lost time to decode it, take only ethertype
+ */
+#if 0
         struct {
             unsigned packet_type;
             unsigned arp_type;
@@ -463,17 +467,19 @@ parse_linux_sll:
             unsigned char mac_address[8];
             unsigned ethertype;
         } sll;
-        
+#endif
         VERIFY_REMAINING(16, FOUND_SLL);
-        
+#if 0
         sll.packet_type = ex16be(px+offset+0);
         sll.arp_type = ex16be(px+offset+2);
         sll.addr_length = ex16be(px+offset+4);
         memcpy(sll.mac_address, px+offset+6, 8);
         sll.ethertype = ex16be(px+offset+14);
-   
+#endif
+        ethertype = ex16be(px+offset+14);
+
         offset += 16;
-        
+
         goto parse_ethertype;
     }
     
