@@ -74,6 +74,13 @@ rawsock_send_probe(
     struct TemplateSet *tmplset);
 
 unsigned rawsock_get_adapter_ip(const char *ifname);
+
+/**
+ * Given the network adapter name, like 'eth0', find the hardware
+ * MAC address. This is needed because we construct raw Ethernet
+ * packets, and need to use the interface's MAC address as the
+ * source address
+ */
 int rawsock_get_adapter_mac(const char *ifname, unsigned char *mac);
 
 int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4);
@@ -130,7 +137,14 @@ int arp_resolve_sync(struct Adapter *adapter,
     unsigned your_ipv4, unsigned char *your_mac_address);
 
 
+/**
+ * Optimization functions to tell the underlying network stack
+ * to not capture the packets we transmit. Most of the time, Ethernet
+ * adapters receive the packets they send, which will cause us a lot
+ * of work requiring us to process the flood of packets we generate.
+ */
 void rawsock_ignore_transmits(struct Adapter *adapter,
-                              const unsigned char *adapter_mac);
+                              const unsigned char *adapter_mac,
+                              const char *ifname);
 
 #endif

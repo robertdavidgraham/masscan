@@ -29,7 +29,7 @@ masscan_initialize_adapter(
     if (masscan == NULL)
         return -1;
 
-    LOG(1, "initializing adapter\n");
+    LOG(1, "if: initializing adapter interface\n");
 
     /*
      * ADAPTER/NETWORK-INTERFACE
@@ -49,12 +49,10 @@ masscan_initialize_adapter(
             fprintf(stderr, "FAIL: could not determine default interface\n");
             fprintf(stderr, "FAIL:... try \"--interface ethX\"\n");
             return -1;
-        } else {
-            LOG(2, "auto-detected: interface=%s\n", ifname2);
         }
         ifname = ifname2;
-
     }
+    LOG(2, "if: interface=%s\n", ifname);
 
     /*
      * IP ADDRESS
@@ -66,12 +64,6 @@ masscan_initialize_adapter(
     adapter_ip = masscan->nic[index].src.ip.first;
     if (adapter_ip == 0) {
         adapter_ip = rawsock_get_adapter_ip(ifname);
-        LOG(2, "auto-detected: adapter-ip=%u.%u.%u.%u\n",
-            (adapter_ip>>24)&0xFF,
-            (adapter_ip>>16)&0xFF,
-            (adapter_ip>> 8)&0xFF,
-            (adapter_ip>> 0)&0xFF
-            );
         masscan->nic[index].src.ip.first = adapter_ip;
         masscan->nic[index].src.ip.last = adapter_ip;
         masscan->nic[index].src.ip.range = 1;
@@ -84,6 +76,13 @@ masscan_initialize_adapter(
                         "\"--adapter-ip 192.168.100.5\"\n");
         return -1;
     }
+    LOG(2, "if:%s: adapter-ip=%u.%u.%u.%u\n",
+        ifname,
+        (adapter_ip>>24)&0xFF,
+        (adapter_ip>>16)&0xFF,
+        (adapter_ip>> 8)&0xFF,
+        (adapter_ip>> 0)&0xFF
+        );
 
     /*
      * MAC ADDRESS
@@ -95,17 +94,7 @@ masscan_initialize_adapter(
     memcpy(adapter_mac, masscan->nic[index].my_mac, 6);
     if (masscan->nic[index].my_mac_count == 0) {
         if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
-
             rawsock_get_adapter_mac(ifname, adapter_mac);
-
-            LOG(2, "auto-detected: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
-                adapter_mac[0],
-                adapter_mac[1],
-                adapter_mac[2],
-                adapter_mac[3],
-                adapter_mac[4],
-                adapter_mac[5]
-                );
         }
         if (memcmp(adapter_mac, "\0\0\0\0\0\0", 6) == 0) {
             fprintf(stderr, "FAIL: failed to detect MAC address of interface:"
@@ -115,6 +104,16 @@ masscan_initialize_adapter(
             return -1;
         }
     }
+    LOG(2, "if:%s: adapter-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
+        ifname,
+        adapter_mac[0],
+        adapter_mac[1],
+        adapter_mac[2],
+        adapter_mac[3],
+        adapter_mac[4],
+        adapter_mac[5]
+        );
+
 
     /*
      * START ADAPTER
@@ -135,10 +134,8 @@ masscan_initialize_adapter(
         fprintf(stderr, "adapter[%s].init: failed\n", ifname);
         return -1;
     }
-    LOG(3, "rawsock: ignoring transmits\n");
-    rawsock_ignore_transmits(masscan->nic[index].adapter, adapter_mac);
-    LOG(3, "rawsock: initialization done\n");
-
+    rawsock_ignore_transmits(masscan->nic[index].adapter, adapter_mac, ifname);
+    
 
 
     /*
@@ -159,11 +156,12 @@ masscan_initialize_adapter(
         int err = 0;
 
 
-        LOG(1, "rawsock: looking for default gateway\n");
+        LOG(1, "if:%s: looking for default gateway\n", ifname);
         if (router_ipv4 == 0)
             err = rawsock_get_default_gateway(ifname, &router_ipv4);
         if (err == 0) {
-            LOG(2, "auto-detected: router-ip=%u.%u.%u.%u\n",
+            LOG(2, "if:%s: router-ip=%u.%u.%u.%u\n",
+                ifname,
                 (router_ipv4>>24)&0xFF,
                 (router_ipv4>>16)&0xFF,
                 (router_ipv4>> 8)&0xFF,
@@ -177,25 +175,24 @@ masscan_initialize_adapter(
                     router_ipv4,
                     router_mac);
 
-            if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-                LOG(2, "auto-detected: router-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
-                    router_mac[0],
-                    router_mac[1],
-                    router_mac[2],
-                    router_mac[3],
-                    router_mac[4],
-                    router_mac[5]
-                    );
-            }
         }
     }
+    LOG(2, "if:%s: router-mac=%02x-%02x-%02x-%02x-%02x-%02x\n",
+        ifname,
+        router_mac[0],
+        router_mac[1],
+        router_mac[2],
+        router_mac[3],
+        router_mac[4],
+        router_mac[5]
+        );
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
-        fprintf(stderr, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        fprintf(stderr, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
+        LOG(0, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
+        LOG(0, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
         return -1;
     }
 
 
-    LOG(1, "adapter initialization done.\n");
+    LOG(1, "if:%s: initialization done.\n", ifname);
     return 0;
 }

@@ -89,7 +89,11 @@ REALLOC(void *p, size_t size)
 char *
 STRDUP(const char *str)
 {
+#if defined(WIN32)
+    char *p = _strdup(str);
+#else
     char *p = strdup(str);
+#endif
     
     if (p == NULL && str != NULL) {
         fprintf(stderr, "[-] out of memory, aborting\n");

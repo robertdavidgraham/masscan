@@ -94,7 +94,6 @@
     <ClCompile Include="..\src\rawsock-pcapfile.c" />
     <ClCompile Include="..\src\rawsock.c" />
     <ClCompile Include="..\src\read-service-probes.c" />
-    <ClCompile Include="..\src\reallocarray_s.c" />
     <ClCompile Include="..\src\rte-ring.c" />
     <ClCompile Include="..\src\scripting-banner.c" />
     <ClCompile Include="..\src\scripting-masscan.c" />
@@ -109,6 +108,7 @@
     <ClCompile Include="..\src\syn-cookie.c" />
     <ClCompile Include="..\src\templ-payloads.c" />
     <ClCompile Include="..\src\templ-pkt.c" />
+    <ClCompile Include="..\src\util-malloc.c" />
     <ClCompile Include="..\src\versioning.c" />
     <ClCompile Include="..\src\vulncheck-heartbleed.c" />
     <ClCompile Include="..\src\vulncheck-ntp-monlist.c" />
@@ -178,7 +178,6 @@
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\read-service-probes.h" />
-    <ClInclude Include="..\src\reallocarray_s.h" />
     <ClInclude Include="..\src\rte-ring.h" />
     <ClInclude Include="..\src\scripting.h" />
     <ClInclude Include="..\src\siphash24.h" />
@@ -191,6 +190,7 @@
     <ClInclude Include="..\src\syn-cookie.h" />
     <ClInclude Include="..\src\templ-payloads.h" />
     <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\util-malloc.h" />
     <ClInclude Include="..\src\versioning.h" />
     <ClInclude Include="..\src\vulncheck.h" />
     <ClInclude Include="..\src\xring.h" />

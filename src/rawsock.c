@@ -477,7 +477,7 @@ rawsock_win_name(const char *ifname)
  * still get filtered at a low level.
  ***************************************************************************/
 void
-rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac)
+rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac, const char *ifname)
 {
     UNUSEDPARM(adapter_mac);
     if (adapter->ring) {
@@ -489,54 +489,13 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
 
     if (adapter->pcap) {
         int err;
-
         err = PCAP.setdirection(adapter->pcap, PCAP_D_IN);
         if (err) {
-            PCAP.perror(adapter->pcap, "pcap_setdirection(IN)");
+            PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
+        } else {
+            PCAP.perror(adapter->pcap, "if: not receiving transmits");
         }
     }
-
-#if !defined(WIN32)
-    /* PORTABILITY: this is what we do on all systems except windows, because
-     * Windows doesn't support this feature. */
-    if (adapter->pcap) {
-        int err;
-
-        err = PCAP.setdirection(adapter->pcap, PCAP_D_IN);
-        if (err) {
-            PCAP.perror(adapter->pcap, "pcap_setdirection(IN)");
-        }
-    }
-#elif defined(WIN32xxx)
-    if (adapter->pcap) {
-        int err;
-        char filter[256];
-        struct bpf_program prog;
-
-        sprintf_s(filter, sizeof(filter), "not ether src %02x:%02X:%02X:%02X:%02X:%02X",
-            adapter_mac[0], adapter_mac[1], adapter_mac[2],
-            adapter_mac[3], adapter_mac[4], adapter_mac[5]);
-
-        err = pcap_compile(
-                    adapter->pcap,
-                    &prog,          /* object code, output of compile */
-                    filter,         /* source code */
-                    1,              /* optimize to go fast */
-                    0);
-
-        if (err) {
-            pcap_perror(adapter->pcap, "pcap_compile()");
-            exit(1);
-        }
-
-
-        err = pcap_setfilter(adapter->pcap, &prog);
-        if (err < 0) {
-            pcap_perror(adapter->pcap, "pcap_setfilter");
-            exit(1);
-        }
-    }
-#endif
 }
 
 /***************************************************************************
@@ -626,7 +585,7 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned vlan_id)
 {
     struct Adapter *adapter;
-    char errbuf[PCAP_ERRBUF_SIZE];
+    char errbuf[PCAP_ERRBUF_SIZE] = "pcap";
 
     /* BPF filter not supported on some platforms, so ignore this compiler
      * warning when unused */
@@ -732,45 +691,86 @@ rawsock_init_adapter(const char *adapter_name,
         return adapter;
     }
 
-    
+    /*----------------------------------------------------------------
+     * Kludge: for using files
+     *----------------------------------------------------------------*/
+    if (memcmp(adapter_name, "file:", 5) == 0) {
+        LOG(1, "pcap: file: %s\n", adapter_name+5);
+        is_pcap_file = 1;
+
+        adapter->pcap = PCAP.open_offline(adapter_name+5, errbuf);
+        adapter->link_type = PCAP.datalink(adapter->pcap);
+    }
     /*----------------------------------------------------------------
      * PORTABILITY: LIBPCAP
      *
-     * This is the stanard that should work everywhere.
+     * This is the standard that should work everywhere.
      *----------------------------------------------------------------*/
     {
-        LOG(1, "pcap: %s\n", PCAP.lib_version());
-        LOG(2, "pcap:'%s': opening...\n", adapter_name);
-     
-        if (memcmp(adapter_name, "file:", 5) == 0) {
-            LOG(1, "pcap: file: %s\n", adapter_name+5);
-            is_pcap_file = 1;
+        int err;
+        LOG(1, "if: pcap=%s\n", PCAP.lib_version());
+        LOG(2, "if:%s: opening...\n", adapter_name);
 
-            adapter->pcap = PCAP.open_offline(
-                        adapter_name+5,         /* interface name */
-                        errbuf);
-        } else {
-#if 0
-            adapter->pcap = PCAP.open_live(
-                        adapter_name,           /* interface name */
-                        65536,                  /* max packet size */
-                        8,                      /* promiscuous mode */
-                        1000,                   /* read timeout in milliseconds */
-                        errbuf);
-#else
-            /* We need to replace "pcap_open_live()" with "pcap_create()/pcap_set_XXX()/pcap_activate()" */
-            adapter->pcap = PCAP.create(adapter_name, errbuf);
-            if (adapter->pcap) {
-                PCAP.set_snaplen(adapter->pcap, 65536);
-                PCAP.set_promisc(adapter->pcap, 8);
-                PCAP.set_timeout(adapter->pcap, 1000);
-                PCAP.set_immediate_mode(adapter->pcap, 1);
-                PCAP.activate(adapter->pcap);
-            }
-
-#endif
+        /* This reserves resources, but doesn't actually open the 
+         * adapter until we call pcap_activate */
+        adapter->pcap = PCAP.create(adapter_name, errbuf);
+        
+        err = PCAP.set_snaplen(adapter->pcap, 65536);
+        if (err) {
+            PCAP.perror(adapter->pcap, "if: set_snaplen");
+            goto pcap_error;
         }
 
+        err = PCAP.set_promisc(adapter->pcap, 8);
+        if (err) {
+            PCAP.perror(adapter->pcap, "if: set_promisc");
+            goto pcap_error;
+        }
+
+        err = PCAP.set_timeout(adapter->pcap, 1000);
+        if (err) {
+            PCAP.perror(adapter->pcap, "if: set_timeout");
+            goto pcap_error;
+        }
+
+        err = PCAP.set_immediate_mode(adapter->pcap, 1);
+        if (err) {
+            PCAP.perror(adapter->pcap, "if: set_immediate_mode");
+            goto pcap_error;
+        }
+
+        err = PCAP.activate(adapter->pcap);
+        if (err) {
+            PCAP.perror(adapter->pcap, "if: activate");
+            if (err < 0)
+                goto pcap_error;
+        }
+
+        LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
+
+        
+
+        /* Figure out the link-type. We suport Ethernet and IP */
+        adapter->link_type = PCAP.datalink(adapter->pcap);
+        switch (adapter->link_type) {
+        case -1:
+            PCAP.perror(adapter->pcap, "if: datalink");
+            goto pcap_error;
+        case 1: /* Ethernet */
+        case 12: /* IP Raw */
+            break;
+        default:
+            LOG(0, "pcap: unknown data link type: %u(%s)\n",
+                    adapter->link_type, 
+                    PCAP.datalink_val_to_name(adapter->link_type));
+            break;
+        }
+
+pcap_error:
+        if (adapter->pcap) {
+            PCAP.close(adapter->pcap);
+            adapter->pcap = NULL;
+        }
         if (adapter->pcap == NULL) {
             LOG(0, "FAIL: %s\n", errbuf);
             if (strstr(errbuf, "perm")) {
@@ -778,62 +778,11 @@ rawsock_init_adapter(const char *adapter_name,
                 LOG(0, " [hint] I've got some local priv escalation "
                         "0days that might work\n");
             }
-#if defined(__APPLE__)
             if (strcmp(adapter_name, "vmnet1") == 0) {
                 LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
             }
-#endif
-
             return 0;
-        } else
-            LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
-        
-
-        /* Figure out the link-type. We suport Ethernet and IP */
-        {
-            int dl = PCAP.datalink(adapter->pcap);
-            switch (dl) {
-                case 1: /* Ethernet */
-                    adapter->link_type = dl;
-                    break;
-                case 12: /* IP Raw */
-                    adapter->link_type = dl;
-                    break;
-                default:
-                    LOG(0, "unknown data link type: %u(%s)\n",
-                        dl, PCAP.datalink_val_to_name(dl));
-                    break;
-
-            }
         }
-        
-#if 0
-        /* Set any BPF filters the user might've set */
-        if (bpf_filter) {
-            int err;
-            struct bpf_program prog;
-
-            err = pcap_compile(
-                        adapter->pcap,
-                        &prog,          /* object code, output of compile */
-                        bpf_filter,         /* source code */
-                        1,              /* optimize to go fast */
-                        0);
-
-            if (err) {
-                pcap_perror(adapter->pcap, "pcap_compile()");
-                exit(1);
-            }
-
-            err = pcap_setfilter(adapter->pcap, &prog);
-            if (err < 0) {
-                pcap_perror(adapter->pcap, "pcap_setfilter");
-                exit(1);
-            }
-        }
-#endif
-        
-
     }
 
     /*----------------------------------------------------------------

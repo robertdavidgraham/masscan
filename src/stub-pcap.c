@@ -271,6 +271,10 @@ static const pcap_if_t *null_PCAP_DEV_NEXT(const pcap_if_t *dev)
     return dev->next;
 }
 
+/*
+ * Some Windows-specific functions to improve speed
+ */
+#if defined(WIN32)
 static pcap_send_queue *null_PCAP_SENDQUEUE_ALLOC(size_t size)
 {
 	UNUSEDPARM(size);
@@ -293,6 +297,8 @@ static int null_PCAP_SENDQUEUE_QUEUE(pcap_send_queue *queue,
 	my_null(4, queue, pkt_header, pkt_data);
 	return 0;
 }
+#endif /*WIN32*/
+
 
 /**
  * Runtime-load the libpcap shared-object or the winpcap DLL. We
@@ -406,14 +412,19 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
     DOLINK(PCAP_DATALINK_VAL_TO_NAME , datalink_val_to_name);
     DOLINK(PCAP_PERROR          , perror);
 
-    DOLINK(PCAP_DEV_NAME        , dev_name);
-    DOLINK(PCAP_DEV_DESCRIPTION , dev_description);
-    DOLINK(PCAP_DEV_NEXT        , dev_next);
 
+    /* pseudo functions that don't exist in the libpcap interface */
+    pl->dev_name = null_PCAP_DEV_NAME;
+    pl->dev_description = null_PCAP_DEV_DESCRIPTION;
+    pl->dev_next = null_PCAP_DEV_NEXT;
+
+    /* windows-only functions that might improve speed */
+#if defined(WIN32)
 	DOLINK(PCAP_SENDQUEUE_ALLOC		, sendqueue_alloc);
 	DOLINK(PCAP_SENDQUEUE_TRANSMIT	, sendqueue_transmit);
 	DOLINK(PCAP_SENDQUEUE_DESTROY	, sendqueue_destroy);
 	DOLINK(PCAP_SENDQUEUE_QUEUE		, sendqueue_queue);
+#endif
 
     DOLINK(PCAP_CREATE              , create);
     DOLINK(PCAP_SET_SNAPLEN         , set_snaplen);

@@ -330,7 +330,7 @@
     <ClCompile Include="..\src\ranges6.c">
       <Filter>Source Files\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\reallocarray_s.c">
+    <ClCompile Include="..\src\util-malloc.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
   </ItemGroup>
@@ -563,7 +563,7 @@
     <ClInclude Include="..\src\ranges6.h">
       <Filter>Source Files\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\reallocarray_s.h">
+    <ClInclude Include="..\src\util-malloc.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
   </ItemGroup>

@@ -45,7 +45,14 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
         goto end;
     }
 
-    LOG(1, "%s: type=0x%4x\n", ifname, ifr.ifr_ifru.ifru_hwaddr.sa_family);
+    /* Log helpful info about the interface type */
+    switch (ifr.ifr_ifru.ifru_hwaddr.sa_family) {
+    case 1:
+        LOG(1, "if:%s: type=ethernet(1)\n");
+        break;
+    default:
+        LOG(1, "if:%s: type=0x%04x\n", ifname, ifr.ifr_ifru.ifru_hwaddr.sa_family);
+    }
 
 
     memcpy(mac, ifr.ifr_ifru.ifru_hwaddr.sa_data, 6);
@@ -112,7 +119,7 @@ again:
         goto again;
     }
     if (err != NO_ERROR) {
-        fprintf(stderr, "GetAdaptersInfo failed with error: %u\n", (unsigned)err);
+        fprintf(stderr, "if: GetAdaptersInfo failed with error: %u\n", (unsigned)err);
         return EFAULT;
     }
 
@@ -177,7 +184,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
             break;
     }
     if (p == NULL) {
-        LOG(1, "%s: not found\n", ifname);
+        LOG(1, "if:%s: not found\n", ifname);
         goto error; /* not found */
     }
 
@@ -192,9 +199,10 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
             len = link->sdl_alen;
         }
 
-        LOG(1, "family=%u, type=%u\n",
-               link->sdl_family,
-               link->sdl_type);
+        LOG(1, "if:%s: family=%u, type=%u\n",
+                ifname,
+                link->sdl_family,
+                link->sdl_type);
 
         memcpy(mac,
                link->sdl_data + link->sdl_nlen,
