@@ -10,7 +10,7 @@
 #include "util-malloc.h"
 #include "logger.h"
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__sun__)
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net/route.h>
@@ -20,6 +20,8 @@
 
 #define ROUNDUP(a)                           \
 ((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
+#define ROUNDUPL(a)                           \
+((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
 
 static struct sockaddr *
 get_rt_address(struct rt_msghdr *rtm, int desired)
@@ -32,7 +34,15 @@ get_rt_address(struct rt_msghdr *rtm, int desired)
         if (bitmask & (1 << i)) {
             if ((1<<i) == desired)
                 return sa;
+#ifdef __sun__
+            sa = (struct sockaddr *)(
+                   (char*)sa 
+                   //+ ROUNDUPL(sizeof(struct rt_msghdr)
+                   + ROUNDUPL(sizeof(struct sockaddr_in))
+                   );
+#else
             sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
+#endif
         } else
             ;
     }

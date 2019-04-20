@@ -105,7 +105,7 @@ errno_t gmtime_s(struct tm* _tm, const time_t *time);
 #undef strerror
 
 #else
-# error unknown compiler
+# warning unknown compiler
 #endif
 
 

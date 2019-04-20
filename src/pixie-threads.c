@@ -161,6 +161,14 @@ pixie_cpu_get_count(void)
 #endif
         }
     }
+#elif defined(_SC_NPROCESSORS_ONLN)
+    /* Linux, Solaris, Mac OS>=10.4 */
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROC_ONLN)
+    /* Irix */
+    return sysconf(_SC_NPROC_ONLN);
+#elif defined(MPC_GETNUMSPUS)
+    return mpctl(MPC_GETNUMSPUS, 0, 0);
 #else
 #error need to find CPU count
     /* UNKNOWN - Well, we don't know the type of system which means we won't
@@ -180,8 +188,7 @@ pixie_begin_thread(
 #if defined(WIN32)
     UNUSEDPARM(flags);
     return _beginthread(worker_thread, 0, worker_data);
-#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__kFreeBSD__) || defined(__OpenBSD__)
-
+#else
     typedef void *(*PTHREADFUNC)(void*);
     pthread_t thread_id = 0;
     pthread_create(
@@ -190,8 +197,6 @@ pixie_begin_thread(
                           (PTHREADFUNC)worker_thread,
                           worker_data);
     return (size_t)thread_id;
-#else
-#error pixie_begin_thread undefined
 #endif
 }
 
