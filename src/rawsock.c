@@ -493,7 +493,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         if (err) {
             PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
         } else {
-            PCAP.perror(adapter->pcap, "if: not receiving transmits");
+            LOG(2, "if:%s: not receiving transmits\n", ifname);
         }
     }
 }
@@ -708,7 +708,7 @@ rawsock_init_adapter(const char *adapter_name,
      *----------------------------------------------------------------*/
     {
         int err;
-        LOG(1, "if: pcap=%s\n", PCAP.lib_version());
+        LOG(1, "if:%s: pcap=%s\n", adapter_name, PCAP.lib_version());
         LOG(2, "if:%s: opening...\n", adapter_name);
 
         /* This reserves resources, but doesn't actually open the 
@@ -739,14 +739,26 @@ rawsock_init_adapter(const char *adapter_name,
             goto pcap_error;
         }
 
+        /* If errors happen, they aren't likely to happen above, but will
+         * happen where when they are applied */
         err = PCAP.activate(adapter->pcap);
-        if (err) {
-            PCAP.perror(adapter->pcap, "if: activate");
+        switch (err) {
+        case 0:
+            /* drop down below */
+            break;
+        case PCAP_ERROR_PERM_DENIED:
+            LOG(0, "FAIL: permission denied\n");
+            LOG(0, " [hint] need to sudo or run as root or something\n");
+            LOG(0, " [hint] I've got some local priv escalation "
+                    "0days that might work\n");
+            goto pcap_error;
+        default:
+	        LOG(0, "if:%s: activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
             if (err < 0)
                 goto pcap_error;
         }
 
-        LOG(1, "pcap:'%s': successfully opened\n", adapter_name);
+        LOG(1, "if:%s: successfully opened\n", adapter_name);
 
         
 
@@ -766,23 +778,6 @@ rawsock_init_adapter(const char *adapter_name,
             break;
         }
 
-pcap_error:
-        if (adapter->pcap) {
-            PCAP.close(adapter->pcap);
-            adapter->pcap = NULL;
-        }
-        if (adapter->pcap == NULL) {
-            LOG(0, "FAIL: %s\n", errbuf);
-            if (strstr(errbuf, "perm")) {
-                LOG(0, " [hint] need to sudo or run as root or something\n");
-                LOG(0, " [hint] I've got some local priv escalation "
-                        "0days that might work\n");
-            }
-            if (strcmp(adapter_name, "vmnet1") == 0) {
-                LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
-            }
-            return 0;
-        }
     }
 
     /*----------------------------------------------------------------
@@ -800,6 +795,19 @@ pcap_error:
 
 
     return adapter;
+pcap_error:
+    if (adapter->pcap) {
+        PCAP.close(adapter->pcap);
+        adapter->pcap = NULL;
+    }
+    if (adapter->pcap == NULL) {
+        if (strcmp(adapter_name, "vmnet1") == 0) {
+            LOG(0, " [hint] VMware on Macintosh doesn't support masscan\n");
+        }
+        return 0;
+    }
+
+    return NULL;
 }
 
 
@@ -883,7 +891,7 @@ rawsock_selftest_if(const char *ifname)
 
         adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
         if (adapter == 0) {
-            printf("adapter[%s]: failed\n", ifname);
+            LOG(1, "if:%s: failed\n", ifname);
             return -1;
         } else {
             printf("pcap = opened\n");

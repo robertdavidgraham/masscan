@@ -258,6 +258,15 @@ static void null_PCAP_PERROR(pcap_t *p, char *prefix)
 	fprintf(stderr, "%s\n", prefix);
     perror("pcap");
 }
+static const char*null_PCAP_GETERR(pcap_t *p)
+{
+#ifdef STATICPCAP
+    return pcap_geterr(p);
+    return;
+#endif
+	UNUSEDPARM(p);
+	return "(unknown)";
+}
 static const char *null_PCAP_DEV_NAME(const pcap_if_t *dev)
 {
     return dev->name;
@@ -411,6 +420,7 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
     DOLINK(PCAP_SETDIRECTION    , setdirection);
     DOLINK(PCAP_DATALINK_VAL_TO_NAME , datalink_val_to_name);
     DOLINK(PCAP_PERROR          , perror);
+    DOLINK(PCAP_GETERR          , geterr);
 
 
     /* pseudo functions that don't exist in the libpcap interface */

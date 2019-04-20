@@ -8,7 +8,7 @@
 #include "ranges.h" /*for parsing IPv4 addresses */
 #include "string_s.h"
 #include "util-malloc.h"
-
+#include "logger.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <unistd.h>
@@ -160,6 +160,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 
 
 struct route_info {
+    int priority;
     struct in_addr dstAddr;
     struct in_addr srcAddr;
     struct in_addr gateWay;
@@ -226,22 +227,35 @@ static int parseRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
     /* Attributes field*/
     rtAttr = (struct rtattr *)RTM_RTA(rtMsg);
     rtLen = RTM_PAYLOAD(nlHdr);
+#define FORMATADDR(n) ((n)&0xFF), ((n>>8)&0xFF), ((n>>16)&0xFF), ((n>>24)&0xFF)
     for (; RTA_OK(rtAttr, rtLen); rtAttr = RTA_NEXT(rtAttr, rtLen)) {
         switch (rtAttr->rta_type) {
         case RTA_OIF:
             if_indextoname(*(int *) RTA_DATA(rtAttr), rtInfo->ifName);
+            //LOG(4, "ifname=%s ", rtInfo->ifName);
             break;
         case RTA_GATEWAY:
             rtInfo->gateWay.s_addr = *(u_int *)RTA_DATA(rtAttr);
+            //LOG(4, "gw=%u.%u.%u.%u ", FORMATADDR(rtInfo->gateWay.s_addr));
             break;
         case RTA_PREFSRC:
             rtInfo->srcAddr.s_addr = *(u_int *)RTA_DATA(rtAttr);
+            //LOG(4, "src=%u.%u.%u.%u ", FORMATADDR(rtInfo->srcAddr.s_addr));
             break;
         case RTA_DST:
             rtInfo->dstAddr .s_addr = *(u_int *)RTA_DATA(rtAttr);
+            //LOG(4, "dst=%u.%u.%u.%u ", FORMATADDR(rtInfo->dstAddr.s_addr));
             break;
+        case RTA_PRIORITY:
+            rtInfo->priority = *(int*)RTA_DATA(rtAttr);
+            //LOG(4, "priority=0x%08x ", rtInfo->priority);
+            break;
+        default:
+            //LOG(4, "rta_type=%d ", rtAttr->rta_type)
+            ;
         }
     }
+    //LOG(4, "\n");
 
     return 0;
 }
@@ -255,6 +269,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     int len;
     int msgSeq = 0;
     unsigned ipv4 = 0;
+    int priority = 0x7FFFFF;
 
 
     /*
@@ -308,21 +323,32 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 
         memset(rtInfo, 0, sizeof(struct route_info));
 
+        //LOG(3, "if: nlmsg_type=%d nlmsg_flags=0x%x\n", nlMsg->nlmsg_type, nlMsg->nlmsg_flags);
         err = parseRoutes(nlMsg, rtInfo);
         if (err != 0)
             continue;
 
+        LOG(3, "if: route: '%12s' dst=%u.%u.%u.%u src=%u.%u.%u.%u gw=%u.%u.%u.%u priority=%d\n",
+                rtInfo->ifName,
+                FORMATADDR(rtInfo->dstAddr.s_addr),
+                FORMATADDR(rtInfo->srcAddr.s_addr),
+                FORMATADDR(rtInfo->gateWay.s_addr),
+                rtInfo->priority
+            );
 
         /* make sure destination = 0.0.0.0 for "default route" */
         if (rtInfo->dstAddr.s_addr != 0)
             continue;
 
         /* found the gateway! */
-        ipv4 = ntohl(rtInfo->gateWay.s_addr);
-        if (ipv4 == 0)
-            continue;
+        if (rtInfo->priority < priority) {
+            priority = rtInfo->priority;
+            ipv4 = ntohl(rtInfo->gateWay.s_addr);
+            if (ipv4 == 0)
+                continue;
+            strcpy_s(ifname, sizeof_ifname, rtInfo->ifName);
+        }
 
-        strcpy_s(ifname, sizeof_ifname, rtInfo->ifName);
     }
 
     close(fd);

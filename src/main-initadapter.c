@@ -131,7 +131,7 @@ masscan_initialize_adapter(
                                             masscan->nic[index].is_vlan,
                                             masscan->nic[index].vlan_id);
     if (masscan->nic[index].adapter == 0) {
-        fprintf(stderr, "adapter[%s].init: failed\n", ifname);
+        LOG(1, "if:%s:init: failed\n", ifname);
         return -1;
     }
     rawsock_ignore_transmits(masscan->nic[index].adapter, adapter_mac, ifname);
@@ -168,6 +168,7 @@ masscan_initialize_adapter(
                 (router_ipv4>> 0)&0xFF
                 );
 
+            LOG(1, "if:%s:arp: resolving IPv4 address\n", ifname);
             arp_resolve_sync(
                     masscan->nic[index].adapter,
                     adapter_ip,
@@ -188,7 +189,8 @@ masscan_initialize_adapter(
         );
     if (memcmp(router_mac, "\0\0\0\0\0\0", 6) == 0) {
         LOG(0, "FAIL: failed to detect router for interface: \"%s\"\n", ifname);
-        LOG(0, " [hint] try something like \"--router-mac 66-55-44-33-22-11\"\n");
+        LOG(0, " [hint] try something like \"--router-mac 66-55-44-33-22-11\" to specify router\n");
+        LOG(0, " [hint] try something like \"--interface eth0\" to change interface\n");
         return -1;
     }
 

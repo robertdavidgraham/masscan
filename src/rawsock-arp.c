@@ -100,6 +100,7 @@ arp_resolve_sync(struct Adapter *adapter,
     time_t start;
     unsigned is_arp_notice_given = 0;
     struct ARP_IncomingRequest response;
+    int is_delay_reported = 0;
 
     /*
      * [KLUDGE]
@@ -177,6 +178,12 @@ arp_resolve_sync(struct Adapter *adapter,
             rawsock_send_packet(adapter, arp_packet, 60, 1);
             if (i++ >= 10)
                 break; /* timeout */
+
+            /* It's taking too long, so notify the user */
+            if (!is_delay_reported) {
+                LOG(0, "...arping router MAC address...\n");
+                is_delay_reported = 1;
+            }
         }
 
         /* If we aren't getting a response back to our ARP, then print a

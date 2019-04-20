@@ -46,6 +46,26 @@ typedef enum {
     PCAP_D_OUT      = 2,
 } pcap_direction_t;
 
+enum {
+    PCAP_ERROR                          =  -1,
+    PCAP_ERROR_BREAK                    =  -2,
+    PCAP_ERROR_NOT_ACTIVATED            =  -3,
+    PCAP_ERROR_ACTIVATED                =  -4,
+    PCAP_ERROR_NO_SUCH_DEVICE           =  -5,
+    PCAP_ERROR_RFMON_NOTSUP             =  -6,
+    PCAP_ERROR_NOT_RFMON                =  -7,
+    PCAP_ERROR_PERM_DENIED              =  -8,
+    PCAP_ERROR_IFACE_NOT_UP             =  -9,
+    PCAP_ERROR_CANTSET_TSTAMP_TYPE      = -10,
+    PCAP_ERROR_PROMISC_PERM_DENIED      = -11,
+    PCAP_ERROR_TSTAMP_PRECISION_NOTSUP  = -12, 
+
+    /* warnings, not errors */
+    PCAP_WARNING                        =   1,
+    PCAP_WARNING_PROMISC_NOTSUP         =   2,
+    PCAP_WARNING_TSTAMP_TYPE_NOTSUP     =   3,
+};
+
 /* The packet header for capturing packets. Apple macOS inexplicably adds
  * an extra comment-field onto the end of this, so the definition needs
  * to be careful to match the real definition */
@@ -80,6 +100,7 @@ typedef const unsigned char *(*PCAP_NEXT)(pcap_t *p, struct pcap_pkthdr *h);
 typedef int         (*PCAP_SETDIRECTION)(pcap_t *, pcap_direction_t);
 typedef const char *(*PCAP_DATALINK_VAL_TO_NAME)(int dlt);
 typedef void        (*PCAP_PERROR)(pcap_t *p, char *prefix);
+typedef const char *(*PCAP_GETERR)(pcap_t *p);
 typedef const char *(*PCAP_DEV_NAME)(const pcap_if_t *dev);
 typedef const char *(*PCAP_DEV_DESCRIPTION)(const pcap_if_t *dev);
 typedef const pcap_if_t *(*PCAP_DEV_NEXT)(const pcap_if_t *dev);
@@ -146,6 +167,7 @@ struct PcapFunctions {
     PCAP_SETDIRECTION       setdirection;
     PCAP_DATALINK_VAL_TO_NAME datalink_val_to_name;
     PCAP_PERROR             perror;
+    PCAP_GETERR             geterr;
     
     /* Accessor functions for opaque data structure, don't really
      * exist in libpcap */
