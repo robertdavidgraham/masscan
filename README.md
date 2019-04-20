@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/robertdavidgraham/masscan.svg?branch=master)](https://travis-ci.org/robertdavidgraham/masscan.svg)
+
 # MASSCAN: Mass IP port scanner
 
 This is the fastest Internet port scanner. It can scan the entire Internet
