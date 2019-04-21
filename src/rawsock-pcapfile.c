@@ -145,7 +145,7 @@ struct PcapFile
     char filename[256];
     int byte_order;
     int linktype;
-    int64_t frame_number;
+    long long frame_number;
 
     uint64_t file_size;
     uint64_t bytes_read;

@@ -206,7 +206,7 @@ struct PcapFunctions PCAP = {
 static void *my_null(int x, ...)
 {
 	UNUSEDPARM(x);
-    printf(""); /* Remove warnings about no effects */
+    printf("%.*s", 0, "a"); /* Remove warnings about no effects */
     return 0;
 }
 static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
