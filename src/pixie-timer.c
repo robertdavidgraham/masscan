@@ -192,8 +192,8 @@ pixie_gettime(void)
 #if defined(CLOCK_UPTIME_RAW)
     /* macOS: ignores time when suspended/sleep */
     x = clock_gettime(CLOCK_UPTIME_RAW, &tv);
-#elif defined(CLOCK_MONOTONIC_RAW)
-    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
+//#elif defined(CLOCK_MONOTONIC_RAW)
+//    x = clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
 #else
     x = clock_gettime(CLOCK_MONOTONIC, &tv);
 #endif
@@ -256,7 +256,7 @@ pixie_nanotime(void)
 
 int pixie_time_selftest(void)
 {
-    static const uint64_t duration = 123456;
+    static const uint64_t duration = 456789;
     uint64_t start, stop, elapsed;
 
 
@@ -265,10 +265,12 @@ int pixie_time_selftest(void)
     stop = pixie_gettime();
     elapsed = stop - start;
 
-    if (elapsed < 0.9*duration || 1.1*duration < elapsed) {
-        /* I wonder how often this will fail just because the process
-         * gets swapped out, but I'm leaving it in to see if people notice */
+    if (elapsed < 0.9 * duration) {
         fprintf(stderr, "timing error, long delay\n");
+        return 1;
+    }
+    if (1.2 * duration < elapsed) {
+        fprintf(stderr, "timing error, long delay %5.0f%%\n", elapsed*100.0/duration);
         return 1;
     }
 
