@@ -28,34 +28,34 @@
 
 
 struct Patterns patterns[] = {
-    {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
-    {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS},
+    {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
+    {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
     
-    {"\x82\x00\x00\x00", 4, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Positive Session Response */
+    {"\x82\x00\x00\x00", 4, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Positive Session Response */
     
-    {"\x83\x00\x00\x01\x80", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening on called name */
-    {"\x83\x00\x00\x01\x81", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Not listening for calling name */
-    {"\x83\x00\x00\x01\x82", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name not present */
-    {"\x83\x00\x00\x01\x83", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Called name present, but insufficient resources */
-    {"\x83\x00\x00\x01\x8f", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN}, /* Unspecified error */
+    {"\x83\x00\x00\x01\x80", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Not listening on called name */
+    {"\x83\x00\x00\x01\x81", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Not listening for calling name */
+    {"\x83\x00\x00\x01\x82", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Called name not present */
+    {"\x83\x00\x00\x01\x83", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Called name present, but insufficient resources */
+    {"\x83\x00\x00\x01\x8f", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Unspecified error */
 
     /* ...the remainder can be in any order */
-    {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN},
-    {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN},
-    {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN},
+    {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN, 0},
+    {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN, 0},
+    {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN, 0},
     {"220-",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 0},
     {"220 ",        4, PROTO_FTP, SMACK_ANCHOR_BEGIN, 1},
-    {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN},
-    {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN},
-    {"521 ",        4, PROTO_SMTP, SMACK_ANCHOR_BEGIN},
-    {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x16\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x16\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x16\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x15\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x15\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x15\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
-    {"\x15\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN},
+    {"+OK ",        4, PROTO_POP3, SMACK_ANCHOR_BEGIN, 0},
+    {"* OK ",       5, PROTO_IMAP4, SMACK_ANCHOR_BEGIN, 0},
+    {"521 ",        4, PROTO_SMTP, SMACK_ANCHOR_BEGIN, 0},
+    {"\x16\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x16\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x16\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x16\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x15\x03\x00",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x15\x03\x01",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x15\x03\x02",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
+    {"\x15\x03\x03",3, PROTO_SSL3, SMACK_ANCHOR_BEGIN, 0},
     {"RFB 000.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 1}, /* UltraVNC repeater mode */
     {"RFB 003.003\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* default version for everything */
     {"RFB 003.005\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* broken, same as 003.003 */
@@ -67,8 +67,8 @@ struct Patterns patterns[] = {
     {"RFB 004.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Intel AMT KVM */
     {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
     {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
-    {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN}, /* memcached stat response */
-    {0,0}
+    {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN, 0}, /* memcached stat response */
+    {0,0,0,0,0}
 };
 
 

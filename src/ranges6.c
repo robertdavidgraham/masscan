@@ -13,7 +13,7 @@
 
 #define BUCKET_COUNT 16
 
-#define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
+#define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%d\n", __FILE__, __LINE__)|1)
 #ifndef false
 #define false 0
 #endif
@@ -868,7 +868,7 @@ regress_pick2()
         unsigned j;
         unsigned num_targets;
         ipv6address begin = {0};
-        ipv6address end;
+        ipv6address end = {0};
         struct Range6List targets[1];
         struct Range6List duplicate[1];
         unsigned range;

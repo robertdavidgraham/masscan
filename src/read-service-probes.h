@@ -59,6 +59,7 @@ struct ServiceProbeMatch {
     struct ServiceProbeMatch *next;
     char *service;
     char *regex;
+    size_t regex_length;
     struct ServiceVersionInfo *versioninfo;
     unsigned is_case_insensitive:1;
     unsigned is_include_newlines:1;

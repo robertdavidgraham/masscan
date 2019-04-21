@@ -313,6 +313,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		114147AC226BD4E1009F9E93 /* stubs */ = {
+			isa = PBXGroup;
+			children = (
+				11DD36362107DE9700CBE1DE /* stub-lua.c */,
+				11DD36372107DE9700CBE1DE /* stub-lua.h */,
+				119969032141ABAC00E82767 /* stub-pcap.h */,
+				119969022141ABAC00E82767 /* stub-pfring.h */,
+				119968FF2141AB3600E82767 /* stub-pcap.c */,
+				119968FE2141AB3600E82767 /* stub-pfring.c */,
+			);
+			name = stubs;
+			sourceTree = "<group>";
+		};
 		11A9217A17DBCB3200DDFD32 = {
 			isa = PBXGroup;
 			children = (
@@ -333,6 +346,7 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				114147AC226BD4E1009F9E93 /* stubs */,
 				119968FD21388A5300E82767 /* read-service-probes.h */,
 				119968FB21388A3B00E82767 /* read-service-probes.c */,
 				11DD36352107DE8200CBE1DE /* scripting */,
@@ -351,10 +365,6 @@
 		11B360C71F90166D0020F3A3 /* rawsock */ = {
 			isa = PBXGroup;
 			children = (
-				119969032141ABAC00E82767 /* stub-pcap.h */,
-				119969022141ABAC00E82767 /* stub-pfring.h */,
-				119968FF2141AB3600E82767 /* stub-pcap.c */,
-				119968FE2141AB3600E82767 /* stub-pfring.c */,
 				116806EA1995D421005B0980 /* rawsock-adapter.h */,
 				11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */,
 				11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */,
@@ -496,6 +506,8 @@
 		11B360CB1F9016D80020F3A3 /* pixie */ = {
 			isa = PBXGroup;
 			children = (
+				11B5897C21C0785B00DD6248 /* util-malloc.h */,
+				11B5897D21C0785B00DD6248 /* util-malloc.c */,
 				11E76DB21889BC5200061F45 /* pixie-backtrace.c */,
 				11E76DB31889BC5200061F45 /* pixie-backtrace.h */,
 				11A868101816F3A7008E00B8 /* pixie-file.c */,
@@ -534,8 +546,6 @@
 			children = (
 				11B5898021C0841100DD6248 /* ranges6.c */,
 				11B5897F21C0841100DD6248 /* ranges6.h */,
-				11B5897D21C0785B00DD6248 /* util-malloc.c */,
-				11B5897C21C0785B00DD6248 /* util-malloc.h */,
 				1106826F20DF863000E612AB /* ranges-avl.c */,
 				1106827020DF863000E612AB /* ranges-avl.h */,
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
@@ -575,8 +585,6 @@
 				11DD363E2107E7ED00CBE1DE /* vulncheck.h */,
 				11DD363A2107DFEB00CBE1DE /* scripting.c */,
 				11DD36392107DFEB00CBE1DE /* scripting.h */,
-				11DD36362107DE9700CBE1DE /* stub-lua.c */,
-				11DD36372107DE9700CBE1DE /* stub-lua.h */,
 			);
 			name = scripting;
 			sourceTree = "<group>";

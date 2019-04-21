@@ -10,8 +10,8 @@
  distributions (Debian, Readhat), FreeBSD, OpenBSD, and macOS. On
  Windows, "winpcap" must be downloaded. 
 */
-#ifndef RAWSOCK_PCAP_H
-#define RAWSOCK_PCAP_H
+#ifndef STUB_PCAP_H
+#define STUB_PCAP_H
 #include <stdio.h>
 
 

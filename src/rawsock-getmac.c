@@ -48,7 +48,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
     /* Log helpful info about the interface type */
     switch (ifr.ifr_ifru.ifru_hwaddr.sa_family) {
     case 1:
-        LOG(1, "if:%s: type=ethernet(1)\n");
+        LOG(1, "if:%s: type=ethernet(1)\n", ifname);
         break;
     default:
         LOG(1, "if:%s: type=0x%04x\n", ifname, ifr.ifr_ifru.ifru_hwaddr.sa_family);

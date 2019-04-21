@@ -2,21 +2,25 @@
 
 # MASSCAN: Mass IP port scanner
 
-This is the fastest Internet port scanner. It can scan the entire Internet
-in under 6 minutes, transmitting 10 million packets per second.
+This is an Internet-scale port scanner. It can scan the entire Internet
+in under 6 minutes, transmitting 10 million packets per second,
+from a single machine.
 
-It produces results similar to `nmap`, the most famous port scanner.
-Internally, it operates more like `scanrand`, `unicornscan`, and `ZMap`, using
-asynchronous transmission. The major difference is that it's faster than these
-other scanners. In addition, it's more flexible, allowing arbitrary address
-ranges and port ranges.
+It's input/output is similar to `nmap`, the most famous port scanner.
+When in doubt, try one of those features.
 
-NOTE: masscan uses a **custom TCP/IP stack**. Anything other than simple port
-scans will cause conflict with the local TCP/IP stack. This means you need to
-either use the `-S` option to use a separate IP address, or configure your
-operating system to firewall the ports that masscan uses.
+Internally, it uses asynchronous tranmissions, similar to port scanners
+like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
+arbitrary port and address ranges.
 
-This tool is free, but consider funding it here:
+NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
+simple port scans may cause conflict with the local TCP/IP stack. This means you 
+need to either the `--src-ip` option to run from a different IP address, or
+use `--src-port` to configure which source ports masscan uses, then also
+configure the internal firewall (like `pf` or `iptables`) to firewall those ports
+from the rest of the operating system.
+
+This tool is free, but consider contributing money to its developement:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
@@ -40,13 +44,14 @@ by using the multi-threaded build:
 
 While Linux is the primary target platform, the code runs well on many other
 systems. Here's some additional build info:
-* Windows w/ Visual Studio: use the VS10 project
-* Windows w/ MingGW: just type `make`
-* Windows w/ cygwin: won't work
-* Mac OS X /w XCode: use the XCode4 project
-* Mac OS X /w cmdline: just type `make`
-* FreeBSD: type `gmake`
-* other: I don't know, don't care
+
+  * Windows w/ Visual Studio: use the VS10 project
+  * Windows w/ MingGW: just type `make`
+  * Windows w/ cygwin: won't work
+  * Mac OS X /w XCode: use the XCode4 project
+  * Mac OS X /w cmdline: just type `make`
+  * FreeBSD: type `gmake`
+  * other: try just compiling all the files together
 
 
 ## PF_RING
@@ -55,9 +60,9 @@ To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
 adapter and a special driver known as ["PF_RING ZC" from ntop](http://www.ntop.org/products/packet-capture/pf_ring/pf_ring-zc-zero-copy/). Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
 you need to build the following components:
 
-* `libpfring.so` (installed in /usr/lib/libpfring.so)
-* `pf_ring.ko` (their kernel driver)
-* `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
+  * `libpfring.so` (installed in /usr/lib/libpfring.so)
+  * `pf_ring.ko` (their kernel driver)
+  * `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
 
 You don't need to build their version of `libpcap.so`.
 
@@ -65,7 +70,6 @@ When Masscan detects that an adapter is named something like `zc:enp1s0` instead
 of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
 
 ## Regression testing
-
 The project contains a built-in self-test:
 
 	$ make regress

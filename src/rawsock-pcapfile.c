@@ -248,7 +248,7 @@ smells_like_valid_packet(const unsigned char *px, unsigned length, unsigned byte
     } else
     switch (link_type) {
     case 1: /*ethernet*/
-        if (px[12] == 0x08 && px[13] == 0x00 && px[13] == 0x45)
+        if (px[12] == 0x08 && px[13] == 0x00 && px[14] == 0x45)
             return 1;
     }
 
@@ -312,7 +312,7 @@ int pcapfile_readframe(
         if (*r_time_usecs < 1000100) {
             *r_time_secs += 1;
             *r_time_usecs -= 1000000;
-        } if (*r_time_usecs > 0xFFFFFF00) {
+        } else if (*r_time_usecs > 0xFFFFFF00) {
             *r_time_secs -= 1;
             *r_time_usecs += 1000000;
             *r_time_usecs &= 0xFFFFFFFF; /* mask off in case of 64-bit ints */
@@ -352,7 +352,7 @@ int pcapfile_readframe(
          * packet.*/
         position = ftell_x(capfile->fp);
         if (position == -1) {
-            fprintf(stderr, "%s: could not resolve file corruption (ftell) frame #%" PRId64 "\n",
+            fprintf(stderr, "%s:%lld: could not resolve file corruption (ftell)\n",
                 capfile->filename, capfile->frame_number);
             perror(capfile->filename);
             fseek_x(capfile->fp, 0, SEEK_END);
@@ -362,7 +362,7 @@ int pcapfile_readframe(
         /* Print an error message indicating corruption was found. Note
          * that if corruption happens past 4-gigs on a 32-bit system, this
          * will print an inaccurate number */
-        fprintf(stderr, "%s(%" PRIu64 "): corruption found at 0x%08" PRIx64 " (%" PRId64 ")\n",
+        fprintf(stderr, "%s:%lld: corruption found at 0x%08" PRIx64 " (%" PRId64 ")\n",
             capfile->filename,
             capfile->frame_number,
             position,
@@ -471,7 +471,7 @@ int pcapfile_readframe(
              * help people figure out where in the file the corruption
              * happened, so they can figure out why it was corrupt.*/
             position = ftell_x(capfile->fp);
-            fprintf(stderr, "%s(%" PRId64 "): good packet found at 0x%08" PRIx64 " (%" PRId64 ")\n",
+            fprintf(stderr, "%s:%lld: good packet found at 0x%08" PRIx64 " (%" PRId64 ")\n",
                 capfile->filename,
                 capfile->frame_number,
                 position,
@@ -494,8 +494,9 @@ int pcapfile_readframe(
     bytes_read = fread(buf, 1, *r_captured_length, capfile->fp);
     if (bytes_read < *r_captured_length) {
         if (bytes_read <= 0) {
-            fprintf(stderr, "%s: could not read packet data, frame #%" PRId64 "\n",
-                capfile->filename, capfile->frame_number);
+            fprintf(stderr, "%s: could not read packet data, frame #%lld\n",
+                capfile->filename,
+                    (long long)capfile->frame_number);
             perror(capfile->filename);
         } else
             fprintf(stderr, "%s: premature end of file\n", capfile->filename);
@@ -562,9 +563,7 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
         if (bytes_read <= 0) {
             fprintf(stderr, "%s: could not read PCAP header\n", capfilename);
             perror(capfilename);
-        } else if (bytes_read == 0)
-            fprintf(stderr, "%s: file empty\n", capfilename);
-        else
+        } else
             fprintf(stderr, "%s: file too short\n", capfilename);
         fclose(fp);
         return 0;
@@ -776,7 +775,7 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
         unsigned minor = PCAP16(byte_order, buf+6);
 
         if (major != 2 || minor != 4)
-            fprintf(stderr, "%s: unknown version %d.%d\n", capfilename, major, minor);
+            fprintf(stderr, "%s: unknown version %u.%u\n", capfilename, major, minor);
     }
 
     /* Protocol */
@@ -793,14 +792,14 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 
         fclose(fp);
 
-        snprintf(linkspec, sizeof(linkspec), "-linktype%d", linktype);
-        linkspec_length = strlen(linkspec);
+        linkspec_length = snprintf(linkspec, sizeof(linkspec), "-linktype%d", linktype);
 
         if (strstr(capfilename, linkspec) || strlen(capfilename) + linkspec_length + 1 > sizeof(newname)) {
             /* Oops, we have a problem, it looks like the filename already
              * has the previous linktype in its name for some reason. At this
              * unlikely point, we just give up */
-            fprintf(stderr, "Giving up on appending %d-type frames onto a %d-type file\n", linktype, file_linktype);
+            fprintf(stderr, "Giving up on appending %u-type frames onto a %u-type file\n",
+                    linktype, file_linktype);
             return 0;
         }
 
@@ -916,7 +915,7 @@ void pcapfile_writeframe(
     }
 
     if (fwrite(header, 1, 16, capfile->fp) != 16) {
-        fprintf(stderr, "%s: could write packet header, frame #%" PRId64 "\n",
+        fprintf(stderr, "%s:%lld: could not write packet header\n",
             capfile->filename, capfile->frame_number);
         perror(capfile->filename);
         fclose(capfile->fp);
@@ -924,7 +923,7 @@ void pcapfile_writeframe(
     }
 
     if (fwrite(buffer, 1, buffer_size, capfile->fp) != buffer_size) {
-        fprintf(stderr, "%s: could write packet contents, frame #%" PRId64 "\n",
+        fprintf(stderr, "%s:%lld: could not write packet contents\n",
             capfile->filename, capfile->frame_number);
         perror(capfile->filename);
         fclose(capfile->fp);

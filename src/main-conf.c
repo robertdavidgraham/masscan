@@ -396,13 +396,15 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
             i = 1;
             while (!feof(fp)) {
                 c = getc(fp);
+                if (c == EOF)
+                    break;
                 line_number += (c == '\n');
                 if (isspace(c&0xFF) || c == ',') {
                     break;
                 }
                 if (i+1 >= sizeof(address)) {
                     LOG(0, "%s:%u:%u: bad address spec: \"%.*s\"\n",
-                            filename, line_number, offset, i, address);
+                            filename, line_number, offset, (int)i, address);
                     exit(1);
                 } else
                     address[i] = (char)c;
@@ -414,7 +416,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
             range = range_parse_ipv4(address, &offset, (unsigned)i);
             if (range.begin == 0xFFFFFFFF && range.end == 0) {
                 LOG(0, "%s:%u:%u: bad range spec: \"%.*s\"\n",
-                        filename, line_number, offset, i, address);
+                        filename, line_number, offset, (int)i, address);
                 exit(1);
             } else {
                 rangelist_add_range(ranges, range.begin, range.end);
@@ -1573,41 +1575,41 @@ struct ConfigParameter {
 };
 enum {F_NONE, F_BOOL};
 struct ConfigParameter config_parameters[] = {
-    {"resume-index",    SET_resume_index},
-    {"resume-count",    SET_resume_count},
-    {"seed",            SET_seed},
+    {"resume-index",    SET_resume_index,       0,      {0}},
+    {"resume-count",    SET_resume_count,       0,      {0}},
+    {"seed",            SET_seed,               0,      {0}},
     {"arpscan",         SET_arpscan,            F_BOOL, {"arp",0}},
-    {"randomize-hosts", SET_randomize_hosts,    F_BOOL},
-    {"rate",            SET_rate,               0, {"max-rate",0}},
-    {"shard",           SET_shard,              0, {"shards",0}},
+    {"randomize-hosts", SET_randomize_hosts,    F_BOOL, {0}},
+    {"rate",            SET_rate,               0,      {"max-rate",0}},
+    {"shard",           SET_shard,              0,      {"shards",0}},
     {"banners",         SET_banners,            F_BOOL, {"banner",0}},
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
-    {"retries",         SET_retries,            0, {"retry", "max-retries", "max-retry", 0}},
-    {"noreset",         SET_noreset,            F_BOOL},
-    {"nmap-payloads",   SET_nmap_payloads,      0, {"nmap-payload",0}},
-    {"nmap-service-probes",SET_nmap_service_probes, 0, {"nmap-service-probe",0}},
-    {"pcap-filename",   SET_pcap_filename,      0, {"pcap",0}},
-    {"pcap-payloads",   SET_pcap_payloads,      0, {"pcap-payload",0}},
-    {"hello",           SET_hello},
-    {"hello-file",      SET_hello_file,         0, {"hello-filename",0}},
-    {"hello-string",    SET_hello_string},
-    {"hello-timeout",   SET_hello_timeout},
-    {"min-packet",      SET_min_packet,         0, {"min-pkt",0}},
-    {"capture",         SET_capture},
-    {"SPACE",           SET_space},
-    {"output-filename", SET_output_filename,    0, {"output-file",0}},
-    {"output-format",   SET_output_format},
-    {"output-show",     SET_output_show,        0, {"output-status", "show",0}},
-    {"output-noshow",   SET_output_noshow,      0, {"noshow",0}},
+    {"retries",         SET_retries,            0,      {"retry", "max-retries", "max-retry", 0}},
+    {"noreset",         SET_noreset,            F_BOOL, {0}},
+    {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
+    {"nmap-service-probes",SET_nmap_service_probes, 0,  {"nmap-service-probe",0}},
+    {"pcap-filename",   SET_pcap_filename,      0,      {"pcap",0}},
+    {"pcap-payloads",   SET_pcap_payloads,      0,      {"pcap-payload",0}},
+    {"hello",           SET_hello,              0,      {0}},
+    {"hello-file",      SET_hello_file,         0,      {"hello-filename",0}},
+    {"hello-string",    SET_hello_string,       0,      {0}},
+    {"hello-timeout",   SET_hello_timeout,      0,      {0}},
+    {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
+    {"capture",         SET_capture,            0,      {0}},
+    {"SPACE",           SET_space,              0,      {0}},
+    {"output-filename", SET_output_filename,    0,      {"output-file",0}},
+    {"output-format",   SET_output_format,      0,      {0}},
+    {"output-show",     SET_output_show,        0,      {"output-status", "show",0}},
+    {"output-noshow",   SET_output_noshow,      0,      {"noshow",0}},
     {"output-show-open",SET_output_show_open,   F_BOOL, {"open", "open-only", 0}},
-    {"output-append",   SET_output_append,      0, {"append-output",0}},
-    {"rotate",          SET_rotate_time,        0, {"output-rotate", "rotate-output", "rotate-time", 0}},
-    {"rotate-dir",      SET_rotate_directory,   0, {"output-rotate-dir", "rotate-directory", 0}},
-    {"rotate-offset",   SET_rotate_offset,      0, {"output-rotate-offset", 0}},
-    {"rotate-size",     SET_rotate_filesize,    0, {"output-rotate-filesize", "rotate-filesize", 0}},
-    {"stylesheet",      SET_output_stylesheet},
-    {"script",          SET_script},
-    {"SPACE",           SET_space},
+    {"output-append",   SET_output_append,      0,      {"append-output",0}},
+    {"rotate",          SET_rotate_time,        0,      {"output-rotate", "rotate-output", "rotate-time", 0}},
+    {"rotate-dir",      SET_rotate_directory,   0,      {"output-rotate-dir", "rotate-directory", 0}},
+    {"rotate-offset",   SET_rotate_offset,      0,      {"output-rotate-offset", 0}},
+    {"rotate-size",     SET_rotate_filesize,    0,      {"output-rotate-filesize", "rotate-filesize", 0}},
+    {"stylesheet",      SET_output_stylesheet,  0,      {0}},
+    {"script",          SET_script,             0,      {0}},
+    {"SPACE",           SET_space,              0,      {0}},
     {0}
 };
 

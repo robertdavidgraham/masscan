@@ -246,7 +246,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
     if (name_equals(name, "hello-timeout")) {
         uint64_t n = parseInt(value, value_length);
         tcpcon->timeout_hello = (unsigned)n;
-        LOG(1, "TCP hello-timeout = \"%.*s\"\n", value_length, value);
+        LOG(1, "TCP hello-timeout = \"%.*s\"\n", (int)value_length, (const char *)value);
         LOG(1, "TCP hello-timeout = %u\n", (unsigned)tcpcon->timeout_hello);
         return;
     }
@@ -474,7 +474,7 @@ tcb_hash(   unsigned ip_me, unsigned port_me,
     unsigned index;
 
     /* TCB hash table uses symmetric hash, so incoming/outgoing packets
-     * get the same hash. FIXME: does this really nee to be symmetric? */
+     * get the same hash. */
     index = (unsigned)syn_cookie(   ip_me   ^ ip_them,
                                     port_me ^ port_them,
                                     ip_me   ^ ip_them,

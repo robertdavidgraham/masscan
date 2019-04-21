@@ -387,7 +387,7 @@ parse_file(struct Output *out, const char *filename,
 
         /* get the remainder fo the record */
         bytes_read = fread(buf, 1, length, fp);
-        if (bytes_read < (int)length)
+        if (bytes_read < length)
             break; /* eof */
 
         /* Depending on record type, do something different */

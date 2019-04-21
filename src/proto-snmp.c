@@ -70,7 +70,7 @@ struct SNMP
  * This is the "compiled MIB" essentially. At program startup, we compile
  * this into an OID tree. We use this to replace OIDs with names.
  ****************************************************************************/
-struct SnmpOid {
+static struct SnmpOid {
     const char *oid;
     const char *name;
 } mib[] = {

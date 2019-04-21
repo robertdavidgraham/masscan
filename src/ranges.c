@@ -14,7 +14,7 @@
 
 #define BUCKET_COUNT 16
 
-#define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%u\n", __FILE__, __LINE__)|1)
+#define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%d\n", __FILE__, __LINE__)|1)
 
 
 /***************************************************************************

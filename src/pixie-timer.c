@@ -21,6 +21,14 @@
 #include <errno.h>
 #include <string.h>
 
+#ifndef UNUSEDPARM
+#ifdef __GNUC__
+#define UNUSEDPARM(x)
+#else
+#define UNUSEDPARM(x) x=(x)
+#endif
+#endif
+
 
 #if defined(WIN32)
 #include <Windows.h>
@@ -57,7 +65,7 @@ clock_gettime(int X, struct timeval *tv)
     static int              initialized = 0;
     static BOOL             usePerformanceCounter = 0;
 
-    X=X;
+    UNUSEDPARM(X);
 
     if (!initialized) {
         LARGE_INTEGER performanceFrequency;

@@ -265,11 +265,32 @@ struct ProtocolParserStream {
 };
 
 
+/**
+ * Patterns that match the data from the start of a TCP connection.
+ * This will hint at what protocol that connection might be.
+ */
 struct Patterns {
+    
+    /** A string like "SSH-" or "220 " that matches a banner */
     const char *pattern;
+    
+    /** The length of that string, since it may be binary containing
+     * nul characters */
     unsigned pattern_length;
+    
+    /** An integer arbitrarily assigned to this pattern, which should
+     * probably match the protocol ID that we are looking for */
     unsigned id;
+    
+    /**
+     * Whether this string matches only at the begining ('anchored')
+     * or anywhere in the input. Virtually all the patterns are anchored.
+     */
     unsigned is_anchored;
+    
+    /**
+     * Some extra flags for the pattern matcher for a few os the patterns.
+     */
     unsigned extra;
 };
 

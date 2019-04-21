@@ -398,7 +398,7 @@ parse_probe(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             fprintf(stderr, "%s:%u:%u: missing end delimiter '%c'\n", filename, line_number, (unsigned)offset, isprint(delimiter)?delimiter:'.');
             goto parse_error;
         }
-        offset++;
+        //offset++;
     }
 
     
@@ -483,6 +483,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             offset++;
         
         /* add regex pattern to record */
+        match->regex_length = regex_length;
         match->regex = MALLOC(regex_length  + 1);
         memcpy(match->regex, line+regex_offset, regex_length + 1);
         match->regex[regex_length] = '\0';
@@ -625,10 +626,8 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
     return match;
     
 parse_error:
-    if (match->regex != 0)
-        free(match->regex);
-    if (match->service != 0)
-        free(match->service);
+    free(match->regex);
+    free(match->service);
     while (match->versioninfo) {
         struct ServiceVersionInfo *v = match->versioninfo;
         match->versioninfo = v->next;
@@ -842,10 +841,8 @@ nmapserviceprobes_free_record(struct NmapServiceProbe *probe)
     while (probe->match) {
         struct ServiceProbeMatch *match = probe->match;
         probe->match = match->next;
-        if (match->regex != 0)
-            free(match->regex);
-        if (match->service != 0)
-            free(match->service);
+        free(match->regex);
+        free(match->service);
         while (match->versioninfo) {
             struct ServiceVersionInfo *v = match->versioninfo;
             match->versioninfo = v->next;
@@ -1074,7 +1071,7 @@ nmapserviceprobes_print(const struct NmapServiceProbeList *list, FILE *fp)
             struct ServiceVersionInfo *vi;
             
             fprintf(fp, "match %s m", match->service);
-            nmapserviceprobes_print_dstring(fp, match->regex, strlen(match->regex), '/');
+            nmapserviceprobes_print_dstring(fp, match->regex, match->regex_length, '/');
             if (match->is_case_insensitive)
                 fprintf(fp, "i");
             if (match->is_include_newlines)

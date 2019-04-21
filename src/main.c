@@ -257,9 +257,9 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t start;
     uint64_t end;
     const struct Masscan *masscan = parms->masscan;
-    unsigned retries = masscan->retries;
-    unsigned rate = (unsigned)masscan->max_rate;
-    unsigned r = retries + 1;
+    uint64_t retries = masscan->retries;
+    uint64_t rate = masscan->max_rate;
+    unsigned r = (unsigned)retries + 1;
     uint64_t range;
     struct BlackRock blackrock;
     uint64_t count_ips = rangelist_count(&masscan->targets);
@@ -426,7 +426,7 @@ infinite:
              */
             if (r == 0) {
                 i += increment; /* <------ increment by 1 normally, more with shards/nics */
-                r = retries + 1;
+                r = (unsigned)retries + 1;
             }
 
         } /* end of batch */

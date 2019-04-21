@@ -51,21 +51,33 @@ CALLOC(size_t count, size_t size)
 }
 
 /***************************************************************************
- * FIXME: if size=0, malloc() may return NULL. Currently, this function
- * doesn't abort in that case. We probably need to make this defined
- * behavior, either aborting, always returning NULL, or never returning
- * NULL (such as by changing size to 1 byte).
+ * Wrap the standard 'malloc()' function.
+ * - never returns a NULL pointer, aborts program instead
+ * - if size is zero, still returns a valid pointer to one byte
  ***************************************************************************/
 void *
 MALLOC(size_t size)
 {
-    void *p = malloc(size);
+    void *p;
     
-    if (p == NULL && size != 0) {
+    /* If 'size' is zero, then the behavior of 'malloc()' is undefined.
+     * I'm not sure which behavior would be best, to either always abort
+     * or always succeed. I'm choosing "always succeed" by bumping the
+     * length by one byte */
+    if (size == 0)
+        size = 1;
+    
+    /* Do the original allocation */
+    p = malloc(size);
+    
+    /* Abort the program if we've run out of memory */
+    if (p == NULL) {
         fprintf(stderr, "[-] out of memory, aborting\n");
         abort();
     }
     
+    /* At this point, we've either succeeded or aborted the program,
+     * so this value is guaranteed to never be NULL */
     return p;
 }
 

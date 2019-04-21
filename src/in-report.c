@@ -51,7 +51,7 @@ cndb_add(unsigned ip, const unsigned char *name, size_t name_length)
 {
     struct CNDB_Entry *entry;
 
-    if (name_length <= 0)
+    if (name_length == 0)
         return;
     
     if (db == NULL) {

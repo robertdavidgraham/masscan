@@ -49,7 +49,7 @@
 
 #ifndef UNUSEDPARM
 #ifdef __GNUC__
-#define UNUSEDPARM(x) x=(x)
+#define UNUSEDPARM(x)
 #else
 #define UNUSEDPARM(x) x=(x)
 #endif
@@ -206,6 +206,7 @@ struct PcapFunctions PCAP = {
 static void *my_null(int x, ...)
 {
 	UNUSEDPARM(x);
+    printf(""); /* Remove warnings about no effects */
     return 0;
 }
 static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
@@ -262,7 +263,6 @@ static const char*null_PCAP_GETERR(pcap_t *p)
 {
 #ifdef STATICPCAP
     return pcap_geterr(p);
-    return;
 #endif
 	UNUSEDPARM(p);
 	return "(unknown)";

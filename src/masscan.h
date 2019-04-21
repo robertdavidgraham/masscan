@@ -38,8 +38,6 @@ enum Operation {
  * be "--interactive", meaning that we'll print to the command-line live as
  * results come in. Only one output format can be specified, except that
  * "--interactive" can be specified alongside any of the other ones.
- * FIXME: eventually we'll support multiple file formats and "all"
- * outputing simultaneously.
  */
 enum OutputFormat {
     Output_Default      = 0x0000,
@@ -121,7 +119,6 @@ struct Masscan
      * One or more network adapters that we'll use for scanning. Each adapter
      * should have a separate set of IP source addresses, except in the case
      * of PF_RING dnaX:Y adapters.
-     * FIXME: add support for link aggregation across adapters
      */
     struct {
         char ifname[256];

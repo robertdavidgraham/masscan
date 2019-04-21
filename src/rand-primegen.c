@@ -131,11 +131,8 @@ static void doit6(register uint32_t *a,register long x,register long y,int64_t s
 
 static void doit12(register uint32_t *a,register long x,register long y,int64_t start)
 {
-  long i0;
-  long y0;
   register long i;
   register uint32_t data;
-  register uint32_t pos;
   register uint32_t bits;
 
   x += 5;
@@ -150,6 +147,8 @@ static void doit12(register uint32_t *a,register long x,register long y,int64_t 
   x += 10;
 
   for (;;) {
+    long i0;
+    long y0;
     while (i >= B) {
       if (x <= y) return;
       i -= y;
@@ -158,6 +157,7 @@ static void doit12(register uint32_t *a,register long x,register long y,int64_t 
     i0 = i;
     y0 = y;
     while ((i >= 0) && (y < x)) {
+      register uint32_t pos;
       pos = (uint32_t)i; data = (uint32_t)i;
       pos >>= 5; data &= 31;
       i -= y;
@@ -339,16 +339,16 @@ uint32_t qq60tab[49] = {
 static void squarefreetiny(register uint32_t *a,uint32_t *Lmodqq,int d)
 {
   int j;
-  register uint32_t k;
-  register uint32_t qq;
-  register uint32_t pos;
-  register uint32_t data;
-  register uint32_t bits;
 
   for (j = 0;j < 49;++j) {
+    register uint32_t k;
+    register uint32_t qq;
     qq = qqtab[j];
     k = qq - 1 - ((Lmodqq[j] + qq60tab[j] * d - 1) % qq);
     while (k < B) {
+      register uint32_t pos;
+      register uint32_t data;
+      register uint32_t bits;
       pos = k;
       data = k;
       pos >>= 5;
@@ -640,12 +640,12 @@ static const unsigned long pop[256] = {
 uint64_t primegen_count(primegen *pg,uint64_t to)
 {
   uint64_t count = 0;
-  register int pos;
-  register int j;
-  register uint32_t bits;
-  register uint32_t smallcount;
-
+  
   for (;;) {
+    register int pos;
+    register int j;
+    register uint32_t bits;
+    register uint32_t smallcount;
     while (pg->num) {
       if (pg->p[pg->num - 1] >= to) return count;
       ++count;
@@ -692,9 +692,8 @@ uint64_t primegen_count(primegen *pg,uint64_t to)
 
 void primegen_skipto(primegen *pg,uint64_t to)
 {
-  int pos;
-
   for (;;) {
+    int pos;
     while (pg->num) {
       if (pg->p[pg->num - 1] >= to) return;
       --pg->num;

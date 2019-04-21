@@ -1,3 +1,7 @@
+#ifndef _RTE_RING_H_
+#define _RTE_RING_H_
+
+
 /*
     RING
 
@@ -80,8 +84,6 @@
 #endif
 
 
-#ifndef _RTE_RING_H_
-#define _RTE_RING_H_
 #if defined(_MSC_VER)
 #define inline __inline
 #define unlikely(x) x
@@ -310,7 +312,7 @@ __rte_ring_mp_do_enqueue(struct rte_ring *r, void * const *obj_table,
              unsigned n, enum rte_ring_queue_behavior behavior)
 {
     uint32_t prod_head, prod_next;
-    uint32_t cons_tail, free_entries;
+    uint32_t free_entries;
     const unsigned max = n;
     int success;
     unsigned i;
@@ -319,6 +321,8 @@ __rte_ring_mp_do_enqueue(struct rte_ring *r, void * const *obj_table,
 
     /* move prod.head atomically */
     do {
+        uint32_t cons_tail;
+        
         /* Reset n to the initial burst count */
         n = max;
 
@@ -490,8 +494,8 @@ static inline int
 __rte_ring_mc_do_dequeue(struct rte_ring *r, void **obj_table,
          unsigned n, enum rte_ring_queue_behavior behavior)
 {
-    uint32_t cons_head, prod_tail;
-    uint32_t cons_next, entries;
+    uint32_t cons_head;
+    uint32_t cons_next;
     const unsigned max = n;
     int success;
     unsigned i;
@@ -499,6 +503,9 @@ __rte_ring_mc_do_dequeue(struct rte_ring *r, void **obj_table,
 
     /* move cons.head atomically */
     do {
+        uint32_t prod_tail;
+        uint32_t entries;
+        
         /* Restore n as it may change every loop */
         n = max;
 

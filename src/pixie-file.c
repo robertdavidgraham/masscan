@@ -13,7 +13,7 @@
 int
 pixie_fopen_shareable(FILE **in_fp, const char *filename, unsigned is_append)
 {
-    FILE *fp = NULL;
+    FILE *fp;
 
     *in_fp = NULL;
 

@@ -21,6 +21,12 @@
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
+/**
+ * A structure representing the information parsed from an incoming
+ * ARP packet. Note: unlike normal programming style, this isn't
+ * overlayed on the incoming ARP header, but instead each field
+ * is parsed one-by-one and converted into this internal structure.
+ */
 struct ARP_IncomingRequest
 {
     unsigned is_valid;
@@ -155,8 +161,8 @@ arp_resolve_sync(struct Adapter *adapter,
     arp_packet[41] = (unsigned char)(your_ipv4 >>  0);
 
 
-    /* kludge me: this is the wrong thing to do
-     * FIXME: */
+    /* Kludge: handle VLNA header if it exists. This is probably
+     * the wrong way to handle this. */
     if (adapter->is_vlan)
         arp_packet -= 4;
     

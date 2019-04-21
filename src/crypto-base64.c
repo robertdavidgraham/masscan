@@ -184,7 +184,6 @@ base64_selftest(void)
     char buf3[100];
     size_t buf_len;
     size_t buf2_len;
-    size_t buf3_len;
     unsigned i;
     unsigned seed = (unsigned)time(0);
 
@@ -201,6 +200,7 @@ base64_selftest(void)
      */
     for (i=0; i<100; i++) {
         unsigned j;
+        size_t buf3_len;
 
         /* create a string of random bytes */
         buf_len = r_rand(&seed) % 50;

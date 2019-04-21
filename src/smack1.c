@@ -947,7 +947,6 @@ smack_stage1_generate_fails(struct SMACK * smack)
 static void
 smack_stage2_link_fails(struct SMACK * smack)
 {
-    unsigned r;
     unsigned a;
     struct Queue *queue;
 
@@ -959,6 +958,8 @@ smack_stage2_link_fails(struct SMACK * smack)
     }
 
     while (queue_has_more_items(queue)) {
+        unsigned r;
+
         r = dequeue(queue);
 
         for (a=0; a<ALPHABET_SIZE; a++) {
@@ -1619,7 +1620,7 @@ smack_selftest(void)
 {
     struct SMACK *s;
 
-    {
+    
         const char *patterns[] = {
             "GET",      "PUT",      "POST",     "OPTIONS",
             "HEAD",     "DELETE",   "TRACE",    "CONNECT",
@@ -1679,7 +1680,7 @@ smack_selftest(void)
         }*/
         smack_destroy(s);
 
-    }
+    
 
 
     return 0;
