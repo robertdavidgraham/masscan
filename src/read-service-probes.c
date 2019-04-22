@@ -882,8 +882,8 @@ nmapserviceprobes_print_ports(const struct RangeList *ranges, FILE *fp, const ch
     /* print all ports */
     for (i=0; i<ranges->count; i++) {
         int proto;
-        unsigned begin = ranges->list[i].begin;
-        unsigned end = ranges->list[i].end;
+        int begin = ranges->list[i].begin;
+        int end = ranges->list[i].end;
         
         if (Templ_TCP <= begin && begin < Templ_UDP)
             proto = Templ_TCP;

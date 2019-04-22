@@ -1391,7 +1391,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                         tcb->seqno_me -= len;
                         LOGSEND(tcb, "peer(payload) retransmit");
                         
-                        if (tcb->payload) /* FIXME: kludge: should never be NULL< but somehow is */
+                        /* kludge: should never be NULL< but somehow is */
+                        if (tcb->payload) 
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x18,
                                            tcb->payload + tcb->payload_length - len,

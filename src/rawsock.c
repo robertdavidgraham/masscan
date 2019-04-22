@@ -714,48 +714,62 @@ rawsock_init_adapter(const char *adapter_name,
         /* This reserves resources, but doesn't actually open the 
          * adapter until we call pcap_activate */
         adapter->pcap = PCAP.create(adapter_name, errbuf);
-        
-        err = PCAP.set_snaplen(adapter->pcap, 65536);
-        if (err) {
-            PCAP.perror(adapter->pcap, "if: set_snaplen");
-            goto pcap_error;
-        }
-
-        err = PCAP.set_promisc(adapter->pcap, 8);
-        if (err) {
-            PCAP.perror(adapter->pcap, "if: set_promisc");
-            goto pcap_error;
-        }
-
-        err = PCAP.set_timeout(adapter->pcap, 1000);
-        if (err) {
-            PCAP.perror(adapter->pcap, "if: set_timeout");
-            goto pcap_error;
-        }
-
-        err = PCAP.set_immediate_mode(adapter->pcap, 1);
-        if (err) {
-            PCAP.perror(adapter->pcap, "if: set_immediate_mode");
-            goto pcap_error;
-        }
-
-        /* If errors happen, they aren't likely to happen above, but will
-         * happen where when they are applied */
-        err = PCAP.activate(adapter->pcap);
-        switch (err) {
-        case 0:
-            /* drop down below */
-            break;
-        case PCAP_ERROR_PERM_DENIED:
-            LOG(0, "FAIL: permission denied\n");
-            LOG(0, " [hint] need to sudo or run as root or something\n");
-            LOG(0, " [hint] I've got some local priv escalation "
-                    "0days that might work\n");
-            goto pcap_error;
-        default:
-	        LOG(0, "if:%s: activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
-            if (err < 0)
+        if (adapter->pcap == NULL) {
+            adapter->pcap = PCAP.open_live(
+                        adapter_name,           /* interface name */
+                        65536,                  /* max packet size */
+                        8,                      /* promiscuous mode */
+                        1000,                   /* read timeout in milliseconds */
+                        errbuf);
+            if (adapter->pcap == NULL) {
+                LOG(0, "FAIL:%s: can't open adapter: %s\n", adapter_name, errbuf);
+                if (strstr(errbuf, "perm")) {
+                    LOG(0, "FAIL: permission denied\n");
+                    LOG(0, " [hint] need to sudo or run as root or something\n");
+                }
+                return 0;
+            }
+        } else {
+            err = PCAP.set_snaplen(adapter->pcap, 65536);
+            if (err) {
+                PCAP.perror(adapter->pcap, "if: set_snaplen");
                 goto pcap_error;
+            }
+
+            err = PCAP.set_promisc(adapter->pcap, 8);
+            if (err) {
+                PCAP.perror(adapter->pcap, "if: set_promisc");
+                goto pcap_error;
+            }
+
+            err = PCAP.set_timeout(adapter->pcap, 1000);
+            if (err) {
+                PCAP.perror(adapter->pcap, "if: set_timeout");
+                goto pcap_error;
+            }
+
+            err = PCAP.set_immediate_mode(adapter->pcap, 1);
+            if (err) {
+                PCAP.perror(adapter->pcap, "if: set_immediate_mode");
+                goto pcap_error;
+            }
+
+            /* If errors happen, they aren't likely to happen above, but will
+             * happen where when they are applied */
+            err = PCAP.activate(adapter->pcap);
+            switch (err) {
+            case 0:
+                /* drop down below */
+                break;
+            case PCAP_ERROR_PERM_DENIED:
+                LOG(0, "FAIL: permission denied\n");
+                LOG(0, " [hint] need to sudo or run as root or something\n");
+                goto pcap_error;
+            default:
+	            LOG(0, "if:%s: activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
+                if (err < 0)
+                    goto pcap_error;
+            }
         }
 
         LOG(1, "if:%s: successfully opened\n", adapter_name);
