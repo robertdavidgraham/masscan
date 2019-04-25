@@ -9,6 +9,8 @@
 #include "unusedparm.h"
 #include "masscan-app.h"
 
+#define MAX_BANNER_LENGTH 8192
+
 struct Masscan;
 struct Output;
 enum ApplicationProtocol;

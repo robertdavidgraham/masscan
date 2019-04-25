@@ -865,7 +865,7 @@ output_report_banner(struct Output *out, time_t now,
      * line screen */
     if (out->is_interactive || out->format == 0 || out->format == Output_Interactive) {
         unsigned count;
-        char banner_buffer[4096];
+        char banner_buffer[MAX_BANNER_LENGTH];
 
         count = fprintf(stdout, "Banner on port %u/%s on %s: [%s] %s",
             port,
