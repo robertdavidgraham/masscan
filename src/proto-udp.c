@@ -1,4 +1,5 @@
 #include "proto-udp.h"
+#include "proto-coap.h"
 #include "proto-dns.h"
 #include "proto-netbios.h"
 #include "proto-snmp.h"
@@ -79,6 +80,9 @@ handle_udp(struct Output *out, time_t timestamp,
             break;
         case 161: /* SNMP - Simple Network Managment Protocol (amplifier) */
             status = handle_snmp(out, timestamp, px, length, parsed, entropy);
+            break;
+        case 5683:
+            status = coap_handle_response(out, timestamp, px + parsed->app_offset, parsed->app_length, parsed, entropy);
             break;
         case 11211: /* memcached (amplifier) */
             px += parsed->app_offset;

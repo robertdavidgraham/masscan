@@ -33,7 +33,7 @@ enum ApplicationProtocol {
     PROTO_MEMCACHED,
     PROTO_SCRIPTING,
     PROTO_VERSIONING,
-    
+    PROTO_COAP,         /* constrained app proto, udp/5683, RFC7252 */
     
     PROTO_end_of_list /* must be last one */
 };

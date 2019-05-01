@@ -77,12 +77,17 @@ banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c);
 
 /**
  * Select a specific string (of the specified protocol).
+ * The "banner output" can have multiple protocol objects associated
+ * with it, such as an SSL protocol objec and an X.509 certificate.
+ * Thus, instead of just grabbing the string, we need to grab the
+ * specific protocol instead.
  */
 const unsigned char *
 banout_string(const struct BannerOutput *banout, unsigned proto);
 
 /**
  * Get the length of a specific string of the specified protocol.
+ * This is the matching function to banout_string.
  */
 unsigned
 banout_string_length(const struct BannerOutput *banout, unsigned proto);

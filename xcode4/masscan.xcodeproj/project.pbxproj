@@ -92,6 +92,7 @@
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
 		11C936C31EDCE77F0023D32E /* in-filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936BF1EDCE77F0023D32E /* in-filter.c */; };
 		11C936C41EDCE77F0023D32E /* in-report.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C11EDCE77F0023D32E /* in-report.c */; };
+		11D0FAFB22763F4900332FA7 /* proto-coap.c in Sources */ = {isa = PBXBuildFile; fileRef = 11D0FAFA22763F4900332FA7 /* proto-coap.c */; };
 		11DD363421067BD400CBE1DE /* out-tcp-services.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363321067BD300CBE1DE /* out-tcp-services.c */; };
 		11DD36382107DE9700CBE1DE /* stub-lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36362107DE9700CBE1DE /* stub-lua.c */; };
 		11DD363B2107DFEB00CBE1DE /* scripting.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363A2107DFEB00CBE1DE /* scripting.c */; };
@@ -281,6 +282,8 @@
 		11C936C01EDCE77F0023D32E /* in-filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-filter.h"; sourceTree = "<group>"; };
 		11C936C11EDCE77F0023D32E /* in-report.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-report.c"; sourceTree = "<group>"; };
 		11C936C21EDCE77F0023D32E /* in-report.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-report.h"; sourceTree = "<group>"; };
+		11D0FAF922763F4900332FA7 /* proto-coap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-coap.h"; sourceTree = "<group>"; };
+		11D0FAFA22763F4900332FA7 /* proto-coap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-coap.c"; sourceTree = "<group>"; };
 		11DD363221067BD300CBE1DE /* out-tcp-services.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-tcp-services.h"; sourceTree = "<group>"; };
 		11DD363321067BD300CBE1DE /* out-tcp-services.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-tcp-services.c"; sourceTree = "<group>"; };
 		11DD36362107DE9700CBE1DE /* stub-lua.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stub-lua.c"; sourceTree = "<group>"; };
@@ -438,6 +441,8 @@
 		11B360CA1F9016C00020F3A3 /* proto */ = {
 			isa = PBXGroup;
 			children = (
+				11D0FAFA22763F4900332FA7 /* proto-coap.c */,
+				11D0FAF922763F4900332FA7 /* proto-coap.h */,
 				110ED16720CB0BC200690C91 /* proto-ntlmssp.c */,
 				110ED16620CB0BC200690C91 /* proto-ntlmssp.h */,
 				110ED16520CA6A8300690C91 /* proto-spnego.h */,
@@ -676,6 +681,7 @@
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,
 				1106827120DF863100E612AB /* ranges-avl.c in Sources */,
 				11DD36492108DCBB00CBE1DE /* versioning.c in Sources */,
+				11D0FAFB22763F4900332FA7 /* proto-coap.c in Sources */,
 				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
 				11A921F317DBCC7E00DDFD32 /* rawsock.c in Sources */,

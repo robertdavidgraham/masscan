@@ -38,6 +38,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_MEMCACHED: return "memcached";
     case PROTO_SCRIPTING:      return "scripting";
     case PROTO_VERSIONING:     return "versioning";
+    case PROTO_COAP:           return "coap";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
@@ -80,6 +81,7 @@ masscan_string_to_app(const char *str)
         {"memcached",   PROTO_MEMCACHED},
         {"scripting",   PROTO_SCRIPTING},
         {"versioning",  PROTO_VERSIONING},
+        {"coap",        PROTO_COAP},
         {0,0}
     };
     size_t i;

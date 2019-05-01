@@ -18,6 +18,7 @@
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
 #include "proto-snmp.h"
 #include "proto-memcached.h"
+#include "proto-coap.h"         /* constrained app proto for IoT udp/5683*/
 #include "proto-ntp.h"
 #include "proto-dns.h"
 #include "util-malloc.h"
@@ -124,6 +125,18 @@ struct PayloadUDP_Default hard_coded_payloads[] = {
         "Contact: <sip:alice@pc33.atlanta.com>\r\n"
         "Accept: application/sdp\r\n"
         "Content-Length: 0\r\n"
+    },
+    
+    /* CoAP (contrained app proto for IoT) GET /.well-known/core request */
+    {5683, 65536, 21, 0, coap_udp_set_cookie,
+        "\x40"      /* ver=1 type=con */
+        "\x01"      /* code=GET */
+        "\x01\xce"  /* message id (changed by set-cookie) */
+        "\xbb" /* ".well-known */
+            "\x2e\x77\x65\x6c\x6c\x2d\x6b\x6e\x6f\x77\x6e"
+        "\x04" /* "core" */
+            "\x63\x6f\x72\x65"
+
     },
 
     /* memcached "stats" request. This looks for memcached systems that can

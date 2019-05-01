@@ -44,6 +44,7 @@
 #include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "proto-ntp.h"          /* parse NTP responses */
+#include "proto-coap.h"         /* CoAP selftest */
 #include "templ-port.h"
 #include "in-binary.h"          /* covert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
@@ -1663,6 +1664,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += proto_coap_selftest();
             x += smack_selftest();
             x += sctp_selftest();
             x += base64_selftest();
