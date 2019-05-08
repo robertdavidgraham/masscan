@@ -46,6 +46,7 @@
     <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-banout.c" />
+    <ClCompile Include="..\src\proto-coap.c" />
     <ClCompile Include="..\src\proto-dns.c" />
     <ClCompile Include="..\src\proto-ftp.c" />
     <ClCompile Include="..\src\proto-http.c" />
@@ -145,6 +146,7 @@
     <ClInclude Include="..\src\proto-arp.h" />
     <ClInclude Include="..\src\proto-banner1.h" />
     <ClInclude Include="..\src\proto-banout.h" />
+    <ClInclude Include="..\src\proto-coap.h" />
     <ClInclude Include="..\src\proto-dns-parse.h" />
     <ClInclude Include="..\src\proto-dns.h" />
     <ClInclude Include="..\src\proto-ftp.h" />
@@ -190,6 +192,7 @@
     <ClInclude Include="..\src\syn-cookie.h" />
     <ClInclude Include="..\src\templ-payloads.h" />
     <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\util-bool.h" />
     <ClInclude Include="..\src\util-malloc.h" />
     <ClInclude Include="..\src\versioning.h" />
     <ClInclude Include="..\src\vulncheck.h" />

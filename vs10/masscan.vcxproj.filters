@@ -333,6 +333,9 @@
     <ClCompile Include="..\src\util-malloc.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-coap.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -565,6 +568,12 @@
     </ClInclude>
     <ClInclude Include="..\src\util-malloc.h">
       <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-coap.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-bool.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

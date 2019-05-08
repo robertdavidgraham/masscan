@@ -262,7 +262,7 @@ telnet_parse(  const struct Banner1 *banner1,
     }
     
     {
-        const size_t r_length = 256*3*4;
+#define r_length (256*3*4)
         unsigned char reply[r_length];
         size_t r_offset = 0;
         size_t i;
@@ -270,22 +270,22 @@ telnet_parse(  const struct Banner1 *banner1,
             if (nego[i] & FLAG_WILL) {
                 reply[r_offset++] = 0xFF; /* IAC */
                 reply[r_offset++] = 0xFB; /* WILL */
-                reply[r_offset++] = i;
+                reply[r_offset++] = (unsigned char)i;
             }
             if (nego[i] & FLAG_WONT) {
                 reply[r_offset++] = 0xFF; /* IAC */
                 reply[r_offset++] = 0xFC; /* WONT */
-                reply[r_offset++] = i;
+                reply[r_offset++] = (unsigned char)i;
             }
             if (nego[i] & FLAG_DO) {
                 reply[r_offset++] = 0xFF; /* IAC */
                 reply[r_offset++] = 0xFD; /* DO */
-                reply[r_offset++] = i;
+                reply[r_offset++] = (unsigned char)i;
             }
             if (nego[i] & FLAG_DONT) {
                 reply[r_offset++] = 0xFF; /* IAC */
                 reply[r_offset++] = 0xFE; /* DONT */
-                reply[r_offset++] = i;
+                reply[r_offset++] = (unsigned char)i;
             }
         }
         if (r_offset) {
@@ -336,7 +336,7 @@ telnet_selftest_item(const char *input, const char *output)
                  banout1,
                  &more
                  );
-    fprintf(stderr, "%.*s\n", (int)banout_string_length(banout1, PROTO_TELNET), banout_string(banout1, PROTO_TELNET));
+    //fprintf(stderr, "%.*s\n", (int)banout_string_length(banout1, PROTO_TELNET), banout_string(banout1, PROTO_TELNET));
     /*
      * Verify that somewhere in the output is the string
      * we are looking for

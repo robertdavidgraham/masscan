@@ -41,10 +41,10 @@
 #include "templ-port.h"
 #include "util-malloc.h"
 #include "string_s.h"
+#include "util-bool.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 struct CoapLink
 {
@@ -294,6 +294,10 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
     unsigned code = 0;
     unsigned token_length = 0;
     unsigned long long token = 0;
+    unsigned offset;
+    unsigned optnum;
+    unsigned content_format;
+    size_t i;
 
     /* All coap responses will be at least 8 bytes */
     if (length < 4) {
@@ -339,7 +343,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
     }
     
     token = 0;
-    for (size_t i=0; i<token_length; i++) {
+    for (i=0; i<token_length; i++) {
         token = token << 8ULL;
         token = token | (unsigned long long)px[i];
     }
@@ -387,9 +391,9 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
      \                               \
      +-------------------------------+
      */
-    unsigned offset = 4 + token_length;
-    unsigned optnum = 0;
-    unsigned content_format = 0;
+    offset = 4 + token_length;
+    optnum = 0;
+    content_format = 0;
     while (offset < length) {
         unsigned delta;
         unsigned opt;
@@ -630,9 +634,10 @@ test_is_link(const char *name, const unsigned char *vinput, struct CoapLink *lin
     const char *input = (const char *)vinput;
     
     for (i=0; i<count; i++) {
+        const char *name2;
         if (name_length != links[i].link_length)
             continue;
-        const char *name2 = input + links[i].link_offset;
+        name2 = input + links[i].link_offset;
         if (memcmp(name2, name, name_length) != 0)
             continue;
         return 1; /* found */
@@ -656,7 +661,7 @@ proto_coap_selftest(void)
     {
         static const unsigned char *input = (const unsigned char *)
         "</sensors/temp>;if=\"se\\\"\\;\\,\\<\\>\\\\nsor\",</success>";
-        links = parse_links(input, 0, (~0), &count);
+        links = parse_links(input, 0, (unsigned)(~0), &count);
         if (!test_is_link("/success", input, links, count, __LINE__))
             return 1;
     }
@@ -665,7 +670,7 @@ proto_coap_selftest(void)
     {
         static const unsigned char *input = (const unsigned char *)
             "</sensors/temp>;if=\"sensor\"";
-        links = parse_links(input, 0, (~0), &count);
+        links = parse_links(input, 0, (unsigned)(~0), &count);
         if (!test_is_link("/sensors/temp", input, links, count, __LINE__))
             return 1;
     }
@@ -688,7 +693,7 @@ proto_coap_selftest(void)
             "</t>;anchor=\"/sensors/temp\";rel=\"alternate\","
             "</firmware/v2.1>;rt=\"firmware\";sz=262144"
             ;
-        links = parse_links(input, 0, (~0), &count);
+        links = parse_links(input, 0, (unsigned)(~0), &count);
         if (!test_is_link("/firmware/v2.1", input, links, count, __LINE__))
             return 1;
     }
