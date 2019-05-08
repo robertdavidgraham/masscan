@@ -12,6 +12,7 @@
 #include "proto-ssh.h"
 #include "proto-ftp.h"
 #include "proto-smtp.h"
+#include "proto-tcp-telnet.h"
 #include "proto-imap4.h"
 #include "proto-pop3.h"
 #include "proto-vnc.h"
@@ -68,6 +69,29 @@ struct Patterns patterns[] = {
     {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
     {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
     {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN, 0}, /* memcached stat response */
+    
+    
+    {"\xff\xfb\x01\xff\xf0", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\xff\xfb", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\xff\xfc", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\xff\xfe", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\x0a\x0d", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\x0d\x0a", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\x0d\x0d", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\x0a\x0a", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb%\x25xff\xfb", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x26\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfd\x18\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfd\x20\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfd\x23\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfd\x27\xff\xfd", 5, PROTO_TELNET, 0, 0},
+    {"\xff\xfb\x01\x1b[",    5, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    {"\xff\xfb\x01Input",    8, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    {"\xff\xfb\x01   ",      6, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    {"\xff\xfb\x01login",    8, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    {"login:",               6, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    {"password:",            9, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
     {0,0,0,0,0}
 };
 
@@ -158,7 +182,7 @@ banner1_parse(
                              banout,
                              more);
             break;
-    case PROTO_SMTP:
+        case PROTO_SMTP:
             banner_smtp.parse(   banner1,
                               banner1->http_fields,
                               tcb_state,
@@ -167,7 +191,16 @@ banner1_parse(
                               more);
             break;
             
-    case PROTO_POP3:
+        case PROTO_TELNET:
+            banner_telnet.parse(   banner1,
+                              banner1->http_fields,
+                              tcb_state,
+                              px, length,
+                              banout,
+                              more);
+            break;
+            
+        case PROTO_POP3:
             banner_pop3.parse(   banner1,
                               banner1->http_fields,
                               tcb_state,
@@ -330,6 +363,7 @@ banner1_create(void)
     banner_ssl.init(b);
     banner_smb0.init(b);
     banner_smb1.init(b);
+    banner_telnet.init(b);
     banner_vnc.init(b);
     
     /* scripting/versioning come after the rest */
@@ -511,7 +545,13 @@ banner1_selftest()
             fprintf(stderr, "HTTP banner: selftest failed\n");
             return 1;
         }
-
+        
+        x = banner_telnet.selftest();
+        if (x) {
+            fprintf(stderr, "Telnet banner: selftest failed\n");
+            return 1;
+        }
+        
         return x;
     }
 }

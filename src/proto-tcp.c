@@ -1438,6 +1438,12 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     
                     LOGSEND(tcb, "app(payload)");
                     application(tcpcon, tcb, APP_RECV_PAYLOAD, payload, payload_length, secs, usecs);
+                    
+                    /* Send ack for the data */
+                    LOGSEND(tcb, "peer(ACK)");
+                    tcpcon_send_packet(tcpcon, tcb,
+                                       0x10,
+                                       0, 0, 0);
                     break;
 
             }

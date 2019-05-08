@@ -189,7 +189,7 @@ smtp_selftest(void)
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_smtp = {
-    "smtp", 21, 0, 0, 0,
+    "smtp", 25, 0, 0, 0,
     smtp_selftest,
     smtp_init,
     smtp_parse,
