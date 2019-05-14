@@ -9,7 +9,7 @@ masscan <ip addresses/ranges> -p <ports> <options>
 
 **masscan** is an Internet-scale port scanner, useful for large scale surveys
 of the Internet, or of internal networks. While the default transmit rate
-is only 100 packets/second, it can optional go as fast as 25 million
+is only 100 packets/second, it can optionally go as fast as 25 million
 packets/second, a rate sufficient to scan the Internet in 3 minutes for
 one port.
 
@@ -21,7 +21,7 @@ one port.
 	is a range like "10.0.0.1-10.0.0.100". The third is a CIDR address,
 	like "0.0.0.0/0". At least one target must be specified. Multiple 
 	targets can be specified. This can be specified as multiple options
-	separated by space, or can be separated by a comma as a single option,
+	separated by a space, or can be separated by a comma as a single option,
 	such as `10.0.0.0/8,192.168.0.1`.
 
   * `--range <ip/range>`: the same as target range spec described above,
@@ -111,7 +111,7 @@ one port.
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
-  * `--nmap`: print help aobut nmap-compatibility alternatives for these
+  * `--nmap`: print help about nmap-compatibility alternatives for these
     options.
 
   * `--pcap-payloads`: read packets from a libpcap file containing packets
@@ -180,7 +180,7 @@ one port.
     Using a different seed will cause packets to be sent in a different
 	random order. Instead of an integer, the string `time` can be specified,
 	which seeds using the local timestamp, automatically generating a 
-	differnet random order of scans. If no seed specified, `time` is the
+	different random order of scans. If no seed specified, `time` is the
 	default.
 
   * `--regress`: run a regression test, returns '0' on success and '1' on
@@ -216,26 +216,26 @@ one port.
 	`xml` will be used.
 		   
   * `-oB <filename>`: sets the output format to binary and saves the output in
-    the given filename. This is equivelent to using the `--output-format` and
+    the given filename. This is equivalent to using the `--output-format` and
     `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
-    equivelents, but require a separate step to convert back into XML or
+    equivalents, but require a separate step to convert back into XML or
     another readable format.
 	
   * `-oX <filename>`: sets the output format to XML and saves the output in the
-    given filename. This is equivelent to using the `--output-format xml` and
+    given filename. This is equivalent to using the `--output-format xml` and
     `--output-filename` parameters.
 	
   * `-oG <filename>`: sets the output format to grepable and saves the output 
-	  in the given filename. This is equivelent to using the --output-format grepable 
+	  in the given filename. This is equivalent to using the --output-format grepable 
 	  and --output-filename parameters.
   
   * `-oJ <filename>`: sets the output format to JSON and saves the output in 
-	  the given filename. This is equivelent to using the --output-format json 
+	  the given filename. This is equivalent to using the --output-format json 
 	  and --output-filename parameters.
   
   * `-oL <filename>`: sets the output format to a simple list format and saves 
-	  the output in the given filename. This is equivelent to using 
+	  the output in the given filename. This is equivalent to using 
 	  the --output-format list and --output-filename parameters.
 
   *  `--readscan <binary-files>`: reads the files created by the `-oB` option
@@ -329,7 +329,7 @@ If the user-mode stack shares the same IP address as the operating-system,
 then the kernel will send RST packets during a scan. This can cause
 unnecessary traffic during a simple port scan, and will terminate TCP
 connections when doing a `--banners` scan. To prevent, this, the built-in
-firewall should be used to filte the source ports. On Linux, this can be done
+firewall should be used to filter the source ports. On Linux, this can be done
 by doing something like:
 
     # iptables -A INPUT -i eth0 -p tcp --dport 44444 -j DROP
@@ -375,7 +375,7 @@ using the following command-lines:
 	# masscan 0.0.0.0/0 -p0-65535 --shard 3/3
 
 An alternative is with the "resume" feature. A scan has an internal index that
-goes from zero to the number of ports times then number of IP addresses. The
+goes from zero to the number of ports times the number of IP addresses. The
 following example shows splitting up a scan into chunks of a 1000 items each:
 
 	# masscan 0.0.0.0/0 -p0-65535 --resume-index 0 --resume-count 1000
