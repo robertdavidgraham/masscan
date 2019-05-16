@@ -54,6 +54,7 @@
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "pixie-backtrace.h"
 #include "proto-sctp.h"
+#include "proto-oproto.h"       /* Other protocols on top of IP */
 #include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
 #include "main-readrange.h"
 #include "scripting.h"
@@ -829,6 +830,9 @@ receive_thread(void *v)
             case FOUND_SCTP:
                 handle_sctp(out, secs, px, length, cookie, &parsed, entropy);
                 break;
+            case FOUND_OPROTO: /* other IP proto */
+                handle_oproto(out, secs, px, length, &parsed, entropy);
+                break;
             case FOUND_TCP:
                 /* fall down to below */
                 break;
@@ -1141,6 +1145,7 @@ main_scan(struct Masscan *masscan)
      * makes lookups faster at high packet rates.
      */
     payloads_udp_trim(masscan->payloads.udp, &masscan->ports);
+    payloads_oproto_trim(masscan->payloads.oproto, &masscan->ports);
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
@@ -1204,6 +1209,7 @@ main_scan(struct Masscan *masscan)
                     parms->adapter_mac,
                     parms->router_mac,
                     masscan->payloads.udp,
+                    masscan->payloads.oproto,
                     rawsock_datalink(masscan->nic[index].adapter),
                     masscan->seed);
 
@@ -1503,6 +1509,7 @@ int main(int argc, char *argv[])
     masscan->shard.of = 1;
     masscan->min_packet_size = 60;
     masscan->payloads.udp = payloads_udp_create();
+    masscan->payloads.oproto = payloads_oproto_create();
     strcpy_s(   masscan->output.rotate.directory,
                 sizeof(masscan->output.rotate.directory),
                 ".");

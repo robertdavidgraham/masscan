@@ -106,6 +106,10 @@ struct Output
         struct {
             uint64_t open;
         } arp;
+        struct {
+            uint64_t open;
+            uint64_t closed;
+        } oproto;
     } counts;
 
     struct {

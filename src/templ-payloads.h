@@ -18,12 +18,18 @@ payloads_udp_selftest(void);
 struct PayloadsUDP *
 payloads_udp_create(void);
 
+struct PayloadsUDP *
+payloads_oproto_create(void);
+
 /**
  * Free the resources of an object created with a matching call to
  * 'payloads_create()'
  */
 void
 payloads_udp_destroy(struct PayloadsUDP *payloads);
+
+void
+payloads_oproto_destroy(struct PayloadsUDP *payloads);
 
 /**
  * Read payloads from an "nmap-payloads" formatted file. The caller is
@@ -38,14 +44,17 @@ payloads_udp_readfile(FILE *fp, const char *filename,
  * Read payloads from a libpcap formatted file.
  */
 void
-payloads_read_pcap(const char *filename, struct PayloadsUDP *payloads);
+payloads_read_pcap(const char *filename, struct PayloadsUDP *payloads, struct PayloadsUDP *oproto_payloads);
 
 /**
  * Called to remove any payloads that aren't be used in the scan. This makes
  * lookups faster when generating packets.
  */
 void
-payloads_udp_trim(struct PayloadsUDP *payloadsd, const struct RangeList *ports);
+payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *ports);
+
+void
+payloads_oproto_trim(struct PayloadsUDP *payloads, const struct RangeList *ports);
 
 
 /**
@@ -89,6 +98,16 @@ payloads_udp_lookup(
                 unsigned *source_port,
                 uint64_t *xsum,
                 SET_COOKIE *set_cookie);
+
+int
+payloads_oproto_lookup(
+                    const struct PayloadsUDP *payloads,
+                    unsigned port,
+                    const unsigned char **px,
+                    unsigned *length,
+                    unsigned *source_port,
+                    uint64_t *xsum,
+                    SET_COOKIE *set_cookie);
 
 
 

@@ -15,7 +15,7 @@
 
 static char *tcp_services[65536];
 static char *udp_services[65536];
-
+static char *oproto_services[256];
 
 
 const char *
@@ -81,4 +81,21 @@ udp_service_name(int port)
     return udp_services[port] = strdup(result->s_name);
     }
 #endif
+}
+
+const char *
+oproto_service_name(int port)
+{
+    if (oproto_services[port])
+        return oproto_services[port];
+    {
+        struct protoent *result;
+        
+        result = getprotobynumber(port);
+        
+        if (result == 0)
+            return "unknown";
+        
+        return oproto_services[port] = strdup(result->p_name);
+    }
 }

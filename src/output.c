@@ -793,6 +793,9 @@ output_report_status(struct Output *out, time_t timestamp, int status,
             case 132:
                 out->counts.sctp.open++;
                 break;
+            default:
+                out->counts.oproto.open++;
+                break;
             }
             if (!out->is_show_open)
                 return;

@@ -758,6 +758,9 @@ template_set_target(
     case Proto_ARP:
         /* don't do any checksumming */
         break;
+    case Proto_Oproto:
+        /* TODO: probably need to add checksums for certain protocols */
+        break;
     case Proto_Count:
         break;
     }
@@ -914,7 +917,8 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct PayloadsUDP *payloads,
+    struct PayloadsUDP *udp_payloads,
+    struct PayloadsUDP *oproto_payloads,
     int data_link,
     uint64_t entropy)
 {
@@ -935,9 +939,18 @@ template_packet_init(
                    default_udp_template,
                    sizeof(default_udp_template)-1,
                    data_link);
-    templset->pkts[Proto_UDP].payloads = payloads;
+    templset->pkts[Proto_UDP].payloads = udp_payloads;
     templset->count++;
-
+    
+    /* [UDP] */
+    _template_init(&templset->pkts[Proto_Oproto],
+                   source_mac, router_mac,
+                   default_udp_template,
+                   sizeof(default_udp_template)-1,
+                   data_link);
+    templset->pkts[Proto_Oproto].payloads = oproto_payloads;
+    templset->count++;
+    
     /* [SCTP] */
     _template_init(&templset->pkts[Proto_SCTP],
                    source_mac, router_mac,
@@ -1094,7 +1107,8 @@ template_selftest(void)
             tmplset,
             (const unsigned char*)"\x00\x11\x22\x33\x44\x55",
             (const unsigned char*)"\x66\x55\x44\x33\x22\x11",
-            0,
+            0,  /* UDP payloads = empty */
+            0,  /* Oproto payloads = empty */
             1,  /* Ethernet */
             0   /* no entropy */
             );

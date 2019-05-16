@@ -10,10 +10,10 @@
 /****************************************************************************
  ****************************************************************************/
 static unsigned
-count_type(const struct RangeList *ports, int type)
+count_type(const struct RangeList *ports, int start_type, int end_type)
 {
-    unsigned min_port = type;
-    unsigned max_port = type + 65535;
+    unsigned min_port = start_type;
+    unsigned max_port = end_type;
     unsigned i;
     unsigned result = 0;
 
@@ -84,22 +84,28 @@ grepable_out_open(struct Output *out, FILE *fp)
     fprintf(fp, "# Masscan " MASSCAN_VERSION " scan initiated %s\n", 
                 timestamp);
 
-    count = count_type(&out->masscan->ports, Templ_TCP);
+    count = count_type(&out->masscan->ports, Templ_TCP, Templ_TCP_last);
     fprintf(fp, "# Ports scanned: TCP(%u;", count);
     if (count)
         print_port_list(&out->masscan->ports, Templ_TCP, fp);
 
-    count = count_type(&out->masscan->ports, Templ_UDP);
+    count = count_type(&out->masscan->ports, Templ_UDP, Templ_UDP_last);
     fprintf(fp, ") UDP(%u;", count);
     if (count)
         print_port_list(&out->masscan->ports, Templ_UDP, fp);
-
-    count = count_type(&out->masscan->ports, Templ_SCTP);
+    
+    
+    count = count_type(&out->masscan->ports, Templ_SCTP, Templ_SCTP_last);
     fprintf(fp, ") SCTP(%u;", count);
     if (count)
         print_port_list(&out->masscan->ports, Templ_SCTP, fp);
 
-    fprintf(fp, ") PROTOCOLS(0;)\n");
+    count = count_type(&out->masscan->ports, Templ_Oproto_first, Templ_Oproto_last);
+    fprintf(fp, ") PROTOCOLS(%u;", count);
+    if (count)
+        print_port_list(&out->masscan->ports, Templ_Oproto_first, fp);
+    
+    fprintf(fp, ")\n");
 }
 
 /****************************************************************************
@@ -145,7 +151,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     else if (ip_proto == 17)
         service = udp_service_name(port);
     else
-        service = "";
+        service = oproto_service_name(ip_proto);
     
 	fprintf(fp, "Timestamp: %lu", timestamp);     
 	

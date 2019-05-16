@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1106827120DF863100E612AB /* ranges-avl.c in Sources */ = {isa = PBXBuildFile; fileRef = 1106826F20DF863000E612AB /* ranges-avl.c */; };
+		110C79B022833AFA003FAC94 /* proto-oproto.c in Sources */ = {isa = PBXBuildFile; fileRef = 110C79AF22833AF9003FAC94 /* proto-oproto.c */; };
 		110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
 		112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
@@ -122,6 +123,8 @@
 /* Begin PBXFileReference section */
 		1106826F20DF863000E612AB /* ranges-avl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "ranges-avl.c"; sourceTree = "<group>"; };
 		1106827020DF863000E612AB /* ranges-avl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ranges-avl.h"; sourceTree = "<group>"; };
+		110C79AE22833AF9003FAC94 /* proto-oproto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-oproto.h"; sourceTree = "<group>"; };
+		110C79AF22833AF9003FAC94 /* proto-oproto.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-oproto.c"; sourceTree = "<group>"; };
 		110ED16520CA6A8300690C91 /* proto-spnego.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-spnego.h"; sourceTree = "<group>"; };
 		110ED16620CB0BC200690C91 /* proto-ntlmssp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ntlmssp.h"; sourceTree = "<group>"; };
 		110ED16720CB0BC200690C91 /* proto-ntlmssp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntlmssp.c"; sourceTree = "<group>"; };
@@ -441,6 +444,8 @@
 		11B360CA1F9016C00020F3A3 /* proto */ = {
 			isa = PBXGroup;
 			children = (
+				110C79AF22833AF9003FAC94 /* proto-oproto.c */,
+				110C79AE22833AF9003FAC94 /* proto-oproto.h */,
 				11D0FAFA22763F4900332FA7 /* proto-coap.c */,
 				11D0FAF922763F4900332FA7 /* proto-coap.h */,
 				110ED16720CB0BC200690C91 /* proto-ntlmssp.c */,
@@ -736,6 +741,7 @@
 				11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */,
 				11C936C31EDCE77F0023D32E /* in-filter.c in Sources */,
 				11420DD819A8160500DB5BFE /* proto-ftp.c in Sources */,
+				110C79B022833AFA003FAC94 /* proto-oproto.c in Sources */,
 				11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */,
 				11DD363421067BD400CBE1DE /* out-tcp-services.c in Sources */,
 				11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */,

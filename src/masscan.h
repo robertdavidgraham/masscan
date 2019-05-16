@@ -97,10 +97,11 @@ struct Masscan
     
     struct {
         unsigned tcp:1;
-        unsigned udp:1;
+        unsigned udp:1;     /* -sU */
         unsigned sctp:1;
-        unsigned ping:1; /* --ping, ICMP echo */
-        unsigned arp:1; /* --arp, local ARP scan */
+        unsigned ping:1;    /* --ping, ICMP echo */
+        unsigned arp:1;     /* --arp, local ARP scan */
+        unsigned oproto:1;  /* -sO */
     } scan_type;
     
     /**
@@ -369,6 +370,7 @@ struct Masscan
         char *nmap_service_probes_filename;
     
         struct PayloadsUDP *udp;
+        struct PayloadsUDP *oproto;
         struct TcpCfgPayloads *tcp;
         struct NmapServiceProbeList *probes;
     } payloads;

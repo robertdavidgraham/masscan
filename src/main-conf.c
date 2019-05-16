@@ -1787,6 +1787,13 @@ masscan_set_parameter(struct Masscan *masscan,
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
+    else if (EQUALS("oprotos", name) || EQUALS("oproto", name)) {
+        unsigned is_error = 0;
+        masscan->scan_type.oproto = 1;
+        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_Oproto_first);
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
+    }
     else if (EQUALS("tcp-ports", name) || EQUALS("tcp-port", name)) {
         unsigned is_error = 0;
         masscan->scan_type.tcp = 1;
@@ -2300,8 +2307,10 @@ masscan_load_database_files(struct Masscan *masscan)
     if (filename) {
         if (masscan->payloads.udp == NULL)
             masscan->payloads.udp = payloads_udp_create();
-    
-        payloads_read_pcap(filename, masscan->payloads.udp);
+        if (masscan->payloads.oproto == NULL)
+            masscan->payloads.oproto = payloads_udp_create();
+
+        payloads_read_pcap(filename, masscan->payloads.udp, masscan->payloads.oproto);
     }
 
     /*
@@ -2626,9 +2635,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     case 'N':
                         fprintf(stderr, "nmap(%s): NULL scan not yet supported\n", argv[i]);
                         exit(1);
-                    case 'O':
-                        fprintf(stderr, "nmap(%s): IP proto scan not yet supported\n", argv[i]);
-                        exit(1);
+                    case 'O': /* Other IP protocols (not ICMP, UDP, TCP, or SCTP) */
+                        masscan->scan_type.oproto = 1;
+                        break;
                     case 'S': /* TCP SYN scan - THIS IS WHAT WE DO! */
                         masscan->scan_type.tcp = 1;
                         break;
@@ -2720,7 +2729,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
      * If no other "scan type" found, then default to TCP
      */
     if (masscan->scan_type.udp == 0 && masscan->scan_type.sctp == 0
-        && masscan->scan_type.ping == 0 && masscan->scan_type.arp == 0)
+        && masscan->scan_type.ping == 0 && masscan->scan_type.arp == 0
+        && masscan->scan_type.oproto == 0)
         masscan->scan_type.tcp = 1;
     
     /*
@@ -2798,6 +2808,11 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
                 rrange.end -= Templ_UDP;
                 fprintf(fp,"U:");
                 range.begin = Templ_SCTP;
+            } else if (Templ_Oproto_first <= rrange.begin && rrange.begin <= Templ_Oproto_last) {
+                rrange.begin -= Templ_Oproto_first;
+                rrange.end -= Templ_Oproto_first;
+                fprintf(fp, "O:");
+                range.begin = Templ_Oproto_first;
             } else
                 range.begin = Templ_UDP;
             rrange.end = min(rrange.end, 65535);

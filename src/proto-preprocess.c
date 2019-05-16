@@ -127,7 +127,9 @@ parse_ipv4:
         case   6: goto parse_tcp;
         case  17: goto parse_udp;
         case 132: goto parse_sctp;
-        default: return 0; /* todo: should add more protocols, like ICMP */
+        default:
+                VERIFY_REMAINING(0, FOUND_OPROTO);
+                return 0; /* todo: should add more protocols, like ICMP */
         }
     }
 

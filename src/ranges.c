@@ -784,6 +784,9 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
                 case 'S': case 's':
                     proto_offset = Templ_SCTP;
                     break;
+                case 'O': case 'o':
+                    proto_offset = Templ_Oproto_first;
+                    break;
                 case 'I': case 'i':
                     proto_offset = Templ_ICMP_echo;
                     break;
@@ -805,7 +808,11 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
             end = (unsigned)strtoul(p, &p, 0);
         }
 
-        if (port > 0xFFFF || end > 0xFFFF || end < port) {
+        if (port > 0xFF && proto_offset == Templ_Oproto_first) {
+            fprintf(stderr, "bad ports: %u-%u\n", port, end);
+            *is_error = 2;
+            return p;
+        } else if (port > 0xFFFF || end > 0xFFFF || end < port) {
             fprintf(stderr, "bad ports: %u-%u\n", port, end);
             *is_error = 2;
             return p;

@@ -20,6 +20,7 @@ enum TemplateProtocol {
     Proto_ICMP_ping,
     Proto_ICMP_timestamp,
     Proto_ARP,
+    Proto_Oproto,
     Proto_VulnCheck,
     //Proto_IP,
     //Proto_Custom,
@@ -97,7 +98,8 @@ template_packet_init(
     struct TemplateSet *templset,
     const unsigned char *source_mac,
     const unsigned char *router_mac,
-    struct PayloadsUDP *payloads,
+    struct PayloadsUDP *udp_payloads,
+    struct PayloadsUDP *oproto_payloads,
     int data_link,
     uint64_t entropy);
 
