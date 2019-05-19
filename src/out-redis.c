@@ -285,7 +285,7 @@ myvalue
             );
 
     count = send((SOCKET)fd, line, (int)line_length, 0);
-    if (count != line_length) {
+    if (count != (size_t)line_length) {
         LOG(0, "redis: error sending data\n");
         exit(1);
     }

@@ -153,8 +153,8 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     else
         service = oproto_service_name(ip_proto);
     
-	fprintf(fp, "Timestamp: %lu", timestamp);     
-	
+    fprintf(fp, "Timestamp: %lu", timestamp);
+
     fprintf(fp, "\tHost: %u.%u.%u.%u ()",
                     (unsigned char)(ip>>24),
                     (unsigned char)(ip>>16),

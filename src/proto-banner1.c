@@ -13,6 +13,7 @@
 #include "proto-ftp.h"
 #include "proto-smtp.h"
 #include "proto-tcp-telnet.h"
+#include "proto-tcp-rdp.h"
 #include "proto-imap4.h"
 #include "proto-pop3.h"
 #include "proto-vnc.h"
@@ -92,6 +93,12 @@ struct Patterns patterns[] = {
     {"\xff\xfb\x01login",    8, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
     {"login:",               6, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
     {"password:",            9, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
+    
+    {"\x03\x00\x00\x13\x0e\xd0\xbe\xef\x12\x34\x00\x02\x0f\x08\x00\x00\x00\x00\x00",
+        12, PROTO_RDP, SMACK_ANCHOR_BEGIN, 0},
+    {"\x03\x00\x00\x13\x0e\xd0\x00\x00\x12\x34\x00\x02\x0f\x08\x00\x00\x00\x00\x00",
+        12, PROTO_RDP, SMACK_ANCHOR_BEGIN, 0},
+
     {0,0,0,0,0}
 };
 
@@ -199,7 +206,14 @@ banner1_parse(
                               banout,
                               more);
             break;
-            
+        case PROTO_RDP:
+            banner_rdp.parse(   banner1,
+                                banner1->http_fields,
+                                tcb_state,
+                                px, length,
+                                banout,
+                                more);
+            break;
         case PROTO_POP3:
             banner_pop3.parse(   banner1,
                               banner1->http_fields,
@@ -348,7 +362,9 @@ banner1_create(void)
     b->payloads.tcp[9050] = (void*)&banner_ssl;  /* Tor */
     b->payloads.tcp[8140] = (void*)&banner_ssl;  /* puppet */
     b->payloads.tcp[11211] = (void*)&banner_memcached;
-
+    b->payloads.tcp[23] = (void*)&banner_telnet;
+    b->payloads.tcp[3389] = (void*)&banner_rdp;
+    
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
      * them.
@@ -364,6 +380,7 @@ banner1_create(void)
     banner_smb0.init(b);
     banner_smb1.init(b);
     banner_telnet.init(b);
+    banner_rdp.init(b);
     banner_vnc.init(b);
     
     /* scripting/versioning come after the rest */
@@ -549,6 +566,12 @@ banner1_selftest()
         x = banner_telnet.selftest();
         if (x) {
             fprintf(stderr, "Telnet banner: selftest failed\n");
+            return 1;
+        }
+        
+        x = banner_rdp.selftest();
+        if (x) {
+            fprintf(stderr, "RDP banner: selftest failed\n");
             return 1;
         }
         

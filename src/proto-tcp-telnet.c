@@ -97,7 +97,7 @@ telnet_parse(  const struct Banner1 *banner1,
         struct InteractiveData *more)
 {
     unsigned state = pstate->state;
-    unsigned i;
+    size_t offset;
     enum {
         TELNET_DATA,
         TELNET_IAC,
@@ -116,8 +116,8 @@ telnet_parse(  const struct Banner1 *banner1,
     UNUSEDPARM(banner1);
     UNUSEDPARM(more);
 
-    for (i=0; i<length; i++) {
-        int c = px[i];
+    for (offset=0; offset<length; offset++) {
+        int c = px[offset];
         switch (state) {
             case 0:
                 if (c == 0xFF) {
@@ -256,7 +256,7 @@ telnet_parse(  const struct Banner1 *banner1,
                 state = 0;
                 break;
             default:
-                i = (unsigned)length;
+                offset = (unsigned)length;
                 break;
         }
     }
@@ -266,6 +266,7 @@ telnet_parse(  const struct Banner1 *banner1,
         unsigned char reply[r_length];
         size_t r_offset = 0;
         size_t i;
+        
         for (i=0; i<256 && r_offset + 3 < r_length; i++) {
             if (nego[i] & FLAG_WILL) {
                 reply[r_offset++] = 0xFF; /* IAC */

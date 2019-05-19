@@ -479,12 +479,10 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
             case 12:
                 banout_append(banout, PROTO_COAP, " /Content-Format/", AUTO_LEN);
                 content_format = 0;
-            {
-                unsigned i;
+                
                 for (i=0; i<optlen; i++) {
                     content_format = content_format<<8 | px[offset+i];
                 }
-            }
                 break;
             case 14: banout_append(banout, PROTO_COAP, " /Max-Age/", AUTO_LEN); break;
             case 15: banout_append(banout, PROTO_COAP, " /Uri-Query/", AUTO_LEN); break;
@@ -510,7 +508,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
         {
             struct CoapLink *links;
             size_t count = 0;
-            size_t i;
+            
             links = parse_links(px, offset, (unsigned)length, &count);
             for (i=0; i<count; i++) {
                 banout_append(banout, PROTO_COAP, " ", AUTO_LEN);

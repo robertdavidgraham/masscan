@@ -40,6 +40,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_VERSIONING:     return "versioning";
     case PROTO_COAP:           return "coap";
     case PROTO_TELNET:         return "telnet";
+    case PROTO_RDP:            return "rdp";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
@@ -85,6 +86,7 @@ masscan_string_to_app(const char *str)
         {"versioning",  PROTO_VERSIONING},
         {"coap",        PROTO_COAP},
         {"telnet",      PROTO_TELNET},
+        {"rdp",         PROTO_RDP},
         {0,0}
     };
     size_t i;

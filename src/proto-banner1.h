@@ -209,6 +209,25 @@ struct SMBSTUFF {
     struct SpnegoDecode spnego;
 };
 
+struct RDPSTUFF {
+    unsigned short tpkt_length;
+    struct {
+        unsigned state;
+        unsigned short dstref;
+        unsigned short srcref;
+        unsigned char len;
+        unsigned char type;
+        unsigned char flags;
+    } cotp;
+    struct {
+        unsigned state;
+        unsigned result;
+        unsigned char type;
+        unsigned char flags;
+        unsigned char len;
+    } cc;
+};
+
 struct ProtocolState {
     unsigned state;
     unsigned remaining;
@@ -225,6 +244,7 @@ struct ProtocolState {
         struct POP3STUFF pop3;
         struct MEMCACHEDSTUFF memcached;
         struct SMBSTUFF smb;
+        struct RDPSTUFF rdp;
     } sub;
 };
 

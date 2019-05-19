@@ -87,6 +87,9 @@ pixie_cpu_set_affinity(unsigned processor)
     if (x != 0) {
         fprintf(stderr, "set_affinity: returned error linux:%d\n", errno);
     }
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+    /* FIXME: add code here */
+    UNUSEDPARM(x);
 #endif
 }
 
