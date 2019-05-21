@@ -929,7 +929,7 @@ receive_thread(void *v)
                  *  but the other side didn't get the packet.
                  */
                 if (!TCP_IS_RST(px, parsed.transport_offset))
-                tcpcon_send_FIN(
+                tcpcon_send_RST(
                     tcpcon,
                     ip_me, ip_them,
                     port_me, port_them,

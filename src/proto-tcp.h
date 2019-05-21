@@ -120,10 +120,16 @@ tcpcon_create_tcb(
  */
 void
 tcpcon_send_FIN(
-    struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_me, unsigned ip_them,
-    unsigned port_me, unsigned port_them,
-    uint32_t seqno_them, uint32_t ackno_them);
+                struct TCP_ConnectionTable *tcpcon,
+                unsigned ip_me, unsigned ip_them,
+                unsigned port_me, unsigned port_them,
+                uint32_t seqno_them, uint32_t ackno_them);
+void
+tcpcon_send_RST(
+                struct TCP_ConnectionTable *tcpcon,
+                unsigned ip_me, unsigned ip_them,
+                unsigned port_me, unsigned port_them,
+                uint32_t seqno_them, uint32_t ackno_them);
 
 /**
  * Send a reset packet back, even if we don't have a TCP connection
