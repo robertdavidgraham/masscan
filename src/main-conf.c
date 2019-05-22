@@ -29,6 +29,11 @@
 #include <ctype.h>
 #include <limits.h>
 
+#ifdef WIN32
+#include <direct.h>
+#define getcwd _getcwd
+#endif
+
 #ifndef min
 #define min(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -2919,7 +2924,10 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
 
     err = fopen_s(&fp, filename, "rt");
     if (err) {
+        char dir[512];
         perror(filename);
+        getcwd(dir, sizeof(dir));
+        fprintf(stderr, "cwd = %s\n", dir);
         return;
     }
 

@@ -18,6 +18,7 @@ struct RangeParser
     unsigned addr;
     unsigned begin;
     unsigned end;
+    unsigned is_unicode:1;
 };
 
 /***************************************************************************
@@ -56,15 +57,15 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                 unsigned *r_begin, unsigned *r_end)
 {
     size_t i = *r_offset;
-    unsigned state = p->state;
     enum {
         LINE_START, ADDR_START,
         COMMENT,
         NUMBER0, NUMBER1, NUMBER2, NUMBER3, NUMBER_ERR,
         SECOND0, SECOND1, SECOND2, SECOND3, SECOND_ERR,
         CIDR,
+        UNIDASH1, UNIDASH2,
         ERROR
-    };
+    } state = p->state;
     int result = 0;
     
     while (i < length) {
@@ -105,6 +106,78 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                 } else
                     state = COMMENT;
                 break;
+            case CIDR:
+                switch (c) {
+                    case '0': case '1': case '2': case '3': case '4':
+                    case '5': case '6': case '7': case '8': case '9':
+                        if (p->digit_count == 3) {
+                            state = ERROR;
+                            length = i; /* break out of loop */
+                        } else {
+                            p->digit_count++;
+                            p->tmp = p->tmp * 10 + (c - '0');
+                            if (p->tmp > 32) {
+                                state = ERROR;
+                                length = i;
+                            }
+                            continue;
+                        }
+                        break;
+                    case ':':
+                    case ',':
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        {
+                            unsigned long long prefix = p->tmp;
+                            unsigned long long mask = 0xFFFFFFFF00000000ULL >> prefix;
+                            
+                            /* mask off low-order bits */
+                            p->begin &= (unsigned)mask;
+
+                            /* Set all suffix bits to 1, so that 192.168.1.0/24 has
+                             * an ending address of 192.168.1.255. */
+                            p->end = p->begin | (unsigned)~mask;
+
+
+                            state = ADDR_START;
+                            length = i; /* break out of loop */
+                            if (c == '\n') {
+                                p->line_number++;
+                                p->char_number = 0;
+                            }
+                            *r_begin = p->begin;
+                            *r_end = p->end;
+                            result = 1;
+                        }
+                        break;
+                    default:
+                        state = ERROR;
+                        length = i; /* break out of loop */
+                        break;
+                }
+                break;
+
+            case UNIDASH1:
+                if (c == 0x80)
+                    state = UNIDASH2;
+                else {
+                    state = ERROR;
+                    length = i; /* break out of loop */
+                }
+                break;
+            case UNIDASH2:
+                if (c != 0x93) {
+                    state = ERROR;
+                    length = i; /* break out of loop */
+                } else {
+                    c = '-';
+                    state = NUMBER3;
+                    /* drop down */
+                }
+
+
             case NUMBER0:
             case NUMBER1:
             case NUMBER2:
@@ -139,7 +212,16 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             continue;
                         }
                         break;
+                    case 0xe2:
+                        if (state == NUMBER3) {
+                            state = UNIDASH1;
+                        } else {
+                            state = ERROR;
+                            length = i; /* break out of loop */
+                        }
+                        break;
                     case '-':
+                    case 0x96: /* long dash, comes from copy/pasting into exclude files */
                         if (state == NUMBER3) {
                             p->begin = (p->addr << 8) | p->tmp;
                             p->tmp = 0;
@@ -345,6 +427,24 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
     }
     fclose(fp);
 
+    /* In case the file doesn't end with a newline '\n', then artificially
+     * add one to the end */
+    if (!is_error) {
+        int x;
+        size_t offset = 0;
+        unsigned begin, end;
+        x = rangeparse_next(p, (const unsigned char *)"\n", &offset, 1, &begin, &end);
+        if (x < 0) {
+            unsigned long long line_number, char_number;
+            rangeparse_err(p, &line_number, &char_number);
+            fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
+            is_error = true;
+        } else if (x == 1) {
+            rangelist_add_range(targets_ipv4, begin, end);
+            addr_count++;
+        }
+    }
+
     LOG(1, "[+] %s: %u addresses read\n", filename, addr_count);
 
     /* Target list must be sorted every time it's been changed, 
@@ -412,7 +512,12 @@ rangefile_selftest(void)
 {
     int x = 0;
 
+    x = rangefile_test_buffer("#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0x6156a2a1, 0x6156a2af);
     x = rangefile_test_buffer("#test\n  1.2.3.4\n", 0x01020304, 0x01020304);
+    x = rangefile_test_buffer("#test\n  1.2.3.4/24\n", 0x01020300, 0x010203ff);
+    x = rangefile_test_buffer("#test\n  1.2.3.4-1.2.3.5\n", 0x01020304, 0x01020305);
+
+
 
     x = rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 4, __LINE__);
     x = rangefile_test_error("#bad ipv4\n 1.257.1.1.1\n", 2, 6, __LINE__);
