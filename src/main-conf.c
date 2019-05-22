@@ -14,6 +14,7 @@
 #include "masscan.h"
 #include "masscan-version.h"
 #include "ranges.h"
+#include "range-file.h"     /* reads millions of IP addresss from a file */
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
@@ -326,7 +327,7 @@ masscan_save_state(struct Masscan *masscan)
 }
 
 
-
+#if 0
 /*****************************************************************************
  * Read in ranges from a file
  *
@@ -430,6 +431,7 @@ ranges_from_file(struct RangeList *ranges, const char *filename)
      * before it can be used */
     rangelist_sort(ranges);
 }
+#endif
 
 /***************************************************************************
  ***************************************************************************/
@@ -1940,11 +1942,21 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("excludefile", name)) {
         unsigned count1 = masscan->exclude_ip.count;
         unsigned count2;
+        int err;
+        const char *filename = value;
+
         LOG(1, "EXCLUDING: %s\n", value);
-        ranges_from_file(&masscan->exclude_ip, value);
+        err = rangefile_read(filename, &masscan->exclude_ip, &masscan->exclude_ipv6);
+        if (err) {
+            LOG(0, "FAIL: error reading from exclude file\n");
+            exit(1);
+        }
+
+        /* Detect if this file has made any change, otherwise don't print
+         * a message */
         count2 = masscan->exclude_ip.count;
         if (count2 - count1)
-        fprintf(stderr, "%s: excluding %u ranges from file\n",
+            fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
     } else if (EQUALS("heartbleed", name)) {
         masscan->is_heartbleed = 1;
@@ -2004,7 +2016,14 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
-        ranges_from_file(&masscan->targets, value);
+        int err;
+        const char *filename = value;
+
+        err = rangefile_read(filename, &masscan->targets, &masscan->targets_ipv6);
+        if (err) {
+            LOG(0, "FAIL: error reading from include file\n");
+            exit(1);
+        }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     } else if (EQUALS("infinite", name)) {

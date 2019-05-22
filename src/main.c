@@ -58,6 +58,7 @@
 #include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
 #include "main-readrange.h"
 #include "scripting.h"
+#include "range-file.h"         /* reading ranges from a file */
 #include "read-service-probes.h"
 #include "util-malloc.h"
 
@@ -1686,6 +1687,7 @@ int main(int argc, char *argv[])
             x += lcg_selftest();
             x += template_selftest();
             x += ranges_selftest();
+            x += rangefile_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();
             x += mainconf_selftest();

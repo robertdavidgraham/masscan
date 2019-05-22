@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "ranges.h"
+#include "ranges6.h"
 #include "packet-queue.h"
 
 struct Adapter;
@@ -141,6 +142,7 @@ struct Masscan
      * and such, and sort the target ranges.
      */
     struct RangeList targets;
+    struct Range6List targets_ipv6;
 
     /**
      * The ports we are scanning for. The user can specify repeated ports
@@ -166,6 +168,7 @@ struct Masscan
      */
     struct RangeList exclude_ip;
     struct RangeList exclude_port;
+    struct Range6List exclude_ipv6;
 
 
     /**

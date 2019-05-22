@@ -1,4 +1,5 @@
 #include "proto-oproto.h"
+#include "unusedparm.h"
 
 void
 handle_oproto(struct Output *out, time_t timestamp,

@@ -168,9 +168,6 @@
     <ClCompile Include="..\src\rand-primegen.c">
       <Filter>Source Files\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ranges.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\smack1.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
@@ -327,13 +324,25 @@
     <ClCompile Include="..\src\read-service-probes.c">
       <Filter>Source Files\versioning</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ranges6.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\util-malloc.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-coap.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges6.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\range-file.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp-rdp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-oproto.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
   </ItemGroup>
@@ -435,9 +444,6 @@
       <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-lcg.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ranges.h">
       <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\smack.h">
@@ -563,9 +569,6 @@
     <ClInclude Include="..\src\read-service-probes.h">
       <Filter>Source Files\versioning</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ranges6.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\util-malloc.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
@@ -573,6 +576,21 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\util-bool.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges6.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\range-file.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp-rdp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-oproto.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>

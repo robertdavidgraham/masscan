@@ -57,6 +57,7 @@
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-ntlmssp.c" />
     <ClCompile Include="..\src\proto-ntp.c" />
+    <ClCompile Include="..\src\proto-oproto.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
     <ClCompile Include="..\src\proto-smb.c" />
@@ -65,6 +66,7 @@
     <ClCompile Include="..\src\proto-ssh.c" />
     <ClCompile Include="..\src\proto-ssl-test.c" />
     <ClCompile Include="..\src\proto-ssl.c" />
+    <ClCompile Include="..\src\proto-tcp-rdp.c" />
     <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
@@ -85,6 +87,7 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
+    <ClCompile Include="..\src\range-file.c" />
     <ClCompile Include="..\src\ranges.c" />
     <ClCompile Include="..\src\ranges6.c" />
     <ClCompile Include="..\src\rawsock-arp.c" />
@@ -158,6 +161,7 @@
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntlmssp.h" />
     <ClInclude Include="..\src\proto-ntp.h" />
+    <ClInclude Include="..\src\proto-oproto.h" />
     <ClInclude Include="..\src\proto-pop3.h" />
     <ClInclude Include="..\src\proto-preprocess.h" />
     <ClInclude Include="..\src\proto-sctp.h" />
@@ -166,6 +170,7 @@
     <ClInclude Include="..\src\proto-snmp.h" />
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />
+    <ClInclude Include="..\src\proto-tcp-rdp.h" />
     <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-tcp-telnet.h" />
     <ClInclude Include="..\src\proto-udp.h" />
@@ -175,6 +180,7 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
+    <ClInclude Include="..\src\range-file.h" />
     <ClInclude Include="..\src\ranges.h" />
     <ClInclude Include="..\src\ranges6.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />

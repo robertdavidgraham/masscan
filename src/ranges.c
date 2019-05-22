@@ -117,11 +117,11 @@ rangelist_sort(struct RangeList *targets)
         return;
     
     if (targets->is_sorted) {
-        LOG(2, "[+] range:sort: already sorted\n");
+        //LOG(2, "[+] range:sort: already sorted\n");
         return;
     }
     
-    LOG(2, "[+] range:sort: sorting...\n");
+    LOG(3, "[+] range:sort: sorting...\n");
     
     /* First, sort the list */
     qsort(  targets->list,              /* the array to sort */
@@ -129,7 +129,7 @@ rangelist_sort(struct RangeList *targets)
             sizeof(targets->list[0]),   /* size of element */
             range_compare);
 
-    LOG(2, "[+] range:sort: combining...\n");
+    LOG(3, "[+] range:sort: combining...\n");
     
     
     /* Second, combine all overlapping ranges. We do this by simply creating
@@ -147,7 +147,7 @@ rangelist_sort(struct RangeList *targets)
         
     }
     
-    LOG(2, "[+] range:sort: combiend from %u elemeents to %u elements\n", original_count, newlist.count);
+    LOG(3, "[+] range:sort: combined from %u elements to %u elements\n", original_count, newlist.count);
     
     free(targets->list);
     targets->list = newlist.list;

@@ -168,7 +168,7 @@ cotp_parse(struct BannerOutput *banout, struct RDPSTUFF *rdp, const unsigned cha
                          * by 1. */
                         assert(bytes_parsed != 0);
                         offset += bytes_parsed - 1;
-                        rdp->cotp.len -= bytes_parsed;
+                        rdp->cotp.len -= (unsigned char)bytes_parsed;
                         
                         /* If we have bytes left in the TPKT, then stay in this state,
                          * otherwise transition to the next TPKT */
@@ -267,7 +267,7 @@ rdp_parse(  const struct Banner1 *banner1,
                  * by 1. */
                 assert(bytes_parsed != 0);
                 offset += bytes_parsed - 1;
-                rdp->tpkt_length -= bytes_parsed;
+                rdp->tpkt_length -= (unsigned short)bytes_parsed;
                 
                 /* If we have bytes left in the TPKT, then stay in this state,
                  * otherwise transition to the next TPKT */
