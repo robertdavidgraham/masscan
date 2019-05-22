@@ -189,7 +189,7 @@ rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
      * we often read in sequential addresses */
     if (range_is_overlap(targets->list[targets->count - 1], range)) {
         range_combine(&targets->list[targets->count - 1], range);
-        
+        targets->is_sorted = 0;
         return;
     }
 
@@ -428,6 +428,7 @@ parse_ipv4(const char *line, unsigned *inout_offset, unsigned max, unsigned *ipv
 
     return 0; /* parse ok */
 }
+
 
 /****************************************************************************
  * Parse from text an IPv4 address range. This can be in one of several
@@ -859,9 +860,8 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
     return p;
 }
 
-
 /***************************************************************************
- * Called during "make regress" to run a regression test over this module.
+ * Called during "make test" to run a regression test over this module.
  ***************************************************************************/
 int
 ranges_selftest(void)

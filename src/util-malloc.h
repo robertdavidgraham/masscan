@@ -8,6 +8,7 @@
 #ifndef UTIL_MALLOC_H
 #define UTIL_MALLOC_H
 #include <stdio.h>
+#include <stdlib.h>
 
 void *
 REALLOCARRAY(void *p, size_t count, size_t size);

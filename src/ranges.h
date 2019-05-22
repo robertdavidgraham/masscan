@@ -1,6 +1,7 @@
 #ifndef RANGES_H
 #define RANGES_H
 #include <stdint.h>
+#include <stdio.h>
 
 /**
  * A range of either IP addresses or ports

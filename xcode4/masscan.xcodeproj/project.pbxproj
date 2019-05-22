@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1106827120DF863100E612AB /* ranges-avl.c in Sources */ = {isa = PBXBuildFile; fileRef = 1106826F20DF863000E612AB /* ranges-avl.c */; };
 		1107E9B2228DF7BB003384B3 /* proto-tcp-rdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1107E9B1228DF7BB003384B3 /* proto-tcp-rdp.c */; };
+		1107E9B52294DF22003384B3 /* range-file.c in Sources */ = {isa = PBXBuildFile; fileRef = 1107E9B32294DF22003384B3 /* range-file.c */; };
 		110C79B022833AFA003FAC94 /* proto-oproto.c in Sources */ = {isa = PBXBuildFile; fileRef = 110C79AF22833AF9003FAC94 /* proto-oproto.c */; };
 		110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
@@ -126,6 +127,8 @@
 		1106827020DF863000E612AB /* ranges-avl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ranges-avl.h"; sourceTree = "<group>"; };
 		1107E9B0228DF7BB003384B3 /* proto-tcp-rdp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-tcp-rdp.h"; sourceTree = "<group>"; };
 		1107E9B1228DF7BB003384B3 /* proto-tcp-rdp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-tcp-rdp.c"; sourceTree = "<group>"; };
+		1107E9B32294DF22003384B3 /* range-file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "range-file.c"; sourceTree = "<group>"; };
+		1107E9B42294DF22003384B3 /* range-file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "range-file.h"; sourceTree = "<group>"; };
 		110C79AE22833AF9003FAC94 /* proto-oproto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-oproto.h"; sourceTree = "<group>"; };
 		110C79AF22833AF9003FAC94 /* proto-oproto.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-oproto.c"; sourceTree = "<group>"; };
 		110ED16520CA6A8300690C91 /* proto-spnego.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-spnego.h"; sourceTree = "<group>"; };
@@ -559,6 +562,8 @@
 		11B360CD1F90174B0020F3A3 /* misc */ = {
 			isa = PBXGroup;
 			children = (
+				1107E9B32294DF22003384B3 /* range-file.c */,
+				1107E9B42294DF22003384B3 /* range-file.h */,
 				11B5898021C0841100DD6248 /* ranges6.c */,
 				11B5897F21C0841100DD6248 /* ranges6.h */,
 				1106826F20DF863000E612AB /* ranges-avl.c */,
@@ -699,6 +704,7 @@
 				11DD364B2108E0CB00CBE1DE /* scripting-banner.c in Sources */,
 				11A921F417DBCC7E00DDFD32 /* rte-ring.c in Sources */,
 				11A921F517DBCC7E00DDFD32 /* smack1.c in Sources */,
+				1107E9B52294DF22003384B3 /* range-file.c in Sources */,
 				11A921F617DBCC7E00DDFD32 /* smackqueue.c in Sources */,
 				11A921F717DBCC7E00DDFD32 /* string_s.c in Sources */,
 				11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */,
