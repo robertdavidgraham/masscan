@@ -314,7 +314,7 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
  * Test errors. We should get exactly which line-number and which character
  * in the line caused the error
  ***************************************************************************/
-int
+static int
 rangefile_test_error(const char *buf, unsigned long long in_line_number, unsigned long long in_char_number, unsigned which_test)
 {
     size_t length = strlen(buf);
@@ -381,7 +381,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
      * many megabytes in size
      */
     err = fopen_s(&fp, filename, "rb");
-    if (fp == NULL) {
+    if (err || fp == NULL) {
         perror(filename);
         exit(1);
     }
@@ -460,7 +460,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
 
 /***************************************************************************
  ***************************************************************************/
-int
+static int
 rangefile_test_buffer(const char *buf, unsigned in_begin, unsigned in_end)
 {
     size_t length = strlen(buf);
@@ -512,18 +512,18 @@ rangefile_selftest(void)
 {
     int x = 0;
 
-    x = rangefile_test_buffer("#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0x6156a2a1, 0x6156a2af);
-    x = rangefile_test_buffer("#test\n  1.2.3.4\n", 0x01020304, 0x01020304);
-    x = rangefile_test_buffer("#test\n  1.2.3.4/24\n", 0x01020300, 0x010203ff);
-    x = rangefile_test_buffer("#test\n  1.2.3.4-1.2.3.5\n", 0x01020304, 0x01020305);
+    x += rangefile_test_buffer("#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0x6156a2a1, 0x6156a2af);
+    x += rangefile_test_buffer("#test\n  1.2.3.4\n", 0x01020304, 0x01020304);
+    x += rangefile_test_buffer("#test\n  1.2.3.4/24\n", 0x01020300, 0x010203ff);
+    x += rangefile_test_buffer("#test\n  1.2.3.4-1.2.3.5\n", 0x01020304, 0x01020305);
 
 
 
-    x = rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 4, __LINE__);
-    x = rangefile_test_error("#bad ipv4\n 1.257.1.1.1\n", 2, 6, __LINE__);
-    x = rangefile_test_error("#bad ipv4\n 1.10.257.1.1.1\n", 2, 9, __LINE__);
-    x = rangefile_test_error("#bad ipv4\n 1.10.255.256.1.1.1\n", 2, 13, __LINE__);
-    x = rangefile_test_error("#bad ipv4\n 1.1.1.1.1\n", 2, 9, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 4, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 1.257.1.1.1\n", 2, 6, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 1.10.257.1.1.1\n", 2, 9, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 1.10.255.256.1.1.1\n", 2, 13, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 1.1.1.1.1\n", 2, 9, __LINE__);
 
     //test_file("../ips.txt");
     if (x)

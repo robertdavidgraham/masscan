@@ -75,6 +75,14 @@ rangelist_is_contains(const struct RangeList *task, unsigned number);
 
 
 /**
+ * Returns 'true' if the indicate range is valid, which is simple the
+ * fact that 'begin' comes before 'end'. We mark invalid ranges
+ * by putting 'begin' after the 'end'
+ */
+int
+range_is_valid(const struct Range range);
+
+/**
  * Parses IPv4 addresses out of a string. A number of formats are allowed,
  * either an individual IPv4 address, a CIDR spec, or a start/stop address.
  * @param line
@@ -102,10 +110,8 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
  *      A list, probably read in from --excludefile, of things that we
  *      should not be scanning, that will override anything we otherwise
  *      try to scan.
- * @return
- *      the total number of IP addresses or ports removed.
  */
-uint64_t
+void
 rangelist_exclude(  struct RangeList *targets,
               const struct RangeList *excludes);
 
