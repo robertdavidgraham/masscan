@@ -60,6 +60,7 @@
 #include "scripting.h"
 #include "range-file.h"         /* reading ranges from a file */
 #include "read-service-probes.h"
+#include "misc-rstfilter.h"
 #include "util-malloc.h"
 
 #include <assert.h>
@@ -545,6 +546,10 @@ receive_thread(void *v)
     uint64_t *status_synack_count;
     uint64_t *status_tcb_count;
     uint64_t entropy = masscan->seed;
+    struct ResetFilter *rf;
+    
+    /* For reducing RST responses, see rstfilter_is_filter() below */
+    rf = rstfilter_create(entropy, 16384);
 
     /* some status variables */
     status_synack_count = MALLOC(sizeof(uint64_t));
@@ -929,12 +934,19 @@ receive_thread(void *v)
                  *  This happens when we've sent a FIN, deleted our connection,
                  *  but the other side didn't get the packet.
                  */
-                if (!TCP_IS_RST(px, parsed.transport_offset))
-                tcpcon_send_RST(
-                    tcpcon,
-                    ip_me, ip_them,
-                    port_me, port_them,
-                    seqno_them, seqno_me);
+                if (TCP_IS_RST(px, parsed.transport_offset))
+                    ; /* ignore if it's own TCP flag is set */
+                else {
+                    int is_suppress;
+                    
+                    is_suppress = rstfilter_is_filter(rf, ip_me, port_me, ip_them, port_them);
+                    if (!is_suppress)
+                        tcpcon_send_RST(
+                            tcpcon,
+                            ip_me, ip_them,
+                            port_me, port_them,
+                            seqno_them, seqno_me);
+                }
             }
 
         }
@@ -1693,6 +1705,7 @@ int main(int argc, char *argv[])
             x += mainconf_selftest();
             x += zeroaccess_selftest();
             x += nmapserviceprobes_selftest();
+            x += rstfilter_selftest();
 
 
             if (x != 0) {

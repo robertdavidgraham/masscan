@@ -40,25 +40,6 @@ struct RangeList
 void
 rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
 
-/**
- * Removes the given range from the target list. The input range doesn't
- * have to exist, or can partial overlap with existing ranges.
- * @param task
- *      A list of ranges of either IPv4 addresses or port numbers.
- * @param begin
- *      The first address of the range that'll be removed.
- * @param end
- *      The last address of the range that'll be removed (inclusive).
- */
-void
-rangelist_remove_range(struct RangeList *task, unsigned begin, unsigned end);
-
-/**
- * Same as 'rangelist_remove_range()', except the input is a range
- * structure instead of a start/stop numbers.
- */
-void
-rangelist_remove_range2(struct RangeList *task, struct Range range);
 
 /**
  * Returns 'true' is the indicated port or IP address is in one of the task

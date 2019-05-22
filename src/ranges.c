@@ -1,5 +1,30 @@
 /*
-    for tracking IP/port ranges
+    IPv4 and port ranges
+ 
+ This is one of the more integral concepts to how masscan works internally.
+ We combine all the input addresses and address ranges into a sorted list
+ of 'target' IP addresses. This allows us to enumerate all the addresses
+ in order by incrementing a simple index. It is that index that we randomize
+ in order to produce random output, but internally, everything is sorted.
+ 
+ Sorting the list allows us to remove duplicates. It also allows us to
+ apply the 'exludes' directly to the input list. In other words, other
+ scanners typically work by selecting an IP address at random, then checking
+ to see if it's been excluded, then skipping it. In this scanner, however,
+ we remove all the excluded address from the targets list before we start
+ scanning.
+ 
+ This module has been tuned to support mass lists of millions of target
+ IPv4 addresses and excludes. This has required:
+    - a fast way to parse the address from a file (see range-file.c)
+    - fast sort (just using qsort() from the standard C library)
+    - fast application of exludes, using an optimal O(n + m) linear
+      algorithm, where 'n' is the number of targets, and 'm' is the
+      number of excluded ranges.
+ Large lists can still take a bit to process. On a fast server with
+ 7-million input ranges/addresse and 5000 exclude ranges/addresses,
+ it takes almost 3 seconds to process everything before starting.
+ 
 */
 #include "ranges.h"
 #include "logger.h"
@@ -22,15 +47,19 @@
 static struct Range INVALID_RANGE = {2,1};
 
 /***************************************************************************
+ * Does a linear search to see if the list contains the address/port.
+ * FIXME: This should be upgraded to a binary search. However, we don't
+ * really use it in any performance critical code, so it's okay
+ * as a linear search.
  ***************************************************************************/
 int
-rangelist_is_contains(const struct RangeList *targets, unsigned number)
+rangelist_is_contains(const struct RangeList *targets, unsigned addr)
 {
     unsigned i;
     for (i=0; i<targets->count; i++) {
         struct Range *range = &targets->list[i];
 
-        if (range->begin <= number && number <= range->end)
+        if (range->begin <= addr && addr <= range->end)
             return 1;
     }
     return 0;
@@ -38,7 +67,9 @@ rangelist_is_contains(const struct RangeList *targets, unsigned number)
 
 
 /***************************************************************************
- * Test if two ranges overlap
+ * Test if two ranges overlap.
+ * FIXME: I need to change this so that it (a) doesn't trigger on invalid
+ * ranges (those where begin>end) and (b) use a simpler algorithm
  ***************************************************************************/
 static int
 range_is_overlap(struct Range lhs, struct Range rhs)
@@ -116,44 +147,38 @@ rangelist_sort(struct RangeList *targets)
     struct RangeList newlist = {0};
     unsigned original_count = targets->count;
 
+    /* Empty lists are, of course, sorted. We need to set this
+     * to avoid an error later on in the code which asserts that
+     * the lists are sorted */
     if (targets->count == 0) {
         targets->is_sorted = 1;
         return;
     }
     
+    /* If it's already sorted, then skip this */
     if (targets->is_sorted) {
-        //LOG(2, "[+] range:sort: already sorted\n");
         return;
     }
     
-    LOG(3, "[+] range:sort: sorting...\n");
     
     /* First, sort the list */
+    LOG(3, "[+] range:sort: sorting...\n");
     qsort(  targets->list,              /* the array to sort */
             targets->count,             /* number of elements to sort */
             sizeof(targets->list[0]),   /* size of element */
             range_compare);
-
-    LOG(3, "[+] range:sort: combining...\n");
     
     
     /* Second, combine all overlapping ranges. We do this by simply creating
      * a new list from a sorted list, so we don't have to remove things in the
      * middle when collapsing overlapping entries together, which is painfully
      * slow. */
+    LOG(3, "[+] range:sort: combining...\n");
     for (i=0; i<targets->count; i++) {
         rangelist_add_range(&newlist, targets->list[i].begin, targets->list[i].end);
-        
-        /*while (i+1<targets->count && range_is_overlap(targets->list[i], targets->list[i+1])) {
-            range_combine(&targets->list[i], targets->list[i+1]);
-            rangelist_remove_at(targets, i+1);
-            fprintf(stderr, " count=%u\n", targets->count);
-        }*/
-        
     }
     
     LOG(3, "[+] range:sort: combined from %u elements to %u elements\n", original_count, newlist.count);
-    
     free(targets->list);
     targets->list = newlist.list;
     targets->count = newlist.count;
@@ -205,14 +230,14 @@ rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
 }
 
 /***************************************************************************
+ * This is the "free" function for the list, freeing up any memory we've
+ * allocated.
  ***************************************************************************/
 void
 rangelist_remove_all(struct RangeList *targets)
 {
-    if (targets->list)
-        free(targets->list);
-    if (targets->picker)
-        free(targets->picker);
+    free(targets->list);
+    free(targets->picker);
     memset(targets, 0, sizeof(*targets));
 }
 
@@ -230,8 +255,16 @@ rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
 }
 
 /***************************************************************************
+ * This searchs a range list and removes that range of IP addresses, if
+ * they exist. Sicne the input range can overlap multiple entries, then
+ * more than one entry can be removed, or truncated. Since the range
+ * can be in the middle of an entry in the list, it can actually increase
+ * the list size by one, as that entry is split into two entries.
+ * DEPRECATED: this function is deprecated, and will be removed at some
+ * point. It's only remaining in order to serve as a regression test for
+ * its replacement.
  ***************************************************************************/
-void
+static void
 rangelist_remove_range(struct RangeList *targets, unsigned begin, unsigned end)
 {
     unsigned i;
@@ -289,7 +322,7 @@ rangelist_add_range2(struct RangeList *targets, struct Range range)
 {
     rangelist_add_range(targets, range.begin, range.end);
 }
-void
+static void
 rangelist_remove_range2(struct RangeList *targets, struct Range range)
 {
     rangelist_remove_range(targets, range.begin, range.end);
