@@ -28,10 +28,10 @@ Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 On Debian/Ubuntu, it goes something like this:
 
-	$ sudo apt-get install git gcc make libpcap-dev
-	$ git clone https://github.com/robertdavidgraham/masscan
-	$ cd masscan
-	$ make
+	sudo apt-get install git gcc make libpcap-dev
+	git clone https://github.com/robertdavidgraham/masscan
+	cd masscan
+	make
 
 This puts the program in the `masscan/bin` subdirectory. You'll have to
 manually copy it to something like `/usr/local/bin` if you want to
@@ -40,7 +40,7 @@ install it elsewhere on the system.
 The source consists of a lot of small files, so building goes a lot faster
 by using the multi-threaded build:
 
-	$ make -j
+	make -j
 
 While Linux is the primary target platform, the code runs well on many other
 systems. Here's some additional build info:
