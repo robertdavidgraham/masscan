@@ -642,6 +642,11 @@ receive_thread(void *v)
                                  "hello",
                                  1,
                                  "smbv1");
+        if (masscan->is_hello_http)
+            tcpcon_set_parameter(   tcpcon,
+                                 "hello",
+                                 1,
+                                 "http");
         if (masscan->is_hello_ssl)
             tcpcon_set_parameter(   tcpcon,
                                  "hello",

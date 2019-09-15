@@ -264,7 +264,21 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         
         return;
     }
-
+    
+    /*
+     * Force HTTP processing on all ports
+     */
+    if (name_equals(name, "hello") && name_equals(value, "http")) {
+        unsigned i;
+        
+        LOG(2, "HELLO: setting HTTP hello message\n");
+        for (i=0; i<65535; i++) {
+            banner1->payloads.tcp[i] = &banner_http;
+        }
+        
+        return;
+    }
+    
     /*
      * Downgrade SMB hello from v1/v2 to use only v1
      */
