@@ -50,7 +50,7 @@ base64_encode(void *vdst, size_t sizeof_dst,
         dst[d+3] = '=';
         d += 4;
     } else if (i + 1 <= sizeof_src && d + 4 <= sizeof_dst) {
-        unsigned n = src[i]<<16 | src[i+1]<<8;
+        unsigned n = src[i]<<16;
         dst[d+0] = b64[ (n>>18) & 0x3F ];
         dst[d+1] = b64[ (n>>12) & 0x3F ];
         dst[d+2] = '=';
