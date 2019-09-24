@@ -397,6 +397,11 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     out->is_show_closed = masscan->output.is_show_closed;
     out->is_show_host = masscan->output.is_show_host;
     out->is_append = masscan->output.is_append;
+    out->is_capture_html = masscan->is_capture_html;
+    out->is_capture_cert = masscan->is_capture_cert;
+    out->is_capture_heartbleed = masscan->is_capture_heartbleed;
+    out->is_heartbleed = masscan->is_heartbleed;
+    out->is_poodle_sslv3 = masscan->is_poodle_sslv3;
     out->xml.stylesheet = duplicate_string(masscan->output.stylesheet);
     out->rotate.directory = duplicate_string(masscan->output.rotate.directory);
     if (masscan->nic_count <= 1)

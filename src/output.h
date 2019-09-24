@@ -85,6 +85,11 @@ struct Output
     unsigned is_show_closed:1; /* show closed ports */
     unsigned is_show_host:1; /* show host status info, like up/down */
     unsigned is_append:1; /* append to file */
+    unsigned is_capture_html:1;
+    unsigned is_capture_cert:1;
+    unsigned is_capture_heartbleed:1;
+    unsigned is_heartbleed:1;
+    unsigned is_poodle_sslv3:1; 
     struct {
         struct {
             uint64_t open;
