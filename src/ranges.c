@@ -909,15 +909,25 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
             p += 2;
         }
 
-        if (!isdigit(p[0] & 0xFF))
-            break;
-
-        port = (unsigned)strtoul(p, &p, 0);
-        end = port;
         if (*p == '-') {
             p++;
-            end = (unsigned)strtoul(p, &p, 0);
-        }
+            if (*p == '\0' || *p == ',') {
+                port = 1;
+                end = (proto_offset == Templ_Oproto_first) ? 0xFF : 0xFFFF;
+            } else {
+                LOG(0, "bad port spec: %s\n", string);
+                *is_error = 2;
+                return p;
+            }
+        } else if (isdigit(*p)) {
+            port = (unsigned)strtoul(p, &p, 0);
+            end = port;
+            if (*p == '-') {
+                p++;
+                end = (unsigned)strtoul(p, &p, 0);
+            }
+        } else
+            break;
 
         if (port > 0xFF && proto_offset == Templ_Oproto_first) {
             LOG(0, "bad ports: %u-%u\n", port, end);
