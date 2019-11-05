@@ -182,8 +182,8 @@ with the following command:
 
 Windows doesn't respond with RST packets, so neither of these techniques
 are necessary. However, masscan is still designed to work best using its
-own IP address, so you should run that way when possible, even when its
-not strictly necessary.
+own IP address, so you should run that way when possible, even when it
+isn't strictly necessary.
 
 The same thing is needed for other checks, such as the `--heartbleed` check,
 which is just a form of banner checking.
