@@ -124,7 +124,7 @@ port in order to grab simple "banner" information.
 
 The problem with this is that masscan contains its own TCP/IP stack
 separate from the system you run it on. When the local system receives
-a SYN-ACK from the probed target, it responds with a RST packet that kills
+a SYN-ACK from the probed target, it responds with an RST packet that kills
 the connection before masscan can grab the banner.
 
 The easiest way to prevent this is to assign masscan a separate IP
