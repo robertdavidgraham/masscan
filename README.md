@@ -485,7 +485,7 @@ Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
 but they have two problems. The first problem is that they cause cache-lines
 to bounce quickly back-and-forth between CPUs. The second is that when there
 is contention, they'll do a system call into the kernel, which kills
-performance. Mutexes on the fast path of a program severely limits scalability.
+performance. Mutexes on the fast path of a program severely limit scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
 interfering with the transmit thread.
