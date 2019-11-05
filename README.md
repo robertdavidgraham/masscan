@@ -434,7 +434,7 @@ MODULUS (%). In my current benchmarks, it's taking 40 nanoseconds to
 encrypt the variable.
 
 This architecture allows for lots of cool features. For example, it supports
-"shards". You can setup 5 machines each doing a fifth of the scan, or
+"shards". You can set up 5 machines each doing a fifth of the scan, or
 `range / shard_count`. Shards can be multiple machines, or simply multiple
 network adapters on the same machine, or even (if you want) multiple IP
 source addresses on the same network adapter.
