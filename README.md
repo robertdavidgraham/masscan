@@ -152,7 +152,7 @@ that range, by looking in the file:
 On the latest version of Kali Linux (2018-August), that range is  32768  to  60999, so
 you should choose ports either below 32768 or 61000 and above.
 
-Setting an `iptables` rule only lasts until the next reboot. You need to lookup how to
+Setting an `iptables` rule only lasts until the next reboot. You need to look up how to
 save the configuration depending upon your distro, such as using `iptables-save` 
 and/or `iptables-persistant`.
 
