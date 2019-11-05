@@ -375,7 +375,7 @@ or exclude a lot of sub-ranges. This chops up the desired range into hundreds
 of smaller ranges.
 
 This leads to one of the slowest parts of the code. We transmit 10 million
-packets per second, and have to convert an index variable to an IP address
+packets per second and have to convert an index variable to an IP address
 for each and every probe. We solve this by doing a "binary search" in a small
 amount of memory. At this packet rate, cache efficiencies start to dominate
 over algorithm efficiencies. There are a lot of more efficient techniques in
