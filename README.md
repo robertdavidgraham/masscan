@@ -250,7 +250,7 @@ This also makes things easier when you repeat a scan.
 By default, masscan first loads the configuration file 
 `/etc/masscan/masscan.conf`. Any later configuration parameters override what's
 in this default configuration file. That's where I put my "excludefile" 
-parameter, so that I don't ever forget it. It just works automatically.
+parameter so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
