@@ -6,7 +6,7 @@ This is an Internet-scale port scanner. It can scan the entire Internet
 in under 6 minutes, transmitting 10 million packets per second,
 from a single machine.
 
-It's input/output is similar to `nmap`, the most famous port scanner.
+Its input/output is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features.
 
 Internally, it uses asynchronous tranmissions, similar to port scanners
