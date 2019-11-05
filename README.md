@@ -415,7 +415,7 @@ heck out of target networks that aren't built for this level of speed. We
 need to spread our traffic evenly over the target.
 
 The way we randomize is simply by encrypting the index variable. By definition,
-encryption is random, and creates a 1-to-1 mapping between the original index
+encryption is random and creates a 1-to-1 mapping between the original index
 variable and the output. This means that while we linearly go through the
 range, the output IP addresses are completely random. In code, this looks like:
 
