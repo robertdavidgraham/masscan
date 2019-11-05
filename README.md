@@ -94,7 +94,7 @@ without the transmit overhead:
 	$ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --offline
     
 This second benchmark shows roughly how fast the program would run if it were
-using PF_RING, which has near zero overhead.
+using PF_RING, which has near-zero overhead.
 
 
 # Usage
