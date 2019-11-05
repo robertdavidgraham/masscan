@@ -494,7 +494,7 @@ interfering with the transmit thread.
 ## Portability
 
 The code runs well on Linux, Windows, and Mac OS X. All the important bits are
-in standard C (C90). It therefore compiles on Visual Studio with Microsoft's
+in standard C (C90). It, therefore, compiles on Visual Studio with Microsoft's
 compiler, the Clang/LLVM compiler on Mac OS X, and GCC on Linux.
 
 Windows and Macs aren't tuned for packet transmit, and get only about 300,000
