@@ -262,7 +262,7 @@ to convert them into any other format. There are five supported output formats:
 
 2. binary: This is the masscan builtin format. It produces much smaller files so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
-though. The command line option `--readscan` will read binary scan files.
+though. The command-line option `--readscan` will read binary scan files.
 Using `--readscan` with the `-oX` option will produce a XML version of the 
 results file.
 
