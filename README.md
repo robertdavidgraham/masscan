@@ -9,7 +9,7 @@ from a single machine.
 Its input/output is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features.
 
-Internally, it uses asynchronous tranmissions, similar to port scanners
+Internally, it uses asynchronous transmissions, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
