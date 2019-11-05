@@ -405,7 +405,7 @@ instructions are around 90 clock cycles, or 30 nanoseconds, on x86 CPUs. When
 transmitting at a rate of 10 million packets/second, we have only
 100 nanoseconds per packet. I see no way to optimize this any better. Luckily,
 though, two such operations can be executed simultaneously, so doing two 
-of these as shown above is no more expensive than doing one.
+of these, as shown above, is no more expensive than doing one.
 
 There are actually some easy optimizations for the above performance problems,
 but they all rely upon `i++`, the fact that the index variable increases one
