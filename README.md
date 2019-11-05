@@ -6,7 +6,7 @@ This is an Internet-scale port scanner. It can scan the entire Internet
 in under 6 minutes, transmitting 10 million packets per second,
 from a single machine.
 
-It's input/output is similar to `nmap`, the most famous port scanner.
+Its input/output is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features.
 
 Internally, it uses asynchronous tranmissions, similar to port scanners
@@ -15,12 +15,12 @@ arbitrary port and address ranges.
 
 NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
-need to either the `--src-ip` option to run from a different IP address, or
+need to either use the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
 
-This tool is free, but consider contributing money to its developement:
+This tool is free, but consider contributing money to its development:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
@@ -182,7 +182,7 @@ with the following command:
 
 Windows doesn't respond with RST packets, so neither of these techniques
 are necessary. However, masscan is still designed to work best using its
-own IP address, so you should run that way when possible, even when its
+own IP address, so you should run that way when possible, even when it's
 not strictly necessary.
 
 The same thing is needed for other checks, such as the `--heartbleed` check,
@@ -204,7 +204,7 @@ you want to use the following syntax:
 
 	# masscan 0.0.0.0/0 -p0-65535 --excludefile exclude.txt
 
-This just prints the results to the command-line. You probably want them
+This just prints the results to the command line. You probably want them
 saved to a file instead. Therefore, you want something like:
 
 	# masscan 0.0.0.0/0 -p0-65535 -oX scan.xml
@@ -221,15 +221,15 @@ This increases the rate to 100,000 packets/second, which will scan the
 entire Internet (minus excludes) in about 10 hours per port (or 655,360 hours
 if scanning all ports).
 
-The thing to notice about this command-line is that these are all `nmap`
+The thing to notice about this command line is that these are all `nmap`
 compatible options. In addition, "invisible" options compatible with `nmap`
 are also set for you: `-sS -Pn -n --randomize-hosts --send-eth`. Likewise,
 the format of the XML file is inspired by `nmap`. There are, of course, a
 lot of differences, because the *asynchronous* nature of the program
 leads to a fundamentally different approach to the problem.
 
-The above command-line is a bit cumbersome. Instead of putting everything
-on the command-line, it can be stored in a file instead. The above settings
+The above command line is a bit cumbersome. Instead of putting everything
+on the command line, it can be stored in a file instead. The above settings
 would look like this:
 
 	# My Scan
@@ -449,7 +449,7 @@ I hit <ctrl-c> to stop the scan, then restart it after I've fixed the bug.
 
 Another feature is retransmits/retries. Packets sometimes get dropped on the
 Internet, so you can send two packets back-to-back. However, something that
-drops one packet may drop the immediately following packet. Therefore, you
+drops one packet may drop the packet immediately following it. Therefore, you
 want to send the copy about 1 second apart. This is simple. We already have
 a 'rate' variable, which is the number of packets-per-second rate we are
 transmitting at, so the retransmit function is simply to use `i + rate`
@@ -485,7 +485,7 @@ Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
 but they have two problems. The first problem is that they cause cache-lines
 to bounce quickly back-and-forth between CPUs. The second is that when there
 is contention, they'll do a system call into the kernel, which kills
-performance. Mutexes on the fast path of a program severely limits scalability.
+performance. Mutexes on the fast path of a program severely limit scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
 interfering with the transmit thread.
