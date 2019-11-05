@@ -154,7 +154,7 @@ you should choose ports either below 32768 or 61000 and above.
 
 Setting an `iptables` rule only lasts until the next reboot. You need to look up how to
 save the configuration depending upon your distro, such as using `iptables-save` 
-and/or `iptables-persistant`.
+and/or `iptables-persistent`.
 
 On Mac OS X and BSD, there are similar steps. To find out the ranges to avoid,
 use a command like the following:
