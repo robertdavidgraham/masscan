@@ -13,7 +13,7 @@ Internally, it uses asynchronous tranmissions, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
-NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
+NOTE: masscan uses its own **custom TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
 need to either the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
