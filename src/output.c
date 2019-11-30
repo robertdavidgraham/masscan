@@ -501,16 +501,16 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
 static FILE *
 output_do_rotate(struct Output *out, int is_closing)
 {
+    /* Don't do anything if there is no file */
+    if (out == NULL || out->fp == NULL)
+        return NULL;
+    
     const char *dir = out->rotate.directory;
     const char *filename = out->filename;
     char *new_filename;
     size_t new_filename_size;
     struct tm tm;
     int err;
-
-    /* Don't do anything if there is no file */
-    if (out == NULL || out->fp == NULL)
-        return NULL;
 
     /* Make sure that all output has been flushed to the file */
     fflush(out->fp);
