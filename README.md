@@ -33,9 +33,9 @@ On Debian/Ubuntu, it goes something like this:
 	$ cd masscan
 	$ make
 
-This puts the program in the `masscan/bin` subdirectory. You'll have to
-manually copy it to something like `/usr/local/bin` if you want to
-install it elsewhere on the system.
+This puts the program in the `masscan/bin` subdirectory. To install it run:
+
+	$ make install
 
 The source consists of a lot of small files, so building goes a lot faster
 by using the multi-threaded build:
