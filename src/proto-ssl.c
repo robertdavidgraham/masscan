@@ -385,6 +385,8 @@ parse_server_cert(
         LEN0, LEN1, LEN2,
         CLEN0, CLEN1, CLEN2,
         CERT,
+        CALEN0, CALEN1, CALEN2,
+        CACERT,
         UNKNOWN,
     };
 
@@ -404,6 +406,7 @@ parse_server_cert(
         DROPDOWN(i,length,state);
 
     case CLEN0:
+    case CALEN0:
         if (remaining < 3) {
             state = UNKNOWN;
             continue;
@@ -412,10 +415,12 @@ parse_server_cert(
         remaining--;
         DROPDOWN(i,length,state);
     case CLEN1:
+    case CALEN1:
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
         DROPDOWN(i,length,state);
     case CLEN2:
+    case CALEN2:
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
         if (banner1->is_capture_cert) {
@@ -432,8 +437,10 @@ parse_server_cert(
         DROPDOWN(i,length,state);
 
     case CERT:
+    case CACERT:
         {
             unsigned len = (unsigned)length-i;
+	    unsigned proto = (state == CERT ? PROTO_X509_CERT : PROTO_X509_CACERT);
             if (len > remaining)
                 len = remaining;
             if (len > cert_remaining)
@@ -442,7 +449,7 @@ parse_server_cert(
             /* parse the certificate */
             if (banner1->is_capture_cert) {
                 banout_append_base64(banout, 
-                             PROTO_X509_CERT, 
+                             proto,
                              px+i, len,
                              &pstate->base64);
             }
@@ -459,11 +466,11 @@ parse_server_cert(
                  * a record of it */
                 if (banner1->is_capture_cert) {
                     banout_finalize_base64(banout, 
-                                           PROTO_X509_CERT, 
+                                           proto,
                                            &pstate->base64);        
-                    banout_end(banout, PROTO_X509_CERT);
+                    banout_end(banout, proto);
                 }
-                state = CLEN0;
+                state = CALEN0;
                 if (remaining == 0) {
                     if (!banner1->is_heartbleed)
                         tcp_close(more);

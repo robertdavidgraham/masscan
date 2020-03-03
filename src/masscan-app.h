@@ -22,6 +22,7 @@ enum ApplicationProtocol {
     PROTO_IMAP4,
     PROTO_UDP_ZEROACCESS,
     PROTO_X509_CERT,
+    PROTO_X509_CACERT,
     PROTO_HTML_TITLE,
     PROTO_HTML_FULL,
     PROTO_NTP,              /* network time protocol, udp/123 */
