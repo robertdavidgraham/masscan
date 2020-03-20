@@ -312,6 +312,29 @@ banner1_parse(
     return tcb_state->app_proto;
 }
 
+/*
+ * Simple banners with hello probes from nmap-service-probes
+ */
+
+static const char
+x11_hello[] = "\x6C\0\x0B\0\0\0\0\0\0\0\0\0";
+
+struct ProtocolParserStream banner_x11 = {
+    "banner-X11Probe", 6000, x11_hello, sizeof(x11_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+static const char
+javarmi_hello[] = "\x4a\x52\x4d\x49\0\x02\x4b";
+
+struct ProtocolParserStream banner_javarmi = {
+    "banner-JavaRMI", 1098, javarmi_hello, sizeof(javarmi_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
 
 /***************************************************************************
  * Create the --banners systems
@@ -368,7 +391,13 @@ banner1_create(void)
     b->payloads.tcp[11211] = (void*)&banner_memcached;
     b->payloads.tcp[23] = (void*)&banner_telnet;
     b->payloads.tcp[3389] = (void*)&banner_rdp;
-    
+
+    b->payloads.tcp[1098] = (void*)&banner_javarmi;
+    b->payloads.tcp[1099] = (void*)&banner_javarmi;
+    for (i=0; i < 20; i++) {
+      b->payloads.tcp[6000 + i] = (void*)&banner_x11;
+    }
+
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
      * them.
