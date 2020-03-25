@@ -317,6 +317,16 @@ banner1_parse(
  */
 
 static const char
+genericlines_hello[] = "\r\n\r\n";
+
+struct ProtocolParserStream banner_genericlines = {
+    "banner-GenericLines", 1098, genericlines_hello, sizeof(genericlines_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+static const char
 x11_hello[] = "\x6C\0\x0B\0\0\0\0\0\0\0\0\0";
 
 struct ProtocolParserStream banner_x11 = {
@@ -331,6 +341,26 @@ javarmi_hello[] = "\x4a\x52\x4d\x49\0\x02\x4b";
 
 struct ProtocolParserStream banner_javarmi = {
     "banner-JavaRMI", 1098, javarmi_hello, sizeof(javarmi_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+static const char
+mongodb_hello[] = "\x41\0\0\0\x3a\x30\0\0\xff\xff\xff\xff\xd4\x07\0\0\0\0\0\0test.$cmd\0\0\0\0\0\xff\xff\xff\xff\x1b\0\0\0\x01serverStatus\0\0\0\0\0\0\0\xf0\x3f\0";
+
+struct ProtocolParserStream banner_mongodb = {
+    "banner-mongodb", 1098, mongodb_hello, sizeof(mongodb_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+static const char
+kerberos_hello[] = "\0\0\0\x71\x6a\x81\x6e\x30\x81\x6b\xa1\x03\x02\x01\x05\xa2\x03\x02\x01\x0a\xa4\x81\x5e\x30\x5c\xa0\x07\x03\x05\0\x50\x80\0\x10\xa2\x04\x1b\x02NM\xa3\x17\x30\x15\xa0\x03\x02\x01\0\xa1\x0e\x30\x0c\x1b\x06krbtgt\x1b\x02NM\xa5\x11\x18\x0f""19700101000000Z\xa7\x06\x02\x04\x1f\x1e\xb9\xd9\xa8\x17\x30\x15\x02\x01\x12\x02\x01\x11\x02\x01\x10\x02\x01\x17\x02\x01\x01\x02\x01\x03\x02\x01\x02";
+
+struct ProtocolParserStream banner_kerberos = {
+    "banner-Kerberos", 1098, kerberos_hello, sizeof(kerberos_hello) - 1, 0,
     NULL,
     NULL,
     NULL,
@@ -397,6 +427,10 @@ banner1_create(void)
     for (i=0; i < 20; i++) {
       b->payloads.tcp[6000 + i] = (void*)&banner_x11;
     }
+    b->payloads.tcp[88] = (void*)&banner_kerberos;
+    b->payloads.tcp[9001] = (void*)&banner_mongodb;
+    b->payloads.tcp[27017] = (void*)&banner_mongodb;
+    b->payloads.tcp[49153] = (void*)&banner_mongodb;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
