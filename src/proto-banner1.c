@@ -366,6 +366,16 @@ struct ProtocolParserStream banner_kerberos = {
     NULL,
 };
 
+static const char
+dicom_hello[] = "\x01\x00\x00\x00\x00\xcd\x00\x01\x00\x00""ANY-SCP         ECHOSCU         0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x15""1.2.840.10008.3.1.1.1 \x00\x00.\x01\x00\x00\x00""0\x00\x00\x11""1.2.840.10008.1.1@\x00\x00\x11""1.2.840.10008.1.2P\x00\x00:Q\x00\x00\x04\x00\x00@\x00R\x00\x00\x1b""1.2.276.0.7230010.3.0.3.6.2U\x00\x00\x0fOFFIS_DCMTK_362";
+
+struct ProtocolParserStream banner_dicom = {
+    "banner-dicom", 1098, dicom_hello, sizeof(dicom_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -431,6 +441,12 @@ banner1_create(void)
     b->payloads.tcp[9001] = (void*)&banner_mongodb;
     b->payloads.tcp[27017] = (void*)&banner_mongodb;
     b->payloads.tcp[49153] = (void*)&banner_mongodb;
+    b->payloads.tcp[104] = (void*)&banner_dicom;
+    b->payloads.tcp[2345] = (void*)&banner_dicom;
+    b->payloads.tcp[2761] = (void*)&banner_dicom;
+    b->payloads.tcp[2762] = (void*)&banner_dicom;
+    b->payloads.tcp[4242] = (void*)&banner_dicom;
+    b->payloads.tcp[11112] = (void*)&banner_dicom;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
