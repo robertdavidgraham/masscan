@@ -350,7 +350,7 @@ static const char
 mongodb_hello[] = "\x41\0\0\0\x3a\x30\0\0\xff\xff\xff\xff\xd4\x07\0\0\0\0\0\0test.$cmd\0\0\0\0\0\xff\xff\xff\xff\x1b\0\0\0\x01serverStatus\0\0\0\0\0\0\0\xf0\x3f\0";
 
 struct ProtocolParserStream banner_mongodb = {
-    "banner-mongodb", 1098, mongodb_hello, sizeof(mongodb_hello) - 1, 0,
+    "banner-mongodb", 27017, mongodb_hello, sizeof(mongodb_hello) - 1, 0,
     NULL,
     NULL,
     NULL,
@@ -360,7 +360,7 @@ static const char
 kerberos_hello[] = "\0\0\0\x71\x6a\x81\x6e\x30\x81\x6b\xa1\x03\x02\x01\x05\xa2\x03\x02\x01\x0a\xa4\x81\x5e\x30\x5c\xa0\x07\x03\x05\0\x50\x80\0\x10\xa2\x04\x1b\x02NM\xa3\x17\x30\x15\xa0\x03\x02\x01\0\xa1\x0e\x30\x0c\x1b\x06krbtgt\x1b\x02NM\xa5\x11\x18\x0f""19700101000000Z\xa7\x06\x02\x04\x1f\x1e\xb9\xd9\xa8\x17\x30\x15\x02\x01\x12\x02\x01\x11\x02\x01\x10\x02\x01\x17\x02\x01\x01\x02\x01\x03\x02\x01\x02";
 
 struct ProtocolParserStream banner_kerberos = {
-    "banner-Kerberos", 1098, kerberos_hello, sizeof(kerberos_hello) - 1, 0,
+    "banner-Kerberos", 88, kerberos_hello, sizeof(kerberos_hello) - 1, 0,
     NULL,
     NULL,
     NULL,
@@ -370,7 +370,17 @@ static const char
 dicom_hello[] = "\x01\x00\x00\x00\x00\xcd\x00\x01\x00\x00""ANY-SCP         ECHOSCU         0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x15""1.2.840.10008.3.1.1.1 \x00\x00.\x01\x00\x00\x00""0\x00\x00\x11""1.2.840.10008.1.1@\x00\x00\x11""1.2.840.10008.1.2P\x00\x00:Q\x00\x00\x04\x00\x00@\x00R\x00\x00\x1b""1.2.276.0.7230010.3.0.3.6.2U\x00\x00\x0fOFFIS_DCMTK_362";
 
 struct ProtocolParserStream banner_dicom = {
-    "banner-dicom", 1098, dicom_hello, sizeof(dicom_hello) - 1, 0,
+    "banner-dicom", 104, dicom_hello, sizeof(dicom_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+static const char
+ldap_hello[] = "\x30\x84\x00\x00\x00\x2d\x02\x01\x07\x63\x84\x00\x00\x00\x24\x04\x00\x0a\x01\x00\x0a\x01\x00\x02\x01\x00\x02\x01\x64\x01\x01\x00\x87\x0b\x6f\x62\x6a\x65\x63\x74\x43\x6c\x61\x73\x73\x30\x84\x00\x00\x00\x00";
+
+struct ProtocolParserStream banner_ldap = {
+    "banner-LDAPSearchReq", 389, ldap_hello, sizeof(ldap_hello) - 1, 0,
     NULL,
     NULL,
     NULL,
@@ -447,6 +457,19 @@ banner1_create(void)
     b->payloads.tcp[2762] = (void*)&banner_dicom;
     b->payloads.tcp[4242] = (void*)&banner_dicom;
     b->payloads.tcp[11112] = (void*)&banner_dicom;
+    b->payloads.tcp[256] = (void*)&banner_ldap;
+    b->payloads.tcp[257] = (void*)&banner_ldap;
+    b->payloads.tcp[389] = (void*)&banner_ldap;
+    b->payloads.tcp[390] = (void*)&banner_ldap;
+    b->payloads.tcp[1702] = (void*)&banner_ldap;
+    b->payloads.tcp[3268] = (void*)&banner_ldap;
+    b->payloads.tcp[3892] = (void*)&banner_ldap;
+    b->payloads.tcp[11711] = (void*)&banner_ldap;
+    /* LDAP/s */
+    b->payloads.tcp[636] = (void*)&banner_ssl;
+    b->payloads.tcp[637] = (void*)&banner_ssl;
+    b->payloads.tcp[3269] = (void*)&banner_ssl;
+    b->payloads.tcp[11712] = (void*)&banner_ssl;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
