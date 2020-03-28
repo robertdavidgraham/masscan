@@ -386,6 +386,16 @@ struct ProtocolParserStream banner_ldap = {
     NULL,
 };
 
+static const char
+sip_hello[] = "OPTIONS sip:nm SIP/2.0\r\nVia: SIP/2.0/TCP nm;branch=foo\r\nFrom: <sip:nm@nm>;tag=root\r\nTo: <sip:nm2@nm2>\r\nCall-ID: 50000\r\nCSeq: 42 OPTIONS\r\nMax-Forwards: 70\r\nContent-Length: 0\r\nContact: <sip:nm@nm>\r\nAccept: application/sdp\r\n\r\n";
+
+struct ProtocolParserStream banner_sip = {
+    "banner-SIPOptions", 5060, sip_hello, sizeof(sip_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -470,6 +480,12 @@ banner1_create(void)
     b->payloads.tcp[637] = (void*)&banner_ssl;
     b->payloads.tcp[3269] = (void*)&banner_ssl;
     b->payloads.tcp[11712] = (void*)&banner_ssl;
+    b->payloads.tcp[406] = (void*)&banner_sip;
+    b->payloads.tcp[5060] = (void*)&banner_sip;
+    b->payloads.tcp[8081] = (void*)&banner_sip;
+    b->payloads.tcp[31337] = (void*)&banner_sip;
+    /* SIP/s */
+    b->payloads.tcp[5061] = (void*)&banner_ssl;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
