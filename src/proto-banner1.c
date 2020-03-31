@@ -396,6 +396,16 @@ struct ProtocolParserStream banner_sip = {
     NULL,
 };
 
+static const char
+rtsp_hello[] = "OPTIONS / RTSP/1.0\r\n\r\n";
+
+struct ProtocolParserStream banner_rtsp = {
+    "banner-RTSPRequest", 554, rtsp_hello, sizeof(rtsp_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -486,6 +496,10 @@ banner1_create(void)
     b->payloads.tcp[31337] = (void*)&banner_sip;
     /* SIP/s */
     b->payloads.tcp[5061] = (void*)&banner_ssl;
+    b->payloads.tcp[554] = (void*)&banner_rtsp;
+    b->payloads.tcp[8554] = (void*)&banner_rtsp;
+    /* RTSP/s */
+    b->payloads.tcp[322] = (void*)&banner_ssl;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
