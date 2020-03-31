@@ -406,6 +406,16 @@ struct ProtocolParserStream banner_rtsp = {
     NULL,
 };
 
+static const char
+rpc_hello[] = "\x80\0\0\x28\x72\xFE\x1D\x13\0\0\0\0\0\0\0\x02\0\x01\x86\xA0\0\x01\x97\x7C\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
+struct ProtocolParserStream banner_rpc = {
+    "banner-RPCCheck", 111, rpc_hello, sizeof(rpc_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -500,6 +510,8 @@ banner1_create(void)
     b->payloads.tcp[8554] = (void*)&banner_rtsp;
     /* RTSP/s */
     b->payloads.tcp[322] = (void*)&banner_ssl;
+    b->payloads.tcp[111] = (void*)&banner_rpc;
+    b->payloads.tcp[2049] = (void*)&banner_rpc;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
