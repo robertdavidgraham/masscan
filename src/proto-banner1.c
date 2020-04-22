@@ -416,6 +416,16 @@ struct ProtocolParserStream banner_rpc = {
     NULL,
 };
 
+static const char
+dns_hello[] = "\0\x1E\0\x06\x01\0\0\x01\0\0\0\0\0\0\x07version\x04""bind\0\0\x10\0\x03";
+
+struct ProtocolParserStream banner_dns = {
+    "banner-DNSVersionBindReqTCP", 53, dns_hello, sizeof(dns_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -512,6 +522,11 @@ banner1_create(void)
     b->payloads.tcp[322] = (void*)&banner_ssl;
     b->payloads.tcp[111] = (void*)&banner_rpc;
     b->payloads.tcp[2049] = (void*)&banner_rpc;
+    b->payloads.tcp[53] = (void*)&banner_dns;
+    b->payloads.tcp[135] = (void*)&banner_dns;
+    b->payloads.tcp[50000] = (void*)&banner_dns;
+    b->payloads.tcp[50001] = (void*)&banner_dns;
+    b->payloads.tcp[50002] = (void*)&banner_dns;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
