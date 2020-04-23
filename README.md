@@ -1,26 +1,27 @@
 [![Build Status](https://travis-ci.org/robertdavidgraham/masscan.svg?branch=master)](https://travis-ci.org/robertdavidgraham/masscan.svg)
 
+
 # MASSCAN: Mass IP port scanner
 
 This is an Internet-scale port scanner. It can scan the entire Internet
 in under 6 minutes, transmitting 10 million packets per second,
 from a single machine.
 
-It's input/output is similar to `nmap`, the most famous port scanner.
+Its input/output is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features.
 
-Internally, it uses asynchronous tranmissions, similar to port scanners
+Internally, it uses asynchronous transmissions, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
-NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
+NOTE: masscan uses its own **custom TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
 need to either the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
 
-This tool is free, but consider contributing money to its developement:
+This tool is free, but consider contributing money to its development:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
@@ -68,6 +69,7 @@ You don't need to build their version of `libpcap.so`.
 
 When Masscan detects that an adapter is named something like `zc:enp1s0` instead
 of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
+
 
 ## Regression testing
 The project contains a built-in self-test:
@@ -154,7 +156,7 @@ you should choose ports either below 32768 or 61000 and above.
 
 Setting an `iptables` rule only lasts until the next reboot. You need to lookup how to
 save the configuration depending upon your distro, such as using `iptables-save` 
-and/or `iptables-persistant`.
+and/or `iptables-persistent`.
 
 On Mac OS X and BSD, there are similar steps. To find out the ranges to avoid,
 use a command like the following:
@@ -252,6 +254,7 @@ By default, masscan first loads the configuration file
 in this default configuration file. That's where I put my "excludefile" 
 parameter, so that I don't ever forget it. It just works automatically.
 
+
 ## Getting output
 
 By default, masscan produces fairly large text files, but it's easy 
@@ -321,10 +324,10 @@ By default, the rate is set to 100 packets/second. To increase the rate to
 a million use something like `--rate 1000000`.
 
 
-
 # Design
 
 This section describes the major design issues of the program.
+
 
 ## Code Layout
 
@@ -333,6 +336,7 @@ contains the `transmit_thread()` and `receive_thread()` functions. These
 functions have been deliberately flattened and heavily commented so that you
 can read the design of the program simply by stepping line-by-line through
 each of these.
+
 
 ## Asynchronous
 
@@ -459,7 +463,6 @@ retransmits this way in order to see if there is any difference in what
 gets dropped.
 
 
-
 ## C10 Scalability
 
 The asynchronous technique is known as a solution to the "c10k problem".
@@ -485,7 +488,7 @@ Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
 but they have two problems. The first problem is that they cause cache-lines
 to bounce quickly back-and-forth between CPUs. The second is that when there
 is contention, they'll do a system call into the kernel, which kills
-performance. Mutexes on the fast path of a program severely limits scalability.
+performance. Mutexes on the fast path of a program severely limit scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
 interfering with the transmit thread.
@@ -524,4 +527,3 @@ everyone who does port scans is (or should be) familiar with.
 This tool created by Robert Graham:
 email: robert_david_graham@yahoo.com
 twitter: @ErrataRob
-
