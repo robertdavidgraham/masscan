@@ -1735,28 +1735,38 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("spoof-address", name) || EQUALS("src-ip", name)) {
         /* Send packets FROM this IP address */
         struct Range range;
+        struct Range6 range6;
+        int err;
 
-        range = range_parse_ipv4(value, 0, 0);
-
-        /* Check for bad format */
-        if (range.begin > range.end) {
-            LOG(0, "FAIL: bad source IPv4 address: %s=%s\n",
+        /* Grab the next IPv4 or IPv6 range */
+        err = range_parse(value, 0, 0, &range, &range6);
+        switch (err) {
+        case Ipv4_Address:
+            /* If more than one IP address given, make the range is
+             * an even power of two (1, 2, 4, 8, 16, ...) */
+            if (!is_power_of_two((uint64_t)range.end - range.begin + 1)) {
+                LOG(0, "FAIL: range must be even power of two: %s=%s\n",
+                        name, value);
+                exit(1);
+            }
+            masscan->nic[index].src.ipv4.first = range.begin;
+            masscan->nic[index].src.ipv4.last = range.end;
+            masscan->nic[index].src.ipv4.range = range.end - range.begin + 1;
+            break;
+        case Ipv6_Address:
+            masscan->nic[index].src.ipv6.first = range6.begin;
+            masscan->nic[index].src.ipv6.last = range6.end;
+            masscan->nic[index].src.ipv6.range = 1; /* TODO: add support for more than one source */
+            break;
+        default:
+            LOG(0, "FAIL: bad source IP address: %s=%s\n",
                     name, value);
-            LOG(0, "hint   addresses look like \"19.168.1.23\"\n");
+            LOG(0, "hint   addresses look like \"192.168.1.23\" or \"2001:db8:1::1ce9\".\n");
             exit(1);
         }
 
-        /* If more than one IP address given, make the range is
-            * an even power of two (1, 2, 4, 8, 16, ...) */
-        if (!is_power_of_two((uint64_t)range.end - range.begin + 1)) {
-            LOG(0, "FAIL: range must be even power of two: %s=%s\n",
-                    name, value);
-            exit(1);
-        }
 
-        masscan->nic[index].src.ip.first = range.begin;
-        masscan->nic[index].src.ip.last = range.end;
-        masscan->nic[index].src.ip.range = range.end - range.begin + 1;
+
     } else if (EQUALS("adapter-port", name) || EQUALS("source-port", name)
                || EQUALS("src-port", name)) {
         /* Send packets FROM this port number */

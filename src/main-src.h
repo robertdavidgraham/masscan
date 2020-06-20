@@ -12,7 +12,7 @@ struct Source
         unsigned first;
         unsigned last;
         unsigned range;
-    } ip;
+    } ipv4;
     struct {
         unsigned first;
         unsigned last;

@@ -9,7 +9,7 @@ int is_my_ip(const struct Source *src, ipaddress ip)
 {
     switch (ip.version) {
     case 4:
-        return src->ip.first <= ip.ipv4 && ip.ipv4 <= src->ip.last;
+        return src->ipv4.first <= ip.ipv4 && ip.ipv4 <= src->ipv4.last;
     case 6:
         return src->ipv6.first.hi == ip.ipv6.hi && src->ipv6.first.lo == ip.ipv6.lo;
     default:

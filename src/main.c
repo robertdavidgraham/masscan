@@ -243,8 +243,8 @@ adapter_get_source_addresses(const struct Masscan *masscan,
     const struct Source *src = &masscan->nic[nic_index].src;
     static ipv6address mask = {~0ULL, ~0ULL};
 
-    *src_ipv4 = src->ip.first;
-    *src_ipv4_mask = src->ip.last - src->ip.first;
+    *src_ipv4 = src->ipv4.first;
+    *src_ipv4_mask = src->ipv4.last - src->ipv4.first;
 
     *src_port = src->port.first;
     *src_port_mask = src->port.last - src->port.first;
