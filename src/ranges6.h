@@ -5,10 +5,10 @@
 */
 #ifndef RANGES6_H
 #define RANGES6_H
+#include "ipv6address.h"
 #include <stdio.h>
 #include <stdint.h>
-
-typedef struct {uint64_t hi; uint64_t lo;} ipv6address;
+struct Range;
 
 /**
  * A range of IPv6 ranges.
@@ -28,7 +28,8 @@ struct Range6List
     struct Range6 *list;
     size_t count;
     size_t max;
-    uint64_t *picker;
+    size_t *picker;
+    unsigned is_sorted:1;
 };
 
 /**
@@ -43,7 +44,8 @@ struct Range6List
  *      The last address (inclusive) of the range that'll be added.
  */
 void
-range6list_add_range(struct Range6List *targets, const ipv6address begin, const ipv6address end);
+range6list_add_range(struct Range6List *targets, ipv6address begin, ipv6address end);
+
 
 /**
  * Removes the given range from the target list. The input range doesn't
@@ -94,6 +96,25 @@ range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
  */
 struct Range6 
 range6_parse(const char *line, unsigned *inout_offset, unsigned max);
+
+/**
+ * Tests if the range is bad/invalid.
+ * @return 1 is invalid, 0 if good.
+ */
+int range6_is_bad_address(const struct Range6 *range);
+
+
+enum RangeParseResult {
+    Bad_Address,
+    Ipv4_Address=4,
+    Ipv6_Address=6,
+};
+
+/**
+ * Parse a range from input text, whether it's IPv4 or IPv6
+ */
+enum RangeParseResult
+range_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6);
 
 
 /**
@@ -176,6 +197,14 @@ range6list_merge(struct Range6List *list1, const struct Range6List *list2);
  */
 void
 range6list_optimize(struct Range6List *targets);
+
+/**
+ * Sorts the list of target. We maintain the list of targets in sorted
+ * order internally even though we scan the targets in random order
+ * externally.
+ */
+void
+range6list_sort(struct Range6List *targets);
 
 /**
  * Does a regression test of this module

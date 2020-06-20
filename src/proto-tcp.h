@@ -1,6 +1,6 @@
 #ifndef PROTO_TCP_H
 #define PROTO_TCP_H
-
+#include "ipv6address.h"
 #include "packet-queue.h"
 #include "output.h"
 
@@ -98,9 +98,9 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entr
  * Lookup a connection record based on IP/ports.
  */
 struct TCP_Control_Block *
-tcpcon_lookup_tcb(
+tcb_lookup(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_src, unsigned ip_dst,
+    ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst);
 
 /**
@@ -109,7 +109,7 @@ tcpcon_lookup_tcb(
 struct TCP_Control_Block *
 tcpcon_create_tcb(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_src, unsigned ip_dst,
+    ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
     unsigned ttl);
@@ -121,13 +121,13 @@ tcpcon_create_tcb(
 void
 tcpcon_send_FIN(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them);
 void
 tcpcon_send_RST(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them);
 
@@ -140,7 +140,7 @@ tcp_send_RST(
     struct TemplatePacket *templ,
     PACKET_QUEUE *packet_buffers,
     PACKET_QUEUE *transmit_queue,
-    unsigned ip_them, unsigned ip_me,
+    ipaddress ip_them, ipaddress ip_me,
     unsigned port_them, unsigned port_me,
     unsigned seqno_them, unsigned seqno_me
 );

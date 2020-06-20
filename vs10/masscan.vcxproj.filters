@@ -43,6 +43,12 @@
     <Filter Include="Source Files\vulncheck">
       <UniqueIdentifier>{8ad0f675-466a-4fb9-bac6-6fa0c868aefb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\massip">
+      <UniqueIdentifier>{1621e340-1943-47fa-b12e-336a46d19b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{1d9cb2b4-1715-44d0-98e9-745f236c7872}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -324,26 +330,38 @@
     <ClCompile Include="..\src\read-service-probes.c">
       <Filter>Source Files\versioning</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\util-malloc.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\proto-coap.c">
       <Filter>Source Files\proto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ranges.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ranges6.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\range-file.c">
-      <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-tcp-rdp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-oproto.c">
       <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\misc-rstfilter.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getip6.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\range-file.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ranges6.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ipv6address.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-checksum.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-malloc.c">
+      <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -569,29 +587,38 @@
     <ClInclude Include="..\src\read-service-probes.h">
       <Filter>Source Files\versioning</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\util-malloc.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-coap.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\util-bool.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ranges6.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ranges.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\range-file.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-tcp-rdp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-oproto.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\misc-rstfilter.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\range-file.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ranges6.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ipv6address.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-checksum.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-malloc.h">
+      <Filter>Source Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

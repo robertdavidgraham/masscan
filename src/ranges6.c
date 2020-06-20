@@ -2,7 +2,9 @@
     for tracking IP/port ranges
 */
 #include "ranges6.h"
+#include "ranges.h"
 #include "util-malloc.h"
+#include "logger.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -61,6 +63,11 @@ LESSEQ(const ipv6address lhs, const ipv6address rhs)
         return 1;
     else
         return 0;
+}
+
+int range6_is_bad_address(const struct Range6 *range)
+{
+    return LESS(range->end, range->begin);
 }
 
 /*static int
@@ -169,10 +176,79 @@ range6_combine(struct Range6 *lhs, const struct Range6 rhs)
 
 
 /***************************************************************************
+ * Callback for qsort() for comparing two ranges
+ ***************************************************************************/
+static int
+range6_compare(const void *lhs, const void *rhs)
+{
+    struct Range6 *left = (struct Range6 *)lhs;
+    struct Range6 *right = (struct Range6 *)rhs;
+
+    if (ipv6address_is_equal(left->begin, right->begin))
+        return 0;
+    else if (LESS(left->begin, right->begin))
+        return -1;
+    else 
+        return 1;
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+void
+range6list_sort(struct Range6List *targets)
+{
+    size_t i;
+    struct Range6List newlist = {0};
+    size_t original_count = targets->count;
+
+    /* Empty lists are, of course, sorted. We need to set this
+     * to avoid an error later on in the code which asserts that
+     * the lists are sorted */
+    if (targets->count == 0) {
+        targets->is_sorted = 1;
+        return;
+    }
+    
+    /* If it's already sorted, then skip this */
+    if (targets->is_sorted) {
+        return;
+    }
+    
+    
+    /* First, sort the list */
+    LOG(3, "[+] range6:sort: sorting...\n");
+    qsort(  targets->list,              /* the array to sort */
+            targets->count,             /* number of elements to sort */
+            sizeof(targets->list[0]),   /* size of element */
+            range6_compare);
+    
+    
+    /* Second, combine all overlapping ranges. We do this by simply creating
+     * a new list from a sorted list, so we don't have to remove things in the
+     * middle when collapsing overlapping entries together, which is painfully
+     * slow. */
+    LOG(3, "[+] range:sort: combining...\n");
+    for (i=0; i<targets->count; i++) {
+        range6list_add_range(&newlist, targets->list[i].begin, targets->list[i].end);
+    }
+    
+    LOG(3, "[+] range:sort: combined from %u elements to %u elements\n", original_count, newlist.count);
+    free(targets->list);
+    targets->list = newlist.list;
+    targets->count = newlist.count;
+    newlist.list = 0;
+
+    LOG(2, "[+] range:sort: done...\n");
+
+    targets->is_sorted = 1;
+}
+
+/***************************************************************************
  * Add the IPv6 range to our list of ranges.
  ***************************************************************************/
 void
-range6list_add_range(struct Range6List *targets, const ipv6address begin, const ipv6address end)
+range6list_add_rangex(struct Range6List *targets, const ipv6address begin, const ipv6address end)
 {
     struct Range6 range;
 
@@ -244,7 +320,43 @@ range6list_add_range(struct Range6List *targets, const ipv6address begin, const 
         }
         return;
     }
+}
 
+void
+range6list_add_range(struct Range6List *targets, ipv6address begin, ipv6address end)
+{
+    struct Range6 range;
+
+    range.begin = begin;
+    range.end = end;
+
+    /* auto-expand the list if necessary */
+    if (targets->count + 1 >= targets->max) {
+        targets->max = targets->max * 2 + 1;
+        targets->list = REALLOCARRAY(targets->list, targets->max, sizeof(targets->list[0]));
+    }
+
+    /* If empty list, then add this one */
+    if (targets->count == 0) {
+        targets->list[0] = range;
+        targets->count++;
+        targets->is_sorted = 1;
+        return;
+    }
+
+    /* If new range overlaps the last range in the list, then combine it
+     * rather than appending it. This is an optimization for the fact that
+     * we often read in sequential addresses */
+    if (range6_is_overlap(targets->list[targets->count - 1], range)) {
+        range6_combine(&targets->list[targets->count - 1], range);
+        targets->is_sorted = 0;
+        return;
+    }
+
+    /* append to the end of our list */
+    targets->list[targets->count] = range;
+    targets->count++;
+    targets->is_sorted = 0;
 }
 
 /***************************************************************************
@@ -405,7 +517,7 @@ parse_ipv6(const char *buf, unsigned *offset, size_t length, ipv6address *ip)
 			break;
 
 		/* Is there an elision/compression of the address? */
-		if (buf[i] == ':' && elision_offset < 16) {
+		if (buf[i] == ':' && elision_offset > 16) {
 			elision_offset = d;
 			i++;
 			continue;
@@ -531,7 +643,7 @@ parse_ipv6(const char *buf, unsigned *offset, size_t length, ipv6address *ip)
         //ip->hi = address[0]<<56ULL;
 
     }
-    return true;
+    return 0;
 }
 
 /****************************************************************************
@@ -819,14 +931,18 @@ range6list_optimize(struct Range6List *targets)
     size_t i;
     uint64_t total = 0;
 
+    if (targets->count == 0)
+        return;
+
+    /* This technique only works when the targets are in
+     * ascending order */
+    if (!targets->is_sorted)
+        range6list_sort(targets);
+
     if (targets->picker)
         free(targets->picker);
 
-    if (((size_t)targets->count) >= (size_t)(SIZE_MAX/sizeof(*picker)))
-        exit(1); /* integer overflow */
-    picker = malloc(targets->count * sizeof(*picker));
-    if (picker == NULL)
-        exit(1); /* out of memory */
+    picker = REALLOCARRAY(NULL, targets->count, sizeof(*picker));
 
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
@@ -834,6 +950,37 @@ range6list_optimize(struct Range6List *targets)
     }
     
     targets->picker = picker;
+}
+
+
+/***************************************************************************
+ ***************************************************************************/
+enum RangeParseResult
+range_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6)
+{
+    /* First attempt IPv4 */
+    {
+        struct Range range;
+
+        range = range_parse_ipv4(line, inout_offset, max);
+        if (range.begin <= range.end) {
+            memcpy(ipv4, &range, sizeof(*ipv4));
+            return Ipv4_Address;
+        }
+    }
+
+    /* Then attempt IPv6 */
+    {
+        struct Range6 range;
+
+        range = range6_parse(line, inout_offset, max);
+        if (!range6_is_bad_address(&range)) {
+            memcpy(ipv6, &range, sizeof(*ipv6));
+            return Ipv6_Address;
+        }
+    }
+
+    return Bad_Address;
 }
 
 
@@ -938,3 +1085,4 @@ ranges6_selftest(void)
 
     return 0;
 }
+

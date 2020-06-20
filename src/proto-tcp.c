@@ -40,9 +40,8 @@
  ***************************************************************************/
 struct TCP_Control_Block
 {
-
-    unsigned ip_me;
-    unsigned ip_them;
+    ipaddress ip_me;
+    ipaddress ip_them;
 
     unsigned short port_me;
     unsigned short port_them;
@@ -51,12 +50,17 @@ struct TCP_Control_Block
     uint32_t seqno_them;    /* the next seqno I expect to receive */
     uint32_t ackno_me;
     uint32_t ackno_them;
-
+    
     struct TCP_Control_Block *next;
     struct TimeoutEntry timeout[1];
 
     unsigned char ttl;
     unsigned tcpstate:4;
+    unsigned is_ipv6:1;
+
+    /** Set to true when the TCB is in-use/allocated, set to zero
+     * when it's about to be deleted soon */
+    unsigned is_active:1;
     
     /* If the payload we've sent was dynamically allocated with
      * malloc() from the heap, in which case we'll have to free()
@@ -77,6 +81,8 @@ struct TCP_Control_Block
     struct BannerOutput banout;
 
     struct ProtocolState banner1_state;
+
+    unsigned packet_number;
 };
 
 struct TCP_ConnectionTable {
@@ -160,7 +166,7 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
          * so I put some code here as a catch-all: if the TCB hasn't been
          * deleted, but hasn't been inserted back into the timeout system,
          * then insert it here. */
-        if (tcb->timeout->prev == 0 && tcb->ip_them != 0 && tcb->port_them != 0) {
+        if (tcb->timeout->prev == 0 && tcb->is_active) {
             timeouts_add(   tcpcon->timeouts,
                             tcb->timeout,
                             offsetof(struct TCP_Control_Block, timeout),
@@ -476,25 +482,47 @@ tcpcon_create_table(    size_t entry_count,
     return tcpcon;
 }
 
-#define EQUALS(lhs,rhs) (memcmp((lhs),(rhs),12)==0)
+static int EQUALS(const struct TCP_Control_Block *lhs, const struct TCP_Control_Block *rhs)
+{
+    if (lhs->port_me != rhs->port_me || lhs->port_them != rhs->port_them)
+        return 0;
+    if (memcmp(&lhs->ip_me, &rhs->ip_me, sizeof(rhs->ip_me)) != 0)
+        return 0;
+    if (memcmp(&lhs->ip_them, &rhs->ip_them, sizeof(rhs->ip_them)) != 0)
+        return 0;
+    return 1;
+}
 
 /***************************************************************************
  ***************************************************************************/
 static unsigned
-tcb_hash(   unsigned ip_me, unsigned port_me, 
-            unsigned ip_them, unsigned port_them,
+tcb_hash(   ipaddress ip_me, unsigned port_me, 
+            ipaddress ip_them, unsigned port_them,
             uint64_t entropy)
 {
     unsigned index;
 
     /* TCB hash table uses symmetric hash, so incoming/outgoing packets
      * get the same hash. */
-    index = (unsigned)syn_cookie(   ip_me   ^ ip_them,
+    if (ip_me.version == 6) {
+        ipv6address ipv6 = ip_me.ipv6;
+        ipv6.hi ^= ip_them.ipv6.hi;
+        ipv6.lo ^= ip_them.ipv6.lo;
+        index = (unsigned)syn_cookie_ipv6(
+                                    ipv6, 
                                     port_me ^ port_them,
-                                    ip_me   ^ ip_them,
+                                    ipv6, 
                                     port_me ^ port_them,
-                                    entropy
-                                    );
+                                    entropy);
+
+    } else {
+        index = (unsigned)syn_cookie_ipv4(   ip_me.ipv4   ^ ip_them.ipv4,
+                                        port_me ^ port_them,
+                                        ip_me.ipv4   ^ ip_them.ipv4,
+                                        port_me ^ port_them,
+                                        entropy
+                                        );
+    }
     return index;
 }
 
@@ -560,6 +588,9 @@ tcpcon_destroy_tcb(
     
     UNUSEDPARM(reason);
 
+    LOG(1, "%s %u - closing\n",
+            ipaddress_fmt(tcb->ip_them).string, tcb->port_them);
+
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
      * have to do a lookup to find the head pointer in the table.
@@ -577,17 +608,7 @@ tcpcon_destroy_tcb(
         r_entry = &(*r_entry)->next;
 
     if (*r_entry == NULL) {
-        /* TODO: this should be impossible, but it's happening anyway, about
-         * 20 times on a full Internet scan. I don't know why, and I'm too
-         * lazy to fix it right now, but I'll get around to eventually */
-        LOG(1, "tcb: double free: %u.%u.%u.%u : %u (0x%x)\n",
-                (tcb->ip_them>>24)&0xFF,
-                (tcb->ip_them>>16)&0xFF,
-                (tcb->ip_them>> 8)&0xFF,
-                (tcb->ip_them>> 0)&0xFF,
-                tcb->port_them,
-                tcb->seqno_them
-                );
+        LOG(1, "tcb: double free\n");
         return;
     }
 
@@ -616,10 +637,15 @@ tcpcon_destroy_tcb(
      */
     timeout_unlink(tcb->timeout);
 
-    tcb->ip_them = 0;
-    tcb->port_them = 0;
-    tcb->ip_me = 0;
-    tcb->port_me = 0;
+    tcb->ip_them.ipv4 = (unsigned)~0;
+    tcb->port_them = (unsigned short)~0;
+    tcb->ip_me.ipv4 = (unsigned)~0;
+    tcb->port_me = (unsigned short)~0;
+
+    tcb->is_active = 0;
+
+
+
 
     (*r_entry) = tcb->next;
     tcb->next = tcpcon->freed_list;
@@ -672,7 +698,7 @@ tcpcon_destroy_table(struct TCP_ConnectionTable *tcpcon)
 struct TCP_Control_Block *
 tcpcon_create_tcb(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_me, unsigned ip_them,
+    ipaddress ip_me, ipaddress ip_them,
     unsigned port_me, unsigned port_them,
     unsigned seqno_me, unsigned seqno_them,
     unsigned ttl)
@@ -680,6 +706,8 @@ tcpcon_create_tcb(
     unsigned index;
     struct TCP_Control_Block tmp;
     struct TCP_Control_Block *tcb;
+
+    assert(ip_me.version != 0 && ip_them.version != 0);
 
     tmp.ip_me = ip_me;
     tmp.ip_them = ip_them;
@@ -701,7 +729,12 @@ tcpcon_create_tcb(
         memset(tcb, 0, sizeof(*tcb));
         tcb->next = tcpcon->entries[index & tcpcon->mask];
         tcpcon->entries[index & tcpcon->mask] = tcb;
-        memcpy(tcb, &tmp, 12);
+
+        tcb->ip_me = ip_me;
+        tcb->ip_them = ip_them;
+        tcb->port_me = (unsigned short)port_me;
+        tcb->port_them = (unsigned short)port_them;
+
         tcb->seqno_me = seqno_me;
         tcb->seqno_them = seqno_them;
         tcb->ackno_me = seqno_them;
@@ -712,6 +745,11 @@ tcpcon_create_tcb(
 
         timeout_init(tcb->timeout);
         banout_init(&tcb->banout);
+        
+        /* The TCB is now allocated/in-use */
+        assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
+        tcb->is_active = 1;
+
 
         tcpcon->active_count++;
     }
@@ -724,9 +762,9 @@ tcpcon_create_tcb(
 /***************************************************************************
  ***************************************************************************/
 struct TCP_Control_Block *
-tcpcon_lookup_tcb(
+tcb_lookup(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_me, unsigned ip_them,
+    ipaddress ip_me, ipaddress ip_them,
     unsigned port_me, unsigned port_them)
 {
     unsigned index;
@@ -740,6 +778,13 @@ tcpcon_lookup_tcb(
 
     index = tcb_hash(ip_me, port_me, ip_them, port_them, tcpcon->entropy);
 
+    LOG(1, "tcb_hash(0x%08x) = %s %u %s %u\n", 
+        (unsigned)index,
+        ipaddress_fmt(ip_me).string, port_me,
+        ipaddress_fmt(ip_them).string, port_them);
+
+    /* Hash to an entry in the table, then follow a linked list from
+     * that point forward. */
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {
         tcb = tcb->next;
@@ -763,6 +808,7 @@ tcpcon_send_packet(
     int err = 0;
     uint64_t wait = 100;
 
+    assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
 
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
@@ -835,7 +881,7 @@ tcp_send_RST(
     struct TemplatePacket *templ,
     PACKET_QUEUE *packet_buffers,
     PACKET_QUEUE *transmit_queue,
-    unsigned ip_them, unsigned ip_me,
+    ipaddress ip_them, ipaddress ip_me,
     unsigned port_them, unsigned port_me,
     unsigned seqno_them, unsigned seqno_me
 )
@@ -959,7 +1005,7 @@ LOGSEND(struct TCP_Control_Block *tcb, const char *what)
 void
 tcpcon_send_FIN(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them)
 {
@@ -983,7 +1029,7 @@ tcpcon_send_FIN(
 void
 tcpcon_send_RST(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them)
 {
@@ -1000,7 +1046,7 @@ tcpcon_send_RST(
     tcb.seqno_them = seqno_them + 1;
     tcb.ackno_them = ackno_them;
     
-    LOGSEND(&tcb, "peer(RST) fake");
+    LOGSEND(&tcb, "send RST");
     tcpcon_send_packet(tcpcon, &tcb, 0x04, 0, 0, 0);
 }
 
@@ -1039,8 +1085,8 @@ handle_ack(
     uint32_t ackno)
 {
 
-    LOG(4,  "%u.%u.%u.%u - %u-sending, %u-reciving\n",
-            (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF,
+    LOG(4,  "%s - %u-sending, %u-reciving\n",
+            ipaddress_fmt(tcb->ip_them).string,
             tcb->seqno_me - ackno,
             ackno - tcb->ackno_them
             );
@@ -1053,10 +1099,10 @@ handle_ack(
     /* Make sure this isn't a duplicate ACK from past
      * WRAPPING of 32-bit arithmetic happens here */
     if (ackno - tcb->ackno_them > 10000) {
-        LOG(4,  "%u.%u.%u.%u - "
+        LOG(4,  "%s - "
                 "tcb: ackno from past: "
                 "old ackno = 0x%08x, this ackno = 0x%08x\n",
-                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF,
+                ipaddress_fmt(tcb->ip_them).string,
                 tcb->ackno_me, ackno);
         return 0;
     }
@@ -1064,10 +1110,10 @@ handle_ack(
     /* Make sure this isn't invalid ACK from the future
      * WRAPPING of 32-bit arithmatic happens here */
     if (tcb->seqno_me - ackno > 10000) {
-        LOG(4, "%u.%u.%u.%u - "
+        LOG(4, "%s - "
                 "tcb: ackno from future: "
                 "my seqno = 0x%08x, their ackno = 0x%08x\n",
-                (tcb->ip_them>>24)&0xFF, (tcb->ip_them>>16)&0xFF, (tcb->ip_them>>8)&0xFF, (tcb->ip_them>>0)&0xFF,
+                ipaddress_fmt(tcb->ip_them).string,
                 tcb->seqno_me, ackno);
         return 0;
     }
@@ -1328,7 +1374,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     break;
                 case TCP_WHAT_SYNACK:
                     /* Send "ACK" to acknowlege their "SYN-ACK" */
-                    LOGSEND(tcb, "peer(ACK)");
+                    LOGSEND(tcb, "peer(ACK) [acknowledge SYN-ACK 1]");
                     tcpcon_send_packet(tcpcon, tcb,
                                        0x10,
                                        0, 0, 0);
@@ -1344,7 +1390,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     break;
                 case TCP_WHAT_SYNACK:
                     /* Send "ACK" to acknowlege their "SYN-ACK" */
-                    LOGSEND(tcb, "peer(ACK)");
+                    LOGSEND(tcb, "peer(ACK) [acknowledge SYN-ACK 2]");
                     tcpcon_send_packet(tcpcon, tcb,
                                        0x10, /* ACK */
                                        0, 0, 0);
@@ -1453,7 +1499,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_DATA:
                     
                     if ((unsigned)(tcb->seqno_them - seqno_them) > payload_length)  {
-                        LOGSEND(tcb, "peer(ACK)");
+                        LOGSEND(tcb, "peer(ACK) [acknowledge payload 1]");
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x10,
                                            0, 0, 0);
@@ -1467,7 +1513,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     }
                     
                     if (payload_length == 0) {
-                        LOGSEND(tcb, "peer(ACK)");
+                        LOGSEND(tcb, "peer(ACK) [acknowledge empty data]");
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x10,
                                            0, 0, 0);
@@ -1478,7 +1524,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     application(tcpcon, tcb, APP_RECV_PAYLOAD, payload, payload_length, secs, usecs);
                     
                     /* Send ack for the data */
-                    LOGSEND(tcb, "peer(ACK)");
+                    LOGSEND(tcb, "peer(ACK) [acknowledge payload 2]");
                     tcpcon_send_packet(tcpcon, tcb,
                                        0x10,
                                        0, 0, 0);
@@ -1536,7 +1582,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                     break;
                 case TCP_WHAT_FIN:
                     tcb->seqno_them = seqno_them + 1;
-                    LOGSEND(tcb, "peer(ACK)");
+                    LOGSEND(tcb, "peer(ACK) [acknowledge FIN]");
                     tcpcon_send_packet(tcpcon, tcb,
                                        0x10,
                                        0, 0, 0);
@@ -1555,6 +1601,10 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
             }
             break;
 
+        case STATE_LAST_ACK:
+            LOGip(1, tcb->ip_them, tcb->port_them, "=%s : %s                  \n", state_to_string(tcb->tcpstate), what_to_string(what));
+            //LOG(1, "TCP-state: unknown state\n");
+            break;
         default:
             LOG(1, "TCP-state: unknown state\n");
     }

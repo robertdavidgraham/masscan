@@ -25,6 +25,8 @@ masscan_initialize_adapter(
     char *ifname;
     char ifname2[256];
     unsigned adapter_ip = 0;
+    unsigned is_usable_ipv4 = (masscan->targets_ipv4.count == 0);
+    unsigned is_usable_ipv6 = (masscan->targets_ipv6.count == 0);
     
     if (masscan == NULL)
         return -1;
@@ -55,34 +57,70 @@ masscan_initialize_adapter(
     LOG(2, "if: interface=%s\n", ifname);
 
     /*
-     * IP ADDRESS
+     * IPv4 ADDRESS
      *
      * We need to figure out that IP address to send packets from. This
      * is done by querying the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
-    adapter_ip = masscan->nic[index].src.ip.first;
-    if (adapter_ip == 0) {
-        adapter_ip = rawsock_get_adapter_ip(ifname);
-        masscan->nic[index].src.ip.first = adapter_ip;
-        masscan->nic[index].src.ip.last = adapter_ip;
-        masscan->nic[index].src.ip.range = 1;
+    if (1 || masscan->targets_ipv4.count) {
+        adapter_ip = masscan->nic[index].src.ip.first;
+        if (adapter_ip == 0) {
+            adapter_ip = rawsock_get_adapter_ip(ifname);
+            masscan->nic[index].src.ip.first = adapter_ip;
+            masscan->nic[index].src.ip.last = adapter_ip;
+            masscan->nic[index].src.ip.range = 1;
+        }
+        if (adapter_ip == 0) {
+            fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n",
+                            ifname);
+            fprintf(stderr, " [hint] did you spell the name correctly?\n");
+            fprintf(stderr, " [hint] if it has no IP address, manually set with something like "
+                            "\"--adapter-ip 192.168.100.5\"\n");
+            if (masscan->targets_ipv4.count)
+                return -1;
+        }
+        LOG(2, "if:%s: adapter-ip=%u.%u.%u.%u\n",
+            ifname,
+            (adapter_ip>>24)&0xFF,
+            (adapter_ip>>16)&0xFF,
+            (adapter_ip>> 8)&0xFF,
+            (adapter_ip>> 0)&0xFF
+            );
+        if (adapter_ip != 0)
+            is_usable_ipv4 = 1;
     }
-    if (adapter_ip == 0) {
-        fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n",
-                        ifname);
-        fprintf(stderr, " [hint] did you spell the name correctly?\n");
-        fprintf(stderr, " [hint] if it has no IP address, manually set with "
-                        "\"--adapter-ip 192.168.100.5\"\n");
-        return -1;
+        
+
+    /*
+     * IPv6 ADDRESS
+     *
+     * We need to figure out that IPv6 address to send packets from. This
+     * is done by querying the adapter (or configured by user). If the
+     * adapter doesn't have one, then the user must configure one.
+     */
+    if (masscan->targets_ipv6.count) {
+        ipv6address adapter_ipv6 = masscan->nic[index].src.ipv6.first;
+        if (ipv6address_is_zero(adapter_ipv6)) {
+            adapter_ipv6 = rawsock_get_adapter_ipv6(ifname);
+            masscan->nic[index].src.ipv6.first = adapter_ipv6;
+            masscan->nic[index].src.ipv6.last = adapter_ipv6;
+            masscan->nic[index].src.ipv6.range = 1;
+        }
+        if (ipv6address_is_zero(adapter_ipv6)) {
+            fprintf(stderr, "FAIL: failed to detect IPv6 address of interface \"%s\"\n",
+                            ifname);
+            fprintf(stderr, " [hint] did you spell the name correctly?\n");
+            fprintf(stderr, " [hint] if it has no IP address, manually set with something like "
+                            "\"--adapter-ip 2001:3b8::1234\"\n");
+            return -1;
+        }
+        LOG(2, "if:%s: adapter-ip=[%s]\n", ifname, ipv6address_fmt(adapter_ipv6).string);
+        is_usable_ipv6 = 1;
     }
-    LOG(2, "if:%s: adapter-ip=%u.%u.%u.%u\n",
-        ifname,
-        (adapter_ip>>24)&0xFF,
-        (adapter_ip>>16)&0xFF,
-        (adapter_ip>> 8)&0xFF,
-        (adapter_ip>> 0)&0xFF
-        );
+
+    masscan->nic[index].is_usable = (is_usable_ipv4 & is_usable_ipv6);
+
 
     /*
      * MAC ADDRESS

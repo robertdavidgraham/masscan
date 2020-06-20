@@ -1,5 +1,6 @@
 #ifndef MASSCAN_H
 #define MASSCAN_H
+#include "ipv6address.h"
 #include "string_s.h"
 #include "main-src.h"
 #include <string.h>
@@ -133,6 +134,7 @@ struct Masscan
         unsigned char my_mac_count; /*is there a MAC address? */
         unsigned vlan_id;
         unsigned is_vlan:1;
+        unsigned is_usable:1;
     } nic[8];
     unsigned nic_count;
 
@@ -141,7 +143,7 @@ struct Masscan
      * The user can specify anything here, and we'll resolve all overlaps
      * and such, and sort the target ranges.
      */
-    struct RangeList targets;
+    struct RangeList targets_ipv4;
     struct Range6List targets_ipv6;
 
     /**
@@ -399,7 +401,7 @@ struct Masscan
     char *bpf_filter;
 
     struct {
-        unsigned ip;
+        ipaddress ip;
         unsigned port;
     } redis;
 

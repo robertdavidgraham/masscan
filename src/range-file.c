@@ -19,8 +19,8 @@ struct RangeParser
     unsigned begin;
     unsigned end;
     struct {
-        unsigned char begin[16];
-        unsigned char end[16];
+        ipv6address _begin;
+        ipv6address _end;
         unsigned short tmp[8];
         unsigned char index;
         unsigned char ellision_index;
@@ -37,7 +37,8 @@ rangeparse_create(void)
     struct RangeParser *result;
     
     result = CALLOC(1, sizeof(*result));
-    result->line_number = 1;    
+    result->line_number = 1;
+    result->ipv6.ellision_index = 8;
     return result;
 }
 
@@ -58,21 +59,17 @@ rangeparse_err(struct RangeParser *p, unsigned long long *line_number, unsigned 
     *charindex = p->char_number;
 }
 
-static void
-ipv6_init(struct RangeParser *p)
-{
-    memset(&p->ipv6, 0, sizeof(p->ipv6));
-}
 
 
 static unsigned
-ipv6_finish_number(struct RangeParser *p, unsigned char c)
+ipv6_finish_address(struct RangeParser *p)
 {
     unsigned index = p->ipv6.index;
     unsigned ellision = p->ipv6.ellision_index;
     
+
     /* We must have seen 8 numbers, or an ellision */
-    if (index < 7 && ellision >= 8)
+    if (index < 8 && ellision >= 8)
         return 1;
     
     /* Handle ellision */
@@ -84,71 +81,129 @@ ipv6_finish_number(struct RangeParser *p, unsigned char c)
     memset(
         &p->ipv6.tmp[ellision],
         0,
-        sizeof(p->ipv6.tmp[0]) * (7 - index)
+        sizeof(p->ipv6.tmp[0]) * (8 - index)
     );
     
-    /* Copy over to begin/end */
-    if (p->ipv6.is_second)
-        memcpy(p->ipv6.end, p->ipv6.tmp, sizeof(p->ipv6.end));
-    else
-        memcpy(p->ipv6.begin, p->ipv6.tmp, sizeof(p->ipv6.begin));
+    /* Copy over to begin/end. We parse the address as a series of 16-bit
+     * integers, but return the result as two 64-bit integers */
+    {
+        ipv6address a;
+        a.hi = (uint64_t)p->ipv6.tmp[0] << 48ULL
+                | (uint64_t)p->ipv6.tmp[1] << 32ULL
+                | (uint64_t)p->ipv6.tmp[2] << 16ULL
+                | (uint64_t)p->ipv6.tmp[3] << 0ULL;
+        a.lo = (uint64_t)p->ipv6.tmp[4] << 48ULL
+                | (uint64_t)p->ipv6.tmp[5] << 32ULL
+                | (uint64_t)p->ipv6.tmp[6] << 16ULL
+                | (uint64_t)p->ipv6.tmp[7] << 0ULL;
+        if (p->ipv6.is_second)
+            p->ipv6._end = a;
+        else {
+            p->ipv6._begin = a;
+
+            /* Set this here in case there is no 'end' address */
+            p->ipv6._end = a;
+        }
+    }
+
+    /* Reset the parser */
+    p->ipv6.ellision_index = 8;
+    p->ipv6.index = 0;
+    p->ipv6.is_second = 1;
 
     return 0;
 }
 
 /***************************************************************************
+ * We store the IPv6 addresses that we are building inside the 'state'
+ * of the state-machine. This function copies them out of the opaque
+ * state into discrete values.
  ***************************************************************************/
 static void
-rangeparse_getipv6(struct RangeParser *p, ipv6address *begin, ipv6address *end)
+rangeparse_getipv6(struct RangeParser *state, ipv6address *begin, ipv6address *end)
 {
-    const unsigned char *address;
-    
-    address = p->ipv6.begin;
-    begin->hi =    (((uint64_t)address[0]) << 56ULL)
-    | ((uint64_t)address[1] << 48ULL)
-    | ((uint64_t)address[2] << 40ULL)
-    | ((uint64_t)address[3] << 32ULL)
-    | ((uint64_t)address[4] << 24ULL)
-    | ((uint64_t)address[5] << 16ULL)
-    | ((uint64_t)address[6] <<  8ULL)
-    | ((uint64_t)address[7] <<  0ULL);
-    begin->lo =    ((uint64_t)address[ 8] << 56ULL)
-    | ((uint64_t)address[ 9] << 48ULL)
-    | ((uint64_t)address[10] << 40ULL)
-    | ((uint64_t)address[11] << 32ULL)
-    | ((uint64_t)address[12] << 24ULL)
-    | ((uint64_t)address[13] << 16ULL)
-    | ((uint64_t)address[14] <<  8ULL)
-    | ((uint64_t)address[15] <<  0ULL);
-    
-    memcpy(end, begin, sizeof(*begin));
+    *begin = state->ipv6._begin;
+    *end = state->ipv6._end;
 }
 
+enum RangeState {
+    LINE_START, ADDR_START,
+    COMMENT,
+    NUMBER0, NUMBER1, NUMBER2, NUMBER3, NUMBER_ERR,
+    SECOND0, SECOND1, SECOND2, SECOND3, SECOND_ERR,
+    CIDR,
+    UNIDASH1, UNIDASH2,
+    IPV6_BEGIN, IPV6_COLON, IPV6_CIDR, IPV6_ENDBRACKET, 
+    IPV6_END,
+    ERROR
+};
+
 /***************************************************************************
+ * When we start parsing an address, we don't know whether it's going to 
+ * be IPv4 or IPv6. We assume IPv4, but when we hit a condition indicating
+ * that it's IPv6 instead, we need change the temporary number we 
+ * are working on from decimal to hex, then move from the middle of 
+ * parsing an IPv4 address to the middle of parsing an IPv6 address.
  ***************************************************************************/
 static int
-rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offset, size_t length,
+change_to_ipv6(struct RangeParser *p, int old_state)
+{
+    unsigned num = p->tmp;
+
+    num = ((num/1000)%10) * 16 * 16 * 16
+        + ((num/100)%10) * 16 * 16
+        + ((num/10)%10) * 16
+        + (num % 10);
+    
+    //printf("%u -> 0x%x\n", p->tmp, num);
+    p->tmp = num;
+    return old_state;
+}
+
+
+enum {
+    IPV4_n, IPV4_nn, IPV4_nnn, IPV4_nnn_, 
+    IPV4_nnn_n, IPV4_nnn_nn, IPV4_nnn_nnn, IPV4_nnn_nnn_, 
+    IPV4_nnn_nnn_n, IPV4_nnn_nnn_nn, IPV4_nnn_nnn_nnn, IPV4_nnn_nnn_nnn_,
+    IPV4_nnn_nnn_nnn_n, IPV4_nnn_nnn_nnn_nn, IPV4_nnn_nnn_nnn_nnn, IPV4_nnn_nnn_nnn_nnn_,
+    IPV4e_n, IPV4e_nn, IPV4e_nnn, IPV4e_nnn_, 
+    IPV4e_nnn_n, IPV4e_nnn_nn, IPV4e_nnn_nnn, IPV4e_nnn_nnn_, 
+    IPV4e_nnn_nnn_n, IPV4e_nnn_nnn_nn, IPV4e_nnn_nnn_nnn, IPV4e_nnn_nnn_nnn_,
+    IPV4e_nnn_nnn_nnn_n, IPV4e_nnn_nnn_nnn_nn, IPV4e_nnn_nnn_nnn_nnn, IPV4e_nnn_nnn_nnn_nnn_,
+
+
+};
+
+/***************************************************************************
+ * Parse the next IPv4/IPv6 address from a text stream, using a
+ * 'state-machine parser'.
+ ***************************************************************************/
+static enum {Still_Working, Found_Error, Found_IPv4, Found_IPv6}
+rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t length,
                 unsigned *r_begin, unsigned *r_end)
 {
-    size_t i = *r_offset;
-    enum RangeState {
-        LINE_START, ADDR_START,
-        COMMENT,
-        NUMBER0, NUMBER1, NUMBER2, NUMBER3, NUMBER_ERR,
-        SECOND0, SECOND1, SECOND2, SECOND3, SECOND_ERR,
-        CIDR,
-        UNIDASH1, UNIDASH2,
-        IPV6_NUM, IPV6_COLON, IPV6_CIDR, IPV6_ENDBRACKET,
-        ERROR
-    } state = p->state;
-    int result = 0;
-    
+    size_t i = r_offset?(*r_offset):0;
+    enum RangeState state = p->state;
+    int result = Still_Working;
+
+    /* The 'offset' parameter is optional. If NULL, then set it to zero */
+    if (r_offset)
+        i = *r_offset;
+    else
+        i = 0;
+
     while (i < length) {
         unsigned char c = buf[i++];
+
         p->char_number++;
         switch (state) {
             case LINE_START:
             case ADDR_START:
+                p->ipv6.ellision_index = 8;
+                p->ipv6.index = 0;
+                p->ipv6.is_bracket = 0;
+                p->ipv6.is_second = 0;
+                p->digit_count = 0;
                 switch (c) {
                     case ' ': case '\t': case '\r':
                         /* ignore leading whitespace */
@@ -168,21 +223,18 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                         state = NUMBER0;
                         break;
                     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-                        ipv6_init(p);
                         p->tmp = (c - 'a' + 10);
                         p->digit_count = 1;
-                        state = IPV6_NUM;
+                        state = IPV6_BEGIN;
                         break;
                     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-                        ipv6_init(p);
                         p->tmp = (c - 'A' + 10);
                         p->digit_count = 1;
-                        state = IPV6_NUM;
+                        state = IPV6_BEGIN;
                         break;
                     case '[':
-                        ipv6_init(p);
                         p->ipv6.is_bracket = 1;
-                        state = IPV6_NUM;
+                        state = IPV6_BEGIN;
                         break;
                     default:
                         state = ERROR;
@@ -203,8 +255,11 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                     }
                     break;
                 }
+                state = IPV6_BEGIN;
+
                 /* drop down */
-            case IPV6_NUM:
+            case IPV6_BEGIN:
+            case IPV6_END:
                 switch (c) {
                     case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
@@ -239,7 +294,7 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             state = ERROR;
                             length = i;
                         } else {
-                            p->ipv6.tmp[p->ipv6.index++] = p->tmp;
+                            p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
                             state = IPV6_COLON;
                         }
                         break;
@@ -252,22 +307,31 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                     case ',':
                     case '-':
                         /* All the things that end an IPv6 address */
-                        p->ipv6.tmp[p->ipv6.index++] = p->tmp;
-                        if (ipv6_finish_number(p, c) != 0) {
+                        p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
+                        if (ipv6_finish_address(p) != 0) {
                             state = ERROR;
                             length = i;
                             break;
+                        } else {
+                            state = IPV6_END;
+                            result = Found_Error;
+                            length = i;
                         }
+
                         switch (c) {
                             case '/':
+                                result = Still_Working;
                                 state = IPV6_CIDR;
                                 break;
                             case ']':
                                 if (!p->ipv6.is_bracket) {
+                                    result = Found_Error;
                                     state = ERROR;
                                     length = i;
                                 } else {
                                     state = IPV6_ENDBRACKET;
+                                    result = Still_Working;
+                                    length = i; /* break out of loop */
                                 }
                                 break;
                             case '\n':
@@ -278,8 +342,15 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             case '\t':
                             case '\r':
                             case ',':
+                                result = Found_IPv6;
+                                state = 0;
                                 /* Return the address */
+                                length = i; /* break out of loop */
+                                break;
+
                             case '-':
+                                result = Still_Working;
+                                /* Continue parsing the next IPv6 address */
                                 break;
                         }
                         break;
@@ -289,6 +360,37 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                         break;
                 }
                 break;
+            case IPV6_ENDBRACKET:
+                switch (c) {
+                    case '/':
+                        result = Found_IPv6;
+                        state = IPV6_CIDR;
+                        break;
+                    case '\n':
+                        p->line_number++;
+                        p->char_number = 0;
+                        /* drop down */
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case ',':
+                        /* We have found a single address, so return that address */
+                        result = Found_IPv6;
+                        state = 0;
+                        length = i;
+                        break;
+                    case '-':
+                        result = Still_Working;
+                        state = IPV6_END;
+                        break;
+                    default:
+                    case ']':
+                        result = Found_Error;
+                        state = ERROR;
+                        length = i;
+                        break;
+                }
+
             case COMMENT:
                 if (c == '\n') {
                     state = LINE_START;
@@ -340,7 +442,7 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             }
                             *r_begin = p->begin;
                             *r_end = p->end;
-                            result = 1;
+                            result = Found_IPv4;
                         }
                         break;
                     default:
@@ -398,17 +500,32 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                         break;
                     case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
-                        if (p->digit_count == 3) {
-                            state = ERROR;
-                            length = i; /* break out of loop */
-                        } else {
-                            p->digit_count++;
-                            p->tmp = p->tmp * 10 + (c - '0');
-                            if (p->tmp > 255) {
+                        p->digit_count++;
+                        p->tmp = p->tmp * 10 + (c - '0');
+                        if (p->tmp > 255 || p->digit_count > 3) {
+                            if (state == NUMBER0) {
+                                /* Assume that we've actually got an
+                                 * IPv6 number */
+                                state = change_to_ipv6(p, state);
+                                state = IPV6_BEGIN;
+                            } else {
                                 state = ERROR;
                                 length = i;
                             }
-                            continue;
+                        }
+                        continue;
+                        break;
+                    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+                    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+                        if (state == NUMBER0 || state == SECOND0) {
+                            /* Assume that we've actually got an
+                             * IPv6 number */
+                            state = change_to_ipv6(p, state);
+                            state = IPV6_BEGIN;
+                            i--; /* go back one character */
+                        } else {
+                            state = ERROR;
+                            length = i; /* break out of loop */
                         }
                         break;
                     case 0xe2:
@@ -445,6 +562,13 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                         }
                         break;
                     case ':':
+                        if (state == NUMBER0) {
+                            /* Assume this is an IPv6 address instead of an IPv4 address */
+                            state = change_to_ipv6(p, state);
+                            state = IPV6_BEGIN;
+                            i--;
+                            break;
+                        }
                     case ',':
                     case ' ':
                     case '\t':
@@ -464,7 +588,7 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             }
                             *r_begin = p->begin;
                             *r_end = p->end;
-                            result = 1;
+                            result = Found_IPv4;
                         } else if (state == SECOND3) {
                             p->end = (p->addr << 8) | p->tmp;
                             p->tmp = 0;
@@ -478,7 +602,7 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                             }
                             *r_begin = p->begin;
                             *r_end = p->end;
-                            result = 1;
+                            result = Found_IPv4;
                         } else {
                             state = NUMBER_ERR;
                             length = i;
@@ -500,11 +624,15 @@ rangeparse_next(struct RangeParser *p, const unsigned char *buf, size_t *r_offse
                 break;
         }
     }
-    
-    *r_offset = i;
+
+    /* The 'offset' parameter is optional. If NULL, then 
+     * we don't return a value */
+    if (r_offset)
+        *r_offset = i;
+
     p->state = state;
     if (state == ERROR || state == NUMBER_ERR || state == SECOND_ERR)
-        result = -1;
+        result = Found_Error;
     return result;
 }
 
@@ -528,37 +656,37 @@ rangefile_test_error(const char *buf, unsigned long long in_line_number, unsigne
 
     /* test the entire buffer */
     p = rangeparse_create();
-    x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &out_begin, &out_end);
-    if (!(x < 0))
+    x = rangeparse_next(p, buf, &offset, length, &out_begin, &out_end);
+    if (x != Found_Error)
         goto fail;
     rangeparse_err(p, &out_line_number, &out_char_number);
-    rangeparse_destroy(p);
     if (in_line_number != out_line_number || in_char_number != out_char_number)
         goto fail;
 
     /* test one byte at a time */
+    rangeparse_destroy(p);
     p = rangeparse_create();
     offset = 0;
     out_begin = 0xa3a3a3a3;
     out_end  = 0xa3a3a3a3;
     is_found = false;
+    x = 0;
     while (offset < length) {
-        x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &out_begin, &out_end);
-        if (x == 0 || x > 1)
-            continue;
-        is_found = true;
-        rangeparse_err(p, &out_line_number, &out_char_number);
-        if (in_line_number != out_line_number || in_char_number != out_char_number)
-            goto fail;
-        else
+        x = rangeparse_next(p, buf, &offset, offset+1, &out_begin, &out_end);
+        if (x == Found_Error)
             break;
     }
-    rangeparse_destroy(p);
-    if (!is_found)
+    if (x != Found_Error)
+        goto fail;
+    rangeparse_err(p, &out_line_number, &out_char_number);
+
+    if (in_line_number != out_line_number || in_char_number != out_char_number)
         goto fail;
 
+    rangeparse_destroy(p);
     return 0;
 fail:
+    rangeparse_destroy(p);
     fprintf(stderr, "[-] rangefile test fail, line=%u\n", which_test);
     return 1;
 }
@@ -569,7 +697,7 @@ int
 rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6)
 {
     struct RangeParser *p;
-    unsigned char buf[65536];
+    char buf[65536];
     FILE *fp = NULL;
     int err;
     bool is_error = false;
@@ -598,6 +726,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
     while (!is_error) {
         size_t count;
         size_t offset;
+        unsigned long long line_number, char_number;
 
         count = fread(buf, 1, sizeof(buf), fp);
         if (count <= 0)
@@ -605,22 +734,37 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
 
         offset = 0;
         while (offset < count) {
-            int x;
+            int err;
             unsigned begin, end;
 
-            x = rangeparse_next(p, buf, &offset, count, &begin, &end);
-            if (x < 0) {
-                unsigned long long line_number, char_number;
+            err = rangeparse_next(p, buf, &offset, count, &begin, &end);
+            switch (err) {
+            case Still_Working:
+                if (offset < count) {
+                    /* We reached this somehow in the middle of the buffer, but
+                     * this return is only possible at the end of the buffer */
+                    fprintf(stderr, "[-] rangeparse_next(): unknown coding failure\n");
+                }
+                break;
+            case Found_Error:
+            default:
                 rangeparse_err(p, &line_number, &char_number);
                 fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
                 is_error = true;
+                count = offset;
                 break;
-            } else if (x == 1) {
+            case Found_IPv4:
                 rangelist_add_range(targets_ipv4, begin, end);
                 addr_count++;
-            } else if (x == 0) {
-                if (offset < count)
-                    fprintf(stderr, "[-] fail\n");
+                break;
+            case Found_IPv6:
+                {
+                    ipv6address found_begin, found_end;
+                    rangeparse_getipv6(p, &found_begin, &found_end);
+                    range6list_add_range(targets_ipv6, found_begin, found_end);
+                    addr_count++;
+                }
+                break;
             }
         }
     }
@@ -632,7 +776,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
         int x;
         size_t offset = 0;
         unsigned begin, end;
-        x = rangeparse_next(p, (const unsigned char *)"\n", &offset, 1, &begin, &end);
+        x = rangeparse_next(p, "\n", &offset, 1, &begin, &end);
         if (x < 0) {
             unsigned long long line_number, char_number;
             rangeparse_err(p, &line_number, &char_number);
@@ -664,101 +808,152 @@ rangefile_test_buffer(const char *buf, unsigned in_begin, unsigned in_end)
 {
     size_t length = strlen(buf);
     size_t offset = 0;
-    struct RangeParser *p;
+    struct RangeParser *state;
     unsigned out_begin = 0xa3a3a3a3;
     unsigned out_end  = 0xa3a3a3a3;
-    int x;
+    int err;
     bool is_found = false;
 
     /* test the entire buffer */
-    p = rangeparse_create();
-    x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &out_begin, &out_end);
-    if (x != 1)
-        return 1; /*fail*/
-    if (in_begin != out_begin || in_end != out_end)
-        return 1; /*fail*/
-    rangeparse_destroy(p);
+    state = rangeparse_create();
+    err = rangeparse_next(state, buf, &offset, length, &out_begin, &out_end);
+    switch (err) {
+    case Found_IPv4:
+        if (in_begin != out_begin || in_end != out_end)
+            goto fail;
+        break;
+    case Still_Working:
+        /* Found a partial address, which is a normal result in the 
+         * real world at buffer boundaries, but which is an error
+         * here */
+        goto fail;
+    case Found_Error:
+    case Found_IPv6:
+    default:
+        goto fail;
+    }
+    rangeparse_destroy(state);
 
     /* test one byte at a time */
-    p = rangeparse_create();
+    state = rangeparse_create();
     offset = 0;
     out_begin = 0xa3a3a3a3;
     out_end  = 0xa3a3a3a3;
     is_found = false;
     while (offset < length) {
-        x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &out_begin, &out_end);
-        if (x == 0)
-            continue;
-        if (x < 0)
-            return 1; /*fail*/
-        is_found = true;    
-        if (in_begin != out_begin || in_end != out_end)
-            return 1; /*fail*/
+        err = rangeparse_next(state, buf, &offset, length, &out_begin, &out_end);
+        switch (err) {
+        case Still_Working:
+            continue; /* the normal case */
+        case Found_IPv4:
+            is_found = true;    
+            if (in_begin != out_begin || in_end != out_end)
+                goto fail;
+            break;
+        case Found_Error:
+        case Found_IPv6:
+        default:
+            goto fail;
+        }
     }
-    rangeparse_destroy(p);
     if (!is_found)
-        return 1; /*fail*/
+        goto fail;
 
-    return 0;
+    rangeparse_destroy(state);
+    return 0; /* success */
+fail:
+    rangeparse_destroy(state);
+    return 1; /* failure */
 }
 
 /***************************************************************************
  ***************************************************************************/
 static int
-rangefile6_test_buffer(const char *buf,
-                       uint64_t in_begin_hi,
-                       uint64_t in_begin_lo,
-                       uint64_t in_end_hi,
-                       uint64_t in_end_lo)
+rangefile6_test_buffer(struct RangeParser *parser,
+                       const char *buf,
+                       uint64_t expected_begin_hi,
+                       uint64_t expected_begin_lo,
+                       uint64_t expected_end_hi,
+                       uint64_t expected_end_lo)
 {
     size_t length = strlen(buf);
     size_t offset = 0;
-    struct RangeParser *p;
-    ipv6address out_begin = {1,2};
-    ipv6address out_end = {1,2};
+    ipv6address found_begin = {1,2};
+    ipv6address found_end = {1,2};
     unsigned tmp1, tmp2;
-    int x;
-    bool is_found = false;
+    int err;
     
     /* test the entire buffer */
-    p = rangeparse_create();
-    x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &tmp1, &tmp2);
-    if (x != 2)
-        return 1; /*fail*/
-    rangeparse_getipv6(p, &out_begin, &out_end);
-    if (out_begin.hi != in_begin_hi || out_begin.lo != in_begin_lo)
-        return 1; /*fail*/
-    if (out_end.hi != in_end_hi || out_end.lo != in_end_lo)
-        return 1; /*fail*/
-    rangeparse_destroy(p);
+    err = rangeparse_next(parser, buf, &offset, length, &tmp1, &tmp2);
+    if (err == Still_Working)
+        err = rangeparse_next(parser, "\n", 0, 1, &tmp1, &tmp2);
+    switch (err) {
+    case Found_IPv6:
+        /* Extract the resulting IPv6 address from the state structure */
+        rangeparse_getipv6(parser, &found_begin, &found_end);
     
-    /* test one byte at a time */
-    p = rangeparse_create();
-    offset = 0;
-    out_begin.hi = 1;
-    out_begin.lo = 2;
-    out_end.hi = 1;
-    out_end.lo = 2;
-    is_found = false;
-    while (offset < length) {
-        x = rangeparse_next(p, (const unsigned char *)buf, &offset, length, &tmp1, &tmp2);
-        if (x == 0)
-            continue;
-        if (x != 2)
-            return 1; /*fail*/
-        is_found = true;
-        rangeparse_getipv6(p, &out_begin, &out_end);
-        if (out_begin.hi != in_begin_hi || out_begin.lo != in_begin_lo)
-            return 1; /*fail*/
-        if (out_end.hi != in_end_hi || out_end.lo != in_end_lo)
-            return 1; /*fail*/
+        /* Test to see if the parsed address equals the expected address */
+        if (found_begin.hi != expected_begin_hi || found_begin.lo != expected_begin_lo)
+            goto fail;
+        if (found_end.hi != expected_end_hi || found_end.lo != expected_end_lo)
+            goto fail;
+        break;
+    case Found_IPv4:
+        if (expected_begin_hi != 0 || expected_end_hi != 0)
+            goto fail;
+        if (tmp1 != expected_begin_lo || tmp2 != expected_end_lo)
+            goto fail;
+        break;
+    case Still_Working:
+        /* Found a partial address, which is a normal result in the 
+         * real world at buffer boundaries, but which is an error
+         * here */
+        goto fail;
+    case Found_Error:
+    default:
+        goto fail;
     }
-    rangeparse_destroy(p);
-    if (!is_found)
-        return 1; /*fail*/
-    
-    return 0;
+
+    return 0; /* success */
+fail:
+    return 1; /* failure */
 }
+
+/***************************************************************************
+ * List of test cases. Each test case contains three parts:
+ * - the string representation of an address, as read from a file, meaning
+ *   that it can contain additional things like comment strings
+ * - the first address of a range, which in the case of IPv6 addresses
+ *   will be two 64-bit numbers, but an IPv4 address have a high-order
+ *   number set to zero and the low-order number set to the IPv4 address
+ * - the second address of a range, which in the case of individual
+ *   addresses, will be equal to the first number
+ ***************************************************************************/
+struct {
+    const char *string;
+    uint64_t begin_hi;
+    uint64_t begin_lo;
+    uint64_t end_hi;
+    uint64_t end_lo;
+} test_cases[] = {
+    {"22ab::1", 0x22ab000000000000ULL, 1ULL, 0x22ab000000000000ULL, 1ULL},
+    {"240e:33c:2:c080:d08:d0e:b53:e74e", 0x240e033c0002c080ULL, 0x0d080d0e0b53e74e, 0x240e033c0002c080, 0x0d080d0e0b53e74e},
+    {"2a03:90c0:105::9", 0x2a0390c001050000ULL, 9ULL, 0x2a0390c001050000ULL, 9ULL},
+    {"2a03:9060:0:400::2", 0x2a03906000000400ULL, 2ULL, 0x2a03906000000400, 2ULL},
+    {"2c0f:ff00:0:a:face:b00c:0:a7", 0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL, 0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL, },
+    {"2a01:5b40:0:4a01:0:e21d:789f:59b1", 0x2a015b4000004a01ULL, 0x0000e21d789f59b1, 0x2a015b4000004a01ULL, 0x0000e21d789f59b1},
+    {"2001:1200:10::1", 0x2001120000100000ULL, 1ULL, 0x2001120000100000ULL, 1ULL},
+    {"fec0:0:0:ffff::1", 0xfec000000000ffffULL, 1ULL, 0xfec000000000ffffULL, 1ULL},
+    {"1234:5678:9abc:def0:0fed:cba9:8765:4321", 0x123456789abcdef0ULL, 0x0fedcba987654321ULL, 0x123456789abcdef0ULL, 0x0fedcba987654321ULL},
+    {"[1234:5678:9abc:def0:0fed:cba9:8765:4321]", 0x123456789abcdef0ULL, 0x0fedcba987654321ULL, 0x123456789abcdef0ULL, 0x0fedcba987654321ULL},
+    {"[1111:2222:3333:4444:5555:6666:7777:8888]", 0x1111222233334444ULL, 0x5555666677778888ULL, 0x1111222233334444ULL, 0x5555666677778888ULL},
+    {"1::1", 0x0001000000000000ULL, 1ULL, 0x0001000000000000ULL, 1ULL},
+    {"1.2.3.4", 0, 0x01020304, 0, 0x01020304},
+    {"#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0, 0x6156a2a1, 0, 0x6156a2af},
+    {"1.2.3.4/24\n", 0, 0x01020300, 0, 0x010203ff},
+    {" 1.2.3.4-1.2.3.5\n", 0, 0x01020304, 0, 0x01020305},
+    {0,0,0,0,0}
+};
 
 /***************************************************************************
  * Called during "make test" to run a regression test over this module.
@@ -767,28 +962,34 @@ int
 rangefile_selftest(void)
 {
     int x = 0;
+    size_t i;
+    struct RangeParser *parser;
 
-    /*x += rangefile6_test_buffer("#test\n  1111:2222:3333:4444:5555:6666:7777:8888\n",
-                               0x1111222233334444ULL,
-                               0x5555666677778888ULL,
-                               0x1111222233334444ULL,
-                               0x5555666677778888ULL
-                               );*/
+    /* Run through the test cases, stopping at the first failure */
+    parser = rangeparse_create();
+    for (i=0; test_cases[i].string; i++) {
+        x += rangefile6_test_buffer(parser,
+                                    test_cases[i].string, 
+                                    test_cases[i].begin_hi,
+                                    test_cases[i].begin_lo,
+                                    test_cases[i].end_hi,
+                                    test_cases[i].end_lo);
+        if (x) {
+            fprintf(stderr, "[-] parse IP address: test failed on string: %s\n", test_cases[i].string);
+            break;
+        }
+    }
+    rangeparse_destroy(parser);
 
-    x += rangefile_test_buffer("#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0x6156a2a1, 0x6156a2af);
-    x += rangefile_test_buffer("#test\n  1.2.3.4\n", 0x01020304, 0x01020304);
-    x += rangefile_test_buffer("#test\n  1.2.3.4/24\n", 0x01020300, 0x010203ff);
-    x += rangefile_test_buffer("#test\n  1.2.3.4-1.2.3.5\n", 0x01020304, 0x01020305);
+    
+    
 
-
-
-    x += rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 4, __LINE__);
+    x += rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 5, __LINE__);
     x += rangefile_test_error("#bad ipv4\n 1.257.1.1.1\n", 2, 6, __LINE__);
     x += rangefile_test_error("#bad ipv4\n 1.10.257.1.1.1\n", 2, 9, __LINE__);
     x += rangefile_test_error("#bad ipv4\n 1.10.255.256.1.1.1\n", 2, 13, __LINE__);
     x += rangefile_test_error("#bad ipv4\n 1.1.1.1.1\n", 2, 9, __LINE__);
 
-    //test_file("../ips.txt");
     if (x)
        LOG(0, "[-] rangefile_selftest: fail\n");
     return x;

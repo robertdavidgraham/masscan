@@ -140,15 +140,12 @@ handle_sctp(struct Output *out, time_t timestamp,
             struct PreprocessedInfo *parsed,
             uint64_t entropy)
 {
-    unsigned ip_them;
+    ipaddress ip_them = parsed->src_ip;
     unsigned port_them = parsed->port_src;
     unsigned verification_tag;
     unsigned offset = parsed->transport_offset;
 
     UNUSEDPARM(entropy);
-
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
 
     verification_tag = px[offset + 4] << 24 | px[offset + 5] << 16 |
                         px[offset + 6] << 8 | px[offset + 7];

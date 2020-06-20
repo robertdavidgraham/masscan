@@ -28,7 +28,7 @@ cert_out_close(struct Output *out, FILE *fp)
  ******************************************************************************/
 static void
 cert_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-                unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+                ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     /* certificates only come with banner info, so there is no port info
      * to report */
@@ -48,7 +48,7 @@ cert_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
  ******************************************************************************/
 static void
 cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-                unsigned ip, unsigned ip_proto, unsigned port,
+                ipaddress ip, unsigned ip_proto, unsigned port,
                 enum ApplicationProtocol proto, 
                 unsigned ttl,
                 const unsigned char *px, unsigned length)

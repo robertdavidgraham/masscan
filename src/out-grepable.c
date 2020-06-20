@@ -138,7 +138,7 @@ grepable_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     const char *service;
     UNUSEDPARM(timestamp);
@@ -155,12 +155,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     
     fprintf(fp, "Timestamp: %lu", timestamp);
 
-    fprintf(fp, "\tHost: %u.%u.%u.%u ()",
-                    (unsigned char)(ip>>24),
-                    (unsigned char)(ip>>16),
-                    (unsigned char)(ip>> 8),
-                    (unsigned char)(ip>> 0)
-                    );
+    fprintf(fp, "\tHost: %s ()", ipaddress_fmt(ip).string);
     fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"
@@ -180,7 +175,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 static void
 grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-        unsigned ip, unsigned ip_proto, unsigned port,
+        ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
         const unsigned char *px, unsigned length)
 {
@@ -191,12 +186,7 @@ grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(out);
     UNUSEDPARM(ip_proto);
     
-    fprintf(fp, "Host: %u.%u.%u.%u ()",
-                    (unsigned char)(ip>>24),
-                    (unsigned char)(ip>>16),
-                    (unsigned char)(ip>> 8),
-                    (unsigned char)(ip>> 0)
-                    );
+    fprintf(fp, "Host: %s ()", ipaddress_fmt(ip).string);
     fprintf(fp, "\tPort: %u", port);
 
     fprintf(fp, "\tService: %s", masscan_app_to_string(proto));

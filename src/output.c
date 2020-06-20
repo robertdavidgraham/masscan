@@ -180,7 +180,7 @@ open_rotate(struct Output *out, const char *filename)
                 LOG(0, "redis: socket() failed to create socket\n");
                 exit(1);
             }
-            sin.sin_addr.s_addr = htonl(out->redis.ip);
+            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: ipv6 */
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
             x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
@@ -702,7 +702,7 @@ oui_from_mac(const unsigned char mac[6])
  ***************************************************************************/
 void
 output_report_status(struct Output *out, time_t timestamp, int status,
-        unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
+        ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
         const unsigned char mac[6])
 {
     FILE *fp = out->fp;
@@ -724,27 +724,21 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
         switch (ip_proto) {
         case 0: /* ARP */
-            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u (%02x:%02x:%02x:%02x:%02x:%02x) %s",
+            count = fprintf(stdout, "Discovered %s port %u/%s on %s (%02x:%02x:%02x:%02x:%02x:%02x) %s",
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        (ip>>24)&0xFF,
-                        (ip>>16)&0xFF,
-                        (ip>> 8)&0xFF,
-                        (ip>> 0)&0xFF,
+                        ipaddress_fmt(ip).string,
                         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
                         oui_from_mac(mac)
                         );
             break;
         default:
-            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
+            count = fprintf(stdout, "Discovered %s port %u/%s on %s",
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        (ip>>24)&0xFF,
-                        (ip>>16)&0xFF,
-                        (ip>> 8)&0xFF,
-                        (ip>> 0)&0xFF
+                        ipaddress_fmt(ip).string
                         );
         }
 
@@ -843,7 +837,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
  ***************************************************************************/
 void
 output_report_banner(struct Output *out, time_t now,
-                unsigned ip, unsigned ip_proto, unsigned port,
+                ipaddress ip, unsigned ip_proto, unsigned port,
                 unsigned proto, 
                 unsigned ttl, 
                 const unsigned char *px, unsigned length)
@@ -862,13 +856,10 @@ output_report_banner(struct Output *out, time_t now,
         unsigned count;
         char banner_buffer[4096];
 
-        count = fprintf(stdout, "Banner on port %u/%s on %u.%u.%u.%u: [%s] %s",
+        count = fprintf(stdout, "Banner on port %u/%s on %s: [%s] %s",
             port,
             name_from_ip_proto(ip_proto),
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
+            ipaddress_fmt(ip).string,
             masscan_app_to_string(proto),
             normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );

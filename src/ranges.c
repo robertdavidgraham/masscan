@@ -753,9 +753,12 @@ rangelist_optimize(struct RangeList *targets)
     unsigned *picker;
     unsigned i;
     unsigned total = 0;
-    unsigned bit_count = 0;
-    size_t count = targets->count;
 
+    if (targets->count == 0)
+        return;
+
+    /* This technique only works when the targets are in
+     * ascending order */
     if (!targets->is_sorted)
         rangelist_sort(targets);
 
@@ -768,19 +771,8 @@ rangelist_optimize(struct RangeList *targets)
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;
     }
+
     targets->picker = picker;
-
-
-    for (;;) {
-        count >>= 1;
-        bit_count++;
-        if (count == 0)
-            break;
-    }
-
-    targets->picker_mask = (1 << bit_count) - 1;
-
-    
 }
 
 

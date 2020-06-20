@@ -187,7 +187,7 @@ arp_resolve_sync(struct Adapter *adapter,
 
             /* It's taking too long, so notify the user */
             if (!is_delay_reported) {
-                LOG(0, "...arping router MAC address...\n");
+                LOG(0, "[ ] arping router MAC address (may take some time)...\n");
                 is_delay_reported = 1;
             }
         }

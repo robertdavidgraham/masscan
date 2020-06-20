@@ -13,8 +13,10 @@ set_target(struct TemplatePacket *tmpl,
                    unsigned char *px, size_t sizeof_px, 
                    size_t *r_length)
 {
-    unsigned offset_tcp = tmpl->offset_tcp;
-    unsigned offset_ip = tmpl->offset_ip;
+    unsigned offset_tcp = tmpl->ipv4.offset_tcp;
+    unsigned offset_ip = tmpl->ipv4.offset_ip;
+    unsigned offset_app = tmpl->ipv4.offset_app;
+    unsigned tmpl_length= tmpl->ipv4.length;
     unsigned xsum;
 
     UNUSEDPARM(r_length);
@@ -27,12 +29,12 @@ set_target(struct TemplatePacket *tmpl,
     px[offset_tcp+ 1] = (unsigned char)(port_me & 0xFF);
     px[offset_tcp+ 2] = (unsigned char)(port_them >> 8);
     px[offset_tcp+ 3] = (unsigned char)(port_them & 0xFF);
-    px[offset_tcp+ 4] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)>>8);
-    px[offset_tcp+ 5] = (unsigned char)((tmpl->length - tmpl->offset_app + 8)&0xFF);
+    px[offset_tcp+ 4] = (unsigned char)((tmpl_length - offset_app + 8)>>8);
+    px[offset_tcp+ 5] = (unsigned char)((tmpl_length - offset_app + 8)&0xFF);
     
     px[offset_tcp+6] = (unsigned char)(0);
     px[offset_tcp+7] = (unsigned char)(0);
-    xsum = udp_checksum2(px, offset_ip, offset_tcp, tmpl->length - offset_tcp);
+    xsum = udp_checksum2(px, offset_ip, offset_tcp, tmpl_length - offset_tcp);
     xsum = ~xsum;
     px[offset_tcp+6] = (unsigned char)(xsum >>  8);
     px[offset_tcp+7] = (unsigned char)(xsum >>  0);

@@ -62,6 +62,7 @@
 #include "read-service-probes.h"
 #include "misc-rstfilter.h"
 #include "util-malloc.h"
+#include "util-checksum.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -230,20 +231,29 @@ flush_packets(struct Adapter *adapter,
  * range into useful variables we can use to pick things form that range.
  ***************************************************************************/
 static void
-get_sources(const struct Masscan *masscan,
+adapter_get_source_addresses(const struct Masscan *masscan,
             unsigned nic_index,
-            unsigned *src_ip,
-            unsigned *src_ip_mask,
+            unsigned *src_ipv4,
+            unsigned *src_ipv4_mask,
             unsigned *src_port,
-            unsigned *src_port_mask)
+            unsigned *src_port_mask,
+            ipv6address *src_ipv6,
+            ipv6address *src_ipv6_mask)
 {
     const struct Source *src = &masscan->nic[nic_index].src;
+    static ipv6address mask = {~0ULL, ~0ULL};
 
-    *src_ip = src->ip.first;
-    *src_ip_mask = src->ip.last - src->ip.first;
+    *src_ipv4 = src->ip.first;
+    *src_ipv4_mask = src->ip.last - src->ip.first;
 
     *src_port = src->port.first;
     *src_port_mask = src->port.last - src->port.first;
+
+    *src_ipv6 = src->ipv6.first;
+
+    /* TODO: currently supports only a single address. This needs to
+     * be fixed to support a list of addresses */
+    *src_ipv6_mask = mask;
 }
 
 /***************************************************************************
@@ -262,20 +272,24 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t end;
     const struct Masscan *masscan = parms->masscan;
     uint64_t retries = masscan->retries;
-    uint64_t rate = masscan->max_rate;
+    uint64_t rate = (uint64_t)masscan->max_rate;
     unsigned r = (unsigned)retries + 1;
     uint64_t range;
+    uint64_t range_ipv6;
     struct BlackRock blackrock;
-    uint64_t count_ips = rangelist_count(&masscan->targets);
+    uint64_t count_ipv4 = rangelist_count(&masscan->targets_ipv4);
+    uint64_t count_ipv6 = range6list_count(&masscan->targets_ipv6);
     struct Throttler *throttler = parms->throttler;
     struct TemplateSet pkt_template = templ_copy(parms->tmplset);
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
     unsigned increment = (masscan->shard.of-1) + masscan->nic_count;
-    unsigned src_ip;
-    unsigned src_ip_mask;
+    unsigned src_ipv4;
+    unsigned src_ipv4_mask;
     unsigned src_port;
     unsigned src_port_mask;
+    ipv6address src_ipv6;
+    ipv6address src_ipv6_mask;
     uint64_t seed = masscan->seed;
     uint64_t repeats = 0; /* --infinite repeats */
     uint64_t *status_syn_count;
@@ -293,9 +307,10 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     /* Normally, we have just one source address. In special cases, though
      * we can have multiple. */
-    get_sources(masscan, parms->nic_index,
-                &src_ip, &src_ip_mask,
-                &src_port, &src_port_mask);
+    adapter_get_source_addresses(masscan, parms->nic_index,
+                &src_ipv4, &src_ipv4_mask,
+                &src_port, &src_port_mask,
+                &src_ipv6, &src_ipv6_mask);
 
 
     /* "THROTTLER" rate-limits how fast we transmit, set with the
@@ -306,9 +321,12 @@ infinite:
     
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
-     * ports */
-    range = rangelist_count(&masscan->targets)
-            * rangelist_count(&masscan->ports);
+     * ports.
+     * IPv6: low index will pick addresses from the IPv6 ranges, and high
+     * indexes will pick addresses from the IPv4 ranges. */
+    range = count_ipv4 * rangelist_count(&masscan->ports)
+            + count_ipv6 * rangelist_count(&masscan->ports);
+    range_ipv6 = count_ipv6 * rangelist_count(&masscan->ports);
     blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
@@ -352,15 +370,18 @@ infinite:
 
         /*
          * Transmit a bunch of packets. At any rate slower than 100,000
-         * packets/second, the 'batch_size' is likely to be 1
+         * packets/second, the 'batch_size' is likely to be 1. At higher
+         * rates, we can't afford to throttle on a per-packet basis and 
+         * instead throttle on a per-batch basis. In other words, throttle
+         * based on 2-at-a-time, 3-at-time, and so on, with the batch
+         * size increasing as the packet rate increases. This gives us
+         * very precise packet-timing for low rates below 100,000 pps,
+         * while not incurring the overhead for high packet rates.
          */
         while (batch_size && i < end) {
             uint64_t xXx;
-            unsigned ip_them;
-            unsigned port_them;
-            unsigned ip_me;
-            unsigned port_me;
             uint64_t cookie;
+            
 
 
             /*
@@ -380,41 +401,79 @@ infinite:
                 while (xXx >= range)
                     xXx -= range;
             xXx = blackrock_shuffle(&blackrock,  xXx);
-            ip_them = rangelist_pick(&masscan->targets, xXx % count_ips);
-            port_them = rangelist_pick(&masscan->ports, xXx / count_ips);
+            
+            if (xXx < range_ipv6) {
+                ipv6address ip_them;
+                unsigned port_them;
+                ipv6address ip_me;
+                unsigned port_me;
 
-            /*
-             * SYN-COOKIE LOGIC
-             *  Figure out the source IP/port, and the SYN cookie
-             */
-            if (src_ip_mask > 1 || src_port_mask > 1) {
-                uint64_t ck = syn_cookie((unsigned)(i+repeats),
-                                        (unsigned)((i+repeats)>>32),
-                                        (unsigned)xXx, (unsigned)(xXx>>32),
-                                        entropy);
-                port_me = src_port + (ck & src_port_mask);
-                ip_me = src_ip + ((ck>>16) & src_ip_mask);
-            } else {
-                ip_me = src_ip;
+                ip_them = range6list_pick(&masscan->targets_ipv6, xXx % count_ipv6);
+                port_them = rangelist_pick(&masscan->ports, xXx / count_ipv6);
+
+                ip_me = src_ipv6;
                 port_me = src_port;
-            }
-            cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy);
+                
+                cookie = syn_cookie_ipv6(ip_them, port_them, ip_me, port_me, entropy);
 
-            /*
-             * SEND THE PROBE
-             *  This is sorta the entire point of the program, but little
-             *  exciting happens here. The thing to note that this may
-             *  be a "raw" transmit that bypasses the kernel, meaning
-             *  we can call this function millions of times a second.
-             */
-            rawsock_send_probe(
-                    adapter,
-                    ip_them, port_them,
-                    ip_me, port_me,
-                    (unsigned)cookie,
-                    !batch_size, /* flush queue on last packet in batch */
-                    &pkt_template
-                    );
+                rawsock_send_probe_ipv6(
+                        adapter,
+                        ip_them, port_them,
+                        ip_me, port_me,
+                        (unsigned)cookie,
+                        !batch_size, /* flush queue on last packet in batch */
+                        &pkt_template
+                        );
+
+                /* Our index selects an IPv6 target */
+            } else {
+                /* Our index selects an IPv4 target. In other words, low numbers
+                 * index into the IPv6 ranges, and high numbers index into the
+                 * IPv4 ranges. */
+                ipv4address ip_them;
+                ipv4address port_them;
+                unsigned ip_me;
+                unsigned port_me;
+
+                xXx -= range_ipv6;
+
+                ip_them = rangelist_pick(&masscan->targets_ipv4, xXx % count_ipv4);
+                port_them = rangelist_pick(&masscan->ports, xXx / count_ipv4);
+
+                /*
+                 * SYN-COOKIE LOGIC
+                 *  Figure out the source IP/port, and the SYN cookie
+                 */
+                if (src_ipv4_mask > 1 || src_port_mask > 1) {
+                    uint64_t ck = syn_cookie_ipv4((unsigned)(i+repeats),
+                                            (unsigned)((i+repeats)>>32),
+                                            (unsigned)xXx, (unsigned)(xXx>>32),
+                                            entropy);
+                    port_me = src_port + (ck & src_port_mask);
+                    ip_me = src_ipv4 + ((ck>>16) & src_ipv4_mask);
+                } else {
+                    ip_me = src_ipv4;
+                    port_me = src_port;
+                }
+                cookie = syn_cookie_ipv4(ip_them, port_them, ip_me, port_me, entropy);
+
+                /*
+                 * SEND THE PROBE
+                 *  This is sorta the entire point of the program, but little
+                 *  exciting happens here. The thing to note that this may
+                 *  be a "raw" transmit that bypasses the kernel, meaning
+                 *  we can call this function millions of times a second.
+                 */
+                rawsock_send_probe_ipv4(
+                        adapter,
+                        ip_them, port_them,
+                        ip_me, port_me,
+                        (unsigned)cookie,
+                        !batch_size, /* flush queue on last packet in batch */
+                        &pkt_template
+                        );
+            }
+
             batch_size--;
             packets_sent++;
             (*status_syn_count)++;
@@ -720,9 +779,9 @@ receive_thread(void *v)
         int err;
         unsigned x;
         struct PreprocessedInfo parsed;
-        unsigned ip_me;
+        ipaddress ip_me;
         unsigned port_me;
-        unsigned ip_them;
+        ipaddress ip_them;
         unsigned port_them;
         unsigned seqno_me;
         unsigned seqno_them;
@@ -766,15 +825,15 @@ receive_thread(void *v)
         x = preprocess_frame(px, length, data_link, &parsed);
         if (!x)
             continue; /* corrupt packet */
-        ip_me = parsed.ip_dst[0]<<24 | parsed.ip_dst[1]<<16
-            | parsed.ip_dst[2]<< 8 | parsed.ip_dst[3]<<0;
-        ip_them = parsed.ip_src[0]<<24 | parsed.ip_src[1]<<16
-            | parsed.ip_src[2]<< 8 | parsed.ip_src[3]<<0;
+        ip_me = parsed.dst_ip;
+        ip_them = parsed.src_ip;
         port_me = parsed.port_dst;
         port_them = parsed.port_src;
         seqno_them = TCP_SEQNO(px, parsed.transport_offset);
         seqno_me = TCP_ACKNO(px, parsed.transport_offset);
         
+        assert(ip_me.version != 0);
+        assert(ip_them.version != 0);
 
         switch (parsed.ip_protocol) {
         case 132: /* SCTP */
@@ -800,7 +859,7 @@ receive_thread(void *v)
                      * for our IP address (as part of our user-mode TCP/IP).
                      * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
                      * ourself, or the router will lose track of us.*/
-                    arp_response(   ip_me,
+                    arp_response(   ip_me.ipv4,
                                     parms->adapter_mac,
                                     px, length,
                                     parms->packet_buffers,
@@ -815,7 +874,7 @@ receive_thread(void *v)
                         break;
 
                     /* If this response isn't in our range, then ignore it */
-                    if (!rangelist_is_contains(&masscan->targets, ip_them))
+                    if (!rangelist_is_contains(&masscan->targets_ipv4, ip_them.ipv4))
                         break;
 
                     /* Ignore duplicates */
@@ -882,14 +941,14 @@ receive_thread(void *v)
             struct TCP_Control_Block *tcb;
 
             /* does a TCB already exist for this connection? */
-            tcb = tcpcon_lookup_tcb(tcpcon,
+            tcb = tcb_lookup(tcpcon,
                             ip_me, ip_them,
                             port_me, port_them);
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (cookie != seqno_me - 1) {
-                    LOG(2, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                        (ip_them>>24)&0xff, (ip_them>>16)&0xff, (ip_them>>8)&0xff, (ip_them>>0)&0xff,
+                    LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                        ipaddress_fmt(ip_them).string,
                         seqno_me-1, cookie);
                     continue;
                 }
@@ -939,6 +998,7 @@ receive_thread(void *v)
                  *  This happens when we've sent a FIN, deleted our connection,
                  *  but the other side didn't get the packet.
                  */
+                LOG(4, "%s: received FIN but no TCB\n", ipaddress_fmt(ip_them).string);
                 if (TCP_IS_RST(px, parsed.transport_offset))
                     ; /* ignore if it's own TCP flag is set */
                 else {
@@ -956,6 +1016,9 @@ receive_thread(void *v)
 
         }
 
+        if (port_me == 55555)
+            printf(".%c\n", TCP_IS_SYNACK(px, parsed.transport_offset)?'A':'x');
+
         if (TCP_IS_SYNACK(px, parsed.transport_offset)
             || TCP_IS_RST(px, parsed.transport_offset)) {
 
@@ -969,10 +1032,8 @@ receive_thread(void *v)
 
             /* verify: syn-cookies */
             if (cookie != seqno_me - 1) {
-                LOG(5, "%u.%u.%u.%u - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                    (ip_them>>24)&0xff, (ip_them>>16)&0xff,
-                    (ip_them>>8)&0xff, (ip_them>>0)&0xff,
-                    seqno_me-1, cookie);
+                LOG(5, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                    ipaddress_fmt(ip_them).string, seqno_me-1, cookie);
                 continue;
             }
 
@@ -1121,7 +1182,7 @@ main_scan(struct Masscan *masscan)
     /*
      * Initialize the task size
      */
-    count_ips = rangelist_count(&masscan->targets);
+    count_ips = rangelist_count(&masscan->targets_ipv4) + range6list_count(&masscan->targets_ipv6);
     if (count_ips == 0) {
         LOG(0, "FAIL: target IP address list empty\n");
         LOG(0, " [hint] try something like \"--range 10.0.0.0/8\"\n");
@@ -1165,12 +1226,6 @@ main_scan(struct Masscan *masscan)
     payloads_udp_trim(masscan->payloads.udp, &masscan->ports);
     payloads_oproto_trim(masscan->payloads.oproto, &masscan->ports);
 
-    /* Optimize target selection so it's a quick binary search instead
-     * of walking large memory tables. When we scan the entire Internet
-     * our --excludefile will chop up our pristine 0.0.0.0/0 range into
-     * hundreds of subranges. This allows us to grab addresses faster. */
-    rangelist_optimize(&masscan->targets);
-    rangelist_optimize(&masscan->ports);
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
   __AFL_INIT();
@@ -1206,7 +1261,7 @@ main_scan(struct Masscan *masscan)
         if (err != 0)
             exit(1);
         parms->adapter = masscan->nic[index].adapter;
-        if (masscan->nic[index].src.ip.range == 0) {
+        if (!masscan->nic[index].is_usable) {
             LOG(0, "FAIL: failed to detect IP of interface\n");
             LOG(0, " [hint] did you spell the name correctly?\n");
             LOG(0, " [hint] if it has no IP address, "
@@ -1591,21 +1646,25 @@ int main(int argc, char *argv[])
      * prevent them from being scanned.
      */
     {
-        uint64_t range = rangelist_count(&masscan->targets) * rangelist_count(&masscan->ports);
-        uint64_t range2;
-        rangelist_exclude(&masscan->targets, &masscan->exclude_ip);
+        uint64_t pre_range = rangelist_count(&masscan->targets_ipv4) * rangelist_count(&masscan->ports)
+                            + range6list_count(&masscan->targets_ipv6) * rangelist_count(&masscan->ports);
+        uint64_t post_range;
+        
+        rangelist_exclude(&masscan->targets_ipv4, &masscan->exclude_ip);
+        range6list_exclude(&masscan->targets_ipv6, &masscan->exclude_ipv6);
         rangelist_exclude(&masscan->ports, &masscan->exclude_port);
         //rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
 
-        range2 = rangelist_count(&masscan->targets) * rangelist_count(&masscan->ports);
+        post_range = rangelist_count(&masscan->targets_ipv4) * rangelist_count(&masscan->ports)
+                     + range6list_count(&masscan->targets_ipv6) * rangelist_count(&masscan->ports);
 
-        if (range != 0 && range2 == 0) {
+        if (pre_range != 0 && post_range == 0) {
             LOG(0, "FAIL: no ranges left to scan\n");
             LOG(0, "   ...all ranges overlapped something in an excludefile range\n");
             exit(1);
         }
 
-        if (range2 != range && masscan->resume.index) {
+        if (post_range != pre_range && masscan->resume.index) {
             LOG(0, "FAIL: Attempted to add additional 'exclude' ranges after scan start.\n");
             LOG(0, "   ...This messes things up the scan randomization, so you have to restart scan\n");
             exit(1);
@@ -1613,6 +1672,13 @@ int main(int argc, char *argv[])
     }
 
 
+    /* Optimize target selection so it's a quick binary search instead
+     * of walking large memory tables. When we scan the entire Internet
+     * our --excludefile will chop up our pristine 0.0.0.0/0 range into
+     * hundreds of subranges. This allows us to grab addresses faster. */
+    rangelist_optimize(&masscan->targets_ipv4);
+    range6list_optimize(&masscan->targets_ipv6);
+    rangelist_optimize(&masscan->ports);
 
     /*
      * Once we've read in the configuration, do the operation that was
@@ -1689,6 +1755,8 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += checksum_selftest();
+            x += ipv6address_selftest();
             x += proto_coap_selftest();
             x += smack_selftest();
             x += sctp_selftest();

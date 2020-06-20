@@ -2,6 +2,7 @@
     Read in the binary file produced by "out-binary.c". This allows you to
     translate the "binary" format into any of the other output formats.
 */
+#include "ipv6address.h"
 #include "in-binary.h"
 #include "masscan.h"
 #include "masscan-app.h"
@@ -20,7 +21,7 @@ static const size_t BUF_MAX = 1024*1024;
 
 struct MasscanRecord {
     unsigned timestamp;
-    unsigned ip;
+    ipaddress ip;
     unsigned char ip_proto;
     unsigned short port;
     unsigned char reason;
@@ -44,13 +45,14 @@ parse_status(struct Output *out,
 
     /* parse record */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
-    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.version = 4;
     record.port      = buf[8]<<8 | buf[9];
     record.reason    = buf[10];
     record.ttl       = buf[11];
 
     /* if ARP, then there will be a MAC address */
-    if (record.ip == 0 && buf_length >= 12+6)
+    if (record.ip.ipv4 == 0 && buf_length >= 12+6)
         memcpy(record.mac, buf+12, 6);
     else
         memset(record.mac, 0, 6);
@@ -106,14 +108,15 @@ parse_status2(struct Output *out,
 
     /* parse record */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
-    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.version = 4;
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.reason    = buf[11];
     record.ttl       = buf[12];
 
     /* if ARP, then there will be a MAC address */
-    if (record.ip == 0 && buf_length >= 13+6)
+    if (record.ip.ipv4 == 0 && buf_length >= 13+6)
         memcpy(record.mac, buf+13, 6);
     else
         memset(record.mac, 0, 6);
@@ -125,7 +128,7 @@ parse_status2(struct Output *out,
      * Filter
      */
     if (ips && ips->count) {
-        if (!rangelist_is_contains(ips, record.ip))
+        if (!rangelist_is_contains(ips, record.ip.ipv4))
             return;
     }
     if (ports && ports->count) {
@@ -164,7 +167,8 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
      * Parse the parts that are common to most records
      */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
-    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.version = 4;
     record.port      = buf[8]<<8 | buf[9];
     record.app_proto = buf[10]<<8 | buf[11];
 
@@ -202,7 +206,8 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
      * Parse the parts that are common to most records
      */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
-    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.version = 4;
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.app_proto = buf[11]<<8 | buf[12];
@@ -245,7 +250,8 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
      * Parse the parts that are common to most records
      */
     record.timestamp = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
-    record.ip        = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
+    record.ip.version = 4;
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
     record.app_proto = buf[11]<<8 | buf[12];
@@ -264,7 +270,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
     /*
      * Filter out records if requested
      */
-    if (!readscan_filter_pass(record.ip, record.port, record.app_proto,
+    if (!readscan_filter_pass(record.ip.ipv4, record.port, record.app_proto,
               ips, ports, btypes))
           return;
     
@@ -289,6 +295,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
 static uint64_t
 parse_file(struct Output *out, const char *filename,
            const struct RangeList *ips,
+           const struct Range6List *ipv6s,
            const struct RangeList *ports,
            const struct RangeList *btypes)
 {
@@ -481,7 +488,7 @@ read_binary_scanfile(struct Masscan *masscan,
      * Then arg_first=3 and arg_max=5.
      */
     for (i=arg_first; i<arg_max; i++) {
-        parse_file(out, argv[i], &masscan->targets, &masscan->ports,
+        parse_file(out, argv[i], &masscan->targets_ipv4, &masscan->targets_ipv6, &masscan->ports,
                    &masscan->banner_types);
     }
 

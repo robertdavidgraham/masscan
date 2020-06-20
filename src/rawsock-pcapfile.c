@@ -186,11 +186,11 @@ static unsigned PCAP32(unsigned byte_order, const unsigned char *buf)
 /**
  * Return the "link" type, such as Ethernet, WiFi, Token Ring, etc.
  */
-unsigned
+int
 pcapfile_datalink(struct PcapFile *handle)
 {
     if (handle)
-        return (unsigned)handle->linktype;
+        return handle->linktype;
     else
         return 0;
 }

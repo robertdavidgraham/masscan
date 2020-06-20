@@ -12,6 +12,7 @@
 
 */
 #include "masscan.h"
+#include "ipv6address.h"
 #include "masscan-version.h"
 #include "ranges.h"
 #include "range-file.h"     /* reads millions of IP addresss from a file */
@@ -239,6 +240,30 @@ count_cidr_bits(struct Range range)
 
     return 0;
 }
+
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+count_cidr6_bits(struct Range6 range)
+{
+    uint64_t i;
+
+    /* Kludge: can't handle more than 64-bits of CIDR ranges */
+    if (range.begin.hi != range.begin.lo)
+        return 0;
+
+    for (i=0; i<64; i++) {
+        uint64_t mask = 0xFFFFFFFFffffffffull >> i;
+
+        if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
+            if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
+                return (unsigned)i;
+        }
+    }
+
+    return 0;
+}
+
 
 
 /***************************************************************************
@@ -1115,6 +1140,19 @@ static int SET_nmap_service_probes(struct Masscan *masscan, const char *name, co
     return CONF_OK;
 }
 
+static int SET_offline(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+
+    if (masscan->echo) {
+        if (masscan->is_offline || masscan->echo_all)
+            fprintf(masscan->echo, "noreset = %s\n", masscan->is_noreset?"true":"false");
+        return 0;
+    }
+    masscan->is_offline = parseBoolean(value);
+    return CONF_OK;
+}
+
 static int SET_output_append(struct Masscan *masscan, const char *name, const char *value)
 {
     if (masscan->echo) {
@@ -1166,12 +1204,9 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
             case Output_None:       fprintf(fp, "output-format = none\n"); break;
             case Output_Redis:
                 fprintf(fp, "output-format = redis\n");
-                fprintf(fp, "redis = %u.%u.%u.%u:%u\n",
-                        (unsigned char)(masscan->redis.ip>>24),
-                        (unsigned char)(masscan->redis.ip>>16),
-                        (unsigned char)(masscan->redis.ip>> 8),
-                        (unsigned char)(masscan->redis.ip>> 0),
-                        masscan->redis.port);
+                fprintf(fp, "redis = %s %u\n",
+                            ipaddress_fmt(masscan->redis.ip).string,
+                            masscan->redis.port);
                 break;
                 
             default:
@@ -1295,6 +1330,13 @@ static int SET_output_show_open(struct Masscan *masscan, const char *name, const
     masscan->output.is_show_host = 0;
     return CONF_OK;
 }
+
+/* Specifies a 'libpcap' file where the received packets will be written.
+ * This is useful while debugging so that we can see what exactly is
+ * going on. It's also an alternate mode for getting output from this
+ * program. Instead of relying upon this program's determination of what
+ * ports are open or closed, you can instead simply parse this capture
+ * file yourself and make your own determination */
 static int SET_pcap_filename(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1308,6 +1350,11 @@ static int SET_pcap_filename(struct Masscan *masscan, const char *name, const ch
     return CONF_OK;
 }
 
+/* Specifies a 'libpcap' file from which to read packet-payloads. The payloads found
+ * in this file will serve as the template for spewing out custom packets. There are
+ * other options that can set payloads as well, like "--nmap-payloads" for reading
+ * their custom payload file, as well as the various "hello" options for specifying
+ * the string sent to the server once a TCP connection has been established. */
 static int SET_pcap_payloads(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1600,6 +1647,7 @@ struct ConfigParameter config_parameters[] = {
     {"noreset",         SET_noreset,            F_BOOL, {0}},
     {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
     {"nmap-service-probes",SET_nmap_service_probes, 0,  {"nmap-service-probe",0}},
+    {"offline",         SET_offline,            F_BOOL, {"notransmit", "nosend", 0}},
     {"pcap-filename",   SET_pcap_filename,      0,      {"pcap",0}},
     {"pcap-payloads",   SET_pcap_payloads,      0,      {"pcap-payload",0}},
     {"hello",           SET_hello,              0,      {0}},
@@ -1871,21 +1919,37 @@ masscan_set_parameter(struct Masscan *masscan,
         unsigned offset = 0;
         unsigned max_offset = (unsigned)strlen(ranges);
 
-        for (;;) {
+        /* Normally we have only a single range, but we actually support multiple
+         * ranges in this field delimited by a comma */
+        while (offset < max_offset) {
             struct Range range;
+            struct Range6 range6;
+            int err;
 
-            range = range_parse_ipv4(ranges, &offset, max_offset);
-            if (range.end < range.begin) {
+            /* Grab the next IPv4 or IPv6 range */
+            err = range_parse(ranges, &offset, max_offset, &range, &range6);
+            switch (err) {
+            case Ipv4_Address:
+                rangelist_add_range(&masscan->targets_ipv4, range.begin, range.end);
+                break;
+            case Ipv6_Address:
+                range6list_add_range(&masscan->targets_ipv6, range6.begin, range6.end);
+                break;
+            default:
+                offset = max_offset; /* An error means skipping the rest of the string */
                 fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
                 break;
             }
-
-            rangelist_add_range(&masscan->targets, range.begin, range.end);
-
-            if (offset >= max_offset || ranges[offset] != ',')
+            
+            if (offset >= max_offset || ranges[offset] != ',') {
+                /* We've either reached the end of a string, or an invalid
+                 * character that is not a comma delimiter */
                 break;
-            else
-                offset++; /* skip comma */
+            } else {
+                /* This character is a comma delimiter between ranges, so 
+                 * script the comma */
+                offset++;
+            }
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
@@ -2029,7 +2093,7 @@ masscan_set_parameter(struct Masscan *masscan,
         int err;
         const char *filename = value;
 
-        err = rangefile_read(filename, &masscan->targets, &masscan->targets_ipv6);
+        err = rangefile_read(filename, &masscan->targets_ipv4, &masscan->targets_ipv6);
         if (err) {
             LOG(0, "FAIL: error reading from include file\n");
             exit(1);
@@ -2070,10 +2134,6 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("nmap", name)) {
         print_nmap_help();
         exit(1);
-    } else if (EQUALS("offline", name)) {
-        /* Run in "offline" mode where it thinks it's sending packets, but
-         * it's not */
-        masscan->is_offline = 1;
     } else if (EQUALS("osscan-limit", name)) {
         fprintf(stderr, "nmap(%s): OS scanning unsupported\n", name);
         exit(1);
@@ -2117,7 +2177,10 @@ masscan_set_parameter(struct Masscan *masscan,
             }
         }
 
-        masscan->redis.ip = range.begin;
+        /* TODO: add support for connecting to IPv6 addresses here */
+        masscan->redis.ip.ipv4 = range.begin;
+        masscan->redis.ip.version = 4;
+
         masscan->redis.port = port;
         masscan->output.format = Output_Redis;
         strcpy_s(masscan->output.filename, 
@@ -2749,7 +2812,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
     /*
      * Targets must be sorted
      */
-    rangelist_sort(&masscan->targets);
+    rangelist_sort(&masscan->targets_ipv4);
+    range6list_sort(&masscan->targets_ipv6);
     rangelist_sort(&masscan->ports);
     rangelist_sort(&masscan->exclude_ip);
     rangelist_sort(&masscan->exclude_port);
@@ -2854,8 +2918,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         } while (range.begin <= range.end);
     }
     fprintf(fp, "\n");
-    for (i=0; i<masscan->targets.count; i++) {
-        struct Range range = masscan->targets.list[i];
+    for (i=0; i<masscan->targets_ipv4.count; i++) {
+        struct Range range = masscan->targets_ipv4.list[i];
         fprintf(fp, "range = ");
         fprintf(fp, "%u.%u.%u.%u",
                 (range.begin>>24)&0xFF,
@@ -2875,6 +2939,20 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
                         (range.end>> 8)&0xFF,
                         (range.end>> 0)&0xFF
                         );
+        }
+        fprintf(fp, "\n");
+    }
+    for (i=0; i<masscan->targets_ipv6.count; i++) {
+        struct Range6 range = masscan->targets_ipv6.list[i];
+        fprintf(fp, "range = %s", ipv6address_fmt(range.begin).string);
+        if (!ipv6address_is_equal(range.begin, range.end)) {
+            unsigned cidr_bits = count_cidr6_bits(range);
+            
+            if (cidr_bits) {
+                fprintf(fp, "/%u", cidr_bits);
+            } else {
+                fprintf(fp, "-%s", ipv6address_fmt(range.end).string);
+            }
         }
         fprintf(fp, "\n");
     }

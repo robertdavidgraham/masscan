@@ -24,12 +24,14 @@
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\in-filter.c" />
     <ClCompile Include="..\src\in-report.c" />
+    <ClCompile Include="..\src\ipv6address.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
     <ClCompile Include="..\src\main-src.c" />
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
+    <ClCompile Include="..\src\misc-rstfilter.c" />
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-certs.c" />
     <ClCompile Include="..\src\out-grepable.c" />
@@ -93,6 +95,7 @@
     <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
+    <ClCompile Include="..\src\rawsock-getip6.c" />
     <ClCompile Include="..\src\rawsock-getmac.c" />
     <ClCompile Include="..\src\rawsock-getroute.c" />
     <ClCompile Include="..\src\rawsock-pcapfile.c" />
@@ -112,6 +115,7 @@
     <ClCompile Include="..\src\syn-cookie.c" />
     <ClCompile Include="..\src\templ-payloads.c" />
     <ClCompile Include="..\src\templ-pkt.c" />
+    <ClCompile Include="..\src\util-checksum.c" />
     <ClCompile Include="..\src\util-malloc.c" />
     <ClCompile Include="..\src\versioning.c" />
     <ClCompile Include="..\src\vulncheck-heartbleed.c" />
@@ -124,6 +128,7 @@
     <ClInclude Include="..\src\crypto-base64.h" />
     <ClInclude Include="..\src\in-filter.h" />
     <ClInclude Include="..\src\in-report.h" />
+    <ClInclude Include="..\src\ipv6address.h" />
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />
@@ -137,6 +142,7 @@
     <ClInclude Include="..\src\masscan-app.h" />
     <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\misc-rstfilter.h" />
     <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\out-tcp-services.h" />
     <ClInclude Include="..\src\output.h" />
@@ -199,6 +205,7 @@
     <ClInclude Include="..\src\templ-payloads.h" />
     <ClInclude Include="..\src\templ-pkt.h" />
     <ClInclude Include="..\src\util-bool.h" />
+    <ClInclude Include="..\src\util-checksum.h" />
     <ClInclude Include="..\src\util-malloc.h" />
     <ClInclude Include="..\src\versioning.h" />
     <ClInclude Include="..\src\vulncheck.h" />
