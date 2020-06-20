@@ -35,6 +35,27 @@ static inline int ipv6address_is_equal(ipv6address a, ipv6address b) {
     return a.hi == b.hi && a.lo == b.lo;
 }
 
+static inline ipv6address ipv6address_from_bytes(const unsigned char *buf) {
+    ipv6address addr;
+    addr.hi = (uint64_t)buf[ 0] << 56
+            | (uint64_t)buf[ 1] << 48
+            | (uint64_t)buf[ 2] << 40
+            | (uint64_t)buf[ 3] << 32
+            | (uint64_t)buf[ 4] << 24
+            | (uint64_t)buf[ 5] << 16
+            | (uint64_t)buf[ 6] <<  8
+            | (uint64_t)buf[ 7] <<  0;
+    addr.lo = (uint64_t)buf[ 8] << 56
+            | (uint64_t)buf[ 9] << 48
+            | (uint64_t)buf[10] << 40
+            | (uint64_t)buf[11] << 32
+            | (uint64_t)buf[12] << 24
+            | (uint64_t)buf[13] << 16
+            | (uint64_t)buf[14] <<  8
+            | (uint64_t)buf[15] <<  0;
+    return addr;
+}
+
 /**
  * Return a buffer with the formatted address
  */

@@ -15,9 +15,19 @@
 #include "string_s.h"
 #include "ranges6.h" /*for parsing IPv6 addresses */
 
+
 /*****************************************************************************
  *****************************************************************************/
 #if defined(__linux__)
+#define _GNU_SOURCE
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <linux/if_link.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -25,33 +35,48 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
+
 ipv6address
 rawsock_get_adapter_ipv6(const char *ifname)
 {
-    int fd;
-    struct ifreq ifr;
-    struct sockaddr_in *sin;
-    struct sockaddr *sa;
-    int x;
+    struct ifaddrs *list = NULL;
+    struct ifaddrs *ifa;
+    int err;
     ipv6address result = {0,0};
 
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strcpy_s(ifr.ifr_name, IFNAMSIZ, ifname);
-
-    x = ioctl(fd, SIOCGIFADDR, &ifr);
-    if (x < 0) {
-        fprintf(stderr, "ERROR:'%s': %s\n", ifname, strerror(errno));
-        //fprintf(stderr, "ERROR:'%s': couldn't discover IP address of network interface\n", ifname);
-        close(fd);
+    /* Fetch the list of addresses */
+    err = getifaddrs(&list);
+    if (err == -1) {
+        fprintf(stderr, "[-] getifaddrs(): %s\n", strerror(errno));
         return result;
     }
 
-    close(fd);
+    for (ifa = list; ifa != NULL; ifa = ifa->ifa_next) {
+        ipv6address addr;
 
-    sa = &ifr.ifr_addr;
-    sin = (struct sockaddr_in *)sa;
+        if (ifa->ifa_addr == NULL)
+            continue;
+        if (ifa->ifa_name == NULL)
+            continue;
+        if (strcmp(ifname, ifa->ifa_name) != 0)
+            continue;
+        if (ifa->ifa_addr->sa_family != AF_INET6)
+            continue;
+
+        addr = ipv6address_from_bytes((const unsigned char *)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr);
+        
+        if (addr.hi>>56ULL >= 0xFC)
+            continue;
+        if (addr.hi>>32ULL == 0x20010db8)
+            continue;
+
+        result = addr;
+        break;
+        //printf(" %s 0x%x\n", ipv6address_fmt(result).string, ifa->ifa_flags);
+    }
+
+    freeifaddrs(list);
     return result;
 }
 
@@ -184,44 +209,47 @@ end:
 #   include <netpacket/packet.h>
 #endif
 
-unsigned
-rawsock_get_adapter_ip(const char *ifname)
+ipv6address
+rawsock_get_adapter_ipv6(const char *ifname)
 {
+    struct ifaddrs *list = NULL;
+    struct ifaddrs *ifa;
     int err;
-    struct ifaddrs *ifap;
-    struct ifaddrs *p;
-    unsigned ip;
+    ipv6address result = {0,0};
 
-
-    /* Get the list of all network adapters */
-    err = getifaddrs(&ifap);
-    if (err != 0) {
-        perror("getifaddrs");
-        return 0;
+    /* Fetch the list of addresses */
+    err = getifaddrs(&list);
+    if (err == -1) {
+        fprintf(stderr, "[-] getifaddrs(): %s\n", strerror(errno));
+        return result;
     }
 
-    /* Look through the list until we get our adapter */
-    for (p = ifap; p; p = p->ifa_next) {
-        if (strcmp(ifname, p->ifa_name) == 0
-            && p->ifa_addr
-            && p->ifa_addr->sa_family == AF_INET)
-            break;
+    for (ifa = list; ifa != NULL; ifa = ifa->ifa_next) {
+        ipv6address addr;
+
+        if (ifa->ifa_addr == NULL)
+            continue;
+        if (ifa->ifa_name == NULL)
+            continue;
+        if (strcmp(ifname, ifa->ifa_name) != 0)
+            continue;
+        if (ifa->ifa_addr->sa_family != AF_INET6)
+            continue;
+
+        addr = ipv6address_from_bytes((const unsigned char *)&((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr);
+        
+        if (addr.hi>>56ULL >= 0xFC)
+            continue;
+        if (addr.hi>>32ULL == 0x20010db8)
+            continue;
+
+        result = addr;
+        break;
+        //printf(" %s 0x%x\n", ipv6address_fmt(result).string, ifa->ifa_flags);
     }
-    if (p == NULL)
-        goto error; /* not found */
 
-    /* Return the address */
-    {
-        struct sockaddr_in *sin = (struct sockaddr_in *)p->ifa_addr;
-
-        ip = ntohl(sin->sin_addr.s_addr);
-    }
-
-    freeifaddrs(ifap);
-    return ip;
-error:
-    freeifaddrs(ifap);
-    return 0;
+    freeifaddrs(list);
+    return result;
 }
 
 #endif
