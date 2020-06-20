@@ -285,24 +285,28 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     if (masscan->nic[i].ifname[0])
         fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
     
-    if (masscan->nic[i].src.ip.first+1 == masscan->nic[i].src.ip.last)
-        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
-            (masscan->nic[i].src.ip.first>>24)&0xFF,
-            (masscan->nic[i].src.ip.first>>16)&0xFF,
-            (masscan->nic[i].src.ip.first>> 8)&0xFF,
-            (masscan->nic[i].src.ip.first>> 0)&0xFF
+    if (masscan->nic[i].src.ipv4.first+1 == masscan->nic[i].src.ipv4.last)
+        fprintf(fp, "adapter-ip%s = %s\n", zzz,
+            (masscan->nic[i].src.ipv4.first>>24)&0xFF,
+            (masscan->nic[i].src.ipv4.first>>16)&0xFF,
+            (masscan->nic[i].src.ipv4.first>> 8)&0xFF,
+            (masscan->nic[i].src.ipv4.first>> 0)&0xFF
             );
-    else if (masscan->nic[i].src.ip.first+1 < masscan->nic[i].src.ip.last)
+    else if (masscan->nic[i].src.ipv4.first+1 < masscan->nic[i].src.ipv4.last)
         fprintf(fp, "adapter-ip%s = %u.%u.%u.%u-%u.%u.%u.%u\n", zzz,
-            (masscan->nic[i].src.ip.first>>24)&0xFF,
-            (masscan->nic[i].src.ip.first>>16)&0xFF,
-            (masscan->nic[i].src.ip.first>> 8)&0xFF,
-            (masscan->nic[i].src.ip.first>> 0)&0xFF,
-            (masscan->nic[i].src.ip.last>>24)&0xFF,
-            (masscan->nic[i].src.ip.last>>16)&0xFF,
-            (masscan->nic[i].src.ip.last>> 8)&0xFF,
-            (masscan->nic[i].src.ip.last>> 0)&0xFF
+            (masscan->nic[i].src.ipv4.first>>24)&0xFF,
+            (masscan->nic[i].src.ipv4.first>>16)&0xFF,
+            (masscan->nic[i].src.ipv4.first>> 8)&0xFF,
+            (masscan->nic[i].src.ipv4.first>> 0)&0xFF,
+            (masscan->nic[i].src.ipv4.last>>24)&0xFF,
+            (masscan->nic[i].src.ipv4.last>>16)&0xFF,
+            (masscan->nic[i].src.ipv4.last>> 8)&0xFF,
+            (masscan->nic[i].src.ipv4.last>> 0)&0xFF
             );
+
+    if (masscan->nic[i].src.ipv6.range) {
+        fprintf(fp, "adapter-ip%s = %s\n", zzz, ipv6address_fmt(masscan->nic[i].src.ipv6.first).string);
+    }
 
     if (masscan->nic[i].my_mac_count)
         fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", zzz,

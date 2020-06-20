@@ -64,12 +64,12 @@ masscan_initialize_adapter(
      * adapter doesn't have one, then the user must configure one.
      */
     if (1 || masscan->targets_ipv4.count) {
-        adapter_ip = masscan->nic[index].src.ip.first;
+        adapter_ip = masscan->nic[index].src.ipv4.first;
         if (adapter_ip == 0) {
             adapter_ip = rawsock_get_adapter_ip(ifname);
-            masscan->nic[index].src.ip.first = adapter_ip;
-            masscan->nic[index].src.ip.last = adapter_ip;
-            masscan->nic[index].src.ip.range = 1;
+            masscan->nic[index].src.ipv4.first = adapter_ip;
+            masscan->nic[index].src.ipv4.last = adapter_ip;
+            masscan->nic[index].src.ipv4.range = 1;
         }
         if (adapter_ip == 0) {
             fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n",
