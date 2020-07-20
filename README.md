@@ -122,6 +122,22 @@ Masscan can do more than just detect whether ports are open. It can also
 complete the TCP connection and interaction with the application at that
 port in order to grab simple "banner" information.
 
+Masscan supports banner checking on the following protocols:
+
+  * FTP
+  * HTTP
+  * IMAP4
+  * memcached
+  * POP3
+  * SMTP
+  * SSH
+  * SSL
+  * SMBv1
+  * SMBv2
+  * Telnet
+  * RDP
+  * VNC
+
 The problem with this is that masscan contains its own TCP/IP stack
 separate from the system you run it on. When the local system receives
 a SYN-ACK from the probed target, it responds with a RST packet that kills
