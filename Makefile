@@ -77,6 +77,13 @@ INCLUDES = -I.
 FLAGS2 =
 endif
 
+# NetBSD
+ifneq (, $(findstring netbsd, $(SYS)))
+LIBS = -lm -lpthread
+INCLUDES = -I.
+FLAGS2 =
+endif
+
 
 DEFINES = 
 CFLAGS = -g -ggdb $(FLAGS2) $(INCLUDES) $(DEFINES) -Wall -O2

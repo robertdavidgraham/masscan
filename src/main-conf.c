@@ -147,6 +147,8 @@ print_version()
     os = "MACH";
 #elif defined(__FreeBSD__)
     os = "FreeBSD";
+#elif defined(__NetBSD__)
+    os = "NetBSD";
 #elif defined(unix) || defined(__unix) || defined(__unix__)
     os = "Unix";
 #endif
