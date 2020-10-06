@@ -436,6 +436,16 @@ struct ProtocolParserStream banner_docker = {
     NULL,
 };
 
+static const char
+redis_hello[] = "*1\r\n$4\r\ninfo\r\n";
+
+struct ProtocolParserStream banner_redis = {
+    "banner-redis-server", 6379, redis_hello, sizeof(redis_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -542,6 +552,7 @@ banner1_create(void)
     b->payloads.tcp[2376] = (void*)&banner_ssl;
     b->payloads.tcp[2379] = (void*)&banner_docker;
     b->payloads.tcp[2380] = (void*)&banner_docker;
+    b->payloads.tcp[6379] = (void*)&banner_redis;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
