@@ -426,6 +426,16 @@ struct ProtocolParserStream banner_dns = {
     NULL,
 };
 
+static const char
+docker_hello[] = "GET /version HTTP/1.1\r\n\r\n";
+
+struct ProtocolParserStream banner_docker = {
+    "banner-docker", 2375, docker_hello, sizeof(docker_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -527,6 +537,11 @@ banner1_create(void)
     b->payloads.tcp[50000] = (void*)&banner_dns;
     b->payloads.tcp[50001] = (void*)&banner_dns;
     b->payloads.tcp[50002] = (void*)&banner_dns;
+    b->payloads.tcp[2375] = (void*)&banner_docker;
+    /* Docker/s */
+    b->payloads.tcp[2376] = (void*)&banner_ssl;
+    b->payloads.tcp[2379] = (void*)&banner_docker;
+    b->payloads.tcp[2380] = (void*)&banner_docker;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
