@@ -15,7 +15,7 @@ arbitrary port and address ranges.
 
 NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
-need to either the `--src-ip` option to run from a different IP address, or
+need to either use the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
