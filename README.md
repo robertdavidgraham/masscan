@@ -9,7 +9,7 @@ from a single machine.
 It's input/output is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features.
 
-Internally, it uses asynchronous tranmissions, similar to port scanners
+Internally, it uses asynchronous transmissions, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
@@ -20,7 +20,7 @@ use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
 
-This tool is free, but consider contributing money to its developement:
+This tool is free, but consider contributing money to its development:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
