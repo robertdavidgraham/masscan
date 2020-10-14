@@ -446,6 +446,16 @@ struct ProtocolParserStream banner_redis = {
     NULL,
 };
 
+static const char
+notes_rpc_hello[] = "\x3A\x00\x00\x00\x2F\x00\x00\x00\x02\x00\x00\x40\x02\x0F\x00\x01\x00\x3D\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x2F\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40\x1F\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+
+struct ProtocolParserStream banner_notes_rpc = {
+    "banner-NotesRPC", 6379, notes_rpc_hello, sizeof(notes_rpc_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -553,6 +563,13 @@ banner1_create(void)
     b->payloads.tcp[2379] = (void*)&banner_docker;
     b->payloads.tcp[2380] = (void*)&banner_docker;
     b->payloads.tcp[6379] = (void*)&banner_redis;
+    b->payloads.tcp[130] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[427] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[1352] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[1972] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[7171] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[8728] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[22001] = (void*)&banner_notes_rpc;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
