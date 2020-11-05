@@ -2,6 +2,9 @@
 # integration website that will build and test this project
 # every time something is submitted, and send me email if
 # the test breaks
+arch:
+  - amd64
+  - ppc64le
 language: c
 
 os:
