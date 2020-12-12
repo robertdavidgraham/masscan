@@ -49,6 +49,9 @@
     <Filter Include="Source Files\util">
       <UniqueIdentifier>{1d9cb2b4-1715-44d0-98e9-745f236c7872}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\stack">
+      <UniqueIdentifier>{26588af1-2234-4000-96fc-72f774f584f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -161,9 +164,6 @@
     </ClCompile>
     <ClCompile Include="..\src\proto-ssl.c">
       <Filter>Source Files\proto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\main-src.c">
-      <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-blackrock.c">
       <Filter>Source Files\crypto</Filter>
@@ -363,6 +363,12 @@
     <ClCompile Include="..\src\util-malloc.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\stack-src.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-ndpv6.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -451,9 +457,6 @@
     </ClInclude>
     <ClInclude Include="..\src\masscan.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\main-src.h">
-      <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-primegen.h">
       <Filter>Source Files\crypto</Filter>
@@ -619,6 +622,12 @@
     </ClInclude>
     <ClInclude Include="..\src\util-malloc.h">
       <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-src.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-ndpv6.h">
+      <Filter>Source Files\stack</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

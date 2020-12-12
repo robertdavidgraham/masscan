@@ -11,7 +11,7 @@
  * Process an ARP packet received in response to an ARP-scan.
  ***************************************************************************/
 void
-handle_arp(struct Output *out, time_t timestamp, const unsigned char *px,
+arp_recv_response(struct Output *out, time_t timestamp, const unsigned char *px,
            unsigned length, struct PreprocessedInfo *parsed)
 {
     ipaddress ip_them = parsed->src_ip;

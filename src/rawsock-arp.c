@@ -18,6 +18,7 @@
 #include "logger.h"
 #include "pixie-timer.h"
 #include "packet-queue.h"
+#include "proto-preprocess.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -40,6 +41,7 @@ struct ARP_IncomingRequest
     const unsigned char *mac_src;
     const unsigned char *mac_dst;
 };
+
 
 /****************************************************************************
  ****************************************************************************/
@@ -266,10 +268,65 @@ arp_resolve_sync(struct Adapter *adapter,
     return 1;
 }
 
+static void
+memxor(void *dst, const void *src, size_t length)
+{
+    unsigned char *dst2 = (unsigned char *)dst;
+    const unsigned char *src2 = (const unsigned char *)src;
+    size_t i;
+
+    for (i=0; i<length; i++)
+        dst2[i] ^= src2[i];
+}
+
+/**
+ * Handle an IPv6 request like Neighbor Solicitation
+ */
+int
+stack_handle_neighbor_solicitation(struct stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length)
+{
+    struct PacketBuffer *response = 0;
+    int err;
+    size_t offset;
+
+    if (parsed->opcode != 135)
+        return -1;
+
+    /* Get a buffer for sending the response packet. This thread doesn't
+     * send the packet itself. Instead, it formats a packet, then hands
+     * that packet off to a transmit thread for later transmission. */
+    for (err=1; err; ) {
+        err = rte_ring_sc_dequeue(stack->packet_buffers, (void**)&response);
+        if (err != 0) {
+            /* Pause and wait for a buffer to become available */
+            pixie_usleep(100);
+        }
+    }
+    if (response == NULL)
+        return -1; /* just to supress warnings */
+
+    if (response->length < length)
+        return 1;
+
+    memcpy(response->px, px, length);
+    response->length = length;
+    px = response->px;
+    
+    /* parse the contents */
+    offset = parsed->transport_offset;
+    printf("NDP\n");
+    /* IPv6-todo */
+    //if (offset + 40 
+
+    /* Swap MAC addresses */
+
+    return 0;
+}
+
 /****************************************************************************
  ****************************************************************************/
 int
-arp_response(
+stack_handle_arp(
     unsigned my_ip, const unsigned char *my_mac,
     const unsigned char *px, unsigned length,
     PACKET_QUEUE *packet_buffers,

@@ -26,6 +26,7 @@ enum {
     FOUND_SLL, /* Linux SLL */
     FOUND_OPROTO, /* some other IP protocol */
     FOUND_IGMP,
+    FOUND_NDPv6,
 };
 struct PreprocessedInfo {
     const unsigned char *mac_src;
@@ -42,7 +43,10 @@ struct PreprocessedInfo {
     ipaddress dst_ip;
     unsigned transport_offset;  /* 34 for normal Ethernet */
     unsigned transport_length;
-    unsigned port_src;
+    union {
+        unsigned port_src;
+        unsigned opcode;
+    };
     unsigned port_dst;
 
     unsigned app_offset; /* start of TCP payload */

@@ -2,7 +2,7 @@
 #define MASSCAN_H
 #include "ipv6address.h"
 #include "string_s.h"
-#include "main-src.h"
+#include "stack-src.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -126,7 +126,7 @@ struct Masscan
     struct {
         char ifname[256];
         struct Adapter *adapter;
-        struct Source src;
+        struct stack_src_t src;
         unsigned char my_mac[6];
         unsigned char router_mac[6];
         unsigned router_ip;

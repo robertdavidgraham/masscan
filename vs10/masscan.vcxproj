@@ -28,7 +28,6 @@
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
-    <ClCompile Include="..\src\main-src.c" />
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
     <ClCompile Include="..\src\misc-rstfilter.c" />
@@ -108,6 +107,8 @@
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
+    <ClCompile Include="..\src\stack-ndpv6.c" />
+    <ClCompile Include="..\src\stack-src.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\stub-lua.c" />
     <ClCompile Include="..\src\stub-pcap.c" />
@@ -136,7 +137,6 @@
     <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-ptrace.h" />
     <ClInclude Include="..\src\main-readrange.h" />
-    <ClInclude Include="..\src\main-src.h" />
     <ClInclude Include="..\src\main-status.h" />
     <ClInclude Include="..\src\main-throttle.h" />
     <ClInclude Include="..\src\masscan-app.h" />
@@ -197,6 +197,8 @@
     <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
+    <ClInclude Include="..\src\stack-ndpv6.h" />
+    <ClInclude Include="..\src\stack-src.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\stub-lua.h" />
     <ClInclude Include="..\src\stub-pcap.h" />

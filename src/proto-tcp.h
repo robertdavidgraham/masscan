@@ -87,8 +87,8 @@ enum TCP_What {
     TCP_WHAT_DATA,
 };
 
-void
-tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
+int
+stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
     int what, const void *p, size_t length,
     unsigned secs, unsigned usecs,
     unsigned seqno_them);

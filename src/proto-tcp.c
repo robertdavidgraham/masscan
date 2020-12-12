@@ -50,6 +50,7 @@ struct TCP_Control_Block
     uint32_t seqno_them;    /* the next seqno I expect to receive */
     uint32_t ackno_me;
     uint32_t ackno_them;
+    uint32_t seqno_them_first; /* ipv6-todo */
     
     struct TCP_Control_Block *next;
     struct TimeoutEntry timeout[1];
@@ -150,13 +151,13 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
         /*
          * Process this timeout
          */
-        tcpcon_handle(
+        stack_incoming_tcp(
             tcpcon,
             tcb,
             TCP_WHAT_TIMEOUT,
             0, 0,
             secs, usecs,
-            0);
+            tcb->seqno_them);
 
         /* If the TCB hasn't been destroyed, then we need to make sure
          * there is a timeout associated with it. KLUDGE: here is the problem:
@@ -361,7 +362,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
 
         if (p == NULL) {
-            fprintf(stderr, "tcpcon: parmeter: expected array []: %s\n", name);
+            LOG(0, "tcpcon: parmeter: expected array []: %s\n", name);
             exit(1);
         }
         port = (unsigned)strtoul(p+1, 0, 0);
@@ -421,7 +422,6 @@ tcpcon_create_table(    size_t entry_count,
                         )
 {
     struct TCP_ConnectionTable *tcpcon;
-    //printf("\nsizeof(TCB) = %u\n\n", (unsigned)sizeof(struct TCP_Control_Block));
     
     
     tcpcon = CALLOC(1, sizeof(*tcpcon));
@@ -486,10 +486,20 @@ static int EQUALS(const struct TCP_Control_Block *lhs, const struct TCP_Control_
 {
     if (lhs->port_me != rhs->port_me || lhs->port_them != rhs->port_them)
         return 0;
-    if (memcmp(&lhs->ip_me, &rhs->ip_me, sizeof(rhs->ip_me)) != 0)
+    if (lhs->ip_me.version != rhs->ip_me.version)
         return 0;
-    if (memcmp(&lhs->ip_them, &rhs->ip_them, sizeof(rhs->ip_them)) != 0)
-        return 0;
+    if (lhs->ip_me.version == 6) {
+        if (memcmp(&lhs->ip_me.ipv6, &rhs->ip_me.ipv6, sizeof(rhs->ip_me.ipv6)) != 0)
+            return 0;
+        if (memcmp(&lhs->ip_them.ipv6, &rhs->ip_them.ipv6, sizeof(rhs->ip_them.ipv6)) != 0)
+            return 0;
+    } else {
+        if (lhs->ip_me.ipv4 != rhs->ip_me.ipv4)
+            return 0;
+        if (lhs->ip_them.ipv4 != rhs->ip_them.ipv4)
+            return 0;
+    }
+
     return 1;
 }
 
@@ -598,7 +608,7 @@ tcpcon_destroy_tcb(
     index = tcb_hash(   tcb->ip_me, tcb->port_me, 
                         tcb->ip_them, tcb->port_them, 
                         tcpcon->entropy);
-
+    
     /*
      * At this point, we have the head of a linked list of TCBs. Now,
      * traverse that linked list until we find our TCB
@@ -715,6 +725,8 @@ tcpcon_create_tcb(
     tmp.port_them = (unsigned short)port_them;
 
     index = tcb_hash(ip_me, port_me, ip_them, port_them, tcpcon->entropy);
+    
+    
     tcb = tcpcon->entries[index & tcpcon->mask];
     while (tcb && !EQUALS(tcb, &tmp)) {
         tcb = tcb->next;
@@ -735,6 +747,7 @@ tcpcon_create_tcb(
         tcb->port_me = (unsigned short)port_me;
         tcb->port_them = (unsigned short)port_them;
 
+        tcb->seqno_them_first = seqno_them; /* ipv6-todo */
         tcb->seqno_me = seqno_me;
         tcb->seqno_them = seqno_them;
         tcb->ackno_me = seqno_them;
@@ -753,6 +766,8 @@ tcpcon_create_tcb(
 
         tcpcon->active_count++;
     }
+
+    tcb_lookup(tcpcon, ip_me, ip_them, port_me, port_them);
 
     return tcb;
 }
@@ -790,6 +805,7 @@ tcb_lookup(
         tcb = tcb->next;
     }
 
+
     return tcb;
 }
 
@@ -810,6 +826,7 @@ tcpcon_send_packet(
 
     assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
 
+
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
@@ -824,8 +841,6 @@ tcpcon_send_packet(
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
-        //if (wait != 100)
-        //    ; //printf("\n");FIXME
     }
     if (response == NULL)
         return;
@@ -905,8 +920,6 @@ tcp_send_RST(
             fflush(stdout);
             pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
         }
-        //if (wait != 100)
-        //    ;//printf("\n"); FIXME
     }
     if (response == NULL)
         return;
@@ -1253,7 +1266,6 @@ application(struct TCP_ConnectionTable *tcpcon,
                 
                 /* acknowledge the bytes received */
                 if (more.m_length) {
-                    //printf("." "sending more data %u bytes\n", more.length);
                     LOGSEND(tcb, "peer(ACK)");
                     LOGSEND(tcb, "peer(payload)");
                     tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, 0);
@@ -1312,8 +1324,8 @@ application(struct TCP_ConnectionTable *tcpcon,
  * you see drawn everywhere, where they have states like "TIME_WAIT". Only
  * we don't really have those states.
  *****************************************************************************/
-void
-tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
+int
+stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
               struct TCP_Control_Block *tcb,
               int in_what, const void *vpayload, size_t payload_length,
               unsigned secs, unsigned usecs,
@@ -1323,8 +1335,8 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
     const unsigned char *payload = (const unsigned char *)vpayload;
 
     if (tcb == NULL)
-        return;
-    
+        return 0;
+
     LOGip(5, tcb->ip_them, tcb->port_them, "=%s : %s                  \n",
           state_to_string(tcb->tcpstate),
           what_to_string(what));
@@ -1340,14 +1352,14 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                 0x04,
                 0, 0, 0);
             tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
-            return;
+            return 1;
         }
     }
     
     if (what == TCP_WHAT_RST) {
         LOGSEND(tcb, "tcb(destroy)");
         tcpcon_destroy_tcb(tcpcon, tcb, Reason_RST);
-        return;
+        return 1;
     }
     
     
@@ -1503,7 +1515,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x10,
                                            0, 0, 0);
-                        return;
+                        return 1;
                     }
                     
                     while (seqno_them != tcb->seqno_them && payload_length) {
@@ -1517,7 +1529,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                         tcpcon_send_packet(tcpcon, tcb,
                                            0x10,
                                            0, 0, 0);
-                        return;
+                        return 1;
                     }
                     
                     LOGSEND(tcb, "app(payload)");
@@ -1575,7 +1587,7 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_TIMEOUT:
                     if (tcb->tcpstate == STATE_TIME_WAIT) {
                         tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
-                        return;
+                        return 1;
                     }
                     break;
                 case TCP_WHAT_ACK:
@@ -1608,5 +1620,6 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon,
         default:
             LOG(1, "TCP-state: unknown state\n");
     }
+    return 1;
 }
 

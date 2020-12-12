@@ -312,6 +312,22 @@ parse_ipv6_hop_by_hop:
     goto parse_ipv6_next;
 
 parse_icmpv6:
+    {
+        unsigned icmp_type;
+        unsigned icmp_code;
+
+        VERIFY_REMAINING(4, FOUND_ICMP);
+        
+        icmp_type = px[offset+0];
+        icmp_code = px[offset+1];
+
+        info->port_src = icmp_type;
+        info->port_dst = icmp_code;
+
+        if (133 <= icmp_type && icmp_type <= 136) {
+            info->found = FOUND_NDPv6;
+        }
+    }
     return 1;
 
 parse_vlan8021q:
@@ -563,6 +579,8 @@ parse_arp:
         hardware_length = px[offset+4];
         protocol_length = px[offset+5];
         opcode = px[offset+6]<<8 | px[offset+7];
+        info->opcode = opcode;
+        info->ip_protocol = opcode;
         offset += 8;
 
         VERIFY_REMAINING(2*hardware_length + 2*protocol_length, FOUND_ARP);
@@ -581,7 +599,6 @@ parse_arp:
                             | px[offset + 2*hardware_length + protocol_length + 2] << 8
                             | px[offset + 2*hardware_length + protocol_length + 3] << 0;
         
-        info->ip_protocol = opcode;
         info->found_offset = info->ip_offset;
         return 1;
     }

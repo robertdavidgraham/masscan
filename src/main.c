@@ -37,7 +37,7 @@
 #include "output.h"             /* for outputing results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
-#include "stub-pcap.h"       /* dynamically load libpcap library */
+#include "stub-pcap.h"          /* dynamically load libpcap library */
 #include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
 #include "pixie-timer.h"        /* portable time functions */
 #include "pixie-threads.h"      /* portable threads */
@@ -144,7 +144,7 @@ struct ThreadPair {
     /**
      * The current IP address we are using for transmit/receive.
      */
-    struct Source src;
+    struct stack_src_t src;
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
 
@@ -240,7 +240,7 @@ adapter_get_source_addresses(const struct Masscan *masscan,
             ipv6address *src_ipv6,
             ipv6address *src_ipv6_mask)
 {
-    const struct Source *src = &masscan->nic[nic_index].src;
+    const struct stack_src_t *src = &masscan->nic[nic_index].src;
     static ipv6address mask = {~0ULL, ~0ULL};
 
     *src_ipv4 = src->ipv4.first;
@@ -582,6 +582,15 @@ is_nic_port(const struct Masscan *masscan, unsigned ip)
     return 0;
 }
 
+static unsigned
+is_ipv6_multicast(ipaddress ip_me)
+{
+    /* If this is an IPv6 multicast packe, one sent to the IPv6
+     * address with a prefix of FF02::/16 */
+    return ip_me.version == 6 && (ip_me.ipv6.hi>>48ULL) == 0xFF02;
+}
+
+
 /***************************************************************************
  *
  * Asynchronous receive thread
@@ -606,6 +615,16 @@ receive_thread(void *v)
     uint64_t *status_tcb_count;
     uint64_t entropy = masscan->seed;
     struct ResetFilter *rf;
+    struct stack_t stack[1];
+
+
+    /* Create an object representing the network stack */
+    memset(stack, 0, sizeof(*stack));
+    stack->mac_address = parms->adapter_mac;
+    stack->packet_buffers = parms->packet_buffers;
+    stack->transmit_queue = parms->transmit_queue;
+    stack->src = &parms->src;
+
     
     /* For reducing RST responses, see rstfilter_is_filter() below */
     rf = rstfilter_create(entropy, 16384);
@@ -786,7 +805,8 @@ receive_thread(void *v)
         unsigned seqno_me;
         unsigned seqno_them;
         unsigned cookie;
-        
+        unsigned Q = 0;
+
         /*
          * RECEIVE
          *
@@ -844,22 +864,57 @@ receive_thread(void *v)
         }
 
         /* verify: my IP address */
-        if (!is_my_ip(&parms->src, ip_me))
+        if (!is_my_ip(&parms->src, ip_me)) {
+            if (parsed.found == FOUND_NDPv6 && parsed.opcode == 135 && is_ipv6_multicast(ip_me)) {
+                stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+            }
             continue;
+        }
 
         /*
          * Handle non-TCP protocols
          */
         switch (parsed.found) {
+            case FOUND_NDPv6:
+                switch (parsed.opcode) {
+                case 133: /* Router Solicitation */
+                    /* Ignore router solicitations, since we aren't a router */
+                    continue;
+                case 134: /* Router advertisement */
+                    /* TODO: We need to process router advertisements while scanning
+                     * so that we can print warning messages if router information
+                     * changes while scanning. */
+                    continue;
+                case 135: /* Neighbor Solicitation */
+                    /* When responses come back from our scans, the router will send us
+                     * these packets. We need to respond to them, so that the router
+                     * can then forward the packets to us. If we don't respond, we'll
+                     * get no responses. */
+                    stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+                    continue;
+                case 136: /* Neighbor Advertisment */
+                    /* TODO: If doing an --ndpscan, the scanner subsystem needs to deal
+                     * with these */
+                    continue;
+                case 137: /* Redirect */
+                    /* We ignore these, since we really don't have the capability to send
+                     * packets to one router for some destinations and to another router
+                     * for other destinations */
+                    continue;
+                default:
+                    break;
+                }
+                continue;
             case FOUND_ARP:
                 LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
-                switch (px[parsed.found_offset + 6]<<8 | px[parsed.found_offset+7]) {
+
+                switch (parsed.opcode) {
                 case 1: /* request */
                     /* This function will transmit a "reply" to somebody's ARP request
                      * for our IP address (as part of our user-mode TCP/IP).
                      * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
                      * ourself, or the router will lose track of us.*/
-                    arp_response(   ip_me.ipv4,
+                     stack_handle_arp(   ip_me.ipv4,
                                     parms->adapter_mac,
                                     px, length,
                                     parms->packet_buffers,
@@ -882,7 +937,7 @@ receive_thread(void *v)
                         continue;
 
                     /* ...everything good, so now report this response */
-                    handle_arp(out, secs, px, length, &parsed);
+                    arp_recv_response(out, secs, px, length, &parsed);
                     break;
                 }
                 continue;
@@ -916,6 +971,8 @@ receive_thread(void *v)
             continue;
         if (parms->masscan->nmap.packet_trace)
             packet_trace(stdout, parms->pt_start, px, length, 0);
+
+        Q = 0;
 
         /* Save raw packet in --pcap file */
         if (pcapfile) {
@@ -960,21 +1017,22 @@ receive_thread(void *v)
                                     seqno_me, seqno_them+1,
                                     parsed.ip_ttl);
                     (*status_tcb_count)++;
+
                 }
 
-                tcpcon_handle(tcpcon, tcb, TCP_WHAT_SYNACK,
+                Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_SYNACK,
                     0, 0, secs, usecs, seqno_them+1);
 
             } else if (tcb) {
                 /* If this is an ACK, then handle that first */
                 if (TCP_IS_ACK(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_ACK,
+                    Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_ACK,
                         0, seqno_me, secs, usecs, seqno_them);
                 }
 
                 /* If this contains payload, handle that second */
                 if (parsed.app_length) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_DATA,
+                    Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_DATA,
                         px + parsed.app_offset, parsed.app_length,
                         secs, usecs, seqno_them);
                 }
@@ -983,13 +1041,13 @@ receive_thread(void *v)
                  * payload + FIN can come together */
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_FIN,
+                    Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_FIN,
                         0, parsed.app_length, secs, usecs, seqno_them);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
                 if (TCP_IS_RST(px, parsed.transport_offset)) {
-                    tcpcon_handle(tcpcon, tcb, TCP_WHAT_RST,
+                    Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_RST,
                         0, 0, secs, usecs, seqno_them);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
@@ -1016,9 +1074,9 @@ receive_thread(void *v)
 
         }
 
-        if (port_me == 55555)
-            printf(".%c\n", TCP_IS_SYNACK(px, parsed.transport_offset)?'A':'x');
-
+        if (Q == 0)
+            ; //printf("\nerr\n");
+   
         if (TCP_IS_SYNACK(px, parsed.transport_offset)
             || TCP_IS_RST(px, parsed.transport_offset)) {
 
