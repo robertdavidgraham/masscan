@@ -80,6 +80,7 @@ handle_icmp(struct Output *out, time_t timestamp,
 
     switch (type) {
     case 0: /* ICMP echo reply */
+    case 129:
         cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0, entropy);
         if ((cookie & 0xFFFFFFFF) != seqno_me)
             return; /* not my response */

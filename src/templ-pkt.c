@@ -849,12 +849,7 @@ template_set_target_ipv6(
             px[offset_tcp+ 5] = (unsigned char)(seqno >> 16);
             px[offset_tcp+ 6] = (unsigned char)(seqno >>  8);
             px[offset_tcp+ 7] = (unsigned char)(seqno >>  0);
-            xsum = (uint64_t)tmpl->ipv6.checksum_tcp
-                    + (uint64_t)seqno;
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = (xsum >> 16) + (xsum & 0xFFFF);
-            xsum = ~xsum;
+            xsum = checksum_ipv6(px + offset_ip + 8, px + offset_ip + 24, 58,  tmpl->ipv6.length - offset_tcp, px + offset_tcp);
             px[offset_tcp+2] = (unsigned char)(xsum >>  8);
             px[offset_tcp+3] = (unsigned char)(xsum >>  0);
         break;
@@ -1121,6 +1116,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
     unsigned payload_length;
     unsigned offset_ip;
     unsigned offset_tcp;
+    unsigned offset_tcp6;
     unsigned char *buf;
 
     /* Zero out everything and start from scratch */
@@ -1151,7 +1147,8 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
     /* destination = end of IPv6 header
      * source = end of IPv4 header
      * contents = everything after IPv4/IPv6 header */
-    memmove(buf + offset_ip + 40,
+    offset_tcp6 = offset_ip + 40;
+    memmove(buf + offset_tcp6,
             buf + offset_tcp,       
             payload_length
             );
@@ -1177,8 +1174,13 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
     /* Set the "next header" field.
      * TODO: need to fix ICMP */
     buf[offset_ip + 6] = (unsigned char)parsed.ip_protocol;
-    if (parsed.ip_protocol == 1)
+    if (parsed.ip_protocol == 1) {
         buf[offset_ip + 6] = 58; /* ICMPv6 */
+        if (payload_length > 0 && buf[offset_tcp6 + 0] == 8) {
+            /* PING -> PINGv6 */
+            buf[offset_tcp6 + 0] = 128;
+        }
+    }
 
     /* Hop limit starts out as 255 */
     buf[offset_ip + 7] = 0xFF;
@@ -1192,6 +1194,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
     tmpl->ipv6.offset_ip = parsed.ip_offset;
     tmpl->ipv6.offset_tcp = parsed.transport_offset;
     tmpl->ipv6.offset_app = parsed.app_offset;
+
 
 }
 

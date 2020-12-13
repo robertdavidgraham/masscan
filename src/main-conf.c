@@ -286,7 +286,7 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
         fprintf(fp, "adapter%s = %s\n", zzz, masscan->nic[i].ifname);
     
     if (masscan->nic[i].src.ipv4.first+1 == masscan->nic[i].src.ipv4.last)
-        fprintf(fp, "adapter-ip%s = %s\n", zzz,
+        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", zzz,
             (masscan->nic[i].src.ipv4.first>>24)&0xFF,
             (masscan->nic[i].src.ipv4.first>>16)&0xFF,
             (masscan->nic[i].src.ipv4.first>> 8)&0xFF,
