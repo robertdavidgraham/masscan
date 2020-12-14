@@ -456,6 +456,17 @@ struct ProtocolParserStream banner_notes_rpc = {
     NULL,
 };
 
+static const char
+ms_sql_s_hello[] = "\x12\x01\x00\x34\x00\x00\x00\x00\x00\x00\x15\x00\x06\x01\x00\x1b\x00\x01\x02\x00\x1c\x00\x0c\x03\x00\x28\x00\x04\xff\x08\x00\x01\x55\x00\x00\x00\x4d\x53\x53\x51\x4c\x53\x65\x72\x76\x65\x72\x00\x48\x0f\x00\x00";
+
+struct ProtocolParserStream banner_ms_sql_s = {
+    "banner-ms-sql-s", 6379, ms_sql_s_hello, sizeof(ms_sql_s_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
+
 /***************************************************************************
  * Create the --banners systems
  ***************************************************************************/
@@ -570,6 +581,7 @@ banner1_create(void)
     b->payloads.tcp[7171] = (void*)&banner_notes_rpc;
     b->payloads.tcp[8728] = (void*)&banner_notes_rpc;
     b->payloads.tcp[22001] = (void*)&banner_notes_rpc;
+    b->payloads.tcp[1433] = (void*)&banner_ms_sql_s;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
