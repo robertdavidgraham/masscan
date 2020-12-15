@@ -13,6 +13,8 @@
 #include "stub-pfring.h"
 #include "pixie-timer.h"
 #include "main-globals.h"
+#include "proto-preprocess.h"
+
 
 #include "unusedparm.h"
 #include "util-malloc.h"
@@ -284,6 +286,9 @@ rawsock_send_packet(
     unsigned length,
     unsigned flush)
 {
+
+    /* Why: this happens in "offline mode", when we are benchmarking the
+     * core algorithms without sending packets. */
     if (adapter == 0)
         return 0;
 

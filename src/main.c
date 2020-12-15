@@ -865,8 +865,12 @@ receive_thread(void *v)
 
         /* verify: my IP address */
         if (!is_my_ip(&parms->src, ip_me)) {
-            if (parsed.found == FOUND_NDPv6 && parsed.opcode == 135 && is_ipv6_multicast(ip_me)) {
-                stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+            /* NDP Neighbor Solicitations don't come to our IP address, but to
+             * a multicast address */
+            if (is_ipv6_multicast(ip_me)) {
+                if (parsed.found == FOUND_NDPv6 && parsed.opcode == 135) {
+                    stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+                }
             }
             continue;
         }

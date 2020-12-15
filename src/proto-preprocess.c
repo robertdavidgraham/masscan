@@ -216,6 +216,7 @@ parse_ipv6:
     {
         unsigned payload_length;
 
+        info->ip_offset = offset;
         VERIFY_REMAINING(40, FOUND_IPV6);
 
         /* Check version */

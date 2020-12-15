@@ -19,6 +19,8 @@
 #include "pixie-timer.h"
 #include "packet-queue.h"
 #include "proto-preprocess.h"
+#include "stack-src.h"
+#include "util-checksum.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -279,22 +281,23 @@ memxor(void *dst, const void *src, size_t length)
         dst2[i] ^= src2[i];
 }
 
-/**
- * Handle an IPv6 request like Neighbor Solicitation
- */
-int
-stack_handle_neighbor_solicitation(struct stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length)
+static inline void _append(unsigned char *buf, size_t *r_offset, unsigned x)
 {
-    struct PacketBuffer *response = 0;
+    buf[(*r_offset)++] = (unsigned char)x;
+}
+static inline void _append_bytes(unsigned char *buf, size_t *r_offset, const unsigned char *bytes, size_t len)
+{
+    size_t i;
+    for (i=0; i<len; i++)
+        _append(buf, r_offset, bytes[i]);
+}
+
+static struct PacketBuffer *
+_stack_get_packetbuffer(struct stack_t *stack)
+{
     int err;
-    size_t offset;
+    struct PacketBuffer *response = NULL;
 
-    if (parsed->opcode != 135)
-        return -1;
-
-    /* Get a buffer for sending the response packet. This thread doesn't
-     * send the packet itself. Instead, it formats a packet, then hands
-     * that packet off to a transmit thread for later transmission. */
     for (err=1; err; ) {
         err = rte_ring_sc_dequeue(stack->packet_buffers, (void**)&response);
         if (err != 0) {
@@ -302,24 +305,116 @@ stack_handle_neighbor_solicitation(struct stack_t *stack, struct PreprocessedInf
             pixie_usleep(100);
         }
     }
-    if (response == NULL)
-        return -1; /* just to supress warnings */
+    return response;
+}
+static void
+_stack_transmit_packetbuffer(struct stack_t *stack, struct PacketBuffer *response)
+{
+    int err;
+    for (err=1; err; ) {
+        err = rte_ring_sp_enqueue(stack->transmit_queue, response);
+        if (err) {
+            LOG(0, "transmit queue full (should be impossible)\n");
+            pixie_usleep(10000000);
+        }
+    }
+}
 
+
+/**
+ * Handle the IPv6 Neighbor Solicitation request.
+ * This happens after we've transmitted a packet, a response is on
+ * it's way back, and the router needs to give us the response
+ * packet. The router sends us a soliticiation, like an ARP request, 
+ * to which we must respond.
+ */
+int
+stack_handle_neighbor_solicitation(struct stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length)
+{
+    struct PacketBuffer *response = 0;
+    size_t offset;
+    size_t remaining;
+    ipaddress target_ip;
+    const unsigned char *target_ip_buf;
+    const unsigned char *target_mac_buf = stack->mac_address;
+    unsigned xsum;
+    unsigned char *buf2;
+    size_t offset_ip = parsed->ip_offset;
+    size_t offset_ip_src = offset_ip + 8; /* offset in packet to the source IPv6 address */
+    size_t offset_ip_dst = offset_ip + 24;
+    size_t offset_icmpv6 = parsed->transport_offset;
+    
+    /* Verify it's a "Neighbor Solitication" opcode */
+    if (parsed->opcode != 135)
+        return -1;
+
+    /* Make sure there's at least a full header */
+    offset = parsed->transport_offset;
+    remaining = length - offset;
+    if (remaining < 24)
+        return -1;
+
+    /* Make sure it's looking for our own address */
+    target_ip_buf = px + offset + 8;
+    target_ip.version = 6;
+    target_ip.ipv6 = ipv6address_from_bytes(target_ip_buf);
+    if (!is_my_ip(stack->src, target_ip))
+        return -1;
+
+    /* Get a buffer for sending the response packet. This thread doesn't
+     * send the packet itself. Instead, it formats a packet, then hands
+     * that packet off to a transmit thread for later transmission. */
+    response = _stack_get_packetbuffer(stack);
+    if (response == NULL)
+        return -1; 
     if (response->length < length)
         return 1;
 
+    /* Use the request packet as a template for the response */
     memcpy(response->px, px, length);
-    response->length = length;
-    px = response->px;
+    buf2 = response->px;
     
-    /* parse the contents */
-    offset = parsed->transport_offset;
-    printf("NDP\n");
-    /* IPv6-todo */
-    //if (offset + 40 
+    /* Set the destination MAC address and destination IPv6 adress*/
+    memcpy(buf2 + 0, px + 6, 6);
+    memcpy(buf2 + offset_ip_dst, px + offset_ip_src, 16);
 
-    /* Swap MAC addresses */
+    /* Set the source MAC address and source IPv6 address */
+    memcpy(buf2 + offset_ip_src, target_ip_buf, 16);
+    memcpy(buf2 + 6, target_mac_buf, 6);
+    
+    /* Format the response */
+    _append(buf2, &offset, 136); /* type */
+    _append(buf2, &offset, 0); /* code */
+    _append(buf2, &offset, 0); /*checksum[hi] */
+    _append(buf2, &offset, 0); /*checksum[lo] */
+    _append(buf2, &offset, 0x60); /* flags*/ 
+    _append(buf2, &offset, 0);
+    _append(buf2, &offset, 0);
+    _append(buf2, &offset, 0);
+    _append_bytes(buf2, &offset, target_ip_buf, 16);
+    _append(buf2, &offset, 2);
+    _append(buf2, &offset, 1);
+    _append_bytes(buf2, &offset, target_mac_buf, 6);
 
+    xsum = checksum_ipv6(   buf2 + offset_ip_src, 
+                            buf2 + offset_ip_dst, 
+                            58,  
+                            offset - offset_icmpv6, 
+                            buf2 +offset_icmpv6);
+    buf2[offset_icmpv6 + 2] = (unsigned char)(xsum >> 8);
+    buf2[offset_icmpv6 + 3] = (unsigned char)(xsum >> 0);
+
+    {
+        struct PreprocessedInfo parsed;
+        int x;
+        x = preprocess_frame(buf2, offset, 1, &parsed);
+        printf("ver=%d proto=%d opcode=%d          \n", parsed.ip_version, parsed.ip_protocol, parsed.opcode);
+    }
+
+
+    /* Transmit the packet-buffer */
+    response->length = offset;
+    _stack_transmit_packetbuffer(stack, response);
     return 0;
 }
 
