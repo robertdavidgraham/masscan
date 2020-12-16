@@ -404,14 +404,6 @@ stack_handle_neighbor_solicitation(struct stack_t *stack, struct PreprocessedInf
     buf2[offset_icmpv6 + 2] = (unsigned char)(xsum >> 8);
     buf2[offset_icmpv6 + 3] = (unsigned char)(xsum >> 0);
 
-    {
-        struct PreprocessedInfo parsed;
-        int x;
-        x = preprocess_frame(buf2, offset, 1, &parsed);
-        printf("ver=%d proto=%d opcode=%d          \n", parsed.ip_version, parsed.ip_protocol, parsed.opcode);
-    }
-
-
     /* Transmit the packet-buffer */
     response->length = offset;
     _stack_transmit_packetbuffer(stack, response);

@@ -274,7 +274,7 @@ binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     static const unsigned HeaderLength = 14;
 
     if (ip.version == 6) {
-        binary_out_banner(out, fp, timestamp, ip, ip_proto, port, proto, ttl, px, length);
+        binary_out_banner_ipv6(out, fp, timestamp, ip, ip_proto, port, proto, ttl, px, length);
         return;
     }
     
