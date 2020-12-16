@@ -697,15 +697,6 @@ template_set_target_ipv6(
         if (*r_length > tmpl->ipv6.length)
             *r_length = tmpl->ipv6.length;
         memcpy(px, tmpl->ipv6.packet, *r_length);
-        px = px + tmpl->ipv6.offset_ip;
-        /*px[14] = (unsigned char)((ip_me >> 24) & 0xFF);
-        px[15] = (unsigned char)((ip_me >> 16) & 0xFF);
-        px[16] = (unsigned char)((ip_me >>  8) & 0xFF);
-        px[17] = (unsigned char)((ip_me >>  0) & 0xFF);
-        px[24] = (unsigned char)((ip_them >> 24) & 0xFF);
-        px[25] = (unsigned char)((ip_them >> 16) & 0xFF);
-        px[26] = (unsigned char)((ip_them >>  8) & 0xFF);
-        px[27] = (unsigned char)((ip_them >>  0) & 0xFF);*/
         return;
     } else if (port_them == Templ_VulnCheck) {
         tmpl = &tmplset->pkts[Proto_VulnCheck];
@@ -792,7 +783,6 @@ template_set_target_ipv6(
     /*
      * Now do the checksum for the higher layer protocols
      */
-    xsum = 0;
     switch (tmpl->proto) {
     case Proto_TCP:
         px[offset_tcp+ 0] = (unsigned char)(port_me >> 8);

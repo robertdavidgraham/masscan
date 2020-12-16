@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-struct RangeParser
+struct massip_parser
 {
     unsigned long long line_number;
     unsigned long long char_number;
@@ -31,29 +31,27 @@ struct RangeParser
 
 /***************************************************************************
  ***************************************************************************/
-static struct RangeParser *
-rangeparse_create(void)
+static struct massip_parser *
+_parser_init(struct massip_parser *p)
 {
-    struct RangeParser *result;
-    
-    result = CALLOC(1, sizeof(*result));
-    result->line_number = 1;
-    result->ipv6.ellision_index = 8;
-    return result;
+    memset(p, 0, sizeof(*p));
+    p->line_number = 1;
+    p->ipv6.ellision_index = 8;
+    return p;
 }
 
 /***************************************************************************
  ***************************************************************************/
 static void
-rangeparse_destroy(struct RangeParser *p)
+_parser_destroy(struct massip_parser *p)
 {
-    free(p);
+    ;
 }
 
 /***************************************************************************
  ***************************************************************************/
 static void
-rangeparse_err(struct RangeParser *p, unsigned long long *line_number, unsigned long long *charindex)
+_parser_err(struct massip_parser *p, unsigned long long *line_number, unsigned long long *charindex)
 {
     *line_number = p->line_number;
     *charindex = p->char_number;
@@ -62,7 +60,7 @@ rangeparse_err(struct RangeParser *p, unsigned long long *line_number, unsigned 
 
 
 static unsigned
-ipv6_finish_address(struct RangeParser *p)
+_parser_finish_ipv6(struct massip_parser *p)
 {
     unsigned index = p->ipv6.index;
     unsigned ellision = p->ipv6.ellision_index;
@@ -120,13 +118,13 @@ ipv6_finish_address(struct RangeParser *p)
  * state into discrete values.
  ***************************************************************************/
 static void
-rangeparse_getipv6(struct RangeParser *state, ipv6address *begin, ipv6address *end)
+_parser_get_ipv6(struct massip_parser *state, ipv6address *begin, ipv6address *end)
 {
     *begin = state->ipv6._begin;
     *end = state->ipv6._end;
 }
 
-enum RangeState {
+enum parser_state_t {
     LINE_START, ADDR_START,
     COMMENT,
     NUMBER0, NUMBER1, NUMBER2, NUMBER3, NUMBER_ERR,
@@ -146,7 +144,7 @@ enum RangeState {
  * parsing an IPv4 address to the middle of parsing an IPv6 address.
  ***************************************************************************/
 static int
-change_to_ipv6(struct RangeParser *p, int old_state)
+_switch_to_ipv6(struct massip_parser *p, int old_state)
 {
     unsigned num = p->tmp;
 
@@ -179,11 +177,11 @@ enum {
  * 'state-machine parser'.
  ***************************************************************************/
 static enum {Still_Working, Found_Error, Found_IPv4, Found_IPv6}
-rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t length,
+_parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t length,
                 unsigned *r_begin, unsigned *r_end)
 {
-    size_t i = r_offset?(*r_offset):0;
-    enum RangeState state = p->state;
+    size_t i;
+    enum parser_state_t state = p->state;
     int result = Still_Working;
 
     /* The 'offset' parameter is optional. If NULL, then set it to zero */
@@ -192,6 +190,8 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
     else
         i = 0;
 
+    /* For all bytes in this chunk. This loop will exit early once
+     * we've found a complete IP address. */
     while (i < length) {
         unsigned char c = buf[i++];
 
@@ -308,7 +308,7 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
                     case '-':
                         /* All the things that end an IPv6 address */
                         p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
-                        if (ipv6_finish_address(p) != 0) {
+                        if (_parser_finish_ipv6(p) != 0) {
                             state = ERROR;
                             length = i;
                             break;
@@ -390,6 +390,7 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
                         length = i;
                         break;
                 }
+                break;
 
             case COMMENT:
                 if (c == '\n') {
@@ -506,7 +507,7 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
                             if (state == NUMBER0) {
                                 /* Assume that we've actually got an
                                  * IPv6 number */
-                                state = change_to_ipv6(p, state);
+                                _switch_to_ipv6(p, state);
                                 state = IPV6_BEGIN;
                             } else {
                                 state = ERROR;
@@ -520,7 +521,7 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
                         if (state == NUMBER0 || state == SECOND0) {
                             /* Assume that we've actually got an
                              * IPv6 number */
-                            state = change_to_ipv6(p, state);
+                            _switch_to_ipv6(p, state);
                             state = IPV6_BEGIN;
                             i--; /* go back one character */
                         } else {
@@ -564,7 +565,7 @@ rangeparse_next(struct RangeParser *p, const char *buf, size_t *r_offset, size_t
                     case ':':
                         if (state == NUMBER0) {
                             /* Assume this is an IPv6 address instead of an IPv4 address */
-                            state = change_to_ipv6(p, state);
+                            _switch_to_ipv6(p, state);
                             state = IPV6_BEGIN;
                             i--;
                             break;
@@ -646,47 +647,46 @@ rangefile_test_error(const char *buf, unsigned long long in_line_number, unsigne
 {
     size_t length = strlen(buf);
     size_t offset = 0;
-    struct RangeParser *p;
+    struct massip_parser p[1];
     unsigned out_begin = 0xa3a3a3a3;
     unsigned out_end  = 0xa3a3a3a3;
     unsigned long long out_line_number;
     unsigned long long out_char_number;
     int x;
-    bool is_found = false;
 
     /* test the entire buffer */
-    p = rangeparse_create();
-    x = rangeparse_next(p, buf, &offset, length, &out_begin, &out_end);
+    _parser_init(p);
+    x = _parser_next(p, buf, &offset, length, &out_begin, &out_end);
     if (x != Found_Error)
         goto fail;
-    rangeparse_err(p, &out_line_number, &out_char_number);
+    _parser_err(p, &out_line_number, &out_char_number);
     if (in_line_number != out_line_number || in_char_number != out_char_number)
         goto fail;
 
     /* test one byte at a time */
-    rangeparse_destroy(p);
-    p = rangeparse_create();
+    _parser_destroy(p);
+    _parser_init(p);
     offset = 0;
     out_begin = 0xa3a3a3a3;
     out_end  = 0xa3a3a3a3;
-    is_found = false;
+    
     x = 0;
     while (offset < length) {
-        x = rangeparse_next(p, buf, &offset, offset+1, &out_begin, &out_end);
+        x = _parser_next(p, buf, &offset, offset+1, &out_begin, &out_end);
         if (x == Found_Error)
             break;
     }
     if (x != Found_Error)
         goto fail;
-    rangeparse_err(p, &out_line_number, &out_char_number);
+    _parser_err(p, &out_line_number, &out_char_number);
 
     if (in_line_number != out_line_number || in_char_number != out_char_number)
         goto fail;
 
-    rangeparse_destroy(p);
+    _parser_destroy(p);
     return 0;
 fail:
-    rangeparse_destroy(p);
+    _parser_destroy(p);
     fprintf(stderr, "[-] rangefile test fail, line=%u\n", which_test);
     return 1;
 }
@@ -696,7 +696,7 @@ fail:
 int
 rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6)
 {
-    struct RangeParser *p;
+    struct massip_parser p[1];
     char buf[65536];
     FILE *fp = NULL;
     int err;
@@ -717,7 +717,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
      * Create a parser for reading in the IP addresses using a state
      * machine parser
      */
-    p = rangeparse_create();
+    _parser_init(p);
 
     /*
      * Read in the data a block at a time, parsing according to the state
@@ -734,10 +734,9 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
 
         offset = 0;
         while (offset < count) {
-            int err;
             unsigned begin, end;
 
-            err = rangeparse_next(p, buf, &offset, count, &begin, &end);
+            err = _parser_next(p, buf, &offset, count, &begin, &end);
             switch (err) {
             case Still_Working:
                 if (offset < count) {
@@ -748,7 +747,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
                 break;
             case Found_Error:
             default:
-                rangeparse_err(p, &line_number, &char_number);
+                _parser_err(p, &line_number, &char_number);
                 fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
                 is_error = true;
                 count = offset;
@@ -760,7 +759,7 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
             case Found_IPv6:
                 {
                     ipv6address found_begin, found_end;
-                    rangeparse_getipv6(p, &found_begin, &found_end);
+                    _parser_get_ipv6(p, &found_begin, &found_end);
                     range6list_add_range(targets_ipv6, found_begin, found_end);
                     addr_count++;
                 }
@@ -776,10 +775,10 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
         int x;
         size_t offset = 0;
         unsigned begin, end;
-        x = rangeparse_next(p, "\n", &offset, 1, &begin, &end);
+        x = _parser_next(p, "\n", &offset, 1, &begin, &end);
         if (x < 0) {
             unsigned long long line_number, char_number;
-            rangeparse_err(p, &line_number, &char_number);
+            _parser_err(p, &line_number, &char_number);
             fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
             is_error = true;
         } else if (x == 1) {
@@ -801,75 +800,134 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
 }
 
 
-/***************************************************************************
- ***************************************************************************/
-static int
-rangefile_test_buffer(const char *buf, unsigned in_begin, unsigned in_end)
+enum RangeParseResult
+massip_parse_range(const char *line, size_t *offset, size_t count, struct Range *ipv4, struct Range6 *ipv6)
 {
-    size_t length = strlen(buf);
-    size_t offset = 0;
-    struct RangeParser *state;
-    unsigned out_begin = 0xa3a3a3a3;
-    unsigned out_end  = 0xa3a3a3a3;
+    struct massip_parser p[1];
     int err;
-    bool is_found = false;
+    unsigned begin, end;
+    size_t tmp_offset = 0;
+    
+    /* The 'count' (length of the string) is an optional parameter. If
+     * zero, and also the offset is NULL, then set it to the string length */
+    if (count == 0 && offset == NULL)
+        count = strlen(line);
 
-    /* test the entire buffer */
-    state = rangeparse_create();
-    err = rangeparse_next(state, buf, &offset, length, &out_begin, &out_end);
+    /* The offset is an optional parameter. If NULL, then we set
+     * it to point to a value on the stack instead */
+    if (offset == NULL)
+        offset = &tmp_offset;
+    
+    /* Creat e parser object */
+    _parser_init(p);
+
+    /* Parse the next range from the input */
+    err = _parser_next(p, line, offset, count, &begin, &end);
+again:
     switch (err) {
-    case Found_IPv4:
-        if (in_begin != out_begin || in_end != out_end)
-            goto fail;
-        break;
-    case Still_Working:
-        /* Found a partial address, which is a normal result in the 
-         * real world at buffer boundaries, but which is an error
-         * here */
-        goto fail;
-    case Found_Error:
-    case Found_IPv6:
-    default:
-        goto fail;
-    }
-    rangeparse_destroy(state);
-
-    /* test one byte at a time */
-    state = rangeparse_create();
-    offset = 0;
-    out_begin = 0xa3a3a3a3;
-    out_end  = 0xa3a3a3a3;
-    is_found = false;
-    while (offset < length) {
-        err = rangeparse_next(state, buf, &offset, length, &out_begin, &out_end);
-        switch (err) {
         case Still_Working:
-            continue; /* the normal case */
-        case Found_IPv4:
-            is_found = true;    
-            if (in_begin != out_begin || in_end != out_end)
-                goto fail;
+            if (*offset < count) {
+                /* We reached this somehow in the middle of the buffer, but
+                 * this return is only possible at the end of the buffer */
+                fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                return Bad_Address;
+            } else {
+                err = _parser_next(p, "\n", 0, 1, &begin, &end);
+                if (err == Still_Working) {
+                    fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                    return Bad_Address;
+                } else {
+                    goto again;
+                }
+            }
             break;
         case Found_Error:
-        case Found_IPv6:
         default:
-            goto fail;
+            return Bad_Address;
+        case Found_IPv4:
+            ipv4->begin = begin;
+            ipv4->end = end;
+            return Ipv4_Address;
+        case Found_IPv6:
+            _parser_get_ipv6(p, &ipv6->begin, &ipv6->end);
+            return Ipv6_Address;
+    }
+}
+
+/**
+ * This tests  parsing when addresses/ranges are specified on the command-line
+ * or configuration files, rather than the other test-cases which test parsing
+ * when the IP addresses are specified in a file. The thing we are looking for
+ * here is specifically when users separate addresses with things like
+ * commas and spaces.
+ */
+static int
+selftest_massip_parse_range(void)
+{
+    struct testcases {
+        const char *line;
+        union {
+            struct Range ipv4;
+            struct Range6 ipv6;
+        } list[4];
+    } cases[] = {
+        {"0.0.1.0/24,0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
+        {"0.0.1.0-0.0.1.255,0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
+        {"0.0.1.0/24 0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
+        0
+    };
+    size_t i;
+    
+    for (i=0; cases[i].line; i++) {
+        size_t length = strlen(cases[i].line);
+        size_t offset = 0;
+        size_t j = 0;
+        struct Range6 range6;
+        struct Range range4;
+        
+        while (offset < length) {
+            int x;
+            x = massip_parse_range(cases[i].line, &offset, length, &range4, &range6);
+            switch (x) {
+                default:
+                case Bad_Address:
+                    fprintf(stdout, "[-] selftest_massip_parse_range[%u] fail\n", (unsigned)i);
+                    return 1;
+                case Ipv4_Address:
+                    if (cases[i].list[j].ipv4.begin != range4.begin
+                        || cases[i].list[j].ipv4.end != range4.end) {
+                        fprintf(stdout, "[-] %u.%u.%u.%u - %u.%u.%u.%u\n",
+                                (unsigned char)(range4.begin>>24),
+                                (unsigned char)(range4.begin>>16),
+                                (unsigned char)(range4.begin>> 8),
+                                (unsigned char)(range4.begin>> 0),
+                                (unsigned char)(range4.end>>24),
+                                (unsigned char)(range4.end>>16),
+                                (unsigned char)(range4.end>> 8),
+                                (unsigned char)(range4.end>> 0)
+                                );
+                        fprintf(stdout, "[-] selftest_massip_parse_range[%u] fail\n", (unsigned)i);
+                        return 1;
+                    }
+                    break;
+            }
+            j++;
+        }
+        
+        /* Make sure we have found all the expected cases */
+        if (cases[i].list[j].ipv4.begin != 0) {
+            fprintf(stdout, "[-] selftest_massip_parse_range[%u] fail\n", (unsigned)i);
+            return 1;
         }
     }
-    if (!is_found)
-        goto fail;
-
-    rangeparse_destroy(state);
-    return 0; /* success */
-fail:
-    rangeparse_destroy(state);
-    return 1; /* failure */
+    return 0;
 }
+
 
 /***************************************************************************
  ***************************************************************************/
 static int
-rangefile6_test_buffer(struct RangeParser *parser,
+rangefile6_test_buffer(struct massip_parser *parser,
                        const char *buf,
                        uint64_t expected_begin_hi,
                        uint64_t expected_begin_lo,
@@ -884,13 +942,13 @@ rangefile6_test_buffer(struct RangeParser *parser,
     int err;
     
     /* test the entire buffer */
-    err = rangeparse_next(parser, buf, &offset, length, &tmp1, &tmp2);
+    err = _parser_next(parser, buf, &offset, length, &tmp1, &tmp2);
     if (err == Still_Working)
-        err = rangeparse_next(parser, "\n", 0, 1, &tmp1, &tmp2);
+        err = _parser_next(parser, "\n", 0, 1, &tmp1, &tmp2);
     switch (err) {
     case Found_IPv6:
         /* Extract the resulting IPv6 address from the state structure */
-        rangeparse_getipv6(parser, &found_begin, &found_end);
+        _parser_get_ipv6(parser, &found_begin, &found_end);
     
         /* Test to see if the parsed address equals the expected address */
         if (found_begin.hi != expected_begin_hi || found_begin.lo != expected_begin_lo)
@@ -959,14 +1017,19 @@ struct {
  * Called during "make test" to run a regression test over this module.
  ***************************************************************************/
 int
-rangefile_selftest(void)
+massip_selftest(void)
 {
     int x = 0;
     size_t i;
-    struct RangeParser *parser;
+    struct massip_parser parser[1];
 
+    /* First, do the sginle line test */
+    x = selftest_massip_parse_range();
+    if (x)
+        return x;
+    
     /* Run through the test cases, stopping at the first failure */
-    parser = rangeparse_create();
+    _parser_init(parser);
     for (i=0; test_cases[i].string; i++) {
         x += rangefile6_test_buffer(parser,
                                     test_cases[i].string, 
@@ -979,7 +1042,7 @@ rangefile_selftest(void)
             break;
         }
     }
-    rangeparse_destroy(parser);
+    _parser_destroy(parser);
 
     
     

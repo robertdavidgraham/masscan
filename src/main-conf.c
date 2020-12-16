@@ -1743,7 +1743,7 @@ masscan_set_parameter(struct Masscan *masscan,
         int err;
 
         /* Grab the next IPv4 or IPv6 range */
-        err = range_parse(value, 0, 0, &range, &range6);
+        err = massip_parse_range(value, 0, 0, &range, &range6);
         switch (err) {
         case Ipv4_Address:
             /* If more than one IP address given, make the range is
@@ -1930,8 +1930,8 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("destination-ip", name)
                || EQUALS("target-ip", name)) {
         const char *ranges = value;
-        unsigned offset = 0;
-        unsigned max_offset = (unsigned)strlen(ranges);
+        size_t offset = 0;
+        size_t max_offset = strlen(ranges);
 
         /* Normally we have only a single range, but we actually support multiple
          * ranges in this field delimited by a comma */
@@ -1941,7 +1941,7 @@ masscan_set_parameter(struct Masscan *masscan,
             int err;
 
             /* Grab the next IPv4 or IPv6 range */
-            err = range_parse(ranges, &offset, max_offset, &range, &range6);
+            err = massip_parse_range(ranges, &offset, max_offset, &range, &range6);
             switch (err) {
             case Ipv4_Address:
                 rangelist_add_range(&masscan->targets_ipv4, range.begin, range.end);

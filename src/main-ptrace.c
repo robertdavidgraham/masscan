@@ -13,7 +13,6 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
     unsigned x;
     struct PreprocessedInfo parsed;
     ipaddress src_ip;
-    ipaddress dst_ip;
     char from[64];
     char to[64];
     char sz_type[32];
@@ -34,7 +33,6 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
     offset = parsed.found_offset;
 
     src_ip = parsed.src_ip;
-    dst_ip = parsed.dst_ip;
 
     /* format the IP addresses into fixed-width fields */
     sprintf_s(from, sizeof(from), "%s:%u",

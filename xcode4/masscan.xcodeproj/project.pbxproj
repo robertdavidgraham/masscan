@@ -338,6 +338,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		112A9A0B258A89FC00D1EEBA /* massip */ = {
+			isa = PBXGroup;
+			children = (
+				11A921BA17DBCC7E00DDFD32 /* ranges.c */,
+				11A921BB17DBCC7E00DDFD32 /* ranges.h */,
+				1107E9B32294DF22003384B3 /* range-file.c */,
+				1107E9B42294DF22003384B3 /* range-file.h */,
+				11B5898021C0841100DD6248 /* ranges6.c */,
+				11B5897F21C0841100DD6248 /* ranges6.h */,
+				1106826F20DF863000E612AB /* ranges-avl.c */,
+				1106827020DF863000E612AB /* ranges-avl.h */,
+			);
+			name = massip;
+			sourceTree = "<group>";
+		};
 		114147AC226BD4E1009F9E93 /* stubs */ = {
 			isa = PBXGroup;
 			children = (
@@ -395,10 +410,9 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				112A9A0B258A89FC00D1EEBA /* massip */,
 				118E114F25859CFD00618314 /* util */,
 				114147AC226BD4E1009F9E93 /* stubs */,
-				119968FD21388A5300E82767 /* read-service-probes.h */,
-				119968FB21388A3B00E82767 /* read-service-probes.c */,
 				11DD36352107DE8200CBE1DE /* scripting */,
 				11B360CD1F90174B0020F3A3 /* misc */,
 				11B360C71F90166D0020F3A3 /* rawsock */,
@@ -434,6 +448,8 @@
 		11B360C81F90169F0020F3A3 /* main */ = {
 			isa = PBXGroup;
 			children = (
+				119968FD21388A5300E82767 /* read-service-probes.h */,
+				119968FB21388A3B00E82767 /* read-service-probes.c */,
 				11A8680D1816F3A7008E00B8 /* masscan-app.c */,
 				11A8680E1816F3A7008E00B8 /* masscan-app.h */,
 				113AD3B818208A1900D5E067 /* masscan-status.h */,
@@ -601,17 +617,9 @@
 			children = (
 				11469CA12295D80A00FA76BE /* misc-rstfilter.c */,
 				11469CA02295D80A00FA76BE /* misc-rstfilter.h */,
-				1107E9B32294DF22003384B3 /* range-file.c */,
-				1107E9B42294DF22003384B3 /* range-file.h */,
-				11B5898021C0841100DD6248 /* ranges6.c */,
-				11B5897F21C0841100DD6248 /* ranges6.h */,
-				1106826F20DF863000E612AB /* ranges-avl.c */,
-				1106827020DF863000E612AB /* ranges-avl.h */,
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
-				11A921BA17DBCC7E00DDFD32 /* ranges.c */,
-				11A921BB17DBCC7E00DDFD32 /* ranges.h */,
 				11A921C717DBCC7E00DDFD32 /* rte-ring.c */,
 				11A921C817DBCC7E00DDFD32 /* rte-ring.h */,
 				11A921C917DBCC7E00DDFD32 /* smack.h */,

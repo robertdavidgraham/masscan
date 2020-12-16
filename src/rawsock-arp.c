@@ -270,16 +270,6 @@ arp_resolve_sync(struct Adapter *adapter,
     return 1;
 }
 
-static void
-memxor(void *dst, const void *src, size_t length)
-{
-    unsigned char *dst2 = (unsigned char *)dst;
-    const unsigned char *src2 = (const unsigned char *)src;
-    size_t i;
-
-    for (i=0; i<length; i++)
-        dst2[i] ^= src2[i];
-}
 
 static inline void _append(unsigned char *buf, size_t *r_offset, unsigned x)
 {

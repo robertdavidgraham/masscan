@@ -1834,7 +1834,7 @@ int main(int argc, char *argv[])
             x += lcg_selftest();
             x += template_selftest();
             x += ranges_selftest();
-            x += rangefile_selftest();
+            x += massip_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();
             x += mainconf_selftest();

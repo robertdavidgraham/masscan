@@ -81,21 +81,7 @@ int
 range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
 
 
-/**
- * Parses IPv6 addresses out of a string. A number of formats are allowed,
- * either an individual IPv6 address, a CIDR spec, or a start/stop address.
- * @param line
- *      A line of text, probably read from a configuration file, or a string
- *      probably input from the command line. It doesn't need to be nul
- *      terminated.
- * @param inout_offset
- *      The offset into the line were we are parsing. This integer will be
- *      be incremented by the number of bytes we've parsed from the string.
- * @param max
- *      The length of the line, in other words, the max value of inout_offset.
- */
-struct Range6 
-range6_parse(const char *line, unsigned *inout_offset, unsigned max);
+
 
 /**
  * Tests if the range is bad/invalid.
@@ -114,7 +100,10 @@ enum RangeParseResult {
  * Parse a range from input text, whether it's IPv4 or IPv6
  */
 enum RangeParseResult
-range_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6);
+xrange_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6);
+
+enum RangeParseResult
+massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Range *ipv4, struct Range6 *ipv6);
 
 
 /**

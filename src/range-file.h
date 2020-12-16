@@ -15,7 +15,7 @@ int
 rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6);
 
 int
-rangefile_selftest(void);
+massip_selftest(void);
 
 #endif
 
