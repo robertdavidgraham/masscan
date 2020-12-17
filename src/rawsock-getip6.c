@@ -13,7 +13,7 @@
 */
 #include "rawsock.h"
 #include "string_s.h"
-#include "ranges6.h" /*for parsing IPv6 addresses */
+#include "range-file.h"
 
 
 /*****************************************************************************
@@ -148,7 +148,7 @@ again:
     for (addr = adapter->FirstUnicastAddress; addr; addr = addr->Next) {
         struct sockaddr_in6 *sa = (struct sockaddr_in6 *)addr->Address.lpSockaddr;
         char  buf[64];
-        struct Range6 range;
+        ipv6address ipv6;
 
 
         /* Ignore any address that isn't IPv6 */
@@ -162,7 +162,12 @@ again:
         /* Format as a string */
         inet_ntop(sa->sin6_family, &sa->sin6_addr, buf, sizeof(buf));
         
-        range = range6_parse(buf, 0, 0);
+        /* Convert to internal format */
+        ipv6 = massip_parse_ipv6(buf);
+        if (ipv6address_is_invalid(ipv6)) {
+            fprintf(stderr, "[-] corrupt IPv6 address: %s\n", buf);
+            continue;
+        }
 
         if (addr->PrefixOrigin == IpPrefixOriginWellKnown) {
              /* This value applies to an IPv6 link-local address or an IPv6 loopback address */
@@ -175,16 +180,13 @@ again:
             continue;
         }
 
-        if (range.begin.hi>>56ULL >= 0xFC)
+        if (ipv6.hi>>56ULL >= 0xFC)
             continue;
 
-        if (range.begin.hi>>32ULL == 0x20010db8)
+        if (ipv6.hi>>32ULL == 0x20010db8)
             continue;
 
-        result = range.begin;
-        //printf("origin = %u %u\n", addr->PrefixOrigin, addr->SuffixOrigin);
-        //printf("addr' = %s\n", buf);
-        //printf("addr` = %s\n", ipv6address_fmt(range.begin).string);
+        result = ipv6;
     }
 
 end:

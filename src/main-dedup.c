@@ -198,10 +198,10 @@ dedup_is_duplicate_ipv6(struct DedupTable *dedup,
     memmove(bucket, bucket+1, 3*sizeof(*bucket));
     bucket[0].ip_them.hi = ip_them.ipv6.hi;
     bucket[0].ip_them.lo = ip_them.ipv6.lo;
-    bucket[0].port_them = port_them;
+    bucket[0].port_them = (unsigned short)port_them;
     bucket[0].ip_me.hi = ip_me.ipv6.hi;
     bucket[0].ip_me.lo = ip_me.ipv6.lo;
-    bucket[0].port_me = port_me;
+    bucket[0].port_me = (unsigned short)port_me;
 
     return 0;
 

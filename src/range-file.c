@@ -5,6 +5,7 @@
 #include "util-bool.h"
 #include "util-malloc.h"
 #include "string_s.h"
+#include "unusedparm.h"
 
 #include <string.h>
 
@@ -45,7 +46,7 @@ _parser_init(struct massip_parser *p)
 static void
 _parser_destroy(struct massip_parser *p)
 {
-    ;
+    UNUSEDPARM(p);
 }
 
 /***************************************************************************
@@ -694,7 +695,7 @@ fail:
 /***************************************************************************
  ***************************************************************************/
 int
-rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6)
+massip_parse_file(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6)
 {
     struct massip_parser p[1];
     char buf[65536];
@@ -800,6 +801,54 @@ rangefile_read(const char *filename, struct RangeList *targets_ipv4, struct Rang
 }
 
 
+ipv6address
+massip_parse_ipv6(const char *line)
+{
+    struct massip_parser p[1];
+    size_t count = strlen(line);
+    size_t offset = 0;
+    int err;
+    unsigned begin, end;
+    ipv6address result;
+    ipv6address range;
+
+    _parser_init(p);
+    err = _parser_next(p, line, &offset, count, &begin, &end);
+again:
+    switch (err) {
+        case Still_Working:
+            if (offset < count) {
+                /* We reached this somehow in the middle of the buffer, but
+                 * this return is only possible at the end of the buffer */
+                fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                goto fail;
+            } else {
+                err = _parser_next(p, "\n", 0, 1, &begin, &end);
+                if (err == Still_Working) {
+                    fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                    goto fail;
+                } else {
+                    goto again;
+                }
+            }
+            break;
+        case Found_Error:
+        default:
+            goto fail;
+        case Found_IPv4:
+            goto fail;
+        case Found_IPv6:
+            _parser_get_ipv6(p, &result, &range);
+            if (!ipv6address_is_equal(result, range))
+                goto fail;
+            return result;
+    }
+fail:
+    result.hi = ~0ULL;
+    result.lo = ~0ULL;
+    return result;
+}
+
 enum RangeParseResult
 massip_parse_range(const char *line, size_t *offset, size_t count, struct Range *ipv4, struct Range6 *ipv6)
 {
@@ -871,10 +920,10 @@ selftest_massip_parse_range(void)
             struct Range6 ipv6;
         } list[4];
     } cases[] = {
-        {"0.0.1.0/24,0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
-        {"0.0.1.0-0.0.1.255,0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
-        {"0.0.1.0/24 0.0.3.0-0.0.4.0", {{0x100,0x1ff}, {0x300,0x400}}},
-        0
+        {"0.0.1.0/24,0.0.3.0-0.0.4.0", {{{0x100,0x1ff}}, {{0x300,0x400}}}},
+        {"0.0.1.0-0.0.1.255,0.0.3.0-0.0.4.0", {{{0x100,0x1ff}}, {{0x300,0x400}}}},
+        {"0.0.1.0/24 0.0.3.0-0.0.4.0", {{{0x100,0x1ff}}, {{0x300,0x400}}}},
+        {0}
     };
     size_t i;
     

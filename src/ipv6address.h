@@ -31,6 +31,9 @@ typedef struct ipaddress ipaddress;
 static inline int ipv6address_is_zero(ipv6address a) {
     return a.hi == 0 && a.lo == 0;
 }
+static inline int ipv6address_is_invalid(ipv6address a) {
+    return a.hi == ~0ULL && a.lo == ~0ULL;
+}
 static inline int ipv6address_is_equal(ipv6address a, ipv6address b) {
     return a.hi == b.hi && a.lo == b.lo;
 }

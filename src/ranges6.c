@@ -5,6 +5,7 @@
 #include "ranges.h"
 #include "util-malloc.h"
 #include "logger.h"
+#include "range-file.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -508,40 +509,6 @@ range6list_optimize(struct Range6List *targets)
     }
     
     targets->picker = picker;
-}
-
-
-/***************************************************************************
- ***************************************************************************/
-enum RangeParseResult
-xrange_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6)
-{
-    
-#if 0
-    /* First attempt IPv4 */
-    {
-        struct Range range;
-
-        range = range_parse_ipv4(line, inout_offset, max);
-        if (range.begin <= range.end) {
-            memcpy(ipv4, &range, sizeof(*ipv4));
-            return Ipv4_Address;
-        }
-    }
-
-    /* Then attempt IPv6 */
-    {
-        struct Range6 range;
-
-        range = range6_parse(line, inout_offset, max);
-        if (!range6_is_bad_address(&range)) {
-            memcpy(ipv6, &range, sizeof(*ipv6));
-            return Ipv6_Address;
-        }
-    }
-#endif
-
-    return Bad_Address;
 }
 
 

@@ -90,21 +90,6 @@ range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
 int range6_is_bad_address(const struct Range6 *range);
 
 
-enum RangeParseResult {
-    Bad_Address,
-    Ipv4_Address=4,
-    Ipv6_Address=6,
-};
-
-/**
- * Parse a range from input text, whether it's IPv4 or IPv6
- */
-enum RangeParseResult
-xrange_parse(const char *line, unsigned *inout_offset, unsigned max, struct Range *ipv4, struct Range6 *ipv6);
-
-enum RangeParseResult
-massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Range *ipv4, struct Range6 *ipv6);
-
 
 /**
  * Remove things from the target list. The primary use of this is the

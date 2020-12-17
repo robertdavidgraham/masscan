@@ -1954,16 +1954,8 @@ masscan_set_parameter(struct Masscan *masscan,
                 fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
                 break;
             }
-            
-            if (offset >= max_offset || ranges[offset] != ',') {
-                /* We've either reached the end of a string, or an invalid
-                 * character that is not a comma delimiter */
-                break;
-            } else {
-                /* This character is a comma delimiter between ranges, so 
-                 * script the comma */
+            while (offset < max_offset && (isspace(ranges[offset]&0xFF) || ranges[offset] == ','))
                 offset++;
-            }
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
@@ -2034,7 +2026,7 @@ masscan_set_parameter(struct Masscan *masscan,
         const char *filename = value;
 
         LOG(1, "EXCLUDING: %s\n", value);
-        err = rangefile_read(filename, &masscan->exclude_ip, &masscan->exclude_ipv6);
+        err = massip_parse_file(filename, &masscan->exclude_ip, &masscan->exclude_ipv6);
         if (err) {
             LOG(0, "FAIL: error reading from exclude file\n");
             exit(1);
@@ -2107,7 +2099,7 @@ masscan_set_parameter(struct Masscan *masscan,
         int err;
         const char *filename = value;
 
-        err = rangefile_read(filename, &masscan->targets_ipv4, &masscan->targets_ipv6);
+        err = massip_parse_file(filename, &masscan->targets_ipv4, &masscan->targets_ipv6);
         if (err) {
             LOG(0, "FAIL: error reading from include file\n");
             exit(1);

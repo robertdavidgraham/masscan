@@ -293,7 +293,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
  * Read in the file, one record at a time.
  ***************************************************************************/
 static uint64_t
-parse_file(struct Output *out, const char *filename,
+_binaryfile_parse(struct Output *out, const char *filename,
            const struct RangeList *ips,
            const struct Range6List *ipv6s,
            const struct RangeList *ports,
@@ -488,7 +488,7 @@ read_binary_scanfile(struct Masscan *masscan,
      * Then arg_first=3 and arg_max=5.
      */
     for (i=arg_first; i<arg_max; i++) {
-        parse_file(out, argv[i], &masscan->targets_ipv4, &masscan->targets_ipv6, &masscan->ports,
+        _binaryfile_parse(out, argv[i], &masscan->targets_ipv4, &masscan->targets_ipv6, &masscan->ports,
                    &masscan->banner_types);
     }
 
