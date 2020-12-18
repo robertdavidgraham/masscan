@@ -34,8 +34,7 @@
  */
 #define DEDUP_ENTRIES 65536
 
-
-struct DedupEntry
+struct DedupEntry_IPv4
 {
     unsigned ip_them;
     unsigned port_them;
@@ -52,12 +51,12 @@ struct DedupEntry_IPv6
 };
 
 /**
- * This is simply the arrray of entries. We have two arrays, one for IPv4
+ * This is simply the arrrasy of entries. We have two arrays, one for IPv4
  * and another for IPv6.
  */
 struct DedupTable
 {
-    struct DedupEntry entries[DEDUP_ENTRIES][4];
+    struct DedupEntry_IPv4 entries[DEDUP_ENTRIES][4];
     struct DedupEntry_IPv6 entries6[DEDUP_ENTRIES][4];
 };
 
@@ -66,6 +65,13 @@ struct DedupTable
  */
 const unsigned fnv1a_seed  = 0x811C9DC5; /* 2166136261 */
 
+/**
+ * Hash one byte, the other hash functions of multiple bytes call this function.
+ * @param hash
+ *      The current hash value that we keep updating as we repeatedly
+ *      call this function, or the `fnv1a_seed   value on the first call to
+ *      this function.
+ */
 static inline unsigned fnv1a(unsigned char c, unsigned hash)
 {
   const unsigned prime = 0x01000193; /* 16777619 */
@@ -92,8 +98,10 @@ static inline unsigned fnv1a_longlong(unsigned long long data, unsigned hash)
     return fnv1a_string(&data, 8, hash);
 }
 
-/***************************************************************************
- ***************************************************************************/
+/**
+ * Create a new table, which means simply allocating the object
+ * and seting it to zero.
+ */
 struct DedupTable *
 dedup_create(void)
 {
@@ -104,13 +112,14 @@ dedup_create(void)
     return dedup;
 }
 
-/***************************************************************************
- ***************************************************************************/
+/**
+ * There's nothing special we need to do to free the structure
+ * since it's all contained in the single allocation.
+ */
 void
 dedup_destroy(struct DedupTable *dedup)
 {
-    if (dedup)
-        free(dedup);
+    free(dedup);
 }
 
 /**
@@ -130,12 +139,19 @@ dedup_hash_ipv6(ipaddress ip_them, unsigned port_them, ipaddress ip_me, unsigned
     return hash;
 }
 
+/**
+ * If two IPv6 addresses are equal.
+ */
 static inline int
-Equals(ipv6address lhs, ipv6address rhs)
+is_equal6(ipv6address lhs, ipv6address rhs)
 {
     return lhs.hi == rhs.hi && lhs.lo == rhs.lo;
 }
 
+/**
+ * Swap two addresses in the table. Thsi uses the classic XOR trick
+ * rather than using a swap variable.
+ */
 static inline void
 swap6(struct DedupEntry_IPv6 *lhs, struct DedupEntry_IPv6 *rhs)
 {
@@ -159,12 +175,12 @@ swap6(struct DedupEntry_IPv6 *lhs, struct DedupEntry_IPv6 *rhs)
     lhs->ip_me.hi ^= rhs->ip_me.hi;
     lhs->ip_me.lo ^= rhs->ip_me.lo;
     lhs->port_me ^= rhs->port_me;
-
-    
 }
-/***************************************************************************
- * TODO: implement IPv6 duplicate packet detection.
- ***************************************************************************/
+
+/**
+ * This implements the same algorithm as for IPv4 addresses, but for
+ * IPv6 addresses instead.
+ */
 static unsigned
 dedup_is_duplicate_ipv6(struct DedupTable *dedup,
                    ipaddress ip_them, unsigned port_them,
@@ -182,9 +198,13 @@ dedup_is_duplicate_ipv6(struct DedupTable *dedup,
     /* Search in this bucket */
     bucket = dedup->entries6[hash];
 
+    /* If we find the entry in our table, move it to the front, so
+     * that it won't be aged out as quickly. We keep prepending new
+     * addresses to front, aging older addresses that haven't been
+     * seen in a while. */
     for (i = 0; i < 4; i++) {
-        if (Equals(bucket[i].ip_them, ip_them.ipv6) && bucket[i].port_them == port_them
-            && Equals(bucket[i].ip_me, ip_me.ipv6) && bucket[i].port_me == port_me) {
+        if (is_equal6(bucket[i].ip_them, ip_them.ipv6) && bucket[i].port_them == port_them
+            && is_equal6(bucket[i].ip_me, ip_me.ipv6) && bucket[i].port_me == port_me) {
             /* move to end of list so constant repeats get ignored */
             if (i > 0) {
                 swap6(&bucket[0], &bucket[i]);
@@ -215,7 +235,7 @@ dedup_is_duplicate_ipv4(struct DedupTable *dedup,
                    ipaddress ip_me, unsigned port_me)
 {
     unsigned hash;
-    struct DedupEntry *bucket;
+    struct DedupEntry_IPv4 *bucket;
     unsigned i;
 
     /* THREAT: probably need to secure this hash, though the syn-cookies
@@ -226,6 +246,10 @@ dedup_is_duplicate_ipv4(struct DedupTable *dedup,
     /* Search in this bucket */
     bucket = dedup->entries[hash];
 
+    /* If we find the entry in our table, move it to the front, so
+     * that it won't be aged out as quickly. We keep prepending new
+     * addresses to front, aging older addresses that haven't been
+     * seen in a while. */
     for (i = 0; i < 4; i++) {
         if (bucket[i].ip_them == ip_them.ipv4 && bucket[i].port_them == port_them
             && bucket[i].ip_me == ip_me.ipv4 && bucket[i].port_me == port_me) {
@@ -273,4 +297,163 @@ dedup_is_duplicate(struct DedupTable *dedup,
         return dedup_is_duplicate_ipv6(dedup, ip_them, port_them, ip_me, port_me);
     else
         return dedup_is_duplicate_ipv4(dedup, ip_them, port_them, ip_me, port_me);
+}
+
+
+/**
+ * My own deterministic rand() function for testing this module
+ */
+static unsigned
+_rand(unsigned *seed)
+{
+    static const unsigned a = 214013;
+    static const unsigned c = 2531011;
+
+    *seed = (*seed) * a + c;
+    return (*seed)>>16 & 0x7fff;
+}
+
+/*
+ * Provide a simple unit test for this module.
+ *
+ * This is a pretty lame test. I'm going to generate
+ * a set of random addresses, tweeked so that they aren't
+ * too random, so that I get around 30 to 50 expected
+ * duplciates. If I get zero duplicates, or if I get too
+ * many duplicates in the test, then I know it's failed.
+ *
+ * This is in no way a reliable test that deterministically
+ * tests the functionality. It'a crappy non-deterministric
+ * test.
+ *
+ * We also do a simple deterministic test, but thhis still
+ * is insufficient testing how duplicates age out and such.
+ */
+int
+dedup_selftest(void)
+{
+    struct DedupTable *dedup;
+    unsigned seed = 0;
+    size_t i;
+    unsigned found_match = 0;
+    unsigned line = 0;
+    
+    dedup = dedup_create();
+    
+    /* Deterministic test.
+     *
+     * The first time we check on a socket combo, there should
+     * be no duplicate. The second time we check, however, there should
+     * be a duplicate.
+     */
+    {
+        ipaddress ip_me;
+        ipaddress ip_them;
+        unsigned port_me;
+        unsigned port_them;
+        
+        ip_me.version = 4;
+        ip_them.version = 4;
+        ip_me.ipv4 = 0x12345678;
+        ip_them.ipv4 = 0xabcdef0;
+        port_me = 0x1234;
+        port_them = 0xfedc;
+        
+        if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            line = __LINE__;
+            goto fail;
+        }
+        if (!dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            line = __LINE__;
+            goto fail;
+        }
+        
+        ip_me.version = 6;
+        ip_them.version = 6;
+        ip_me.ipv6.hi = 0x12345678;
+        ip_them.ipv6.lo = 0xabcdef0;
+
+        if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            line = __LINE__;
+            goto fail;
+        }
+        if (!dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            line = __LINE__;
+            goto fail;
+        }
+        
+    }
+    
+    /* Test IPv4 addresses */
+    for (i=0; i<100000; i++) {
+        ipaddress ip_me;
+        ipaddress ip_them;
+        unsigned port_me;
+        unsigned port_them;
+        
+        ip_me.version = 4;
+        ip_them.version = 4;
+        
+        /* Instead of completely random numbers over the entire
+         * range, each port/IP is restricted to just 512
+         * random combinations. This should statistically
+         * give us around 10 matches*/
+        ip_me.ipv4 = _rand(&seed) & 0xFF800000;
+        ip_them.ipv4 = _rand(&seed) & 0x1FF;
+        port_me = _rand(&seed) & 0xFF80;
+        port_them = _rand(&seed) & 0x1FF;
+        
+        if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            found_match++;
+        }
+    }
+    
+    /* Approximately 30 matches should be found. If we couldn't
+     * find any, or if we've found too many, then the test has
+     * failed. */
+    if (found_match == 0 || found_match > 200) {
+        line = __LINE__;
+        goto fail;
+    }
+    
+    /* Now do IPv6 */
+    found_match = 0;
+    seed = 0;
+    
+    /* Test IPv4 addresses */
+    for (i=0; i<100000; i++) {
+        ipaddress ip_me;
+        ipaddress ip_them;
+        unsigned port_me;
+        unsigned port_them;
+        
+        ip_me.version = 6;
+        ip_them.version = 6;
+        
+        /* Instead of completely random numbers over the entire
+         * range, each port/IP is restricted to just 512
+         * random combinations. This should statistically
+         * give us around 10 matches*/
+        ip_me.ipv6.hi = _rand(&seed) & 0xFF800000;
+        ip_them.ipv6.lo = _rand(&seed) & 0x1FF;
+        port_me = _rand(&seed) & 0xFF80;
+        port_them = _rand(&seed) & 0x1FF;
+        
+        if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            found_match++;
+        }
+    }
+
+    /* The result should be same as for IPv4, around 30 matches found. */
+    if (found_match == 0 || found_match > 200) {
+        line = __LINE__;
+        goto fail;
+    }
+    
+    /* All tests have passed */
+    return 0; /* success :) */
+
+fail:
+    fprintf(stderr, "[-] selftest: 'dedup' failed, line=%u\n", line);
+    return 1;
 }

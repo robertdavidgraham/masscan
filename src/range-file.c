@@ -130,9 +130,9 @@ enum parser_state_t {
     COMMENT,
     NUMBER0, NUMBER1, NUMBER2, NUMBER3, NUMBER_ERR,
     SECOND0, SECOND1, SECOND2, SECOND3, SECOND_ERR,
-    CIDR,
+    IPV4_CIDR_NUM,
     UNIDASH1, UNIDASH2,
-    IPV6_BEGIN, IPV6_COLON, IPV6_CIDR, IPV6_ENDBRACKET, 
+    IPV6_BEGIN, IPV6_COLON, IPV6_CIDR, IPV6_CIDR_NUM, IPV6_ENDBRACKET,
     IPV6_END,
     ERROR
 };
@@ -172,6 +172,59 @@ enum {
 
 
 };
+
+
+/**
+ * Applies a CIDR mask to an IPv4 address to creat a begin/end address.
+ */
+static void
+_ipv4_apply_cidr(unsigned *begin, unsigned *end, unsigned bitcount)
+{
+    unsigned long long mask = 0xFFFFFFFF00000000ULL >> bitcount;
+    
+    /* mask off low-order bits */
+    *begin &= (unsigned)mask;
+
+    /* Set all suffix bits to 1, so that 192.168.1.0/24 has
+     * an ending address of 192.168.1.255. */
+    *end = *begin | (unsigned)~mask;
+}
+
+static void
+_ipv6_apply_cidr(ipv6address *begin, ipv6address *end, unsigned prefix)
+{
+    ipv6address mask;
+    
+    /* For bad prefixes, make sure we return an invalid address */
+    if (prefix > 128) {
+        *begin = (ipv6address){~0ULL, ~0ULL};
+        *end = (ipv6address){~0ULL, ~0ULL};
+        return;
+    };
+
+    /* Create the mask from the prefix */
+    if (prefix > 64)
+        mask.hi = ~0ULL;
+    else if (prefix == 0)
+        mask.hi = 0;
+    else
+        mask.hi = ~0ULL << (64 - prefix);
+    
+    if (prefix > 64)
+        mask.lo = ~0ULL << (128 - prefix);
+    else
+        mask.lo = 0;
+
+    /* Mask off any non-zero bits from the start
+     * TODO print warning */
+    begin->hi &= mask.hi;
+    begin->lo &= mask.lo;
+    
+    /* Set all suffix bits to 1, so that 192.168.1.0/24 has
+     * an ending address of 192.168.1.255. */
+    end->hi = begin->hi | ~mask.hi;
+    end->lo = begin->lo | ~mask.lo;
+}
 
 /***************************************************************************
  * Parse the next IPv4/IPv6 address from a text stream, using a
@@ -243,6 +296,23 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                         break;
                 }
                 break;
+            case IPV6_CIDR:
+                p->digit_count = 0;
+                p->tmp = 0;
+                switch (c) {
+                    case '0': case '1': case '2': case '3': case '4':
+                    case '5': case '6': case '7': case '8': case '9':
+                        p->tmp = (c - '0');
+                        p->digit_count = 1;
+                        state = IPV6_CIDR_NUM;
+                        break;
+                    default:
+                        state = ERROR;
+                        length = i; /* break out of loop */
+                        break;
+                }
+                break;
+                
             case IPV6_COLON:
                 p->digit_count = 0;
                 p->tmp = 0;
@@ -315,8 +385,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                             break;
                         } else {
                             state = IPV6_END;
-                            result = Found_Error;
-                            length = i;
+                            result = Found_Error; /* Not yet an error, but default value unless changed below */
                         }
 
                         switch (c) {
@@ -352,6 +421,9 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                             case '-':
                                 result = Still_Working;
                                 /* Continue parsing the next IPv6 address */
+                                break;
+                            default:
+                                length = i;
                                 break;
                         }
                         break;
@@ -401,7 +473,50 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                 } else
                     state = COMMENT;
                 break;
-            case CIDR:
+            case IPV6_CIDR_NUM:
+                switch (c) {
+                    case '0': case '1': case '2': case '3': case '4':
+                    case '5': case '6': case '7': case '8': case '9':
+                        if (p->digit_count == 4) {
+                            state = ERROR;
+                            length = i; /* break out of loop */
+                        } else {
+                            p->digit_count++;
+                            p->tmp = p->tmp * 10 + (c - '0');
+                            if (p->tmp > 128) {
+                                state = ERROR;
+                                length = i;
+                            }
+                            continue;
+                        }
+                        break;
+                    case ':':
+                    case ',':
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        {
+                            _ipv6_apply_cidr(&p->ipv6._begin, &p->ipv6._end, p->tmp);
+
+                            state = ADDR_START;
+                            length = i; /* break out of loop */
+                            if (c == '\n') {
+                                p->line_number++;
+                                p->char_number = 0;
+                            }
+                            *r_begin = p->begin;
+                            *r_end = p->end;
+                            result = Found_IPv6;
+                        }
+                        break;
+                    default:
+                        state = ERROR;
+                        length = i; /* break out of loop */
+                        break;
+                }
+                break;
+            case IPV4_CIDR_NUM:
                 switch (c) {
                     case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
@@ -425,17 +540,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                     case '\r':
                     case '\n':
                         {
-                            unsigned long long prefix = p->tmp;
-                            unsigned long long mask = 0xFFFFFFFF00000000ULL >> prefix;
-                            
-                            /* mask off low-order bits */
-                            p->begin &= (unsigned)mask;
-
-                            /* Set all suffix bits to 1, so that 192.168.1.0/24 has
-                             * an ending address of 192.168.1.255. */
-                            p->end = p->begin | (unsigned)~mask;
-
-
+                            _ipv4_apply_cidr(&p->begin, &p->end, p->tmp);
                             state = ADDR_START;
                             length = i; /* break out of loop */
                             if (c == '\n') {
@@ -557,7 +662,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                             p->tmp = 0;
                             p->digit_count = 0;
                             p->addr = 0;
-                            state = CIDR;
+                            state = IPV4_CIDR_NUM;
                         } else {
                             state = NUMBER_ERR;
                             length = i; /* break out of loop */

@@ -1817,6 +1817,7 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += dedup_selftest();
             x += checksum_selftest();
             x += ipv6address_selftest();
             x += proto_coap_selftest();
