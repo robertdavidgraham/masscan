@@ -361,11 +361,6 @@ range6list_remove_range(struct Range6List *targets, const ipv6address begin, con
     }
 }
 
-/*void
-range6list_add_range2(struct Range6List *targets, struct Range6 range)
-{
-    range6list_add_range(targets, range.begin, range.end);
-}*/
 void
 range6list_remove_range2(struct Range6List *targets, struct Range6 range)
 {

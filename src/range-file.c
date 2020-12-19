@@ -1,3 +1,12 @@
+/*
+    massip-parse
+
+    This module parses IPv4 and IPv6 addresses.
+
+    It's not a typical parser. It's optimized around parsing large
+    files containing millions of addresses and ranges using a 
+    "state-machine parser".
+*/
 #include "range-file.h"
 #include "ranges.h"
 #include "ranges6.h"
@@ -58,6 +67,22 @@ _parser_err(struct massip_parser *p, unsigned long long *line_number, unsigned l
     *charindex = p->char_number;
 }
 
+/** 
+ * Called before parsing the first address in a pair, and also
+ * after the first address, to prepare for parsing the next
+ * address
+ */
+static void
+_init_next_address(struct massip_parser *p, int is_second)
+{
+    p->tmp = 0;
+    p->ipv6.ellision_index = 8;
+    p->ipv6.index = 0;
+    p->ipv6.is_bracket = 0;
+    p->digit_count = 0;
+    p->ipv6.is_second = is_second;
+}
+
 
 
 static unsigned
@@ -105,10 +130,8 @@ _parser_finish_ipv6(struct massip_parser *p)
         }
     }
 
-    /* Reset the parser */
-    p->ipv6.ellision_index = 8;
-    p->ipv6.index = 0;
-    p->ipv6.is_second = 1;
+    /* Reset the parser to start parsing the next address */
+    _init_next_address(p, 1);
 
     return 0;
 }
@@ -132,7 +155,8 @@ enum parser_state_t {
     SECOND0, SECOND1, SECOND2, SECOND3, SECOND_ERR,
     IPV4_CIDR_NUM,
     UNIDASH1, UNIDASH2,
-    IPV6_BEGIN, IPV6_COLON, IPV6_CIDR, IPV6_CIDR_NUM, IPV6_ENDBRACKET,
+    IPV6_BEGIN, IPV6_COLON, IPV6_CIDR, IPV6_CIDR_NUM,
+    IPV6_NEXT,
     IPV6_END,
     ERROR
 };
@@ -197,8 +221,9 @@ _ipv6_apply_cidr(ipv6address *begin, ipv6address *end, unsigned prefix)
     
     /* For bad prefixes, make sure we return an invalid address */
     if (prefix > 128) {
-        *begin = (ipv6address){~0ULL, ~0ULL};
-        *end = (ipv6address){~0ULL, ~0ULL};
+        static const ipv6address invalid = {~0ULL, ~0ULL};
+        *begin = invalid;
+        *end = invalid;
         return;
     };
 
@@ -233,7 +258,7 @@ _ipv6_apply_cidr(ipv6address *begin, ipv6address *end, unsigned prefix)
 static enum {Still_Working, Found_Error, Found_IPv4, Found_IPv6}
 _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t length,
                 unsigned *r_begin, unsigned *r_end)
-{
+{ 
     size_t i;
     enum parser_state_t state = p->state;
     int result = Still_Working;
@@ -253,11 +278,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
         switch (state) {
             case LINE_START:
             case ADDR_START:
-                p->ipv6.ellision_index = 8;
-                p->ipv6.index = 0;
-                p->ipv6.is_bracket = 0;
-                p->ipv6.is_second = 0;
-                p->digit_count = 0;
+                _init_next_address(p, 0);
                 switch (c) {
                     case ' ': case '\t': case '\r':
                         /* ignore leading whitespace */
@@ -330,7 +351,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
 
                 /* drop down */
             case IPV6_BEGIN:
-            case IPV6_END:
+            case IPV6_NEXT:
                 switch (c) {
                     case '0': case '1': case '2': case '3': case '4':
                     case '5': case '6': case '7': case '8': case '9':
@@ -369,75 +390,61 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                             state = IPV6_COLON;
                         }
                         break;
-                    case '/':
                     case ']':
+                        if (!p->ipv6.is_bracket) {
+                            state = ERROR;
+                            length = i;
+                        } else {
+                            state = IPV6_END;
+                        }
+                        break;
+                    case '[':
+                        if (p->ipv6.is_bracket) {
+                            state = ERROR;
+                            length = i;
+                        } else {
+                            p->ipv6.is_bracket = 1;
+                        }
+                        break;
+                    case '/':
                     case ' ':
                     case '\t':
                     case '\r':
                     case '\n':
                     case ',':
                     case '-':
-                        /* All the things that end an IPv6 address */
-                        p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
-                        if (_parser_finish_ipv6(p) != 0) {
-                            state = ERROR;
-                            length = i;
-                            break;
-                        } else {
-                            state = IPV6_END;
-                            result = Found_Error; /* Not yet an error, but default value unless changed below */
-                        }
-
-                        switch (c) {
-                            case '/':
-                                result = Still_Working;
-                                state = IPV6_CIDR;
-                                break;
-                            case ']':
-                                if (!p->ipv6.is_bracket) {
-                                    result = Found_Error;
-                                    state = ERROR;
-                                    length = i;
-                                } else {
-                                    state = IPV6_ENDBRACKET;
-                                    result = Still_Working;
-                                    length = i; /* break out of loop */
-                                }
-                                break;
-                            case '\n':
-                                p->line_number++;
-                                p->char_number = 0;
-                                /* drop down */
-                            case ' ':
-                            case '\t':
-                            case '\r':
-                            case ',':
-                                result = Found_IPv6;
-                                state = 0;
-                                /* Return the address */
-                                length = i; /* break out of loop */
-                                break;
-
-                            case '-':
-                                result = Still_Working;
-                                /* Continue parsing the next IPv6 address */
-                                break;
-                            default:
-                                length = i;
-                                break;
-                        }
-                        break;
+                        i--; /* push back */
+                        state = IPV6_END;
+                        continue;
                     default:
                         state = ERROR;
                         length = i;
                         break;
                 }
                 break;
-            case IPV6_ENDBRACKET:
+
+            case IPV6_END:
+                /* Finish off the trailing number */
+                p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
+
+                /* Do the final processing of this IPv6 address and 
+                 * and prepair for the next one */
+                if (_parser_finish_ipv6(p) != 0) {
+                    state = ERROR;
+                    length = i;
+                    continue;
+                }
+
+                /* Now decide the next state, whether this is a single
+                 * address, an address range, or a CIDR address */
                 switch (c) {
                     case '/':
-                        result = Found_IPv6;
+                        result = Still_Working;
                         state = IPV6_CIDR;
+                        break;
+                    case '-':
+                        result = Still_Working;
+                        state = IPV6_NEXT;
                         break;
                     case '\n':
                         p->line_number++;
@@ -447,24 +454,16 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                     case '\t':
                     case '\r':
                     case ',':
-                        /* We have found a single address, so return that address */
                         result = Found_IPv6;
                         state = 0;
-                        length = i;
-                        break;
-                    case '-':
-                        result = Still_Working;
-                        state = IPV6_END;
+                        length = i; /* shortend the end to break out of loop */
                         break;
                     default:
-                    case ']':
-                        result = Found_Error;
                         state = ERROR;
                         length = i;
                         break;
                 }
                 break;
-
             case COMMENT:
                 if (c == '\n') {
                     state = LINE_START;
@@ -1083,10 +1082,8 @@ selftest_massip_parse_range(void)
 static int
 rangefile6_test_buffer(struct massip_parser *parser,
                        const char *buf,
-                       uint64_t expected_begin_hi,
-                       uint64_t expected_begin_lo,
-                       uint64_t expected_end_hi,
-                       uint64_t expected_end_lo)
+                       ipv6address expected_begin,
+                       ipv6address expected_end)
 {
     size_t length = strlen(buf);
     size_t offset = 0;
@@ -1105,15 +1102,23 @@ rangefile6_test_buffer(struct massip_parser *parser,
         _parser_get_ipv6(parser, &found_begin, &found_end);
     
         /* Test to see if the parsed address equals the expected address */
-        if (found_begin.hi != expected_begin_hi || found_begin.lo != expected_begin_lo)
+        if (!ipv6address_is_equal(found_begin, expected_begin)) {
+            fprintf(stderr, "[-] begin mismatch: found=[%s], expected=[%s]\n",
+                ipv6address_fmt(found_begin).string,
+                ipv6address_fmt(expected_begin).string);
             goto fail;
-        if (found_end.hi != expected_end_hi || found_end.lo != expected_end_lo)
+        }
+        if (!ipv6address_is_equal(found_end, expected_end)) {
+            fprintf(stderr, "[-] end mismatch: found=[%s], expected=[%s]\n",
+                ipv6address_fmt(found_end).string,
+                ipv6address_fmt(expected_end).string);
             goto fail;
+        }
         break;
     case Found_IPv4:
-        if (expected_begin_hi != 0 || expected_end_hi != 0)
+        if (expected_begin.hi != 0 || expected_end.hi != 0)
             goto fail;
-        if (tmp1 != expected_begin_lo || tmp2 != expected_end_lo)
+        if (tmp1 != expected_begin.lo || tmp2 != expected_end.lo)
             goto fail;
         break;
     case Still_Working:
@@ -1143,28 +1148,30 @@ fail:
  ***************************************************************************/
 struct {
     const char *string;
-    uint64_t begin_hi;
-    uint64_t begin_lo;
-    uint64_t end_hi;
-    uint64_t end_lo;
+    ipv6address begin;
+    ipv6address end;
 } test_cases[] = {
-    {"22ab::1", 0x22ab000000000000ULL, 1ULL, 0x22ab000000000000ULL, 1ULL},
-    {"240e:33c:2:c080:d08:d0e:b53:e74e", 0x240e033c0002c080ULL, 0x0d080d0e0b53e74e, 0x240e033c0002c080, 0x0d080d0e0b53e74e},
-    {"2a03:90c0:105::9", 0x2a0390c001050000ULL, 9ULL, 0x2a0390c001050000ULL, 9ULL},
-    {"2a03:9060:0:400::2", 0x2a03906000000400ULL, 2ULL, 0x2a03906000000400, 2ULL},
-    {"2c0f:ff00:0:a:face:b00c:0:a7", 0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL, 0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL, },
-    {"2a01:5b40:0:4a01:0:e21d:789f:59b1", 0x2a015b4000004a01ULL, 0x0000e21d789f59b1, 0x2a015b4000004a01ULL, 0x0000e21d789f59b1},
-    {"2001:1200:10::1", 0x2001120000100000ULL, 1ULL, 0x2001120000100000ULL, 1ULL},
-    {"fec0:0:0:ffff::1", 0xfec000000000ffffULL, 1ULL, 0xfec000000000ffffULL, 1ULL},
-    {"1234:5678:9abc:def0:0fed:cba9:8765:4321", 0x123456789abcdef0ULL, 0x0fedcba987654321ULL, 0x123456789abcdef0ULL, 0x0fedcba987654321ULL},
-    {"[1234:5678:9abc:def0:0fed:cba9:8765:4321]", 0x123456789abcdef0ULL, 0x0fedcba987654321ULL, 0x123456789abcdef0ULL, 0x0fedcba987654321ULL},
-    {"[1111:2222:3333:4444:5555:6666:7777:8888]", 0x1111222233334444ULL, 0x5555666677778888ULL, 0x1111222233334444ULL, 0x5555666677778888ULL},
-    {"1::1", 0x0001000000000000ULL, 1ULL, 0x0001000000000000ULL, 1ULL},
-    {"1.2.3.4", 0, 0x01020304, 0, 0x01020304},
-    {"#test\n  97.86.162.161" "\x96" "97.86.162.175\n", 0, 0x6156a2a1, 0, 0x6156a2af},
-    {"1.2.3.4/24\n", 0, 0x01020300, 0, 0x010203ff},
-    {" 1.2.3.4-1.2.3.5\n", 0, 0x01020304, 0, 0x01020305},
-    {0,0,0,0,0}
+    {"[1::1]/126", {0x0001000000000000ULL, 0ULL}, {0x0001000000000000ULL, 3ULL}},
+    {"1::1/126", {0x0001000000000000ULL, 0ULL}, {0x0001000000000000ULL, 3ULL}},
+    {"[1::1]-[2::3]", {0x0001000000000000ULL, 1ULL}, {0x0002000000000000ULL, 3ULL}},
+    {"1::1-2::3", {0x0001000000000000ULL, 1ULL}, {0x0002000000000000ULL, 3ULL}},
+    {"[1234:5678:9abc:def0:0fed:cba9:8765:4321]", {0x123456789abcdef0ULL, 0x0fedcba987654321ULL}, {0x123456789abcdef0ULL, 0x0fedcba987654321ULL}},
+    {"22ab::1", {0x22ab000000000000ULL, 1ULL}, {0x22ab000000000000ULL, 1ULL}},
+    {"240e:33c:2:c080:d08:d0e:b53:e74e", {0x240e033c0002c080ULL, 0x0d080d0e0b53e74e}, {0x240e033c0002c080, 0x0d080d0e0b53e74e}},
+    {"2a03:90c0:105::9", {0x2a0390c001050000ULL, 9ULL}, {0x2a0390c001050000ULL, 9ULL}},
+    {"2a03:9060:0:400::2", {0x2a03906000000400ULL, 2ULL}, {0x2a03906000000400, 2ULL}},
+    {"2c0f:ff00:0:a:face:b00c:0:a7", {0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL}, {0x2c0fff000000000aULL, 0xfaceb00c000000a7ULL}},
+    {"2a01:5b40:0:4a01:0:e21d:789f:59b1", {0x2a015b4000004a01ULL, 0x0000e21d789f59b1ULL}, {0x2a015b4000004a01ULL, 0x0000e21d789f59b1ULL}},
+    {"2001:1200:10::1", {0x2001120000100000ULL, 1ULL}, {0x2001120000100000ULL, 1ULL}},
+    {"fec0:0:0:ffff::1", {0xfec000000000ffffULL, 1ULL}, {0xfec000000000ffffULL, 1ULL}},
+    {"1234:5678:9abc:def0:0fed:cba9:8765:4321", {0x123456789abcdef0ULL, 0x0fedcba987654321ULL}, {0x123456789abcdef0ULL, 0x0fedcba987654321ULL}},
+    {"[1111:2222:3333:4444:5555:6666:7777:8888]", {0x1111222233334444ULL, 0x5555666677778888ULL}, {0x1111222233334444ULL, 0x5555666677778888ULL}},
+    {"1::1", {0x0001000000000000ULL, 1ULL}, {0x0001000000000000ULL, 1ULL}},
+    {"1.2.3.4", {0, 0x01020304}, {0, 0x01020304}},
+    {"#test\n  97.86.162.161" "\x96" "97.86.162.175\n", {0, 0x6156a2a1}, {0, 0x6156a2af}},
+    {"1.2.3.4/24\n", {0, 0x01020300}, {0, 0x010203ff}},
+    {" 1.2.3.4-1.2.3.5\n", {0, 0x01020304}, {0, 0x01020305}},
+    {0,{0,0},{0,0}}
 };
 
 /***************************************************************************
@@ -1177,28 +1184,26 @@ massip_selftest(void)
     size_t i;
     struct massip_parser parser[1];
 
-    /* First, do the sginle line test */
-    x = selftest_massip_parse_range();
-    if (x)
-        return x;
     
     /* Run through the test cases, stopping at the first failure */
     _parser_init(parser);
     for (i=0; test_cases[i].string; i++) {
         x += rangefile6_test_buffer(parser,
                                     test_cases[i].string, 
-                                    test_cases[i].begin_hi,
-                                    test_cases[i].begin_lo,
-                                    test_cases[i].end_hi,
-                                    test_cases[i].end_lo);
+                                    test_cases[i].begin,
+                                    test_cases[i].end);
         if (x) {
-            fprintf(stderr, "[-] parse IP address: test failed on string: %s\n", test_cases[i].string);
+            fprintf(stderr, "[-] failed: %u: %s\n", (unsigned)i, test_cases[i].string);
             break;
         }
     }
     _parser_destroy(parser);
 
     
+    /* First, do the single line test */
+    x += selftest_massip_parse_range();
+    if (x)
+        return x;
     
 
     x += rangefile_test_error("#bad ipv4\n 257.1.1.1\n", 2, 5, __LINE__);

@@ -3,8 +3,9 @@
 
     This module parses IPv4 and IPv6 addresses.
 
-    It's not a typical parser. It's optimized around parsing large files
-    containing millions of addresses using a "state-machine parser".
+    It's not a typical parser. It's optimized around parsing large
+    files containing millions of addresses and ranges using a 
+    "state-machine parser".
 */
 #ifndef MASSIP_PARSE_H
 #define MASSIP_PARSE_H
@@ -41,18 +42,25 @@ enum RangeParseResult {
 };
 
 /**
- * Parse the next IPv4/IPv6 range from a string.
+ * Parse the next IPv4/IPv6 range from a string. This is called
+ * when parsing strings from the command-line.
  */
 enum RangeParseResult
 massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Range *ipv4, struct Range6 *ipv6);
 
 /**
- * Parse a single IPv6 address.
+ * Parse a single IPv6 address. This is called when working with
+ * the operating system stack, when querying addresses from
+ * the local network adapters.
  */
 ipv6address
 massip_parse_ipv6(const char *buf);
 
 
+/**
+ * Do a simplistic unit test of the parser.
+ * @return 0 on success, 1 on failure
+ */
 int
 massip_selftest(void);
 

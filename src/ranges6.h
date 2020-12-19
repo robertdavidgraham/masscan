@@ -81,15 +81,11 @@ int
 range6list_is_contains(const struct Range6List *targets, const ipv6address ip);
 
 
-
-
 /**
  * Tests if the range is bad/invalid.
  * @return 1 is invalid, 0 if good.
  */
 int range6_is_bad_address(const struct Range6 *range);
-
-
 
 /**
  * Remove things from the target list. The primary use of this is the
