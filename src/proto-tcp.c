@@ -16,7 +16,7 @@
 #include "logger.h"
 #include "templ-pkt.h"
 #include "pixie-timer.h"
-#include "packet-queue.h"
+#include "stack-queue.h"
 #include "proto-banner1.h"
 #include "proto-ssl.h"
 #include "proto-http.h"
@@ -99,8 +99,7 @@ struct TCP_ConnectionTable {
 
     struct Timeouts *timeouts;
     struct TemplatePacket *pkt_template;
-    PACKET_QUEUE *transmit_queue;
-    PACKET_QUEUE *packet_buffers;
+    struct stack_t *stack;
 
     struct Banner1 *banner1;
     OUTPUT_REPORT_BANNER report_banner;
@@ -412,8 +411,7 @@ void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
  ***************************************************************************/
 struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
-                        PACKET_QUEUE *transmit_queue,
-                        PACKET_QUEUE *packet_buffers,
+                        struct stack_t *stack,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
@@ -471,9 +469,8 @@ tcpcon_create_table(    size_t entry_count,
 
     tcpcon->pkt_template = pkt_template;
 
-    tcpcon->transmit_queue = transmit_queue;
-    tcpcon->packet_buffers = packet_buffers;
-
+    tcpcon->stack = stack;
+    
 
     tcpcon->banner1 = banner1_create();
 
@@ -821,7 +818,6 @@ tcpcon_send_packet(
     unsigned ctrl)
 {
     struct PacketBuffer *response = 0;
-    int err = 0;
     uint64_t wait = 100;
 
     assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
@@ -830,17 +826,15 @@ tcpcon_send_packet(
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sc_dequeue(tcpcon->packet_buffers, (void**)&response);
-        if (err != 0) {
-            static int is_warning_printed = 0;
-            if (!is_warning_printed) {
-                LOG(0, "packet buffers empty (should be impossible)\n");
-                is_warning_printed = 1;
-            }
-            fflush(stdout);
-            pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
+    response = stack_get_packetbuffer(tcpcon->stack);
+    if (response == NULL) {
+        static int is_warning_printed = 0;
+        if (!is_warning_printed) {
+            LOG(0, "packet buffers empty (should be impossible)\n");
+            is_warning_printed = 1;
         }
+        fflush(stdout);
+        pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
     }
     if (response == NULL)
         return;
@@ -880,13 +874,7 @@ tcpcon_send_packet(
      * from a transmit-thread only, and this function is being called
      * from a receive-thread. Therefore, instead of transmiting ourselves,
      * we hae to queue it up for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sp_enqueue(tcpcon->transmit_queue, response);
-        if (err != 0) {
-            LOG(0, "transmit queue full (should be impossible)\n");
-            pixie_usleep(100); /* no space available */
-        }
-    }
+    stack_transmit_packetbuffer(tcpcon->stack, response);
 }
 
 /***************************************************************************
@@ -894,32 +882,28 @@ tcpcon_send_packet(
 void
 tcp_send_RST(
     struct TemplatePacket *templ,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue,
+    struct stack_t *stack,
     ipaddress ip_them, ipaddress ip_me,
     unsigned port_them, unsigned port_me,
     unsigned seqno_them, unsigned seqno_me
 )
 {
     struct PacketBuffer *response = 0;
-    int err = 0;
     uint64_t wait = 100;
 
 
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
-        if (err != 0) {
-            static int is_warning_printed = 0;
-            if (!is_warning_printed) {
-                LOG(0, "packet buffers empty (should be impossible)\n");
-                is_warning_printed = 1;
-            }
-            fflush(stdout);
-            pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
+    response = stack_get_packetbuffer(stack);
+    if (response == NULL) {
+        static int is_warning_printed = 0;
+        if (!is_warning_printed) {
+            LOG(0, "packet buffers empty (should be impossible)\n");
+            is_warning_printed = 1;
         }
+        fflush(stdout);
+        pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
     }
     if (response == NULL)
         return;
@@ -939,13 +923,7 @@ tcp_send_RST(
      * from a transmit-thread only, and this function is being called
      * from a receive-thread. Therefore, instead of transmiting ourselves,
      * we hae to queue it up for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sp_enqueue(transmit_queue, response);
-        if (err != 0) {
-            LOG(0, "transmit queue full (should be impossible)\n");
-            pixie_usleep(100); /* no space available */
-        }
-    }
+    stack_transmit_packetbuffer(stack, response);
 }
 
 /***************************************************************************

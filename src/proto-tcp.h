@@ -1,7 +1,7 @@
 #ifndef PROTO_TCP_H
 #define PROTO_TCP_H
 #include "ipv6address.h"
-#include "packet-queue.h"
+#include "stack-queue.h"
 #include "output.h"
 
 struct Adapter;
@@ -47,8 +47,7 @@ void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
  */
 struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
-                        struct rte_ring *transmit_queue,
-                        struct rte_ring *packet_buffers,
+                        struct stack_t *stack,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
@@ -138,8 +137,7 @@ tcpcon_send_RST(
 void
 tcp_send_RST(
     struct TemplatePacket *templ,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue,
+    struct stack_t *stack,
     ipaddress ip_them, ipaddress ip_me,
     unsigned port_them, unsigned port_me,
     unsigned seqno_them, unsigned seqno_me

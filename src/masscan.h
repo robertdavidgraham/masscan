@@ -10,7 +10,7 @@
 
 #include "ranges.h"
 #include "ranges6.h"
-#include "packet-queue.h"
+#include "stack-queue.h"
 
 struct Adapter;
 struct TemplateSet;

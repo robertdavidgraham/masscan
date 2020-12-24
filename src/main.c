@@ -28,6 +28,7 @@
 #include "main-dedup.h"         /* ignore duplicate responses */
 #include "main-ptrace.h"        /* for nmap --packet-trace feature */
 #include "proto-arp.h"          /* for responding to ARP requests */
+#include "stack-ndpv6.h"        /* IPv6 Neighbor Discovery Protocol */
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
@@ -108,17 +109,7 @@ struct ThreadPair {
      * clustering. */
     struct Adapter *adapter;
 
-    /**
-     * The thread-pair use a "packet_buffer" and "transmit_queue" to
-     * send packets to each other. That's because when doing things
-     * like banner-checking, the receive-thread needs to respond to
-     * things like syn-acks received from the target. However, the
-     * receive-thread cannot transmit packets, so it uses this ring
-     * in order to send the packets to the transmit thread for
-     * transmission.
-     */
-    PACKET_QUEUE *packet_buffers;
-    PACKET_QUEUE *transmit_queue;
+    struct stack_t *stack;
 
     /**
      * The index of the network adapter that we are using for this
@@ -144,7 +135,8 @@ struct ThreadPair {
     /**
      * The current IP address we are using for transmit/receive.
      */
-    struct stack_src_t src;
+    struct stack_src_t _src_;
+
     unsigned char adapter_mac[6];
     unsigned char router_mac[6];
 
@@ -163,67 +155,6 @@ struct ThreadPair {
     size_t thread_handle_recv;
 };
 
-
-/***************************************************************************
- * The receive thread doesn't transmit packets. Instead, it queues them
- * up on the transmit thread. Every so often, the transmit thread needs
- * to flush this transmit queue and send everything.
- *
- * This is an inherent design issue trying to send things as batches rather
- * than individually. It increases latency, but increases performance. We
- * don't really care about latency.
- ***************************************************************************/
-static void
-flush_packets(struct Adapter *adapter,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue,
-    uint64_t *packets_sent,
-    uint64_t *batchsize)
-{
-    /*
-     * Send a batch of queued packets
-     */
-    for ( ; (*batchsize); (*batchsize)--) {
-        int err;
-        struct PacketBuffer *p;
-
-        /*
-         * Get the next packet from the transmit queue. This packet was
-         * put there by a receive thread, and will contain things like
-         * an ACK or an HTTP request
-         */
-        err = rte_ring_sc_dequeue(transmit_queue, (void**)&p);
-        if (err) {
-            break; /* queue is empty, nothing to send */
-        }
-
-
-        /*
-         * Actually send the packet
-         */
-        rawsock_send_packet(adapter, p->px, (unsigned)p->length, 1);
-
-        /*
-         * Now that we are done with the packet, put it on the free list
-         * of buffers that the transmit thread can reuse
-         */
-        for (err=1; err; ) {
-            err = rte_ring_sp_enqueue(packet_buffers, p);
-            if (err) {
-                LOG(0, "transmit queue full (should be impossible)\n");
-                pixie_usleep(10000);
-            }
-        }
-
-
-        /*
-         * Remember that we sent a packet, which will be used in
-         * throttling.
-         */
-        (*packets_sent)++;
-    }
-
-}
 
 
 /***************************************************************************
@@ -364,7 +295,7 @@ infinite:
          * then "batch_size" will get decremented to zero, and we won't be
          * able to transmit SYN packets.
          */
-        flush_packets(adapter, parms->packet_buffers, parms->transmit_queue,
+        stack_flush_packets(parms->stack, adapter,
                         &packets_sent, &batch_size);
 
 
@@ -550,9 +481,7 @@ infinite:
 
 
             /* Transmit packets from the receive thread */
-            flush_packets(  adapter,
-                            parms->packet_buffers,
-                            parms->transmit_queue,
+            stack_flush_packets(  parms->stack, adapter,
                             &packets_sent,
                             &batch_size);
 
@@ -615,16 +544,9 @@ receive_thread(void *v)
     uint64_t *status_tcb_count;
     uint64_t entropy = masscan->seed;
     struct ResetFilter *rf;
-    struct stack_t stack[1];
+    struct stack_t *stack = parms->stack;
 
-
-    /* Create an object representing the network stack */
-    memset(stack, 0, sizeof(*stack));
-    stack->mac_address = parms->adapter_mac;
-    stack->packet_buffers = parms->packet_buffers;
-    stack->transmit_queue = parms->transmit_queue;
-    stack->src = &parms->src;
-
+    
     
     /* For reducing RST responses, see rstfilter_is_filter() below */
     rf = rstfilter_create(entropy, 16384);
@@ -676,7 +598,7 @@ receive_thread(void *v)
     dedup = dedup_create();
 
     /*
-     * Create a TCP connection table for interacting with live
+     * Create a TCP connection table (per thread pair) for interacting with live
      * connections when doing --banners
      */
     if (masscan->is_banners) {
@@ -687,8 +609,7 @@ receive_thread(void *v)
          */
         tcpcon = tcpcon_create_table(
             (size_t)((masscan->max_rate/5) / masscan->nic_count),
-            parms->transmit_queue,
-            parms->packet_buffers,
+            parms->stack,
             &parms->tmplset->pkts[Proto_TCP],
             output_report_banner,
             out,
@@ -864,7 +785,7 @@ receive_thread(void *v)
         }
 
         /* verify: my IP address */
-        if (!is_my_ip(&parms->src, ip_me)) {
+        if (!is_my_ip(stack->src, ip_me)) {
             /* NDP Neighbor Solicitations don't come to our IP address, but to
              * a multicast address */
             if (is_ipv6_multicast(ip_me)) {
@@ -918,11 +839,10 @@ receive_thread(void *v)
                      * for our IP address (as part of our user-mode TCP/IP).
                      * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
                      * ourself, or the router will lose track of us.*/
-                     stack_handle_arp(   ip_me.ipv4,
-                                    parms->adapter_mac,
-                                    px, length,
-                                    parms->packet_buffers,
-                                    parms->transmit_queue);
+                     stack_handle_arp(stack,
+                                      ip_me.ipv4,
+                                      parms->adapter_mac,
+                                      px, length);
                     break;
                 case 2: /* response */
                     /* This is for "arp scan" mode, where we are ARPing targets rather
@@ -971,7 +891,7 @@ receive_thread(void *v)
 
 
         /* verify: my port number */
-        if (!is_my_port(&parms->src, port_me))
+        if (!is_my_port(stack->src, port_me))
             continue;
         if (parms->masscan->nmap.packet_trace)
             packet_trace(stdout, parms->pt_start, px, length, 0);
@@ -1130,8 +1050,7 @@ receive_thread(void *v)
             if (tcpcon == NULL && !masscan->is_noreset)
                 tcp_send_RST(
                     &parms->tmplset->pkts[Proto_TCP],
-                    parms->packet_buffers,
-                    parms->transmit_queue,
+                    parms->stack,
                     ip_them, ip_me,
                     port_them, port_me,
                     0, seqno_me);
@@ -1153,15 +1072,7 @@ end:
     if (pcapfile)
         pcapfile_close(pcapfile);
 
-    for (;;) {
-        void *p;
-        int err;
-        err = rte_ring_sc_dequeue(parms->packet_buffers, (void**)&p);
-        if (err == 0)
-            free(p);
-        else
-            break;
-    }
+    /*TODO: free stack packet buffers */
 
     /* Thread is about to exit */
     parms->done_receiving = 1;
@@ -1200,6 +1111,7 @@ static void control_c_handler(int x)
 
 
 
+
 /***************************************************************************
  * Called from main() to initiate the scan.
  * Launches the 'transmit_thread()' and 'receive_thread()' and waits for
@@ -1217,6 +1129,7 @@ main_scan(struct Masscan *masscan)
     struct Status status;
     uint64_t min_index = UINT64_MAX;
     struct MassVulnCheck *vulncheck = NULL;
+    struct stack_t *stack;
 
     memset(parms_array, 0, sizeof(parms_array));
 
@@ -1358,8 +1271,8 @@ main_scan(struct Masscan *masscan)
             masscan->nic[index].src.port.range = 1;
         }
 
-        parms->src = masscan->nic[index].src;
-
+        stack = stack_create(parms->adapter_mac, &masscan->nic[index].src);
+        parms->stack = stack;
 
         /*
          * Set the "TTL" (IP time-to-live) of everything we send.
@@ -1377,27 +1290,7 @@ main_scan(struct Masscan *masscan)
         signal(SIGINT, control_c_handler);
 
 
-        /*
-         * Allocate packet buffers for sending
-         */
-#define BUFFER_COUNT 16384
-        parms->packet_buffers = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
-        parms->transmit_queue = rte_ring_create(BUFFER_COUNT, RING_F_SP_ENQ|RING_F_SC_DEQ);
-        {
-            unsigned i;
-            for (i=0; i<BUFFER_COUNT-1; i++) {
-                struct PacketBuffer *p;
-
-                p = MALLOC(sizeof(*p));
-                err = rte_ring_sp_enqueue(parms->packet_buffers, p);
-                if (err) {
-                    /* I dunno why but I can't queue all 256 packets, just 255 */
-                    LOG(0, "packet_buffers: enqueue: error %d\n", err);
-                }
-            }
-        }
-
-
+        
         /*
          * Start the scanning thread.
          * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH

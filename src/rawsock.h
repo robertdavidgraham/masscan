@@ -7,7 +7,7 @@
 #include <stdio.h>
 struct Adapter;
 struct TemplateSet;
-#include "packet-queue.h"
+#include "stack-queue.h"
 
 
 /**

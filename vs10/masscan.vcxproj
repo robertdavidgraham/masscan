@@ -108,6 +108,7 @@
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\stack-ndpv6.c" />
+    <ClCompile Include="..\src\stack-queue.c" />
     <ClCompile Include="..\src\stack-src.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\stub-lua.c" />
@@ -198,6 +199,7 @@
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\stack-ndpv6.h" />
+    <ClInclude Include="..\src\stack-queue.h" />
     <ClInclude Include="..\src\stack-src.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\stub-lua.h" />

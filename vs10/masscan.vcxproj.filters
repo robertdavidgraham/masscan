@@ -369,6 +369,9 @@
     <ClCompile Include="..\src\stack-ndpv6.c">
       <Filter>Source Files\stack</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\stack-queue.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -627,6 +630,9 @@
       <Filter>Source Files\stack</Filter>
     </ClInclude>
     <ClInclude Include="..\src\stack-ndpv6.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-queue.h">
       <Filter>Source Files\stack</Filter>
     </ClInclude>
   </ItemGroup>
