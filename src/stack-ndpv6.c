@@ -2,6 +2,7 @@
 #include "proto-preprocess.h"
 #include "stack-src.h"
 #include "util-checksum.h"
+#include <string.h>
 
 
 
@@ -115,6 +116,5 @@ stack_handle_ndpv6_neighbor_notification(
             const unsigned char *mac_them,
             struct stack_t *stack)
 {
-    printf("neighbor notification\n");
     return 0;
 }
