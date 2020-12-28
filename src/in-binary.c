@@ -13,6 +13,7 @@
 #include "in-filter.h"
 #include "in-report.h"
 #include "util-malloc.h"
+#include "ranges6.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -129,6 +130,132 @@ parse_status2(struct Output *out,
      */
     if (ips && ips->count) {
         if (!rangelist_is_contains(ips, record.ip.ipv4))
+            return;
+    }
+    if (ports && ports->count) {
+        if (!rangelist_is_contains(ports, record.port))
+            return;
+    }
+
+    /*
+     * Now report the result
+     */
+    output_report_status(out,
+                    record.timestamp,
+                    status,
+                    record.ip,
+                    record.ip_proto,
+                    record.port,
+                    record.reason,
+                    record.ttl,
+                    record.mac);
+
+}
+
+static unsigned char
+_get_byte(const unsigned char *buf, size_t length, size_t *offset)
+{
+    unsigned char result;
+    if (*offset < length) {
+        result = buf[*offset];
+    } else {
+        result = 0xFF;
+    }
+    (*offset)++;
+    return result;
+}
+static unsigned
+_get_integer(const unsigned char *buf, size_t length, size_t *r_offset)
+{
+    unsigned result;
+    size_t offset = *r_offset;
+    (*r_offset) += 4;
+    
+    if (offset + 4 <= length) {
+        result = buf[offset+0]<<24
+                | buf[offset+1]<<16
+                | buf[offset+2]<<8
+                | buf[offset+3]<<0;
+    } else {
+        result = 0xFFFFFFFF;
+    }
+    return result;
+}
+static unsigned short
+_get_short(const unsigned char *buf, size_t length, size_t *r_offset)
+{
+    unsigned short result;
+    size_t offset = *r_offset;
+    (*r_offset) += 2;
+    
+    if (offset + 2 <= length) {
+        result = buf[offset+0]<<8
+        | buf[offset+1]<<0;
+    } else {
+        result = 0xFFFF;
+    }
+    return result;
+}
+
+static unsigned long long
+_get_long(const unsigned char *buf, size_t length, size_t *r_offset)
+{
+    unsigned long long result;
+    size_t offset = *r_offset;
+    (*r_offset) += 8;
+    
+    if (offset + 8 <= length) {
+        result =
+          (unsigned long long)buf[offset+0]<<56ULL
+        | (unsigned long long)buf[offset+1]<<48ULL
+        | (unsigned long long)buf[offset+2]<<40ULL
+        | (unsigned long long)buf[offset+3]<<32ULL
+        | (unsigned long long)buf[offset+4]<<24ULL
+        | (unsigned long long)buf[offset+5]<<16ULL
+        | (unsigned long long)buf[offset+6]<<8ULL
+        | (unsigned long long)buf[offset+7]<<0ULL;
+
+    } else {
+        result = 0xFFFFFFFFffffffffULL;
+    }
+    return result;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+parse_status6(struct Output *out,
+        enum PortStatus status, /* open/closed */
+        const unsigned char *buf, size_t length,
+        const struct Range6List *ips,
+        const struct RangeList *ports)
+{
+    struct MasscanRecord record;
+    size_t offset = 0;
+
+    /* parse record */
+    record.timestamp = _get_integer(buf, length, &offset);
+    record.ip_proto  = _get_byte(buf, length, &offset);
+    record.port      = _get_short(buf, length, &offset);
+    record.reason    = _get_byte(buf, length, &offset);
+    record.ttl       = _get_byte(buf, length, &offset);
+    record.ip.version= _get_byte(buf, length, &offset);
+    if (record.ip.version != 6) {
+        fprintf(stderr, "[-] corrupt record\n");
+        return;
+    }
+    
+    record.ip.ipv6.hi = _get_long(buf, length, &offset);
+    record.ip.ipv6.lo = _get_long(buf, length, &offset);
+
+    if (out->when_scan_started == 0)
+        out->when_scan_started = record.timestamp;
+
+    /*
+     * Filter
+     */
+    if (ips && ips->count) {
+        if (!range6list_is_contains(ips, record.ip.ipv6))
             return;
     }
     if (ports && ports->count) {
@@ -295,7 +422,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
 static uint64_t
 _binaryfile_parse(struct Output *out, const char *filename,
            const struct RangeList *ips,
-           const struct Range6List *ipv6s,
+           const struct Range6List *ips6,
            const struct RangeList *ports,
            const struct RangeList *btypes)
 {
@@ -431,6 +558,17 @@ _binaryfile_parse(struct Output *out, const char *filename,
                 break;
             case 9:
                 parse_banner9(out, buf, bytes_read, ips, ports, btypes);
+                break;
+            case 10: /* Open6 */
+                if (!btypes->count)
+                    parse_status6(out, PortStatus_Open, buf, bytes_read, ips6, ports);
+                break;
+            case 11: /* Closed6 */
+                if (!btypes->count)
+                    parse_status6(out, PortStatus_Closed, buf, bytes_read, ips6, ports);
+                break;
+            case 12: /* Arp6 */
+            case 13: /* Banner6 */
                 break;
             case 'm': /* FILEHEADER */
                 //goto end;

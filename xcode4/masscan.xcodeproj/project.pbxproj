@@ -94,6 +94,8 @@
 		11B2DD9E17DE4DD8007FC363 /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
 		11B5897E21C0785C00DD6248 /* util-malloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B5897D21C0785B00DD6248 /* util-malloc.c */; };
 		11B5898121C0841100DD6248 /* ranges6.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B5898021C0841100DD6248 /* ranges6.c */; };
+		11B6297925995AA100D4786F /* stack-queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B6297525995AA100D4786F /* stack-queue.c */; };
+		11B6297A25995AA100D4786F /* stack-ndpv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B6297625995AA100D4786F /* stack-ndpv6.c */; };
 		11BA296218902CEE0064A759 /* out-grepable.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA295F18902CEE0064A759 /* out-grepable.c */; };
 		11BA296318902CEE0064A759 /* proto-tcp-telnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296018902CEE0064A759 /* proto-tcp-telnet.c */; };
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
@@ -294,6 +296,10 @@
 		11B5897D21C0785B00DD6248 /* util-malloc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-malloc.c"; sourceTree = "<group>"; };
 		11B5897F21C0841100DD6248 /* ranges6.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ranges6.h; sourceTree = "<group>"; };
 		11B5898021C0841100DD6248 /* ranges6.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ranges6.c; sourceTree = "<group>"; };
+		11B6297525995AA100D4786F /* stack-queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-queue.c"; sourceTree = "<group>"; };
+		11B6297625995AA100D4786F /* stack-ndpv6.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-ndpv6.c"; sourceTree = "<group>"; };
+		11B6297725995AA100D4786F /* stack-queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-queue.h"; sourceTree = "<group>"; };
+		11B6297825995AA100D4786F /* stack-ndpv6.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-ndpv6.h"; sourceTree = "<group>"; };
 		11BA295E18902CEE0064A759 /* masscan-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "masscan-version.h"; sourceTree = "<group>"; };
 		11BA295F18902CEE0064A759 /* out-grepable.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-grepable.c"; sourceTree = "<group>"; };
 		11BA296018902CEE0064A759 /* proto-tcp-telnet.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-tcp-telnet.c"; sourceTree = "<group>"; };
@@ -369,6 +375,10 @@
 		118E114E2585931800618314 /* stack */ = {
 			isa = PBXGroup;
 			children = (
+				11B6297625995AA100D4786F /* stack-ndpv6.c */,
+				11B6297825995AA100D4786F /* stack-ndpv6.h */,
+				11B6297525995AA100D4786F /* stack-queue.c */,
+				11B6297725995AA100D4786F /* stack-queue.h */,
 				11A8680B1816F3A7008E00B8 /* stack-src.c */,
 				11A8680C1816F3A7008E00B8 /* stack-src.h */,
 			);
@@ -706,6 +716,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				11B6297925995AA100D4786F /* stack-queue.c in Sources */,
 				11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */,
 				11DD36412107E7ED00CBE1DE /* vulncheck-heartbleed.c in Sources */,
 				11A921D617DBCC7E00DDFD32 /* logger.c in Sources */,
@@ -756,6 +767,7 @@
 				1107E9B52294DF22003384B3 /* range-file.c in Sources */,
 				11A921F617DBCC7E00DDFD32 /* smackqueue.c in Sources */,
 				11A921F717DBCC7E00DDFD32 /* string_s.c in Sources */,
+				11B6297A25995AA100D4786F /* stack-ndpv6.c in Sources */,
 				11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */,
 				11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */,
 				11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */,

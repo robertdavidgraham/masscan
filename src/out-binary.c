@@ -3,6 +3,7 @@
 #include "masscan-status.h"
 #include "out-record.h"
 #include "string_s.h"
+#include <assert.h>
 
 /****************************************************************************
  ****************************************************************************/
@@ -48,71 +49,98 @@ binary_out_close(struct Output *out, FILE *fp)
     out->rotate.bytes_written += bytes_written;
 }
 
+static void
+_put_byte(unsigned char *buf, size_t length, size_t *r_offset, unsigned long long num)
+{
+    size_t offset = *r_offset;
+    (*r_offset) += 1;
+    if (*r_offset <= length) {
+        buf[offset++] = (unsigned char)(num>>0);
+    }
+}
+static void
+_put_short(unsigned char *buf, size_t length, size_t *r_offset, unsigned long long num)
+{
+    size_t offset = *r_offset;
+    (*r_offset) += 2;
+    if (*r_offset <= length) {
+        buf[offset++] = (unsigned char)(num>>8);
+        buf[offset++] = (unsigned char)(num>>0);
+    }
+}
+static void
+_put_integer(unsigned char *buf, size_t length, size_t *r_offset, unsigned long long num)
+{
+    size_t offset = *r_offset;
+    (*r_offset) += 4;
+    if (*r_offset <= length) {
+        buf[offset++] = (unsigned char)(num>>24);
+        buf[offset++] = (unsigned char)(num>>16);
+        buf[offset++] = (unsigned char)(num>>8);
+        buf[offset++] = (unsigned char)(num>>0);
+    }
+}
+static void
+_put_long(unsigned char *buf, size_t length, size_t *r_offset, unsigned long long num)
+{
+    size_t offset = *r_offset;
+    (*r_offset) += 8;
+    if (*r_offset <= length) {
+        buf[offset++] = (unsigned char)(num>>56);
+        buf[offset++] = (unsigned char)(num>>48);
+        buf[offset++] = (unsigned char)(num>>40);
+        buf[offset++] = (unsigned char)(num>>32);
+        buf[offset++] = (unsigned char)(num>>24);
+        buf[offset++] = (unsigned char)(num>>16);
+        buf[offset++] = (unsigned char)(num>>8);
+        buf[offset++] = (unsigned char)(num>>0);
+    }
+}
+
 /****************************************************************************
  ****************************************************************************/
 static void
 binary_out_status_ipv6(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
-    unsigned char foo[256];
+    unsigned char buf[256];
+    size_t max = sizeof(buf);
+    size_t offset = 0;
     size_t bytes_written;
 
  
     /* [TYPE] field */
     switch (status) {
     case PortStatus_Open:
-        foo[0] = Out_Open6;
+        _put_byte(buf, max, &offset, Out_Open6);
         break;
     case PortStatus_Closed:
-        foo[0] = Out_Closed6;
+        _put_byte(buf, max, &offset, Out_Closed6);
         break;
     case PortStatus_Arp:
-        foo[0] = Out_Arp6;
+        _put_byte(buf, max, &offset, Out_Arp6);
         break;
     default:
         return;
     }
 
-    /* [LENGTH] field */
-    foo[1] = 26;
+    /* [LENGTH] field
+     * see assert() below */
+    _put_byte(buf, max, &offset, 26);
 
-    /* [TIMESTAMP] field */
-    foo[2] = (unsigned char)(timestamp>>24);
-    foo[3] = (unsigned char)(timestamp>>16);
-    foo[4] = (unsigned char)(timestamp>> 8);
-    foo[5] = (unsigned char)(timestamp>> 0);
-
-    foo[6] = (unsigned char)(ip_proto);
-
-    foo[7] = (unsigned char)(port>>8);
-    foo[8] = (unsigned char)(port>>0);
-
-    foo[9] = (unsigned char)reason;
-    foo[10] = (unsigned char)ttl;
-
-    foo[11] = (unsigned char)(ip.version);
-
-    foo[12] = (unsigned char)(ip.ipv6.hi >> 56ULL);
-    foo[13] = (unsigned char)(ip.ipv6.hi >> 48ULL);
-    foo[14] = (unsigned char)(ip.ipv6.hi >> 40ULL);
-    foo[15] = (unsigned char)(ip.ipv6.hi >> 32ULL);
-    foo[16] = (unsigned char)(ip.ipv6.hi >> 24ULL);
-    foo[17] = (unsigned char)(ip.ipv6.hi >> 16ULL);
-    foo[18] = (unsigned char)(ip.ipv6.hi >>  8ULL);
-    foo[19] = (unsigned char)(ip.ipv6.hi >>  0ULL);
-
-    foo[20] = (unsigned char)(ip.ipv6.lo >> 56ULL);
-    foo[21] = (unsigned char)(ip.ipv6.lo >> 48ULL);
-    foo[22] = (unsigned char)(ip.ipv6.lo >> 40ULL);
-    foo[23] = (unsigned char)(ip.ipv6.lo >> 32ULL);
-    foo[24] = (unsigned char)(ip.ipv6.lo >> 24ULL);
-    foo[25] = (unsigned char)(ip.ipv6.lo >> 16ULL);
-    foo[26] = (unsigned char)(ip.ipv6.lo >>  8ULL);
-    foo[27] = (unsigned char)(ip.ipv6.lo >>  0ULL);
-
-
-    bytes_written = fwrite(&foo, 1, 15, fp);
-    if (bytes_written != 15) {
+    _put_integer(buf, max, &offset, timestamp);
+    _put_byte(buf, max, &offset, ip_proto);
+    _put_short(buf, max, &offset, port);
+    _put_byte(buf, max, &offset, reason);
+    _put_byte(buf, max, &offset, ttl);
+    _put_byte(buf, max, &offset, ip.version);
+    _put_long(buf, max, &offset, ip.ipv6.hi);
+    _put_long(buf, max, &offset, ip.ipv6.lo);
+    
+    assert(offset == 2 + 26);
+    
+    bytes_written = fwrite(buf, 1, offset, fp);
+    if (bytes_written != offset) {
         perror("output");
         exit(1);
     }
