@@ -25,11 +25,10 @@ masscan_initialize_adapter(
     char *ifname;
     char ifname2[256];
     unsigned adapter_ip = 0;
-    unsigned is_usable_ipv4 = (masscan->targets_ipv4.count == 0);
-    unsigned is_usable_ipv6 = (masscan->targets_ipv6.count == 0);
+    unsigned is_usable_ipv4 = !massip_has_ipv4_targets(&masscan->targets); /* I don't understand this line, seems opposite */
+    unsigned is_usable_ipv6 = !massip_has_ipv6_targets(&masscan->targets); /* I don't understand this line, seems opposite */
     
-    if (masscan == NULL)
-        return -1;
+
 
     LOG(1, "if: initializing adapter interface\n");
 
@@ -63,7 +62,7 @@ masscan_initialize_adapter(
      * is done by querying the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
-    if (1 || masscan->targets_ipv4.count) {
+    if (1 || massip_has_ipv4_targets(&masscan->targets)) {
         adapter_ip = masscan->nic[index].src.ipv4.first;
         if (adapter_ip == 0) {
             adapter_ip = rawsock_get_adapter_ip(ifname);
@@ -72,13 +71,17 @@ masscan_initialize_adapter(
             masscan->nic[index].src.ipv4.range = 1;
         }
         if (adapter_ip == 0) {
+            /* We appear to have IPv4 targets, yet we cannot find an adapter
+             * to use for those targets. We are having trouble querying the
+             * operating system stack. */
             fprintf(stderr, "FAIL: failed to detect IP of interface \"%s\"\n",
                             ifname);
             fprintf(stderr, " [hint] did you spell the name correctly?\n");
             fprintf(stderr, " [hint] if it has no IP address, manually set with something like "
                             "\"--adapter-ip 192.168.100.5\"\n");
-            if (masscan->targets_ipv4.count)
+            if (massip_has_ipv4_targets(&masscan->targets)) {
                 return -1;
+            }
         }
         LOG(2, "if:%s: adapter-ip=%u.%u.%u.%u\n",
             ifname,
@@ -99,7 +102,7 @@ masscan_initialize_adapter(
      * is done by querying the adapter (or configured by user). If the
      * adapter doesn't have one, then the user must configure one.
      */
-    if (masscan->targets_ipv6.count) {
+    if (massip_has_ipv6_targets(&masscan->targets)) {
         ipv6address adapter_ipv6 = masscan->nic[index].src.ipv6.first;
         if (ipv6address_is_zero(adapter_ipv6)) {
             adapter_ipv6 = rawsock_get_adapter_ipv6(ifname);

@@ -11,8 +11,7 @@
 #define MASSIP_PARSE_H
 #include "ipv6address.h"
 
-struct RangeList;
-struct Range6List;
+struct MassIP;
 struct Range;
 struct Range6;
 
@@ -32,7 +31,7 @@ struct Range6;
         0 on success, any other number on failure.
  */
 int
-massip_parse_file(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6);
+massip_parse_file(struct MassIP *massip, const char *filename);
 
 
 enum RangeParseResult {
@@ -56,13 +55,16 @@ massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Ra
 ipv6address
 massip_parse_ipv6(const char *buf);
 
+unsigned
+massip_parse_ipv4(const char *buf);
+
 
 /**
  * Do a simplistic unit test of the parser.
  * @return 0 on success, 1 on failure
  */
 int
-massip_selftest(void);
+massip_parse_selftest(void);
 
 #endif
 

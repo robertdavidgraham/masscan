@@ -101,7 +101,7 @@ int range6_is_bad_address(const struct Range6 *range);
  * @return
  *      the total number of IP addresses or ports removed.
  */
-uint64_t
+ipv6address
 range6list_exclude( struct Range6List *targets,
                     const struct Range6List *excludes);
 
@@ -115,7 +115,7 @@ range6list_exclude( struct Range6List *targets,
  * @return
  *      The total number of address or ports.
  */
-uint64_t
+massint128_t
 range6list_count(const struct Range6List *targets);
 
 /**

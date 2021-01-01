@@ -1,5 +1,4 @@
 #include "main-readrange.h"
-#include "ranges.h"
 #include "masscan.h"
 #include <assert.h>
 
@@ -50,8 +49,8 @@ count_cidr6_bits(struct Range6 range)
 void
 main_readrange(struct Masscan *masscan)
 {
-    struct RangeList *list4 = &masscan->targets_ipv4;
-    struct Range6List *list6 = &masscan->targets_ipv6;
+    struct RangeList *list4 = &masscan->targets.ipv4;
+    struct Range6List *list6 = &masscan->targets.ipv6;
     unsigned i;
     FILE *fp = stdout;
 

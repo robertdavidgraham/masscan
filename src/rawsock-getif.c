@@ -5,7 +5,6 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "ranges.h" /*for parsing IPv4 addresses */
 #include "string_s.h"
 #include "util-malloc.h"
 #include "logger.h"
@@ -372,6 +371,8 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 #if defined(WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
+#include "massip-parse.h"
+
 #ifdef _MSC_VER
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
@@ -431,14 +432,12 @@ again:
         {
             const IP_ADDR_STRING *addr;
 
-            for (addr = &pAdapter->GatewayList;
-                    addr;
-                    addr = addr->Next) {
-                struct Range range;
+            for (addr = &pAdapter->GatewayList; addr; addr = addr->Next) {
+                unsigned x;
 
-                range = range_parse_ipv4(addr->IpAddress.String, 0, 0);
-                if (range.begin != 0 && range.begin == range.end) {
-                    ipv4 = range.begin;
+                x = massip_parse_ipv4(addr->IpAddress.String);
+                if (x != 0xFFFFFFFF) {
+                    ipv4 = x;
                     break;
                 }
             }

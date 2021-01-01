@@ -26,7 +26,7 @@
  it takes almost 3 seconds to process everything before starting.
  
 */
-#include "ranges.h"
+#include "massip-rangesv4.h"
 #include "logger.h"
 #include "templ-port.h"
 #include "util-bool.h"
@@ -595,7 +595,7 @@ range_is_valid(struct Range range)
  ***************************************************************************/
 void
 rangelist_exclude(  struct RangeList *targets,
-                  const struct RangeList *excludes)
+                  struct RangeList *excludes)
 {
     unsigned i;
     unsigned x;
@@ -603,7 +603,7 @@ rangelist_exclude(  struct RangeList *targets,
     
     /* Both lists must be sorted */
     rangelist_sort(targets);
-    assert(excludes->is_sorted);
+    rangelist_sort(excludes);
     
     /* Go through all target ranges, apply excludes to them
      * (which may split into two ranges), and add them to the
@@ -860,6 +860,10 @@ const char *
 rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error, unsigned proto_offset)
 {
     char *p = (char*)string;
+    unsigned tmp = 0;
+
+    if (is_error == NULL)
+        is_error = &tmp;
     
     *is_error = 0;
     while (*p) {

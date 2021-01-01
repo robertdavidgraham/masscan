@@ -7,9 +7,10 @@
     files containing millions of addresses and ranges using a 
     "state-machine parser".
 */
-#include "range-file.h"
-#include "ranges.h"
-#include "ranges6.h"
+#include "massip.h"
+#include "massip-parse.h"
+#include "massip-rangesv4.h"
+#include "massip-rangesv6.h"
 #include "logger.h"
 #include "util-bool.h"
 #include "util-malloc.h"
@@ -799,8 +800,10 @@ fail:
 /***************************************************************************
  ***************************************************************************/
 int
-massip_parse_file(const char *filename, struct RangeList *targets_ipv4, struct Range6List *targets_ipv6)
+massip_parse_file(struct MassIP *massip, const char *filename)
 {
+    struct RangeList *targets_ipv4 = &massip->ipv4;
+    struct Range6List *targets_ipv6 = &massip->ipv6;
     struct massip_parser p[1];
     char buf[65536];
     FILE *fp = NULL;
@@ -951,6 +954,50 @@ fail:
     result.hi = ~0ULL;
     result.lo = ~0ULL;
     return result;
+}
+
+unsigned
+massip_parse_ipv4(const char *line)
+{
+    struct massip_parser p[1];
+    size_t count = strlen(line);
+    size_t offset = 0;
+    int err;
+    unsigned begin, end;
+
+
+    _parser_init(p);
+    err = _parser_next(p, line, &offset, count, &begin, &end);
+again:
+    switch (err) {
+        case Still_Working:
+            if (offset < count) {
+                /* We reached this somehow in the middle of the buffer, but
+                 * this return is only possible at the end of the buffer */
+                fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                goto fail;
+            } else {
+                err = _parser_next(p, "\n", 0, 1, &begin, &end);
+                if (err == Still_Working) {
+                    fprintf(stderr, "[-] _parser_next(): unknown coding failure\n");
+                    goto fail;
+                } else {
+                    goto again;
+                }
+            }
+            break;
+        case Found_Error:
+        default:
+            goto fail;
+        case Found_IPv6:
+            goto fail;
+        case Found_IPv4:
+            if (begin != end)
+                goto fail;
+            return begin;
+    }
+fail:
+    return 0xFFFFFFFF;
 }
 
 enum RangeParseResult
@@ -1178,7 +1225,7 @@ struct {
  * Called during "make test" to run a regression test over this module.
  ***************************************************************************/
 int
-massip_selftest(void)
+massip_parse_selftest(void)
 {
     int x = 0;
     size_t i;

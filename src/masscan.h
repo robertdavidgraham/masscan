@@ -3,13 +3,13 @@
 #include "ipv6address.h"
 #include "string_s.h"
 #include "stack-src.h"
+#include "massip.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 
-#include "ranges.h"
-#include "ranges6.h"
+#include "massip.h"
 #include "stack-queue.h"
 
 struct Adapter;
@@ -143,23 +143,8 @@ struct Masscan
      * The user can specify anything here, and we'll resolve all overlaps
      * and such, and sort the target ranges.
      */
-    struct RangeList targets_ipv4;
-    struct Range6List targets_ipv6;
-
-    /**
-     * The ports we are scanning for. The user can specify repeated ports
-     * and overlapping ranges, but we'll deduplicate them, scanning ports
-     * only once.
-     * NOTE: TCP ports are stored 0-64k, but UDP ports are stored in the
-     * range 64k-128k, thus, allowing us to scan both at the same time.
-     */
-    struct RangeList ports;
+    struct MassIP targets;
     
-    /**
-     * Only output these types of banners
-     */
-    struct RangeList banner_types;
-
     /**
      * IPv4 addresses/ranges that are to be exluded from the scan. This takes
      * precedence over any 'include' statement. What happens is this: after
@@ -168,9 +153,12 @@ struct Masscan
      * Thus, during the scan, we only choose from the target/whitelist and
      * don't consult the exclude/blacklist.
      */
-    struct RangeList exclude_ip;
-    struct RangeList exclude_port;
-    struct Range6List exclude_ipv6;
+    struct MassIP exclude;
+
+    /**
+     * Only output these types of banners
+     */
+    struct RangeList banner_types;
 
 
     /**

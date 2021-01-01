@@ -30,6 +30,10 @@
     <ClCompile Include="..\src\main-readrange.c" />
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
+    <ClCompile Include="..\src\massip-parse.c" />
+    <ClCompile Include="..\src\massip-rangesv4.c" />
+    <ClCompile Include="..\src\massip-rangesv6.c" />
+    <ClCompile Include="..\src\massip.c" />
     <ClCompile Include="..\src\misc-rstfilter.c" />
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-certs.c" />
@@ -88,9 +92,6 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
-    <ClCompile Include="..\src\range-file.c" />
-    <ClCompile Include="..\src\ranges.c" />
-    <ClCompile Include="..\src\ranges6.c" />
     <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
@@ -143,6 +144,10 @@
     <ClInclude Include="..\src\masscan-app.h" />
     <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\massip-parse.h" />
+    <ClInclude Include="..\src\massip-rangesv4.h" />
+    <ClInclude Include="..\src\massip-rangesv6.h" />
+    <ClInclude Include="..\src\massip.h" />
     <ClInclude Include="..\src\misc-rstfilter.h" />
     <ClInclude Include="..\src\out-record.h" />
     <ClInclude Include="..\src\out-tcp-services.h" />
@@ -187,9 +192,6 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
-    <ClInclude Include="..\src\range-file.h" />
-    <ClInclude Include="..\src\ranges.h" />
-    <ClInclude Include="..\src\ranges6.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\read-service-probes.h" />

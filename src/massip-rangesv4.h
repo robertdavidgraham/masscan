@@ -92,7 +92,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
  */
 void
 rangelist_exclude(  struct RangeList *targets,
-              const struct RangeList *excludes);
+                    struct RangeList *excludes);
 
 
 /**

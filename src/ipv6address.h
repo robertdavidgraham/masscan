@@ -16,6 +16,7 @@
 
 struct ipv6address {uint64_t hi; uint64_t lo;};
 typedef struct ipv6address ipv6address;
+typedef ipv6address massint128_t;
 typedef unsigned ipv4address;
 
 
@@ -31,6 +32,8 @@ typedef struct ipaddress ipaddress;
 static inline int ipv6address_is_zero(ipv6address a) {
     return a.hi == 0 && a.lo == 0;
 }
+#define massint128_is_zero ipv6address_is_zero
+
 static inline int ipv6address_is_invalid(ipv6address a) {
     return a.hi == ~0ULL && a.lo == ~0ULL;
 }

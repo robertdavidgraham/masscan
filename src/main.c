@@ -47,7 +47,7 @@
 #include "proto-ntp.h"          /* parse NTP responses */
 #include "proto-coap.h"         /* CoAP selftest */
 #include "templ-port.h"
-#include "in-binary.h"          /* covert binary output to XML/JSON */
+#include "in-binary.h"          /* convert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
 #include "proto-zeroaccess.h"
 #include "siphash24.h"
@@ -59,11 +59,11 @@
 #include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
 #include "main-readrange.h"
 #include "scripting.h"
-#include "range-file.h"         /* reading ranges from a file */
 #include "read-service-probes.h"
 #include "misc-rstfilter.h"
 #include "util-malloc.h"
 #include "util-checksum.h"
+#include "massip-parse.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -208,8 +208,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t range;
     uint64_t range_ipv6;
     struct BlackRock blackrock;
-    uint64_t count_ipv4 = rangelist_count(&masscan->targets_ipv4);
-    uint64_t count_ipv6 = range6list_count(&masscan->targets_ipv6);
+    uint64_t count_ipv4 = rangelist_count(&masscan->targets.ipv4);
+    uint64_t count_ipv6 = range6list_count(&masscan->targets.ipv6).lo;
     struct Throttler *throttler = parms->throttler;
     struct TemplateSet pkt_template = templ_copy(parms->tmplset);
     struct Adapter *adapter = parms->adapter;
@@ -255,9 +255,9 @@ infinite:
      * ports.
      * IPv6: low index will pick addresses from the IPv6 ranges, and high
      * indexes will pick addresses from the IPv4 ranges. */
-    range = count_ipv4 * rangelist_count(&masscan->ports)
-            + count_ipv6 * rangelist_count(&masscan->ports);
-    range_ipv6 = count_ipv6 * rangelist_count(&masscan->ports);
+    range = count_ipv4 * rangelist_count(&masscan->targets.ports)
+            + count_ipv6 * rangelist_count(&masscan->targets.ports);
+    range_ipv6 = count_ipv6 * rangelist_count(&masscan->targets.ports);
     blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
@@ -339,8 +339,8 @@ infinite:
                 ipv6address ip_me;
                 unsigned port_me;
 
-                ip_them = range6list_pick(&masscan->targets_ipv6, xXx % count_ipv6);
-                port_them = rangelist_pick(&masscan->ports, xXx / count_ipv6);
+                ip_them = range6list_pick(&masscan->targets.ipv6, xXx % count_ipv6);
+                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv6);
 
                 ip_me = src_ipv6;
                 port_me = src_port;
@@ -368,8 +368,8 @@ infinite:
 
                 xXx -= range_ipv6;
 
-                ip_them = rangelist_pick(&masscan->targets_ipv4, xXx % count_ipv4);
-                port_them = rangelist_pick(&masscan->ports, xXx / count_ipv4);
+                ip_them = rangelist_pick(&masscan->targets.ipv4, xXx % count_ipv4);
+                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv4);
 
                 /*
                  * SYN-COOKIE LOGIC
@@ -853,7 +853,7 @@ receive_thread(void *v)
                         break;
 
                     /* If this response isn't in our range, then ignore it */
-                    if (!rangelist_is_contains(&masscan->targets_ipv4, ip_them.ipv4))
+                    if (!rangelist_is_contains(&masscan->targets.ipv4, ip_them.ipv4))
                         break;
 
                     /* Ignore duplicates */
@@ -1143,12 +1143,12 @@ main_scan(struct Masscan *masscan)
         
         /* If no ports specified on command-line, grab default ports */
         is_error = 0;
-        if (rangelist_count(&masscan->ports) == 0)
-            rangelist_parse_ports(&masscan->ports, vulncheck->ports, &is_error, 0);
+        if (rangelist_count(&masscan->targets.ports) == 0)
+            rangelist_parse_ports(&masscan->targets.ports, vulncheck->ports, &is_error, 0);
         
         /* Kludge: change normal port range to vulncheck range */
-        for (i=0; i<masscan->ports.count; i++) {
-            struct Range *r = &masscan->ports.list[i];
+        for (i=0; i<masscan->targets.ports.count; i++) {
+            struct Range *r = &masscan->targets.ports.list[i];
             r->begin = (r->begin&0xFFFF) | Templ_VulnCheck;
             r->end = (r->end & 0xFFFF) | Templ_VulnCheck;
         }
@@ -1157,14 +1157,14 @@ main_scan(struct Masscan *masscan)
     /*
      * Initialize the task size
      */
-    count_ips = rangelist_count(&masscan->targets_ipv4) + range6list_count(&masscan->targets_ipv6);
+    count_ips = rangelist_count(&masscan->targets.ipv4) + range6list_count(&masscan->targets.ipv6).lo;
     if (count_ips == 0) {
         LOG(0, "FAIL: target IP address list empty\n");
         LOG(0, " [hint] try something like \"--range 10.0.0.0/8\"\n");
         LOG(0, " [hint] try something like \"--range 192.168.0.100-192.168.0.200\"\n");
         return 1;
     }
-    count_ports = rangelist_count(&masscan->ports);
+    count_ports = rangelist_count(&masscan->targets.ports);
     if (count_ports == 0) {
         LOG(0, "FAIL: no ports were specified\n");
         LOG(0, " [hint] try something like \"-p80,8000-9000\"\n");
@@ -1176,8 +1176,8 @@ main_scan(struct Masscan *masscan)
     /*
      * If doing an ARP scan, then don't allow port scanning
      */
-    if (rangelist_is_contains(&masscan->ports, Templ_ARP)) {
-        if (masscan->ports.count != 1) {
+    if (rangelist_is_contains(&masscan->targets.ports, Templ_ARP)) {
+        if (masscan->targets.ports.count != 1) {
             LOG(0, "FAIL: cannot arpscan and portscan at the same time\n");
             return 1;
         }
@@ -1187,7 +1187,7 @@ main_scan(struct Masscan *masscan)
      * If the IP address range is very big, then require that that the
      * user apply an exclude range
      */
-    if (count_ips > 1000000000ULL && rangelist_count(&masscan->exclude_ip) == 0) {
+    if (count_ips > 1000000000ULL && rangelist_count(&masscan->exclude.ipv4) == 0) {
         LOG(0, "FAIL: range too big, need confirmation\n");
         LOG(0, " [hint] to prevent acccidents, at least one --exclude must be specified\n");
         LOG(0, " [hint] use \"--exclude 255.255.255.255\" as a simple confirmation\n");
@@ -1198,8 +1198,8 @@ main_scan(struct Masscan *masscan)
      * trim the nmap UDP payloads down to only those ports we are using. This
      * makes lookups faster at high packet rates.
      */
-    payloads_udp_trim(masscan->payloads.udp, &masscan->ports);
-    payloads_oproto_trim(masscan->payloads.oproto, &masscan->ports);
+    payloads_udp_trim(masscan->payloads.udp, &masscan->targets);
+    payloads_oproto_trim(masscan->payloads.oproto, &masscan->targets);
 
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
@@ -1320,8 +1320,8 @@ main_scan(struct Masscan *masscan)
         LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
 
         if (count_ports == 1 && \
-            masscan->ports.list->begin == Templ_ICMP_echo && \
-            masscan->ports.list->end == Templ_ICMP_echo)
+            masscan->targets.ports.list->begin == Templ_ICMP_echo && \
+            masscan->targets.ports.list->end == Templ_ICMP_echo)
             { /* ICMP only */
                 LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
                 LOG(0, "Initiating ICMP Echo Scan\n");
@@ -1503,6 +1503,8 @@ int main(int argc, char *argv[])
 {
     struct Masscan masscan[1];
     unsigned i;
+    int has_target_addresses = 0;
+    int has_target_ports = 0;
     
     usec_start = pixie_gettime();
 #if defined(WIN32)
@@ -1600,40 +1602,17 @@ int main(int argc, char *argv[])
      * of their ranges, and when doing wide scans, add the exclude list to
      * prevent them from being scanned.
      */
-    {
-        uint64_t pre_range = rangelist_count(&masscan->targets_ipv4) * rangelist_count(&masscan->ports)
-                            + range6list_count(&masscan->targets_ipv6) * rangelist_count(&masscan->ports);
-        uint64_t post_range;
-        
-        rangelist_exclude(&masscan->targets_ipv4, &masscan->exclude_ip);
-        range6list_exclude(&masscan->targets_ipv6, &masscan->exclude_ipv6);
-        rangelist_exclude(&masscan->ports, &masscan->exclude_port);
-        //rangelist_remove_range2(&masscan->targets, range_parse_ipv4("224.0.0.0/4", 0, 0));
+    has_target_addresses = massip_has_ipv4_targets(&masscan->targets) || massip_has_ipv6_targets(&masscan->targets);
+    has_target_ports = massip_has_target_ports(&masscan->targets);
+    massip_apply_excludes(&masscan->targets, &masscan->exclude);
 
-        post_range = rangelist_count(&masscan->targets_ipv4) * rangelist_count(&masscan->ports)
-                     + range6list_count(&masscan->targets_ipv6) * rangelist_count(&masscan->ports);
-
-        if (pre_range != 0 && post_range == 0) {
-            LOG(0, "FAIL: no ranges left to scan\n");
-            LOG(0, "   ...all ranges overlapped something in an excludefile range\n");
-            exit(1);
-        }
-
-        if (post_range != pre_range && masscan->resume.index) {
-            LOG(0, "FAIL: Attempted to add additional 'exclude' ranges after scan start.\n");
-            LOG(0, "   ...This messes things up the scan randomization, so you have to restart scan\n");
-            exit(1);
-        }
-    }
 
 
     /* Optimize target selection so it's a quick binary search instead
      * of walking large memory tables. When we scan the entire Internet
      * our --excludefile will chop up our pristine 0.0.0.0/0 range into
      * hundreds of subranges. This allows us to grab addresses faster. */
-    rangelist_optimize(&masscan->targets_ipv4);
-    range6list_optimize(&masscan->targets_ipv6);
-    rangelist_optimize(&masscan->ports);
+    massip_optimize(&masscan->targets);
 
     /*
      * Once we've read in the configuration, do the operation that was
@@ -1649,6 +1628,29 @@ int main(int argc, char *argv[])
         /*
          * THIS IS THE NORMAL THING
          */
+        if (rangelist_count(&masscan->targets.ipv4) == 0 && massint128_is_zero(range6list_count(&masscan->targets.ipv6))) {
+            /* We check for an empty target list here first, before the excludes,
+             * so that we can differentiate error messages after excludes, in case
+             * the user specified addresses, but they were removed by excludes. */
+            LOG(0, "FAIL: target IP address list empty\n");
+            if (has_target_addresses) {
+                LOG(0, " [hint] all addresses were removed by exclusion ranges\n");
+            } else {
+                LOG(0, " [hint] try something like \"--range 10.0.0.0/8\"\n");
+                LOG(0, " [hint] try something like \"--range 192.168.0.100-192.168.0.200\"\n");
+            }
+            exit(1);
+        }
+        if (rangelist_count(&masscan->targets.ports) == 0) {
+            if (has_target_ports) {
+                LOG(0, " [hint] all ports were removed by exclusion ranges\n");
+            } else {
+                LOG(0, "FAIL: no ports were specified\n");
+                LOG(0, " [hint] try something like \"-p80,8000-9000\"\n");
+                LOG(0, " [hint] try something like \"--ports 0-65535\"\n");
+            }
+            return 1;
+        }
         return main_scan(masscan);
 
     case Operation_ListScan:
@@ -1710,6 +1712,8 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            x += massip_selftest();
+            x += ranges6_selftest();
             x += dedup_selftest();
             x += checksum_selftest();
             x += ipv6address_selftest();
@@ -1728,7 +1732,7 @@ int main(int argc, char *argv[])
             x += lcg_selftest();
             x += template_selftest();
             x += ranges_selftest();
-            x += massip_selftest();
+            x += massip_parse_selftest();
             x += pixie_time_selftest();
             x += rte_ring_selftest();
             x += mainconf_selftest();

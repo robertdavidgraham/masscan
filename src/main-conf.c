@@ -14,8 +14,6 @@
 #include "masscan.h"
 #include "ipv6address.h"
 #include "masscan-version.h"
-#include "ranges.h"
-#include "range-file.h"     /* reads millions of IP addresss from a file */
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
@@ -27,6 +25,8 @@
 #include "unusedparm.h"
 #include "read-service-probes.h"
 #include "util-malloc.h"
+#include "massip.h"
+#include "massip-parse.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -841,7 +841,7 @@ config_top_ports(struct Masscan *masscan, unsigned n)
         52848,52869,54045,54328,55055,55056,55555,55600,56737,56738,57294,
         57797,58080,60020,60443,61532,61900,62078,63331,64623,64680,65000,
         65129,65389};
-    struct RangeList *ports = &masscan->ports;
+    struct RangeList *ports = &masscan->targets.ports;
 
     if (masscan->scan_type.tcp) {
         for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
@@ -891,8 +891,8 @@ static int SET_arpscan(struct Masscan *masscan, const char *name, const char *va
     }
     range.begin = Templ_ARP;
     range.end = Templ_ARP;
-    rangelist_add_range(&masscan->ports, range.begin, range.end);
-    rangelist_sort(&masscan->ports);
+    rangelist_add_range(&masscan->targets.ports, range.begin, range.end);
+    rangelist_sort(&masscan->targets.ports);
     masscan_set_parameter(masscan, "router-mac", "ff-ff-ff-ff-ff-ff");
     masscan->scan_type.arp = 1;
     LOG(5, "--arpscan\n");
@@ -1857,21 +1857,21 @@ masscan_set_parameter(struct Masscan *masscan,
     else if (EQUALS("udp-ports", name) || EQUALS("udp-port", name)) {
         unsigned is_error = 0;
         masscan->scan_type.udp = 1;
-        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+        rangelist_parse_ports(&masscan->targets.ports, value, &is_error, Templ_UDP);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
     else if (EQUALS("oprotos", name) || EQUALS("oproto", name)) {
         unsigned is_error = 0;
         masscan->scan_type.oproto = 1;
-        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_Oproto_first);
+        rangelist_parse_ports(&masscan->targets.ports, value, &is_error, Templ_Oproto_first);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
     else if (EQUALS("tcp-ports", name) || EQUALS("tcp-port", name)) {
         unsigned is_error = 0;
         masscan->scan_type.tcp = 1;
-        rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_TCP);
+        rangelist_parse_ports(&masscan->targets.ports, value, &is_error, Templ_TCP);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
@@ -1881,9 +1881,9 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("target-port", name)) {
         unsigned is_error = 0;
         if (masscan->scan_type.udp)
-            rangelist_parse_ports(&masscan->ports, value, &is_error, Templ_UDP);
+            rangelist_parse_ports(&masscan->targets.ports, value, &is_error, Templ_UDP);
         else
-            rangelist_parse_ports(&masscan->ports, value, &is_error, 0);
+            rangelist_parse_ports(&masscan->targets.ports, value, &is_error, 0);
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
@@ -1904,7 +1904,7 @@ masscan_set_parameter(struct Masscan *masscan,
         }
     } else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->exclude_port, value, &is_error, 0);
+        rangelist_parse_ports(&masscan->exclude.ports, value, &is_error, 0);
         if (is_error) {
             LOG(0, "FAIL: bad exclude port: %s\n", value);
             exit(1);
@@ -1920,8 +1920,8 @@ masscan_set_parameter(struct Masscan *masscan,
         struct Range range;
         range.begin = Templ_ICMP_echo;
         range.end = Templ_ICMP_echo;
-        rangelist_add_range(&masscan->ports, range.begin, range.end);
-        rangelist_sort(&masscan->ports);
+        rangelist_add_range(&masscan->targets.ports, range.begin, range.end);
+        rangelist_sort(&masscan->targets.ports);
         masscan->scan_type.ping = 1;
         LOG(5, "--ping\n");
     } else if (EQUALS("range", name) || EQUALS("ranges", name)
@@ -1929,34 +1929,12 @@ masscan_set_parameter(struct Masscan *masscan,
                || EQUALS("dst-ip", name) || EQUALS("dest-ip", name)
                || EQUALS("destination-ip", name)
                || EQUALS("target-ip", name)) {
-        const char *ranges = value;
-        size_t offset = 0;
-        size_t max_offset = strlen(ranges);
-
-        /* Normally we have only a single range, but we actually support multiple
-         * ranges in this field delimited by a comma */
-        while (offset < max_offset) {
-            struct Range range;
-            struct Range6 range6;
-            int err;
-
-            /* Grab the next IPv4 or IPv6 range */
-            err = massip_parse_range(ranges, &offset, max_offset, &range, &range6);
-            switch (err) {
-            case Ipv4_Address:
-                rangelist_add_range(&masscan->targets_ipv4, range.begin, range.end);
-                break;
-            case Ipv6_Address:
-                range6list_add_range(&masscan->targets_ipv6, range6.begin, range6.end);
-                break;
-            default:
-                offset = max_offset; /* An error means skipping the rest of the string */
-                fprintf(stderr, "ERROR: bad IP address/range: %s\n", ranges);
-                break;
-            }
-            while (offset < max_offset && (isspace(ranges[offset]&0xFF) || ranges[offset] == ','))
-                offset++;
+        int err;
+        err = massip_add_target_string(&masscan->targets, value);
+        if (err) {
+            fprintf(stderr, "ERROR: bad IP address/range: %s\n", value);
         }
+
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
     }
@@ -1967,25 +1945,10 @@ masscan_set_parameter(struct Masscan *masscan,
                 EQUALS("exclude-ip", name) ||
                 EQUALS("exclude-ipv4", name)
                 ) {
-        const char *ranges = value;
-        unsigned offset = 0;
-        unsigned max_offset = (unsigned)strlen(ranges);
-
-        for (;;) {
-            struct Range range;
-
-            range = range_parse_ipv4(ranges, &offset, max_offset);
-            if (range.begin == 0 && range.end == 0) {
-                fprintf(stderr, "CONF: bad range spec: %s\n", ranges);
-                exit(1);
-            }
-
-            rangelist_add_range(&masscan->exclude_ip, range.begin, range.end);
-
-            if (offset >= max_offset || ranges[offset] != ',')
-                break;
-            else
-                offset++; /* skip comma */
+        int err;
+        err = massip_add_target_string(&masscan->exclude, value);
+        if (err) {
+            fprintf(stderr, "ERROR: bad exclude address/range: %s\n", value);
         }
         if (masscan->op == 0)
             masscan->op = Operation_Scan;
@@ -2020,13 +1983,13 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan_echo(masscan, stdout, EQUALS("echo-all", name));
         exit(0);
     } else if (EQUALS("excludefile", name)) {
-        unsigned count1 = masscan->exclude_ip.count;
+        unsigned count1 = masscan->exclude.ipv4.count;
         unsigned count2;
         int err;
         const char *filename = value;
 
         LOG(1, "EXCLUDING: %s\n", value);
-        err = massip_parse_file(filename, &masscan->exclude_ip, &masscan->exclude_ipv6);
+        err = massip_parse_file(&masscan->exclude, filename);
         if (err) {
             LOG(0, "FAIL: error reading from exclude file\n");
             exit(1);
@@ -2034,7 +1997,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Detect if this file has made any change, otherwise don't print
          * a message */
-        count2 = masscan->exclude_ip.count;
+        count2 = masscan->exclude.ipv4.count;
         if (count2 - count1)
             fprintf(stderr, "%s: excluding %u ranges from file\n",
                 value, count2 - count1);
@@ -2099,7 +2062,7 @@ masscan_set_parameter(struct Masscan *masscan,
         int err;
         const char *filename = value;
 
-        err = massip_parse_file(filename, &masscan->targets_ipv4, &masscan->targets_ipv6);
+        err = massip_parse_file(&masscan->targets, filename);
         if (err) {
             LOG(0, "FAIL: error reading from include file\n");
             exit(1);
@@ -2816,15 +2779,6 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
     }
 
     /*
-     * Targets must be sorted
-     */
-    rangelist_sort(&masscan->targets_ipv4);
-    range6list_sort(&masscan->targets_ipv6);
-    rangelist_sort(&masscan->ports);
-    rangelist_sort(&masscan->exclude_ip);
-    rangelist_sort(&masscan->exclude_port);
-
-    /*
      * If no other "scan type" found, then default to TCP
      */
     if (masscan->scan_type.udp == 0 && masscan->scan_type.sctp == 0
@@ -2884,8 +2838,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
     fprintf(fp, "ports = ");
     /* Disable comma generation for the first element */
     l = 0;
-    for (i=0; i<masscan->ports.count; i++) {
-        struct Range range = masscan->ports.list[i];
+    for (i=0; i<masscan->targets.ports.count; i++) {
+        struct Range range = masscan->targets.ports.list[i];
         do {
             struct Range rrange = range;
             unsigned done = 0;
@@ -2924,8 +2878,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         } while (range.begin <= range.end);
     }
     fprintf(fp, "\n");
-    for (i=0; i<masscan->targets_ipv4.count; i++) {
-        struct Range range = masscan->targets_ipv4.list[i];
+    for (i=0; i<masscan->targets.ipv4.count; i++) {
+        struct Range range = masscan->targets.ipv4.list[i];
         fprintf(fp, "range = ");
         fprintf(fp, "%u.%u.%u.%u",
                 (range.begin>>24)&0xFF,
@@ -2948,8 +2902,8 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         }
         fprintf(fp, "\n");
     }
-    for (i=0; i<masscan->targets_ipv6.count; i++) {
-        struct Range6 range = masscan->targets_ipv6.list[i];
+    for (i=0; i<masscan->targets.ipv6.count; i++) {
+        struct Range6 range = masscan->targets.ipv6.list[i];
         fprintf(fp, "range = %s", ipv6address_fmt(range.begin).string);
         if (!ipv6address_is_equal(range.begin, range.end)) {
             unsigned cidr_bits = count_cidr6_bits(range);
