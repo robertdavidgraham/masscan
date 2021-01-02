@@ -709,9 +709,9 @@ ranges6_selftest(void)
     
     /* test for the /0 CIDR block, since we'll be using that a lot to scan the entire
      * Internet */
-    if (r.begin.hi != 0x20010db885a30000)
+    if (r.begin.hi != 0x20010db885a30000ULL)
         return 1;
-    if (r.begin.lo != 0x00008a2e03707334)
+    if (r.begin.lo != 0x00008a2e03707334ULL)
         return 1;
 
     return 0;
