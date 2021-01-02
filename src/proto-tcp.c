@@ -818,8 +818,7 @@ tcpcon_send_packet(
     unsigned ctrl)
 {
     struct PacketBuffer *response = 0;
-    uint64_t wait = 100;
-
+    
     assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
 
 
@@ -834,7 +833,11 @@ tcpcon_send_packet(
             is_warning_printed = 1;
         }
         fflush(stdout);
-        pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
+        
+        /* FIXME: I'm no sure the best way to handle this.
+         * This would result from a bug in the code,
+         * but I'm not sure what should be done in response */
+        pixie_usleep(100); /* no packet available */
     }
     if (response == NULL)
         return;
@@ -889,8 +892,7 @@ tcp_send_RST(
 )
 {
     struct PacketBuffer *response = 0;
-    uint64_t wait = 100;
-
+    
 
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
@@ -903,7 +905,7 @@ tcp_send_RST(
             is_warning_printed = 1;
         }
         fflush(stdout);
-        pixie_usleep(wait = (uint64_t)(wait *1.5)); /* no packet available */
+        pixie_usleep(100); /* no packet available */
     }
     if (response == NULL)
         return;

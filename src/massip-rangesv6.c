@@ -667,10 +667,10 @@ regress_pick2()
         }
         range = x.lo;
         for (j=0; j<range; j++) {
-            ipv6address x;
+            ipv6address addr;
 
-            x = range6list_pick(targets, j);
-            range6list_add_range(duplicate, x, x);
+            addr = range6list_pick(targets, j);
+            range6list_add_range(duplicate, addr, addr);
         }
 
         /* at this point, the two range lists shouild be identical */
