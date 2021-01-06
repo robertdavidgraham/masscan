@@ -2499,8 +2499,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 
             switch (argv[i][1]) {
             case '6':
-                fprintf(stderr, "nmap(%s): unsupported: maybe one day\n", argv[i]);
-                exit(1);
+                /* Silently ignore this: IPv6 features enabled all the time */
+                break;
             case 'A':
                 fprintf(stderr, "nmap(%s): unsupported: this tool only does SYN scan\n", argv[i]);
                 exit(1);

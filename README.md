@@ -496,7 +496,8 @@ everyone who does port scans is (or should be) familiar with.
 ## IPv6 and IPv4 coexistence
 
 Masscan supports IPv6, but there is no special mode, both are supported
-at the same time.
+at the same time. (There is no `-6` option -- it's always available).
+
 In any example you see of masscan usage,
 simply put an IPv6 address where you see an IPv4 address. You can include
 IPv4 and IPv6 addresses simultaneously in the same scan. Output includes
