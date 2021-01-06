@@ -1,9 +1,10 @@
 /*
     Simple module that contains the IPv6 type (consisting of two 64-bit
-    integers), and for pretty-printing the address.
+    integers), and for pretty-printing the address. Also handles 128-bit
+    integer arithmetic on addresses.
 */
-#ifndef IPV6ADDRESS_H
-#define IPV6ADDRESS_H
+#ifndef MASSIP_ADDR_H
+#define MASSIP_ADDR_H
 #include <stdint.h>
 #include <stddef.h>
 
@@ -14,12 +15,35 @@
 #pragma warning(disable: 4201)
 #endif
 
+/**
+ * An IPv6 address is represented as two 64-bit integers intead of a single
+ * 128-bit integer. This is because curently (year 2020) most compilers
+ * do not support the `uint128_t` type, but all relevant ones do support
+ * the `uint64_t` type.
+ */
 struct ipv6address {uint64_t hi; uint64_t lo;};
 typedef struct ipv6address ipv6address;
-typedef ipv6address massint128_t;
+
+/**
+ * IPv4 addresses are represented simply with an integer.
+ */
 typedef unsigned ipv4address;
 
+/**
+ * In many cases we need to do arithmetic on IPv6 addresses, treating
+ * them as a large 128-bit integer. Thus, we declare our own 128-bit
+ * integer type (and some accompanying math functions). But it's
+ * still just the same as a 128-bit integer.
+ */
+typedef ipv6address massint128_t;
 
+
+/**
+ * Most of the code in this project is agnostic to the version of IP
+ * addresses (IPv4 or IPv6). Therefore, we represnet them as a union
+ * distinguished by a version number. The `version` is an integer
+ * with a value of either 4 or 6.
+ */
 struct ipaddress {
     union {
         unsigned ipv4;
@@ -71,6 +95,8 @@ struct ipaddress_formatted {
 
 struct ipaddress_formatted ipv6address_fmt(ipv6address a);
 struct ipaddress_formatted ipaddress_fmt(ipaddress a);
+
+unsigned massint128_bitcount(massint128_t num);
 
 /**
  * @return 0 on success, 1 on failure

@@ -1,6 +1,6 @@
 #ifndef PROTO_TCP_H
 #define PROTO_TCP_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include "stack-queue.h"
 #include "output.h"
 

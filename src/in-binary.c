@@ -2,7 +2,7 @@
     Read in the binary file produced by "out-binary.c". This allows you to
     translate the "binary" format into any of the other output formats.
 */
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include "in-binary.h"
 #include "masscan.h"
 #include "masscan-app.h"

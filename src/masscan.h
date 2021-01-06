@@ -1,6 +1,6 @@
 #ifndef MASSCAN_H
 #define MASSCAN_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include "string_s.h"
 #include "stack-src.h"
 #include "massip.h"

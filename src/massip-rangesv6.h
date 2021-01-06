@@ -5,7 +5,7 @@
 */
 #ifndef RANGES6_H
 #define RANGES6_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include <stdio.h>
 #include <stdint.h>
 struct Range;

@@ -3,7 +3,7 @@
 */
 #ifndef IN_FILTER_H
 #define IN_FILTER_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 struct RangeList;
 struct Range6List;
 struct MassIP;

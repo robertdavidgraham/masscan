@@ -14,7 +14,7 @@
 #include "output.h"
 #include "masscan-app.h"
 #include "proto-banner1.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "masscan.h"
 #include "unusedparm.h"
 

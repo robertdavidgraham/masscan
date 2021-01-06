@@ -2,7 +2,7 @@
 #define PROTO_ARP_H
 #include <time.h>
 #include "stack-queue.h"
-#include "ipv6address.h"
+#include "massip-addr.h"
 struct Output;
 struct PreprocessedInfo;
 

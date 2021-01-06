@@ -1,7 +1,7 @@
 /* Copyright: (c) 2009-2010 by Robert David Graham */
 #ifndef PREPROCESS_H
 #define PREPROCESS_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 
 
 enum {

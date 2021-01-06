@@ -27,8 +27,8 @@
  
 */
 #include "massip-rangesv4.h"
+#include "massip-port.h"
 #include "logger.h"
-#include "templ-port.h"
 #include "util-bool.h"
 #include "util-malloc.h"
 
@@ -916,11 +916,9 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
         }
 
         if (port > 0xFF && proto_offset == Templ_Oproto_first) {
-            LOG(0, "bad ports: %u-%u\n", port, end);
             *is_error = 2;
             return p;
         } else if (port > 0xFFFF || end > 0xFFFF || end < port) {
-            LOG(0, "bad ports: %u-%u\n", port, end);
             *is_error = 2;
             return p;
         } else {
@@ -934,6 +932,8 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
 
     return p;
 }
+
+
 
 /***************************************************************************
  * Deterministic random number generator for repeatable tests.

@@ -73,6 +73,12 @@ int massip_has_port(const struct MassIP *massip, unsigned port);
 int massip_add_target_string(struct MassIP *massip, const char *string);
 
 /**
+ * Parse the string contain port specifier.
+ */
+int massip_add_port_string(struct MassIP *massip, const char *string, unsigned proto);
+
+
+/**
  * Indicates whether there are IPv4 targets. If so, we'll have to 
  * initialize the IPv4 portion of the stack.
  * @return true if there are IPv4 targets to be scanned, false

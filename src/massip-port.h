@@ -1,11 +1,12 @@
-#ifndef TEMPL_PORT_H
-#define TEMPL_PORT_H
+#ifndef MASSIP_PORT_H
+#define MASSIP_PORT_H
 
 /*
- * Due to the asynchronous scanning architecture, we have to combine TCP
- * and UDP ports (plus other scans) in a combined range. Thus, we make
- * the weird decision to put UDP ports in the range 64k to 128k, and
- * so on. We should probably make this less bizaree in the future.
+ * Ports are 16-bit numbers ([0..65535], but different
+ * transports (TCP, UDP, SCTP) are distinct port ranges. Thus, we
+ * instead of three 64k ranges we could instead treat this internally
+ * as a 192k port range. We can expand this range to include other
+ * things we scan for, such as ICMP pings or ARP requests.
  */
 enum {
     Templ_TCP = 0,

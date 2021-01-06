@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <time.h>
 #include "stack-queue.h"
-#include "ipv6address.h"
+#include "massip-addr.h"
 struct PreprocessedInfo;
 
 int

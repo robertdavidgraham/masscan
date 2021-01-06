@@ -3,7 +3,7 @@
 */
 #ifndef RAWSOCK_H
 #define RAWSOCK_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include <stdio.h>
 struct Adapter;
 struct TemplateSet;

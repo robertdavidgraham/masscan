@@ -9,7 +9,7 @@
 */
 #ifndef MASSIP_PARSE_H
 #define MASSIP_PARSE_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 
 struct MassIP;
 struct Range;
@@ -46,6 +46,8 @@ enum RangeParseResult {
  */
 enum RangeParseResult
 massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Range *ipv4, struct Range6 *ipv6);
+
+
 
 /**
  * Parse a single IPv6 address. This is called when working with

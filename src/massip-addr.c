@@ -1,4 +1,4 @@
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include <string.h>
 
 /**
@@ -156,6 +156,26 @@ struct ipaddress_formatted ipaddress_fmt(ipaddress a)
 
     /* Return the static buffer */
     return out;
+}
+
+
+static unsigned _count_long(uint64_t number)
+{
+    unsigned i;
+    unsigned count = 0;
+    for (i=0; i<64; i++) {
+        if ((number >> i) & 1)
+            count = i + 1;
+    }
+    return count;
+}
+
+unsigned massint128_bitcount(massint128_t number)
+{
+    if (number.hi)
+        return _count_long(number.hi) + 64;
+    else
+        return _count_long(number.lo);
 }
 
 int ipv6address_selftest(void)

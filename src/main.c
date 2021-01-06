@@ -46,7 +46,6 @@
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "proto-ntp.h"          /* parse NTP responses */
 #include "proto-coap.h"         /* CoAP selftest */
-#include "templ-port.h"
 #include "in-binary.h"          /* convert binary output to XML/JSON */
 #include "main-globals.h"       /* all the global variables in the program */
 #include "proto-zeroaccess.h"
@@ -64,6 +63,7 @@
 #include "util-malloc.h"
 #include "util-checksum.h"
 #include "massip-parse.h"
+#include "massip-port.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1605,6 +1605,9 @@ int main(int argc, char *argv[])
     has_target_addresses = massip_has_ipv4_targets(&masscan->targets) || massip_has_ipv6_targets(&masscan->targets);
     has_target_ports = massip_has_target_ports(&masscan->targets);
     massip_apply_excludes(&masscan->targets, &masscan->exclude);
+    if (!has_target_ports && masscan->op == Operation_ListScan)
+        massip_add_port_string(&masscan->targets, "80", 0);
+
 
 
 
@@ -1613,6 +1616,26 @@ int main(int argc, char *argv[])
      * our --excludefile will chop up our pristine 0.0.0.0/0 range into
      * hundreds of subranges. This allows us to grab addresses faster. */
     massip_optimize(&masscan->targets);
+    
+    /* FIXME: we only support 63-bit scans at the current time.
+     * This is big enough for the IPv4 Internet, where scanning
+     * for all TCP ports on all IPv4 addresses results in a 48-bit
+     * scan, but this isn't big enough even for a single port on
+     * an IPv6 subnet (which are 64-bits in size, usually). However,
+     * even at millions of packets per second scanning rate, you still
+     * can't complete a 64-bit scan in a reasonable amount of time.
+     * Nor would you want to attempt the feat, as it would overload
+     * the target IPv6 subnet. Since implementing this would be
+     * difficult for 32-bit processors, for now, I'm going to stick
+     * to a simple 63-bit scan.
+     */
+    if (massint128_bitcount(massip_range(&masscan->targets)) > 63) {
+        fprintf(stderr, "[-] FAIL: scan range too large, max is 63-bits, requested is %u bits\n",
+                massint128_bitcount(massip_range(&masscan->targets)));
+        fprintf(stderr, "    Hint: scan range is number of IP addresses times number of ports\n");
+        fprintf(stderr, "    Hint: IPv6 subnet must be at least /66 \n");
+        exit(1);
+    }
 
     /*
      * Once we've read in the configuration, do the operation that was

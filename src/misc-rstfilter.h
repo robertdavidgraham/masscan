@@ -18,7 +18,7 @@
 #ifndef MISC_RSTFILTER_H
 #define MISC_RSTFILTER_H
 #include <stdio.h>
-#include "ipv6address.h"
+#include "massip-addr.h"
 
 struct ResetFilter;
 

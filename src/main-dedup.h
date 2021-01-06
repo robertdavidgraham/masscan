@@ -1,6 +1,6 @@
 #ifndef MAIN_DEDUP_H
 #define MAIN_DEDUP_H
-#include "ipv6address.h"
+#include "massip-addr.h"
 
 struct DedupTable *
 dedup_create(void);

@@ -99,6 +99,15 @@ int massip_add_target_string(struct MassIP *massip, const char *string)
     return 0;
 }
 
+int massip_add_port_string(struct MassIP *targets, const char *string, unsigned defaultrange)
+{
+    unsigned is_error = 0;
+    rangelist_parse_ports(&targets->ports, string, &is_error, defaultrange);
+    if (is_error)
+        return 1;
+    else
+        return 0;
+}
 
 int massip_selftest(void)
 {

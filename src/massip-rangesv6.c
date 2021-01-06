@@ -497,6 +497,8 @@ range6list_count(const struct Range6List *targets)
         ipv6address x;
 
         x = _int128_subtract(targets->list[i].end, targets->list[i].begin);
+        if (x.hi == ~0ULL && x.lo == ~0ULL)
+            return x; /* overflow */
         x = _int128_add64(x, 1);
         result = _int128_add(result, x);
     }

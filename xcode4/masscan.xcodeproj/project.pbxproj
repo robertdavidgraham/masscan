@@ -26,7 +26,6 @@
 		118B9B3325A00FA900F5FB0B /* massip-rangesv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2C25A00FA800F5FB0B /* massip-rangesv6.c */; };
 		118B9B3425A00FA900F5FB0B /* massip-parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2F25A00FA900F5FB0B /* massip-parse.c */; };
 		118B9B3525A00FA900F5FB0B /* massip.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B3125A00FA900F5FB0B /* massip.c */; };
-		118E115225859D1300618314 /* ipv6address.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115125859D1300618314 /* ipv6address.c */; };
 		118E115725859D5300618314 /* util-checksum.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115525859D5300618314 /* util-checksum.c */; };
 		118E115925859E6F00618314 /* rawsock-getip6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115825859E6F00618314 /* rawsock-getip6.c */; };
 		119968FC21388A3C00E82767 /* read-service-probes.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FB21388A3B00E82767 /* read-service-probes.c */; };
@@ -99,6 +98,7 @@
 		11BA296218902CEE0064A759 /* out-grepable.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA295F18902CEE0064A759 /* out-grepable.c */; };
 		11BA296318902CEE0064A759 /* proto-tcp-telnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296018902CEE0064A759 /* proto-tcp-telnet.c */; };
 		11BA296B189060220064A759 /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
+		11BE533625A6441100451F95 /* massip-addr.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BE533525A6441100451F95 /* massip-addr.c */; };
 		11C936C31EDCE77F0023D32E /* in-filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936BF1EDCE77F0023D32E /* in-filter.c */; };
 		11C936C41EDCE77F0023D32E /* in-report.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C11EDCE77F0023D32E /* in-report.c */; };
 		11D0FAFB22763F4900332FA7 /* proto-coap.c in Sources */ = {isa = PBXBuildFile; fileRef = 11D0FAFA22763F4900332FA7 /* proto-coap.c */; };
@@ -158,7 +158,6 @@
 		115C0CA618035BC5004E6CD7 /* proto-netbios.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-netbios.h"; sourceTree = "<group>"; };
 		115C0CA718035BC5004E6CD7 /* proto-ssl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ssl.c"; sourceTree = "<group>"; };
 		115C0CA818035BC5004E6CD7 /* proto-ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ssl.h"; sourceTree = "<group>"; };
-		115C0CA918035BC5004E6CD7 /* templ-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-port.h"; sourceTree = "<group>"; };
 		115C0CAA18035BC5004E6CD7 /* unusedparm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unusedparm.h; sourceTree = "<group>"; };
 		11623F69191E0DB00075EEE6 /* out-certs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-certs.c"; sourceTree = "<group>"; };
 		116806EA1995D421005B0980 /* rawsock-adapter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rawsock-adapter.h"; sourceTree = "<group>"; };
@@ -170,8 +169,6 @@
 		118B9B2F25A00FA900F5FB0B /* massip-parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "massip-parse.c"; sourceTree = "<group>"; };
 		118B9B3025A00FA900F5FB0B /* massip-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "massip-parse.h"; sourceTree = "<group>"; };
 		118B9B3125A00FA900F5FB0B /* massip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = massip.c; sourceTree = "<group>"; };
-		118E115025859D1300618314 /* ipv6address.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ipv6address.h; sourceTree = "<group>"; };
-		118E115125859D1300618314 /* ipv6address.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ipv6address.c; sourceTree = "<group>"; };
 		118E115325859D2400618314 /* proto-interactive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-interactive.h"; sourceTree = "<group>"; };
 		118E115425859D5200618314 /* util-bool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-bool.h"; sourceTree = "<group>"; };
 		118E115525859D5300618314 /* util-checksum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-checksum.c"; sourceTree = "<group>"; };
@@ -306,6 +303,9 @@
 		11BA296118902CEE0064A759 /* proto-tcp-telnet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-tcp-telnet.h"; sourceTree = "<group>"; };
 		11BA296A189060220064A759 /* proto-ntp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntp.c"; sourceTree = "<group>"; };
 		11BA296C189060590064A759 /* proto-ntp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-ntp.h"; sourceTree = "<group>"; };
+		11BE532E25A62C4100451F95 /* massip-port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "massip-port.h"; sourceTree = "<group>"; };
+		11BE533425A6441100451F95 /* massip-addr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "massip-addr.h"; sourceTree = "<group>"; };
+		11BE533525A6441100451F95 /* massip-addr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "massip-addr.c"; sourceTree = "<group>"; };
 		11C936BF1EDCE77F0023D32E /* in-filter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-filter.c"; sourceTree = "<group>"; };
 		11C936C01EDCE77F0023D32E /* in-filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-filter.h"; sourceTree = "<group>"; };
 		11C936C11EDCE77F0023D32E /* in-report.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-report.c"; sourceTree = "<group>"; };
@@ -347,6 +347,9 @@
 		112A9A0B258A89FC00D1EEBA /* massip */ = {
 			isa = PBXGroup;
 			children = (
+				11BE533525A6441100451F95 /* massip-addr.c */,
+				11BE533425A6441100451F95 /* massip-addr.h */,
+				11BE532E25A62C4100451F95 /* massip-port.h */,
 				118B9B2F25A00FA900F5FB0B /* massip-parse.c */,
 				118B9B3025A00FA900F5FB0B /* massip-parse.h */,
 				118B9B2B25A00FA800F5FB0B /* massip-rangesv4.c */,
@@ -394,8 +397,6 @@
 				118E115525859D5300618314 /* util-checksum.c */,
 				118E115625859D5300618314 /* util-checksum.h */,
 				118E115325859D2400618314 /* proto-interactive.h */,
-				118E115125859D1300618314 /* ipv6address.c */,
-				118E115025859D1300618314 /* ipv6address.h */,
 			);
 			name = util;
 			sourceTree = "<group>";
@@ -581,7 +582,6 @@
 				11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */,
 				11A921D117DBCC7E00DDFD32 /* templ-pkt.c */,
 				11A921D217DBCC7E00DDFD32 /* templ-pkt.h */,
-				115C0CA918035BC5004E6CD7 /* templ-port.h */,
 			);
 			name = proto;
 			sourceTree = "<group>";
@@ -755,7 +755,6 @@
 				11B5897E21C0785C00DD6248 /* util-malloc.c in Sources */,
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,
 				11DD36492108DCBB00CBE1DE /* versioning.c in Sources */,
-				118E115225859D1300618314 /* ipv6address.c in Sources */,
 				11D0FAFB22763F4900332FA7 /* proto-coap.c in Sources */,
 				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
@@ -779,6 +778,7 @@
 				119AB2062051FFED008E4DDD /* proto-memcached.c in Sources */,
 				11DD36462107EB8700CBE1DE /* scripting-masscan.c in Sources */,
 				118B9B3525A00FA900F5FB0B /* massip.c in Sources */,
+				11BE533625A6441100451F95 /* massip-addr.c in Sources */,
 				11B039C117E506B400925E7E /* main-listscan.c in Sources */,
 				11B039C717E7834000925E7E /* proto-dns.c in Sources */,
 				11B039C817E7834000925E7E /* proto-udp.c in Sources */,

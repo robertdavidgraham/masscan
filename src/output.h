@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include "stack-src.h"
 #include "unusedparm.h"
 #include "masscan-app.h"

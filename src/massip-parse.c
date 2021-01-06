@@ -308,6 +308,10 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                         p->digit_count = 1;
                         state = IPV6_BEGIN;
                         break;
+                    case ':':
+                        p->ipv6.tmp[p->ipv6.index++] = 0;
+                        state = IPV6_COLON;
+                        break;
                     case '[':
                         p->ipv6.is_bracket = 1;
                         state = IPV6_BEGIN;

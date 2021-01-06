@@ -1,7 +1,7 @@
 #ifndef SYN_COOKIE_H
 #define SYN_COOKIE_H
 #include <stdint.h>
-#include "ipv6address.h"
+#include "massip-addr.h"
 
 /**
  * Create a hash of the src/dst IP/port combination. This allows us to match

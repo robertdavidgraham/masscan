@@ -2,7 +2,7 @@
 #define TCP_PACKET_H
 #include <stdio.h>
 #include <stdint.h>
-#include "ipv6address.h"
+#include "massip-addr.h"
 struct PayloadsUDP;
 struct MassVulnCheck;
 

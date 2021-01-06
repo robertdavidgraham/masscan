@@ -12,13 +12,12 @@
 
 */
 #include "masscan.h"
-#include "ipv6address.h"
+#include "massip-addr.h"
 #include "masscan-version.h"
 #include "string_s.h"
 #include "logger.h"
 #include "proto-banner1.h"
 #include "templ-payloads.h"
-#include "templ-port.h"
 #include "crypto-base64.h"
 #include "vulncheck.h"
 #include "masscan-app.h"
@@ -27,6 +26,7 @@
 #include "util-malloc.h"
 #include "massip.h"
 #include "massip-parse.h"
+#include "massip-port.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -1879,14 +1879,21 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("dst-port", name) || EQUALS("dest-port", name)
              || EQUALS("destination-port", name)
              || EQUALS("target-port", name)) {
-        unsigned is_error = 0;
+        unsigned defaultrange = 0;
         if (masscan->scan_type.udp)
-            rangelist_parse_ports(&masscan->targets.ports, value, &is_error, Templ_UDP);
-        else
-            rangelist_parse_ports(&masscan->targets.ports, value, &is_error, 0);
+            defaultrange = Templ_UDP;
+        else if (masscan->scan_type.sctp)
+            defaultrange = Templ_SCTP;
+        int err;
+        
+        err = massip_add_port_string(&masscan->targets, value, defaultrange);
+        if (err) {
+            fprintf(stderr, "[-] FAIL: bad target port: %s\n", value);
+            fprintf(stderr, "    Hint: a port is a number [0..65535]\n");
+            exit(1);
+        }
         if (masscan->op == 0)
-            masscan->op = Operation_Scan;
-    }
+            masscan->op = Operation_Scan;    }
     else if (EQUALS("banner-types", name) || EQUALS("banner-type", name)
              || EQUALS("banner-apps", name) || EQUALS("banner-app", name)
            ) {
@@ -1903,12 +1910,21 @@ masscan_set_parameter(struct Masscan *masscan,
             exit(1);
         }
     } else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
-        unsigned is_error = 0;
-        rangelist_parse_ports(&masscan->exclude.ports, value, &is_error, 0);
-        if (is_error) {
-            LOG(0, "FAIL: bad exclude port: %s\n", value);
+        unsigned defaultrange = 0;
+        if (masscan->scan_type.udp)
+            defaultrange = Templ_UDP;
+        else if (masscan->scan_type.sctp)
+            defaultrange = Templ_SCTP;
+        int err;
+        
+        err = massip_add_port_string(&masscan->exclude, value, defaultrange);
+        if (err) {
+            fprintf(stderr, "[-] FAIL: bad exclude port: %s\n", value);
+            fprintf(stderr, "    Hint: a port is a number [0..65535]\n");
             exit(1);
         }
+        if (masscan->op == 0)
+            masscan->op = Operation_Scan;
     } else if (EQUALS("bpf", name)) {
         size_t len = strlen(value) + 1;
         if (masscan->bpf_filter)
@@ -2766,7 +2782,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             continue;
         }
 
-        if (!isdigit(argv[i][0])) {
+        if (!isdigit(argv[i][0]) && argv[i][0] != ':' && argv[i][0] != '[') {
             fprintf(stderr, "FAIL: unknown command-line parameter \"%s\"\n", argv[i]);
             fprintf(stderr, " [hint] did you want \"--%s\"?\n", argv[i]);
             exit(1);
