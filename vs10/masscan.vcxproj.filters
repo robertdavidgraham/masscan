@@ -363,9 +363,6 @@
     <ClCompile Include="..\src\massip.c">
       <Filter>Source Files\massip</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ipv6address.c">
-      <Filter>Source Files\massip</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\massip-parse.c">
       <Filter>Source Files\massip</Filter>
     </ClCompile>
@@ -373,6 +370,9 @@
       <Filter>Source Files\massip</Filter>
     </ClCompile>
     <ClCompile Include="..\src\massip-rangesv6.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-addr.c">
       <Filter>Source Files\massip</Filter>
     </ClCompile>
   </ItemGroup>
@@ -629,9 +629,6 @@
     <ClInclude Include="..\src\massip.h">
       <Filter>Source Files\massip</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ipv6address.h">
-      <Filter>Source Files\massip</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\massip-parse.h">
       <Filter>Source Files\massip</Filter>
     </ClInclude>
@@ -639,6 +636,9 @@
       <Filter>Source Files\massip</Filter>
     </ClInclude>
     <ClInclude Include="..\src\massip-rangesv6.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-addr.h">
       <Filter>Source Files\massip</Filter>
     </ClInclude>
   </ItemGroup>

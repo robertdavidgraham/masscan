@@ -24,12 +24,12 @@
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\in-filter.c" />
     <ClCompile Include="..\src\in-report.c" />
-    <ClCompile Include="..\src\ipv6address.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
     <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\masscan-app.c" />
+    <ClCompile Include="..\src\massip-addr.c" />
     <ClCompile Include="..\src\massip-parse.c" />
     <ClCompile Include="..\src\massip-rangesv4.c" />
     <ClCompile Include="..\src\massip-rangesv6.c" />
@@ -131,7 +131,6 @@
     <ClInclude Include="..\src\crypto-base64.h" />
     <ClInclude Include="..\src\in-filter.h" />
     <ClInclude Include="..\src\in-report.h" />
-    <ClInclude Include="..\src\ipv6address.h" />
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />
@@ -144,6 +143,7 @@
     <ClInclude Include="..\src\masscan-app.h" />
     <ClInclude Include="..\src\masscan-version.h" />
     <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\massip-addr.h" />
     <ClInclude Include="..\src\massip-parse.h" />
     <ClInclude Include="..\src\massip-rangesv4.h" />
     <ClInclude Include="..\src\massip-rangesv6.h" />

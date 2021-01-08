@@ -1880,11 +1880,12 @@ masscan_set_parameter(struct Masscan *masscan,
              || EQUALS("destination-port", name)
              || EQUALS("target-port", name)) {
         unsigned defaultrange = 0;
+        int err;
+
         if (masscan->scan_type.udp)
             defaultrange = Templ_UDP;
         else if (masscan->scan_type.sctp)
             defaultrange = Templ_SCTP;
-        int err;
         
         err = massip_add_port_string(&masscan->targets, value, defaultrange);
         if (err) {
@@ -1911,11 +1912,12 @@ masscan_set_parameter(struct Masscan *masscan,
         }
     } else if (EQUALS("exclude-ports", name) || EQUALS("exclude-port", name)) {
         unsigned defaultrange = 0;
+        int err;
+
         if (masscan->scan_type.udp)
             defaultrange = Templ_UDP;
         else if (masscan->scan_type.sctp)
             defaultrange = Templ_SCTP;
-        int err;
         
         err = massip_add_port_string(&masscan->exclude, value, defaultrange);
         if (err) {
