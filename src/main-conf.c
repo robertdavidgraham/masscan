@@ -1458,7 +1458,7 @@ static int SET_rate(struct Masscan *masscan, const char *name, const char *value
                 return CONF_ERR;
             }
             rate += (c - '0')/point;
-            point /= 10.0;
+            point *= 10.0;
             value++;
         }
     }
