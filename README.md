@@ -307,7 +307,7 @@ IP addresses so that it shouldn't overwhelm any distant network.
 By default, the rate is set to 100 packets/second. To increase the rate to
 a million use something like `--rate 1000000`.
 
-When scaning the IPv4 Intenret, you'll be scanning lots of subnets,
+When scanning the IPv4 Internet, you'll be scanning lots of subnets,
 so even though there's a high rate of packets going out, each
 target subnet will receive a small rate of incoming packets.
 
@@ -531,7 +531,7 @@ via DHCPv6.
 
 Instead, you'll probably want to scan large lists of addresses stored
 in a file (`--include-file filename.txt`) that you got from other sources.
-Like everywere else, this file can contain lists of both IPv4 and IPv6 addresses.
+Like everywhere else, this file can contain lists of both IPv4 and IPv6 addresses.
 The test file I use contains 8 million addresses. Files of that size need a couple
 extra seconds to be read on startup (masscan sorts the addresses and removes
 duplicates before scanning).
