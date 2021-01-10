@@ -1,7 +1,8 @@
 #ifndef PROTO_ARP_H
 #define PROTO_ARP_H
 #include <time.h>
-#include "packet-queue.h"
+#include "stack-queue.h"
+#include "massip-addr.h"
 struct Output;
 struct PreprocessedInfo;
 
@@ -22,13 +23,14 @@ struct PreprocessedInfo;
  *      I put the formatted response onto this queue for later
  *      transmission by a transmit thread.
  */
-int arp_response(
+int stack_handle_arp(struct stack_t *stack,
         unsigned my_ip, const unsigned char *my_mac,
-        const unsigned char *px, unsigned length,
-        PACKET_QUEUE *packet_buffers,
-        PACKET_QUEUE *transmit_queue);
+        const unsigned char *px, unsigned length);
+
+
+
 
 void
-handle_arp(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
+arp_recv_response(struct Output *out, time_t timestamp, const unsigned char *px, unsigned length, struct PreprocessedInfo *parsed);
 
 #endif

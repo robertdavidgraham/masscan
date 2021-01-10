@@ -29,7 +29,7 @@ json_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-               unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+               ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
     UNUSEDPARM(out);
@@ -44,8 +44,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
         out->is_first_record_seen = 1;
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
-            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
+    fprintf(fp, "  \"ip\": \"%s\", ", ipaddress_fmt(ip).string);
     fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"status\": \"%s\","
                 " \"reason\": \"%s\", \"ttl\": %u} ] ",
                 (int) timestamp,
@@ -99,7 +98,7 @@ normalize_json_string(const unsigned char *px, size_t length,
  ******************************************************************************/
 static void
 json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-               unsigned ip, unsigned ip_proto, unsigned port,
+               ipaddress ip, unsigned ip_proto, unsigned port,
                enum ApplicationProtocol proto,
                unsigned ttl,
                const unsigned char *px, unsigned length)
@@ -107,7 +106,6 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     char banner_buffer[65536];
 
     UNUSEDPARM(ttl);
-    //UNUSEDPARM(timestamp);
 
     /* Trailing comma breaks some JSON parsers. We don't know precisely when
      * we'll end, but we do know when we begin, so instead of appending
@@ -118,8 +116,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         out->is_first_record_seen = 1;
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"ip\": \"%u.%u.%u.%u\", ",
-            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
+    fprintf(fp, "  \"ip\": \"%s\", ", ipaddress_fmt(ip).string);
     fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
             (int) timestamp,
             port,
@@ -130,28 +127,6 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     fprintf(fp, "}\n");
 
     UNUSEDPARM(out);
-
-/*    fprintf(fp, "<host endtime=\"%u\">"
-            "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
-            "<ports>"
-            "<port protocol=\"%s\" portid=\"%u\">"
-            "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
-            "<service name=\"%s\" banner=\"%s\"></service>"
-            "</port>"
-            "</ports>"
-            "</host>"
-            "\r\n",
-            (unsigned)timestamp,
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
-            name_from_ip_proto(ip_proto),
-            port,
-            reason, ttl,
-            masscan_app_to_string(proto),
-            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
-            );*/
 }
 
 /****************************************************************************

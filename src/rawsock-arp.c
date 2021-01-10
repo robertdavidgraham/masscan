@@ -17,7 +17,10 @@
 #include "string_s.h"
 #include "logger.h"
 #include "pixie-timer.h"
-#include "packet-queue.h"
+#include "stack-queue.h"
+#include "proto-preprocess.h"
+#include "stack-src.h"
+#include "util-checksum.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -40,6 +43,7 @@ struct ARP_IncomingRequest
     const unsigned char *mac_src;
     const unsigned char *mac_dst;
 };
+
 
 /****************************************************************************
  ****************************************************************************/
@@ -187,7 +191,7 @@ arp_resolve_sync(struct Adapter *adapter,
 
             /* It's taking too long, so notify the user */
             if (!is_delay_reported) {
-                LOG(0, "...arping router MAC address...\n");
+                LOG(0, "[ ] arping router MAC address (may take some time)...\n");
                 is_delay_reported = 1;
             }
         }
@@ -266,18 +270,18 @@ arp_resolve_sync(struct Adapter *adapter,
     return 1;
 }
 
+    
+
+
 /****************************************************************************
  ****************************************************************************/
 int
-arp_response(
+stack_handle_arp( struct stack_t *stack,
     unsigned my_ip, const unsigned char *my_mac,
-    const unsigned char *px, unsigned length,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue)
+    const unsigned char *px, unsigned length)
 {
     struct PacketBuffer *response = 0;
     struct ARP_IncomingRequest request;
-    int err;
 
     memset(&request, 0, sizeof(request));
 
@@ -285,15 +289,9 @@ arp_response(
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
-        if (err != 0) {
-            //LOG(0, "packet buffers empty (should be impossible)\n");
-            pixie_usleep(100);
-        }
-    }
+    response = stack_get_packetbuffer(stack);
     if (response == NULL)
-        return -1; /* just to supress warnings */
+        return -1;
 
     /* ARP packets are too short, so increase the packet size to
      * the Ethernet minimum */
@@ -355,13 +353,7 @@ arp_response(
     /*
      * Now queue the packet up for transmission
      */
-    for (err=1; err; ) {
-        err = rte_ring_sp_enqueue(transmit_queue, response);
-        if (err) {
-            LOG(0, "transmit queue full (should be impossible)\n");
-            pixie_usleep(10000000);
-        }
-    }
+    stack_transmit_packetbuffer(stack, response);
 
     return 0;
 }

@@ -5,10 +5,9 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "ranges.h" /*for parsing IPv4 addresses */
 #include "string_s.h"
 #include "util-malloc.h"
-
+#include "massip-parse.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__sun__)
 #include <unistd.h>
@@ -514,26 +513,21 @@ again:
         {
             const IP_ADDR_STRING *addr;
 
-            for (addr = &pAdapter->GatewayList;
-                    addr;
-                    addr = addr->Next) {
-                struct Range range;
-
-                range = range_parse_ipv4(addr->IpAddress.String, 0, 0);
-                if (range.begin != 0 && range.begin == range.end) {
-                    *ipv4 = range.begin;
+            for (addr = &pAdapter->GatewayList; addr; addr = addr->Next) {
+                unsigned x = massip_parse_ipv4(addr->IpAddress.String);
+                if (x != 0xFFFFFFFF) {
+                    *ipv4 = x;
+                    goto end;
                 }
-
-
             }
         }
 
 
         //printf("\n");
     }
+end:
     if (pAdapterInfo)
         free(pAdapterInfo);
-
     return 0;
 }
 

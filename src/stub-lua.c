@@ -65,7 +65,7 @@ int stublua_init(void)
 
 #if defined(WIN32)
 #define DOLINK(name) \
-    name = GetProcAddress(lib, #name); \
+    name = (void (*)())GetProcAddress(lib, #name); \
     if (name == NULL) fprintf(stderr, "liblua: %s: failed\n", #name);
 #else
 #define DOLINK(name) \

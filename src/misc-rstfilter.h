@@ -18,7 +18,7 @@
 #ifndef MISC_RSTFILTER_H
 #define MISC_RSTFILTER_H
 #include <stdio.h>
-
+#include "massip-addr.h"
 
 struct ResetFilter;
 
@@ -49,7 +49,7 @@ rstfilter_destroy(struct ResetFilter *rf);
  *          or else 0 if we shouldn't ignore it.
  */
 int
-rstfilter_is_filter(struct ResetFilter *rf, unsigned src_ip, unsigned src_port, unsigned dst_ip, unsigned dst_port);
+rstfilter_is_filter(struct ResetFilter *rf, ipaddress src_ip, unsigned src_port, ipaddress dst_ip, unsigned dst_port);
 
 int
 rstfilter_selftest(void);

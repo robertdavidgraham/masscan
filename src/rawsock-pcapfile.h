@@ -11,8 +11,12 @@ extern "C" {
 
 struct PcapFile;
 
+enum pcapfile_datalink_t {
+    PCAPFILE_ETHERNET = 1,
+    PCAPFILE_WIFi = 105,
+};
 
-unsigned pcapfile_datalink(struct PcapFile *handle);
+int pcapfile_datalink(struct PcapFile *handle);
 
 void pcapfile_writeframe(
     struct PcapFile *capfile,

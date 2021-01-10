@@ -11,7 +11,7 @@
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "syn-cookie.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "unusedparm.h"
 
 
@@ -232,7 +232,7 @@ ntp_handle_response(struct Output *out, time_t timestamp,
             uint64_t entropy
             )
 {
-    unsigned ip_them;
+    ipaddress ip_them = parsed->src_ip;
     unsigned request_id = 0;
     struct BannerOutput banout[1];
     unsigned offset = parsed->app_offset;
@@ -260,11 +260,6 @@ ntp_handle_response(struct Output *out, time_t timestamp,
             banout_release(banout);
             return 0;
     }
-    
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-    | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    /*ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-    | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;*/
     
     /* Validate the "syn-cookie" style information. */
     //seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me);

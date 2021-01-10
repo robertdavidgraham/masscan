@@ -7,7 +7,7 @@
 #include "output.h"
 #include "masscan-app.h"
 #include "proto-banner1.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "masscan.h"
 #include "unusedparm.h"
 
@@ -60,7 +60,7 @@ append_name(unsigned char *banner, size_t banner_max, unsigned *banner_length, c
 static unsigned
 handle_nbtstat_rr(struct Output *out, time_t timestamp, unsigned ttl,
                   const unsigned char *px, unsigned length,
-                  unsigned ip_them, unsigned port_them)
+                  ipaddress ip_them, unsigned port_them)
 {
     unsigned char banner[65536];
     unsigned banner_length = 0;
@@ -113,18 +113,14 @@ handle_nbtstat(struct Output *out, time_t timestamp,
     struct PreprocessedInfo *parsed,
     uint64_t entropy)
 {
-    unsigned ip_them;
-    unsigned ip_me;
+    ipaddress ip_them = parsed->src_ip;
+    ipaddress ip_me = parsed->dst_ip;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     struct DNS_Incoming dns[1];
     unsigned offset;
     uint64_t seqno;
 
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
     seqno = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me, entropy);
 

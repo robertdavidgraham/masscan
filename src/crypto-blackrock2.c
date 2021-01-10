@@ -480,11 +480,11 @@ void
 blackrock2_benchmark(unsigned rounds)
 {
     struct BlackRock br;
-    uint64_t range = 0x010356789123UL;
+    uint64_t range = 0x010356789123ULL;
     uint64_t i;
     uint64_t result = 0;
     uint64_t start, stop;
-    static const uint64_t ITERATIONS = 5000000UL;
+    static const uint64_t ITERATIONS = 5000000ULL;
 
     printf("-- blackrock-2 -- \n");
     printf("rounds = %u\n", rounds);

@@ -3,10 +3,11 @@
 */
 #ifndef RAWSOCK_H
 #define RAWSOCK_H
+#include "massip-addr.h"
 #include <stdio.h>
 struct Adapter;
 struct TemplateSet;
-#include "packet-queue.h"
+#include "stack-queue.h"
 
 
 /**
@@ -66,14 +67,32 @@ rawsock_datalink(struct Adapter *adapter);
 void rawsock_list_adapters(void);
 
 void
-rawsock_send_probe(
+rawsock_send_probe_ipv4(
     struct Adapter *adapter,
-    unsigned ip_them, unsigned port_them,
-    unsigned ip_me, unsigned port_me,
+    ipv4address ip_them, unsigned port_them,
+    ipv4address ip_me, unsigned port_me,
     unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset);
 
+void
+rawsock_send_probe_ipv6(
+    struct Adapter *adapter,
+    ipv6address ip_them, unsigned port_them,
+    ipv6address ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
+    struct TemplateSet *tmplset);
+
+/**
+ * Queries the operating-system's network-stack in order to discover
+ * the best IPv4 address to use inside our own custom network-stack.
+ */
 unsigned rawsock_get_adapter_ip(const char *ifname);
+
+/**
+ * Queries the operating-system's network-stack in order to discover
+ * the best IPv6 address to use inside our own custom network-stack.
+ */
+ipv6address rawsock_get_adapter_ipv6(const char *ifname);
 
 /**
  * Given the network adapter name, like 'eth0', find the hardware

@@ -38,7 +38,7 @@
 #include "proto-ssl.h"
 #include "proto-udp.h"
 #include "syn-cookie.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "util-malloc.h"
 #include "string_s.h"
 #include "util-bool.h"
@@ -539,8 +539,8 @@ coap_handle_response(struct Output *out, time_t timestamp,
             uint64_t entropy
             )
 {
-    unsigned ip_them;
-    unsigned ip_me;
+    ipaddress ip_them = parsed->src_ip;
+    ipaddress ip_me = parsed->dst_ip;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     unsigned message_id = 0;
@@ -549,11 +549,6 @@ coap_handle_response(struct Output *out, time_t timestamp,
     bool is_valid;
     
     LOG(1, "[+] COAP\n");
-    /* Grab IP addresses */
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-        | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-        | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
     
     /* Initialize the "banner output" module that we'll use to print
      * pretty text in place of the raw packet */

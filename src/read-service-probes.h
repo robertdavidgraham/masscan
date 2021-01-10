@@ -4,7 +4,7 @@
 #ifndef READ_SERVICE_PROBES_H
 #define READ_SERVICE_PROBES_H
 #include <stdio.h>
-#include "ranges.h"
+#include "massip-rangesv4.h"
 
 /*
  Exclude <port specification>

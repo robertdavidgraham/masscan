@@ -47,7 +47,7 @@
 #include "proto-preprocess.h"
 #include "proto-banner1.h"
 #include "syn-cookie.h"
-#include "templ-port.h"
+#include "massip-port.h"
 
 static struct SMACK *global_mib;
 
@@ -540,8 +540,8 @@ handle_snmp(struct Output *out, time_t timestamp,
             uint64_t entropy
             )
 {
-    unsigned ip_them;
-    unsigned ip_me;
+    ipaddress ip_them = parsed->src_ip;
+    ipaddress ip_me = parsed->dst_ip;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     unsigned seqno;
@@ -560,12 +560,6 @@ handle_snmp(struct Output *out, time_t timestamp,
         parsed->app_length,         /* length of SNMP response */
         banout,                     /* banner printing */
         &request_id);               /* syn-cookie info */
-
-
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
     /* Validate the "syn-cookie" style information. In the case of SNMP,
      * this will be held in the "request-id" field. If the cookie isn't

@@ -13,6 +13,8 @@
 #include "stub-pfring.h"
 #include "pixie-timer.h"
 #include "main-globals.h"
+#include "proto-preprocess.h"
+
 
 #include "unusedparm.h"
 #include "util-malloc.h"
@@ -284,6 +286,9 @@ rawsock_send_packet(
     unsigned length,
     unsigned flush)
 {
+
+    /* Why: this happens in "offline mode", when we are benchmarking the
+     * core algorithms without sending packets. */
     if (adapter == 0)
         return 0;
 
@@ -398,10 +403,10 @@ int rawsock_recv_packet(
  * Step 2: send it in a portable manner
  ***************************************************************************/
 void
-rawsock_send_probe(
+rawsock_send_probe_ipv4(
     struct Adapter *adapter,
-    unsigned ip_them, unsigned port_them,
-    unsigned ip_me, unsigned port_me,
+    ipv4address ip_them, unsigned port_them,
+    ipv4address ip_me, unsigned port_me,
     unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset)
 {
@@ -411,7 +416,7 @@ rawsock_send_probe(
     /*
      * Construct the destination packet
      */
-    template_set_target(tmplset, ip_them, port_them, ip_me, port_me, seqno,
+    template_set_target_ipv4(tmplset, ip_them, port_them, ip_me, port_me, seqno,
         px, sizeof(px), &packet_length);
     
     /*
@@ -420,6 +425,28 @@ rawsock_send_probe(
     rawsock_send_packet(adapter, px, (unsigned)packet_length, flush);
 }
 
+void
+rawsock_send_probe_ipv6(
+    struct Adapter *adapter,
+    ipv6address ip_them, unsigned port_them,
+    ipv6address ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
+    struct TemplateSet *tmplset)
+{
+    unsigned char px[2048];
+    size_t packet_length;
+
+    /*
+     * Construct the destination packet
+     */
+    template_set_target_ipv6(tmplset, ip_them, port_them, ip_me, port_me, seqno,
+        px, sizeof(px), &packet_length);
+    
+    /*
+     * Send it
+     */
+    rawsock_send_packet(adapter, px, (unsigned)packet_length, flush);
+}
 
 /***************************************************************************
  * Used on Windows: network adapters have horrible names, so therefore we
@@ -491,7 +518,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         int err;
         err = PCAP.setdirection(adapter->pcap, PCAP_D_IN);
         if (err) {
-            PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
+            ; //PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
         } else {
             LOG(2, "if:%s: not receiving transmits\n", ifname);
         }
@@ -851,6 +878,7 @@ rawsock_selftest_if(const char *ifname)
 {
     int err;
     unsigned ipv4 = 0;
+    ipv6address ipv6;
     unsigned router_ipv4 = 0;
     unsigned char mac[6] = {0,0,0,0,0,0};
     struct Adapter *adapter;
@@ -868,7 +896,7 @@ rawsock_selftest_if(const char *ifname)
     /* Name */
     printf("if = %s\n", ifname);
 
-    /* IP address */
+    /* IPv4 address */
     ipv4 = rawsock_get_adapter_ip(ifname);
     if (ipv4 == 0) {
         fprintf(stderr, "get-ip: returned err\n");
@@ -878,6 +906,14 @@ rawsock_selftest_if(const char *ifname)
             (unsigned char)(ipv4>>16),
             (unsigned char)(ipv4>>8),
             (unsigned char)(ipv4>>0));
+    }
+
+    /* IPv6 address */
+    ipv6 = rawsock_get_adapter_ipv6(ifname);
+    if (ipv6address_is_zero(ipv6)) {
+       LOG(0, "ipv6 = [::]\n");
+    } else {
+       LOG(0, "ipv6 = [%s]\n", ipv6address_fmt(ipv6).string);
     }
 
     /* MAC address */

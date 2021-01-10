@@ -25,13 +25,13 @@ next_pow2(size_t n)
     if ((n & (n - 1)) == 0)
         return n;
     
-    /* Count the nubmer of bits */
+    /* Count the number of bits */
     while (n != 0) {
         n >>= 1;
         bit_count += 1;
     }
     
-    return 1 << bit_count;
+    return (size_t)1 << (size_t)bit_count;
 }
 
 struct ResetFilter *
@@ -60,11 +60,11 @@ rstfilter_destroy(struct ResetFilter *rf)
 
 int
 rstfilter_is_filter(struct ResetFilter *rf,
-                    unsigned src_ip, unsigned src_port,
-                    unsigned dst_ip, unsigned dst_port)
+                    ipaddress src_ip, unsigned src_port,
+                    ipaddress dst_ip, unsigned dst_port)
 {
     uint64_t hash;
-    unsigned input[4];
+    uint64_t input[5];
     uint64_t key[2];
     size_t index;
     unsigned char *p;
@@ -73,10 +73,21 @@ rstfilter_is_filter(struct ResetFilter *rf,
     /*
      * Setup the input
      */
-    input[0] = src_ip;
-    input[1] = src_port;
-    input[2] = dst_ip;
-    input[3] = dst_port;
+    switch (src_ip.version) {
+    case 4:
+        input[0] = src_ip.ipv4;
+        input[1] = src_port;
+        input[2] = dst_ip.ipv4;
+        input[3] = dst_port;
+        break;
+    case 6:
+        input[0] = src_ip.ipv6.hi;
+        input[1] = src_ip.ipv6.lo;
+        input[2] = dst_ip.ipv6.hi;
+        input[3] = dst_ip.ipv6.lo;
+        input[4] = src_port<<16 | dst_port;
+        break;
+    }
     key[0] = rf->seed;
     key[1] = rf->seed;
     
@@ -130,13 +141,22 @@ rstfilter_selftest(void)
     size_t i;
     unsigned count_filtered = 0;
     unsigned count_passed = 0;
-    
+
+    ipaddress src;
+    ipaddress dst;
+
+    src.version = 4;
+    src.ipv4 = 1;
+    dst.version = 4;
+    dst.ipv4 = 3;
+
     rf = rstfilter_create(time(0), 64);
     
     /* Verify the first 15 packets pass the filter */
     for (i=0; i<15; i++) {
         int x;
-        x = rstfilter_is_filter(rf, 1, 2, 3, 4);
+
+        x = rstfilter_is_filter(rf, src, 2, dst, 4);
         if (x) {
             fprintf(stderr, "[-] rstfilter failed, line=%u\n", __LINE__);
             return 1;
@@ -146,7 +166,7 @@ rstfilter_selftest(void)
     /* Now run 10000 more times */
     for (i=0; i<1000; i++) {
         int x;
-        x = rstfilter_is_filter(rf, 1, 2, 3, 4);
+        x = rstfilter_is_filter(rf, src, 2, dst, 4);
         count_filtered += x;
         count_passed += !x;
     }

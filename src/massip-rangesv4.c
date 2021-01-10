@@ -26,9 +26,9 @@
  it takes almost 3 seconds to process everything before starting.
  
 */
-#include "ranges.h"
+#include "massip-rangesv4.h"
+#include "massip-port.h"
 #include "logger.h"
-#include "templ-port.h"
 #include "util-bool.h"
 #include "util-malloc.h"
 
@@ -595,7 +595,7 @@ range_is_valid(struct Range range)
  ***************************************************************************/
 void
 rangelist_exclude(  struct RangeList *targets,
-                  const struct RangeList *excludes)
+                  struct RangeList *excludes)
 {
     unsigned i;
     unsigned x;
@@ -603,7 +603,7 @@ rangelist_exclude(  struct RangeList *targets,
     
     /* Both lists must be sorted */
     rangelist_sort(targets);
-    assert(excludes->is_sorted);
+    rangelist_sort(excludes);
     
     /* Go through all target ranges, apply excludes to them
      * (which may split into two ranges), and add them to the
@@ -753,9 +753,12 @@ rangelist_optimize(struct RangeList *targets)
     unsigned *picker;
     unsigned i;
     unsigned total = 0;
-    unsigned bit_count = 0;
-    size_t count = targets->count;
 
+    if (targets->count == 0)
+        return;
+
+    /* This technique only works when the targets are in
+     * ascending order */
     if (!targets->is_sorted)
         rangelist_sort(targets);
 
@@ -768,19 +771,8 @@ rangelist_optimize(struct RangeList *targets)
         picker[i] = total;
         total += targets->list[i].end - targets->list[i].begin + 1;
     }
+
     targets->picker = picker;
-
-
-    for (;;) {
-        count >>= 1;
-        bit_count++;
-        if (count == 0)
-            break;
-    }
-
-    targets->picker_mask = (1 << bit_count) - 1;
-
-    
 }
 
 
@@ -868,6 +860,10 @@ const char *
 rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_error, unsigned proto_offset)
 {
     char *p = (char*)string;
+    unsigned tmp = 0;
+
+    if (is_error == NULL)
+        is_error = &tmp;
     
     *is_error = 0;
     while (*p) {
@@ -920,11 +916,9 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
         }
 
         if (port > 0xFF && proto_offset == Templ_Oproto_first) {
-            LOG(0, "bad ports: %u-%u\n", port, end);
             *is_error = 2;
             return p;
         } else if (port > 0xFFFF || end > 0xFFFF || end < port) {
-            LOG(0, "bad ports: %u-%u\n", port, end);
             *is_error = 2;
             return p;
         } else {
@@ -938,6 +932,8 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
 
     return p;
 }
+
+
 
 /***************************************************************************
  * Deterministic random number generator for repeatable tests.
