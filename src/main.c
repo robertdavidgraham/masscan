@@ -1528,7 +1528,9 @@ int main(int argc, char *argv[])
      * Initialize those defaults that aren't zero
      */
     memset(masscan, 0, sizeof(*masscan));
-    masscan->blackrock_rounds = 4;
+    /* 14 rounds seem to give way better statistical distribution than 4 with a 
+    very low impact on scan rate */
+    masscan->blackrock_rounds = 14;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
     masscan->output.is_status_updates = 1; /* default: show status updates */
     masscan->seed = get_entropy(); /* entropy for randomness */
