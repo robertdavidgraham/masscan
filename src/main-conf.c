@@ -287,55 +287,63 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     if (masscan->nic[i].ifname[0])
         fprintf(fp, "adapter%s = %s\n", idx_str, masscan->nic[i].ifname);
     
-    /**
-     * FIX 495.1 for issue #495: Single adapter-ip is not saved at all
-     *
-     * The else case handles a simple invocation of one adapter-ip:
-     *
-     * 1. masscan ... --adapter-ip 1.2.3.1 ...   [BROKEN]
-     *
-     * This looks like it was just copy pasta/typo. If the first ip is the same
-     * as the last ip, it is a single adapter-ip
-     *
-     * This never worked as it was before so paused.conf would never save the
-     * adapter-ip as it fell through this if/else if into nowhere. It probably
-     * went undetected because in simple environments and/or in simple scans,
-     * masscan is able to intelligently determine the adapter-ip and only
-     * advanced usage requires overriding the chosen value. In addition to
-     * that, it is probably relatively uncommon to interrupt a scan as not many
-     * users are doing multi-hour / multi-day scans, having them paused and
-     * then resuming them (apparently)
-     */
-    if (masscan->nic[i].src.ipv4.first == masscan->nic[i].src.ipv4.last)
-        fprintf(fp, "adapter-ip%s = %s\n", idx_str, 
-            ipv4address_fmt(masscan->nic[i].src.ipv4.first).string);
+    if (masscan->nic[i].src.ipv4.first != 0 || masscan->nic[i].src.ipv4.last != 0) {
 
-    /**
-     * FIX 495.2 for issue #495: Ranges of size two don't print. When 495.1 is
-     * added, ranges of size two print as only the first value in the range
-     * Before 495.1, they didn't print at all, so this is not a bug that is
-     * introduced by 495.1, just noticed while applying that fix
-     *
-     * The first if case here is for handling when adapter-ip is a range
-     *
-     * Examples of the multiple/range case:
-     *
-     * 1. masscan ... --adapter-ip 1.2.3.1-1.2.3.2 ...   [BROKEN]
-     * 2. masscan ... --adapter-ip 1.2.3.1-1.2.3.4 ...   [OK]
-     *
-     * If the range spans exactly two adapter-ips, it will not hit the range
-     * printing logic case here because of an off-by-one
-     *
-     * Changing it from < to <= fixes that issue and both of the above cases
-     * now print the correct range as expected
-     */
-    else if (masscan->nic[i].src.ipv4.first < masscan->nic[i].src.ipv4.last)
-        fprintf(fp, "adapter-ip%s = %s-%s\n", idx_str,
-            ipv4address_fmt(masscan->nic[i].src.ipv4.first).string,
-            ipv4address_fmt(masscan->nic[i].src.ipv4.last).string);
+        /**
+         * FIX 495.1 for issue #495: Single adapter-ip is not saved at all
+         *
+         * The else case handles a simple invocation of one adapter-ip:
+         *
+         * 1. masscan ... --adapter-ip 1.2.3.1 ...   [BROKEN]
+         *
+         * This looks like it was just copy pasta/typo. If the first ip is the same
+         * as the last ip, it is a single adapter-ip
+         *
+         * This never worked as it was before so paused.conf would never save the
+         * adapter-ip as it fell through this if/else if into nowhere. It probably
+         * went undetected because in simple environments and/or in simple scans,
+         * masscan is able to intelligently determine the adapter-ip and only
+         * advanced usage requires overriding the chosen value. In addition to
+         * that, it is probably relatively uncommon to interrupt a scan as not many
+         * users are doing multi-hour / multi-day scans, having them paused and
+         * then resuming them (apparently)
+         */
+        if (masscan->nic[i].src.ipv4.first == masscan->nic[i].src.ipv4.last)
+            fprintf(fp, "adapter-ip%s = %s\n", idx_str, 
+                ipv4address_fmt(masscan->nic[i].src.ipv4.first).string);
+
+        /**
+         * FIX 495.2 for issue #495: Ranges of size two don't print. When 495.1 is
+         * added, ranges of size two print as only the first value in the range
+         * Before 495.1, they didn't print at all, so this is not a bug that is
+         * introduced by 495.1, just noticed while applying that fix
+         *
+         * The first if case here is for handling when adapter-ip is a range
+         *
+         * Examples of the multiple/range case:
+         *
+         * 1. masscan ... --adapter-ip 1.2.3.1-1.2.3.2 ...   [BROKEN]
+         * 2. masscan ... --adapter-ip 1.2.3.1-1.2.3.4 ...   [OK]
+         *
+         * If the range spans exactly two adapter-ips, it will not hit the range
+         * printing logic case here because of an off-by-one
+         *
+         * Changing it from < to <= fixes that issue and both of the above cases
+         * now print the correct range as expected
+         */
+        else if (masscan->nic[i].src.ipv4.first < masscan->nic[i].src.ipv4.last)
+            fprintf(fp, "adapter-ip%s = %s-%s\n", idx_str,
+                ipv4address_fmt(masscan->nic[i].src.ipv4.first).string,
+                ipv4address_fmt(masscan->nic[i].src.ipv4.last).string);
+    }
 
     if (masscan->nic[i].src.ipv6.range) {
-        fprintf(fp, "adapter-ip%s = %s\n", idx_str, ipv6address_fmt(masscan->nic[i].src.ipv6.first).string);
+        if (ipv6address_is_lessthan(masscan->nic[i].src.ipv6.first, masscan->nic[i].src.ipv6.last))
+            fprintf(fp, "adapter-ip%s = %s-%s\n", idx_str, 
+                    ipv6address_fmt(masscan->nic[i].src.ipv6.first).string,
+                    ipv6address_fmt(masscan->nic[i].src.ipv6.last).string);
+        else
+            fprintf(fp, "adapter-ip%s = %s\n", idx_str, ipv6address_fmt(masscan->nic[i].src.ipv6.first).string);
     }
 
     if (masscan->nic[i].my_mac_count)

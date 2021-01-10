@@ -64,6 +64,9 @@ static inline int ipv6address_is_invalid(ipv6address a) {
 static inline int ipv6address_is_equal(ipv6address a, ipv6address b) {
     return a.hi == b.hi && a.lo == b.lo;
 }
+static inline int ipv6address_is_lessthan(ipv6address a, ipv6address b) {
+    return (a.hi == b.hi)?(a.lo < b.lo):(a.hi < b.hi);
+}
 
 static inline ipv6address ipv6address_from_bytes(const unsigned char *buf) {
     ipv6address addr;
