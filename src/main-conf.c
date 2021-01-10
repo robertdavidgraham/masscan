@@ -148,6 +148,8 @@ print_version()
     os = "MACH";
 #elif defined(__FreeBSD__)
     os = "FreeBSD";
+#elif defined(__NetBSD__)
+    os = "NetBSD";
 #elif defined(unix) || defined(__unix) || defined(__unix__)
     os = "Unix";
 #endif
@@ -304,13 +306,10 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
      * users are doing multi-hour / multi-day scans, having them paused and
      * then resuming them (apparently)
      */
-    if (masscan->nic[i].src.ip.first == masscan->nic[i].src.ip.last)
-        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u\n", idx_str,
-            (masscan->nic[i].src.ip.first>>24)&0xFF,
-            (masscan->nic[i].src.ip.first>>16)&0xFF,
-            (masscan->nic[i].src.ip.first>> 8)&0xFF,
-            (masscan->nic[i].src.ip.first>> 0)&0xFF
-            );
+    if (masscan->nic[i].src.ipv4.first == masscan->nic[i].src.ipv4.last)
+        fprintf(fp, "adapter-ip%s = %s\n", idx_str, 
+            ipv4address_fmt(masscan->nic[i].src.ipv4.first).string);
+
     /**
      * FIX 495.2 for issue #495: Ranges of size two don't print. When 495.1 is
      * added, ranges of size two print as only the first value in the range
@@ -330,20 +329,13 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
      * Changing it from < to <= fixes that issue and both of the above cases
      * now print the correct range as expected
      */
-    else if (masscan->nic[i].src.ip.first+1 <= masscan->nic[i].src.ip.last)
-        fprintf(fp, "adapter-ip%s = %u.%u.%u.%u-%u.%u.%u.%u\n", idx_str,
-            (masscan->nic[i].src.ip.first>>24)&0xFF,
-            (masscan->nic[i].src.ip.first>>16)&0xFF,
-            (masscan->nic[i].src.ip.first>> 8)&0xFF,
-            (masscan->nic[i].src.ip.first>> 0)&0xFF,
-            (masscan->nic[i].src.ip.last>>24)&0xFF,
-            (masscan->nic[i].src.ip.last>>16)&0xFF,
-            (masscan->nic[i].src.ip.last>> 8)&0xFF,
-            (masscan->nic[i].src.ip.last>> 0)&0xFF
-            );
+    else if (masscan->nic[i].src.ipv4.first < masscan->nic[i].src.ipv4.last)
+        fprintf(fp, "adapter-ip%s = %s-%s\n", idx_str,
+            ipv4address_fmt(masscan->nic[i].src.ipv4.first).string,
+            ipv4address_fmt(masscan->nic[i].src.ipv4.last).string);
 
     if (masscan->nic[i].src.ipv6.range) {
-        fprintf(fp, "adapter-ip%s = %s\n", zzz, ipv6address_fmt(masscan->nic[i].src.ipv6.first).string);
+        fprintf(fp, "adapter-ip%s = %s\n", idx_str, ipv6address_fmt(masscan->nic[i].src.ipv6.first).string);
     }
 
     if (masscan->nic[i].my_mac_count)

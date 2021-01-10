@@ -234,6 +234,7 @@ By default, masscan first loads the configuration file
 in this default configuration file. That's where I put my "excludefile" 
 parameter so that I don't ever forget it. It just works automatically.
 
+
 ## Getting output
 
 By default, masscan produces fairly large text files, but it's easy 
@@ -265,6 +266,7 @@ per line. Just use the parameter `-oL <filename>`. Or, use the parameters
 	<port state> <protocol> <port number> <IP address> <POSIX timestamp>  
 	open tcp 80 XXX.XXX.XXX.XXX 1390380064
 	```	
+
 
 ## Comparison with Nmap
 
@@ -319,6 +321,7 @@ crash under the load that masscan can generate.
 
 This section describes the major design issues of the program.
 
+
 ## Code Layout
 
 The file `main.c` contains the `main()` function, as you'd expect. It also
@@ -326,6 +329,7 @@ contains the `transmit_thread()` and `receive_thread()` functions. These
 functions have been deliberately flattened and heavily commented so that you
 can read the design of the program simply by stepping line-by-line through
 each of these.
+
 
 ## Asynchronous
 
@@ -452,7 +456,6 @@ retransmits this way in order to see if there is any difference in what
 gets dropped.
 
 
-
 ## C10 Scalability
 
 The asynchronous technique is known as a solution to the "c10k problem".
@@ -511,6 +514,7 @@ This project has automated unit regression tests (`make regress`).
 A lot of effort has gone into making the input/output look like `nmap`, which
 everyone who does port scans is (or should be) familiar with.
 
+
 ## IPv6 and IPv4 coexistence
 
 Masscan supports IPv6, but there is no special mode, both are supported
@@ -534,7 +538,7 @@ duplicates before scanning).
 
 Remember that masscan contains its own network stack. Thus, the local machine
 you run masscan from does not need to be IPv6 enabled -- though the local
-netowrk needs to be able to route IPv6 packets.
+network needs to be able to route IPv6 packets.
 
 
 ## PF_RING
@@ -553,6 +557,7 @@ When Masscan detects that an adapter is named something like `zc:enp1s0` instead
 of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
 
 A more detail discussion can be found in **PoC||GTFO 0x15**.
+
 
 ## Regression testing
 
@@ -593,4 +598,3 @@ at which they perform this calculation, making `masscan` much faster.
 This tool created by Robert Graham:
 email: robert_david_graham@yahoo.com
 twitter: @ErrataRob
-

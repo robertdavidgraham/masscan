@@ -130,6 +130,29 @@ _append_decimal(stream_t *out, unsigned long long n)
         _append_char(out, tmp[--tmp_offset]);
 }
 
+struct ipaddress_formatted ipv4address_fmt(ipv4address ip)
+{
+    struct ipaddress_formatted out;
+    stream_t s;
+
+
+    /* Call the formatting function */
+    s.buf = out.string;
+    s.offset = 0;
+    s.length = sizeof(out.string);
+
+    _append_decimal(&s, (ip >> 24) & 0xFF);
+    _append_char(&s, '.');
+    _append_decimal(&s, (ip >> 16) & 0xFF);
+    _append_char(&s, '.');
+    _append_decimal(&s, (ip >> 8) & 0xFF);
+    _append_char(&s, '.');
+    _append_decimal(&s, (ip >> 0) & 0xFF);
+
+    /* Return the static buffer */
+    return out;
+}
+
 struct ipaddress_formatted ipaddress_fmt(ipaddress a)
 {
     struct ipaddress_formatted out;

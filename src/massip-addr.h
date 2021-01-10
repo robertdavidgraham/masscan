@@ -94,6 +94,7 @@ struct ipaddress_formatted {
 };
 
 struct ipaddress_formatted ipv6address_fmt(ipv6address a);
+struct ipaddress_formatted ipv4address_fmt(ipv4address a);
 struct ipaddress_formatted ipaddress_fmt(ipaddress a);
 
 unsigned massint128_bitcount(massint128_t num);

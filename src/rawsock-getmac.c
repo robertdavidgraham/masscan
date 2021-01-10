@@ -147,7 +147,7 @@ again:
 
 /*****************************************************************************
  *****************************************************************************/
-#elif defined(__APPLE__) || defined(__FreeBSD__) || 1
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || 1
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
