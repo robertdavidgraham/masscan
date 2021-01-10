@@ -6,23 +6,23 @@ This is an Internet-scale port scanner. It can scan the entire Internet
 in under 6 minutes, transmitting 10 million packets per second,
 from a single machine.
 
-It's usage (parameters, output) is similar to `nmap`, the most famous port scanner.
+Its usage (parameters, output) is similar to `nmap`, the most famous port scanner.
 When in doubt, try one of those features -- features that support widespread
 scanning of many machines are supported, while in-depth scanning of single
 machines aren't.
 
-Internally, it uses asynchronous tranmissions, similar to port scanners
+Internally, it uses asynchronous transmission, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
-NOTE: masscan uses a its own **ad hoc TCP/IP stack**. Anything other than
+NOTE: masscan uses its own **ad hoc TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
-need to either the `--src-ip` option to run from a different IP address, or
+need to use either the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
 
-This tool is free, but consider contributing money to its developement:
+This tool is free, but consider contributing money to its development:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
@@ -36,12 +36,15 @@ really have any dependencies other than a C compiler.
 	$ cd masscan
 	$ make
 
-This puts the program in the `masscan/bin` subdirectory. You'll have to
-manually copy it to something like `/usr/local/bin` if you want to
-install it elsewhere on the system.
+This puts the program in the `masscan/bin` subdirectory. 
+To install it (on Linux) run:
+
+    $ make install
 
 The source consists of a lot of small files, so building goes a lot faster
-by using the multi-threaded build.
+by using the multi-threaded build. This requires more than 2gigs on a 
+Raspberry Pi (and breaks), so you might use a smaller number, like `-j4` rather than
+all possible threads.
 
 	$ make -j
 
@@ -83,6 +86,21 @@ Masscan can do more than just detect whether ports are open. It can also
 complete the TCP connection and interaction with the application at that
 port in order to grab simple "banner" information.
 
+Masscan supports banner checking on the following protocols:
+  * FTP
+  * HTTP
+  * IMAP4
+  * memcached
+  * POP3
+  * SMTP
+  * SSH
+  * SSL
+  * SMBv1
+  * SMBv2
+  * Telnet
+  * RDP
+  * VNC
+
 The problem with this is that masscan contains its own TCP/IP stack
 separate from the system you run it on. When the local system receives
 a SYN-ACK from the probed target, it responds with a RST packet that kills
@@ -118,7 +136,7 @@ you should choose ports either below 32768 or 61000 and above.
 
 Setting an `iptables` rule only lasts until the next reboot. You need to lookup how to
 save the configuration depending upon your distro, such as using `iptables-save` 
-and/or `iptables-persistant`.
+and/or `iptables-persistent`.
 
 On Mac OS X and BSD, there are similar steps. To find out the ranges to avoid,
 use a command like the following:
@@ -146,7 +164,7 @@ with the following command:
 
 Windows doesn't respond with RST packets, so neither of these techniques
 are necessary. However, masscan is still designed to work best using its
-own IP address, so you should run that way when possible, even when its
+own IP address, so you should run that way when possible, even when it is
 not strictly necessary.
 
 The same thing is needed for other checks, such as the `--heartbleed` check,
@@ -214,7 +232,7 @@ This also makes things easier when you repeat a scan.
 By default, masscan first loads the configuration file 
 `/etc/masscan/masscan.conf`. Any later configuration parameters override what's
 in this default configuration file. That's where I put my "excludefile" 
-parameter, so that I don't ever forget it. It just works automatically.
+parameter so that I don't ever forget it. It just works automatically.
 
 ## Getting output
 
@@ -224,10 +242,10 @@ to convert them into any other format. There are five supported output formats:
 1. xml:  Just use the parameter `-oX <filename>`. 
 	Or, use the parameters `--output-format xml` and `--output-filename <filename>`.
 
-2. binary: This is the masscan builtin format. It produces much smaller files, so that
+2. binary: This is the masscan builtin format. It produces much smaller files so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
-though. The command line option `--readscan` will read binary scan files.
-Using `--readscan` with the `-oX` option will produce a XML version of the 
+though. The command-line option `--readscan` will read binary scan files.
+Using `--readscan` with the `-oX` option will produce an XML version of the 
 results file.
 
 3. grepable: This is an implementation of the Nmap -oG
@@ -350,7 +368,7 @@ or exclude a lot of sub-ranges. This chops up the desired range into hundreds
 of smaller ranges.
 
 This leads to one of the slowest parts of the code. We transmit 10 million
-packets per second, and have to convert an index variable to an IP address
+packets per second and have to convert an index variable to an IP address
 for each and every probe. We solve this by doing a "binary search" in a small
 amount of memory. At this packet rate, cache efficiencies start to dominate
 over algorithm efficiencies. There are a lot of more efficient techniques in
@@ -380,7 +398,7 @@ instructions are around 90 clock cycles, or 30 nanoseconds, on x86 CPUs. When
 transmitting at a rate of 10 million packets/second, we have only
 100 nanoseconds per packet. I see no way to optimize this any better. Luckily,
 though, two such operations can be executed simultaneously, so doing two 
-of these as shown above is no more expensive than doing one.
+of these, as shown above, is no more expensive than doing one.
 
 There are actually some easy optimizations for the above performance problems,
 but they all rely upon `i++`, the fact that the index variable increases one
@@ -390,7 +408,7 @@ heck out of target networks that aren't built for this level of speed. We
 need to spread our traffic evenly over the target.
 
 The way we randomize is simply by encrypting the index variable. By definition,
-encryption is random, and creates a 1-to-1 mapping between the original index
+encryption is random and creates a 1-to-1 mapping between the original index
 variable and the output. This means that while we linearly go through the
 range, the output IP addresses are completely random. In code, this looks like:
 
@@ -409,7 +427,7 @@ MODULUS (%). In my current benchmarks, it's taking 40 nanoseconds to
 encrypt the variable.
 
 This architecture allows for lots of cool features. For example, it supports
-"shards". You can setup 5 machines each doing a fifth of the scan, or
+"shards". You can set up 5 machines each doing a fifth of the scan or
 `range / shard_count`. Shards can be multiple machines, or simply multiple
 network adapters on the same machine, or even (if you want) multiple IP
 source addresses on the same network adapter.
@@ -460,7 +478,7 @@ Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
 but they have two problems. The first problem is that they cause cache-lines
 to bounce quickly back-and-forth between CPUs. The second is that when there
 is contention, they'll do a system call into the kernel, which kills
-performance. Mutexes on the fast path of a program severely limits scalability.
+performance. A mutex on the fast path of a program severely limits scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
 interfering with the transmit thread.
@@ -469,7 +487,7 @@ interfering with the transmit thread.
 ## Portability
 
 The code runs well on Linux, Windows, and Mac OS X. All the important bits are
-in standard C (C90). It therefore compiles on Visual Studio with Microsoft's
+in standard C (C90). Therefore, it compiles on Visual Studio with Microsoft's
 compiler, the Clang/LLVM compiler on Mac OS X, and GCC on Linux.
 
 Windows and Macs aren't tuned for packet transmit, and get only about 300,000
@@ -514,7 +532,7 @@ The test file I use contains 8 million addresses. Files of that size need a coup
 extra seconds to be read on startup (masscan sorts the addresses and removes
 duplicates before scanning).
 
-Remember that masscan contains it's own network stack. Thus, the local machine
+Remember that masscan contains its own network stack. Thus, the local machine
 you run masscan from does not need to be IPv6 enabled -- though the local
 netowrk needs to be able to route IPv6 packets.
 
