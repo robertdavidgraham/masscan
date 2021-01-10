@@ -179,14 +179,14 @@ redis_out_close(struct Output *out, FILE *fp)
 
     UNUSEDPARM(out);
 
-    count = send((SOCKET)fd, "PING\r\n", 6, 0);
+    count = send((SOCKET)fd, "QUIT\r\n", 6, 0);
     if (count != 6) {
-        LOG(0, "redis: send(ping) failed\n");
+        LOG(0, "redis: send(quit) failed\n");
         exit(1);
     }
 
     count = recv_line((SOCKET)fd, line, sizeof(line));
-    if (count != 7 && memcmp(line, "+PONG\r\n", 7) != 0) {
+    if ((count != 5 && memcmp(line, "+OK\r\n", 5) != 0) && (count != 4 && memcmp(line, ":0\r\n", 4) != 0)){
         LOG(0, "redis: unexpected response from redis server: %s\n", line);
         exit(1);
     }
