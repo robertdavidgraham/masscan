@@ -67,7 +67,7 @@ status_print(
      * shift it by 1-million
      */
     elapsed_time = (now - status->last.clock)/1000000.0;
-    if (elapsed_time == 0)
+    if (elapsed_time <= 0)
         return;
 
     /* Figure out the "packets-per-second" number, which is just:
