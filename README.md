@@ -3,7 +3,7 @@
 # MASSCAN: Mass IP port scanner
 
 This is an Internet-scale port scanner. It can scan the entire Internet
-in under 6 minutes, transmitting 10 million packets per second,
+in under 5 minutes, transmitting 10 million packets per second,
 from a single machine.
 
 Its usage (parameters, output) is similar to `nmap`, the most famous port scanner.
@@ -29,24 +29,25 @@ Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 # Building
 
 On Debian/Ubuntu, it goes something like the following. It doesn't
-really have any dependencies other than a C compiler.
+really have any dependencies other than a C compiler (such as `gcc`
+or `clang`).
 
-	$ sudo apt-get install git gcc make
-	$ git clone https://github.com/robertdavidgraham/masscan
-	$ cd masscan
-	$ make
+	sudo apt-get --assume-yes install git make gcc
+	git clone https://github.com/robertdavidgraham/masscan
+	cd masscan
+	make
 
 This puts the program in the `masscan/bin` subdirectory. 
 To install it (on Linux) run:
 
-    $ make install
+    make install
 
 The source consists of a lot of small files, so building goes a lot faster
 by using the multi-threaded build. This requires more than 2gigs on a 
 Raspberry Pi (and breaks), so you might use a smaller number, like `-j4` rather than
 all possible threads.
 
-	$ make -j
+	make -j
 
 While Linux is the primary target platform, the code runs well on many other
 systems (Windows, macOS, etc.). Here's some additional build info:

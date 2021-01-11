@@ -45,7 +45,6 @@
 #define strdup _strdup
 #endif
 
-static void masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
 
 /***************************************************************************
@@ -1435,7 +1434,14 @@ static int SET_rate(struct Masscan *masscan, const char *name, const char *value
     unsigned i;
     
     if (masscan->echo) {
-        fprintf(masscan->echo, "rate = %-10.2f\n", masscan->max_rate);
+        if ((unsigned)(masscan->max_rate * 100000) % 100000) {
+            /* print as floating point number, which is rare */
+            fprintf(masscan->echo, "rate = %f\n", masscan->max_rate);
+        } else {
+            /* pretty print as just an integer, which is what most people
+             * expect */
+            fprintf(masscan->echo, "rate = %-10.0f\n", masscan->max_rate);
+        }
         return 0;
     }
     
@@ -2035,9 +2041,10 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): unsupported: DNS lookups too synchronous\n",
                 name);
         exit(1);
-    } else if (EQUALS("echo", name) || EQUALS("echo-all", name)) {
-        masscan_echo(masscan, stdout, EQUALS("echo-all", name));
-        exit(0);
+    } else if (EQUALS("echo", name)) {
+        masscan->op = Operation_Echo;
+    } else if (EQUALS("echo-all", name)) {
+        masscan->op = Operation_EchoAll;
     } else if (EQUALS("excludefile", name)) {
         unsigned count1 = masscan->exclude.ipv4.count;
         unsigned count2;
@@ -2856,7 +2863,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
  * Use#1: create a template file of all setable parameters.
  * Use#2: make sure your configuration was interpreted correctly.
  ***************************************************************************/
-static void
+void
 masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
 {
     unsigned i;

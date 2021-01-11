@@ -17,7 +17,7 @@ struct TemplateSet;
 struct Banner1;
 
 /**
- * This is the "operationg" to be performed by masscan, which is almost always
+ * This is the "operation" to be performed by masscan, which is almost always
  * to "scan" the network. However, there are some lesser operations to do
  * instead, like run a "regression self test", or "debug", or something else
  * instead of scanning. We parse the command-line in order to figure out the
@@ -33,6 +33,8 @@ enum Operation {
     Operation_ReadScan = 6,         /* --readscan <binary-output> */
     Operation_ReadRange = 7,        /* --readrange */
     Operation_Benchmark = 8,        /* --benchmark */
+    Operation_Echo = 9,             /* --echo */
+    Operation_EchoAll = 10,         /* --echo-all */
 };
 
 /**
@@ -463,5 +465,12 @@ masscan_initialize_adapter(
     unsigned index,
     unsigned char *adapter_mac,
     unsigned char *router_mac);
+
+/**
+ * Echoes the settings to the command-line. By default, echoes only
+ * non-default values. With "echo-all", everything is echoed.
+ */
+void
+masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
 #endif

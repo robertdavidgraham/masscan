@@ -1731,6 +1731,16 @@ int main(int argc, char *argv[])
         exit(1);
         break;
 
+    case Operation_Echo:
+        masscan_echo(masscan, stdout, 0);
+        exit(0);
+        break;
+
+    case Operation_EchoAll:
+        masscan_echo(masscan, stdout, 0);
+        exit(0);
+        break;
+
     case Operation_Selftest:
         /*
          * Do a regression test of all the significant units

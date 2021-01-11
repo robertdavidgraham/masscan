@@ -905,29 +905,52 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
             p += 2;
         }
 
-        if (!isdigit(p[0] & 0xFF))
+        /*
+         * Get the start of the range.
+         */
+        if (p[0] == '-') {
+            /* nmap style port range spec meaning starting with 0 */
+            port = 1;
+        } else if (isdigit(p[0] & 0xFF)) {
+            port = (unsigned)strtoul(p, &p, 0);
+        } else {
             break;
-
-        port = (unsigned)strtoul(p, &p, 0);
-        end = port;
-        if (*p == '-') {
-            p++;
-            end = (unsigned)strtoul(p, &p, 0);
         }
 
+        /* 
+         * Get the end of the range 
+         */
+        if (*p == '-') {
+            p++;
+            if (!isdigit(*p)) {
+                /* nmap style range spec meaning end with 65535 */
+                end = (proto_offset == Templ_Oproto_first) ? 0xFF : 0xFFFF;
+            } else {
+                end = (unsigned)strtoul(p, &p, 0);
+            }
+        } else
+            end = port;
+
+        /* Check for out-of-range */
         if (port > 0xFF && proto_offset == Templ_Oproto_first) {
             *is_error = 2;
             return p;
         } else if (port > 0xFFFF || end > 0xFFFF || end < port) {
             *is_error = 2;
             return p;
-        } else {
-            rangelist_add_range(ports, port+proto_offset, end+proto_offset);
         }
-        if (*p == ',')
+
+        /* Add to our list */
+        rangelist_add_range(ports, port+proto_offset, end+proto_offset);
+
+        /* skip trailing whitespace */
+        while (*p && isspace(*p & 0xFF))
             p++;
-        else
+
+        /* Now get the next port/range if there is one */
+        if (*p != ',')
             break;
+        p++;
     }
 
     return p;
