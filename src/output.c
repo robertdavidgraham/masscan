@@ -520,10 +520,13 @@ output_do_rotate(struct Output *out, int is_closing)
 
     /* Remove directory prefix from filename, we just want the root filename
      * to start with */
-    while (strchr(filename, '/') || strchr(filename, '\\')) {
+    while (strchr(filename, '/')) {
         filename = strchr(filename, '/');
         if (*filename == '/')
             filename++;
+    }
+
+    while (strchr(filename, '\\')) {
         filename = strchr(filename, '\\');
         if (*filename == '\\')
             filename++;
