@@ -17,7 +17,7 @@ count_type(const struct RangeList *ports, int start_type, int end_type)
     unsigned i;
     unsigned result = 0;
 
-    for (i=0; i<ports->count; ports++) {
+    for (i=0; i<ports->count; i++) {
         struct Range r = ports->list[i];
         if (r.begin > max_port)
             continue;
@@ -45,7 +45,7 @@ print_port_list(const struct RangeList *ports, int type, FILE *fp)
     unsigned max_port = type + 65535;
     unsigned i;
 
-    for (i=0; i<ports->count; ports++) {
+    for (i=0; i<ports->count; i++) {
         struct Range r = ports->list[i];
         if (r.begin > max_port)
             continue;
