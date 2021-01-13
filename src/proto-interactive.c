@@ -21,6 +21,8 @@ tcp_transmit_alloc(struct InteractiveData *more, size_t length)
 void
 tcp_close(struct InteractiveData *more)
 {
+    if (more == NULL)
+        return;
     more->is_closing = 1;
 }
 

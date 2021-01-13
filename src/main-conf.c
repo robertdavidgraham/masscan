@@ -953,6 +953,8 @@ static int SET_capture(struct Masscan *masscan, const char *name, const char *va
     if (masscan->echo) {
         if (!masscan->is_capture_cert || masscan->echo_all)
             fprintf(masscan->echo, "%scapture = cert\n", masscan->is_capture_cert?"":"no");
+        if (!masscan->is_capture_servername || masscan->echo_all)
+            fprintf(masscan->echo, "%scapture = servername\n", masscan->is_capture_servername?"":"no");
         if (masscan->is_capture_html || masscan->echo_all)
             fprintf(masscan->echo, "%scapture = html\n", masscan->is_capture_html?"":"no");
         if (masscan->is_capture_heartbleed || masscan->echo_all)
@@ -964,6 +966,8 @@ static int SET_capture(struct Masscan *masscan, const char *name, const char *va
     if (EQUALS("capture", name)) {
         if (EQUALS("cert", value))
             masscan->is_capture_cert = 1;
+        else if (EQUALS("servername", value))
+            masscan->is_capture_servername = 1;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 1;
         else if (EQUALS("heartbleed", value))

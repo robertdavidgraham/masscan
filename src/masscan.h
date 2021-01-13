@@ -197,6 +197,7 @@ struct Masscan
     unsigned is_hello_smbv1:1;  /* --smbv1, use SMBv1 hello, instead of v1/v2 hello */
     unsigned is_hello_http:1;    /* --hello=http, use HTTP on all ports */
     unsigned is_scripting:1;    /* whether scripting is needed */
+    unsigned is_capture_servername:1; /* --capture servername */
         
     /**
      * Wait forever for responses, instead of the default 10 seconds

@@ -628,6 +628,7 @@ receive_thread(void *v)
          */
         tcpcon_set_banner_flags(tcpcon,
                 masscan->is_capture_cert,
+                masscan->is_capture_servername,
                 masscan->is_capture_html,
                 masscan->is_capture_heartbleed,
 				masscan->is_capture_ticketbleed);

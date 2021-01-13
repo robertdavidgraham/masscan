@@ -57,6 +57,7 @@ tcpcon_create_table(    size_t entry_count,
 
 void tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
+    unsigned is_capture_servername,
     unsigned is_capture_html,
     unsigned is_capture_heartbleed,
 	unsigned is_capture_ticketbleed);
