@@ -1534,7 +1534,6 @@ int main(int argc, char *argv[])
     masscan->blackrock_rounds = 14;
     masscan->output.is_show_open = 1; /* default: show syn-ack, not rst */
     masscan->output.is_status_updates = 1; /* default: show status updates */
-    masscan->seed = get_entropy(); /* entropy for randomness */
     masscan->wait = 10; /* how long to wait for responses when done */
     masscan->max_rate = 100.0; /* max rate = hundred packets-per-second */
     masscan->nic_count = 1;
@@ -1576,7 +1575,9 @@ int main(int argc, char *argv[])
      * either options or a list of IPv4 address ranges.
      */
     masscan_command_line(masscan, argc, argv);
-    
+    if (masscan->seed == 0)
+        masscan->seed = get_entropy(); /* entropy for randomness */
+
     /*
      * Load database files like "nmap-payloads" and "nmap-service-probes"
      */

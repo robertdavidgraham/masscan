@@ -1634,7 +1634,7 @@ static int SET_shard(struct Masscan *masscan, const char *name, const char *valu
 
     UNUSEDPARM(name);
     if (masscan->echo) {
-        if ((masscan->shard.one != 1 && masscan->shard.of != 1)  || masscan->echo_all)
+        if (masscan->shard.of > 0  || masscan->echo_all)
             fprintf(masscan->echo, "shard = %u/%u\n", masscan->shard.one, masscan->shard.of);
         return 0;
     }
@@ -2859,6 +2859,13 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
      */
     if (masscan->top_ports) {
         config_top_ports(masscan, masscan->top_ports);
+    }
+    if (masscan->shard.of < masscan->shard.one) {
+        fprintf(stderr, "[-] WARNING: the shard number must be less than the total shard count: %u/%u\n",
+            masscan->shard.one, masscan->shard.of);
+    }
+    if (masscan->shard.of && masscan->seed == 0) {
+        fprintf(stderr, "[-] WARNING: --seed <num> is not specified\n    HINT: all shards must share the same seed\n");
     }
 }
 
