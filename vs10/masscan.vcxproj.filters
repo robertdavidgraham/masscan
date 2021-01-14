@@ -375,6 +375,9 @@
     <ClCompile Include="..\src\massip-addr.c">
       <Filter>Source Files\massip</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\out-hostonly.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">

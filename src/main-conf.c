@@ -1247,6 +1247,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
             case Output_NDJSON:     fprintf(fp, "output-format = ndjson\n"); break;
             case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
             case Output_None:       fprintf(fp, "output-format = none\n"); break;
+            case Output_Hostonly:   fprintf(fp, "output-format = hostonly\n"); break;
             case Output_Redis:
                 fprintf(fp, "output-format = redis\n");
                 fprintf(fp, "redis = %s %u\n",
@@ -1273,6 +1274,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
     else if (EQUALS("certs", value))        x = Output_Certs;
     else if (EQUALS("none", value))         x = Output_None;
     else if (EQUALS("redis", value))        x = Output_Redis;
+    else if (EQUALS("hostonly", value))     x = Output_Hostonly;
     else {
         LOG(0, "FAIL: unknown output-format: %s\n", value);
         LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
@@ -2686,6 +2688,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 case 'U':
                     masscan_set_parameter(masscan, "output-format", "unicornscan");
                     break;
+                case 'H':
+                    masscan_set_parameter(masscan, "output-format", "hostonly");
+                    break;
                 default:
                     fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);
                     exit(1);
@@ -2864,7 +2869,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
         fprintf(stderr, "[-] WARNING: the shard number must be less than the total shard count: %u/%u\n",
             masscan->shard.one, masscan->shard.of);
     }
-    if (masscan->shard.of && masscan->seed == 0) {
+    if (masscan->shard.of > 1 && masscan->seed == 0) {
         fprintf(stderr, "[-] WARNING: --seed <num> is not specified\n    HINT: all shards must share the same seed\n");
     }
 }

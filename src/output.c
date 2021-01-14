@@ -441,6 +441,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_Redis:
         out->funcs = &redis_output;
         break;
+    case Output_Hostonly:
+        out->funcs = &hostonly_output;
+        break;
     case Output_None:
         out->funcs = &null_output;
         break;

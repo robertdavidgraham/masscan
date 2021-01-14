@@ -38,6 +38,7 @@
     <ClCompile Include="..\src\out-binary.c" />
     <ClCompile Include="..\src\out-certs.c" />
     <ClCompile Include="..\src\out-grepable.c" />
+    <ClCompile Include="..\src\out-hostonly.c" />
     <ClCompile Include="..\src\out-json.c" />
     <ClCompile Include="..\src\out-ndjson.c" />
     <ClCompile Include="..\src\out-null.c" />

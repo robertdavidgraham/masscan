@@ -58,6 +58,7 @@ enum OutputFormat {
     Output_Unicornscan  = 0x0200,   /* -oU, "unicornscan" */
     Output_None         = 0x0400,
     Output_Certs        = 0x0800,
+    Output_Hostonly     = 0x1000,   /* -oH, "hostonly" */
     Output_All          = 0xFFBF,   /* not supported */
 };
 
