@@ -860,7 +860,7 @@ massip_parse_file(struct MassIP *massip, const char *filename)
             case Found_Error:
             default:
                 _parser_err(p, &line_number, &char_number);
-                fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
+                fprintf(stderr, "[-] %s:%llu:%llu: invalid IP address on line #%llu\n", filename, line_number, char_number, line_number);
                 is_error = true;
                 count = offset;
                 break;

@@ -2060,7 +2060,7 @@ masscan_set_parameter(struct Masscan *masscan,
         LOG(1, "EXCLUDING: %s\n", value);
         err = massip_parse_file(&masscan->exclude, filename);
         if (err) {
-            LOG(0, "FAIL: error reading from exclude file\n");
+            LOG(0, "[-] FAIL: error reading from exclude file\n");
             exit(1);
         }
 
@@ -2133,7 +2133,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         err = massip_parse_file(&masscan->targets, filename);
         if (err) {
-            LOG(0, "FAIL: error reading from include file\n");
+            LOG(0, "[-] FAIL: error reading from include file\n");
             exit(1);
         }
         if (masscan->op == 0)
