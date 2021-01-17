@@ -1,6 +1,7 @@
 #include "masscan.h"
 #include "logger.h"
 #include "rawsock.h"
+#include "stack-arpv4.h"
 
 
 /***************************************************************************
@@ -210,7 +211,7 @@ masscan_initialize_adapter(
                 );
 
             LOG(1, "if:%s:arp: resolving IPv4 address\n", ifname);
-            arp_resolve_sync(
+            stack_arp_resolve(
                     masscan->nic[index].adapter,
                     adapter_ip,
                     adapter_mac,

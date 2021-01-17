@@ -14,7 +14,8 @@
 #include "pixie-timer.h"
 #include "main-globals.h"
 #include "proto-preprocess.h"
-
+#include "stack-arpv4.h"
+#include "stack-ndpv6.h"
 
 #include "unusedparm.h"
 #include "util-malloc.h"
@@ -587,17 +588,6 @@ is_pfring_dna(const char *name)
 }
 
 
-/***************************************************************************
- ***************************************************************************/
-int
-rawsock_datalink(struct Adapter *adapter)
-{
-    if (adapter->ring)
-        return 1; /* ethernet */
-    else {
-        return adapter->link_type;
-    }
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -884,71 +874,69 @@ rawsock_selftest_if(const char *ifname)
     struct Adapter *adapter;
     char ifname2[246];
 
+    /*
+     * Get the interface
+     */
     if (ifname == NULL || ifname[0] == 0) {
         err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
         if (err) {
-            fprintf(stderr, "get-default-if: returned err %d\n", err);
+            printf("[-] if = not found (err=%d)\n", err);
             return -1;
         }
         ifname = ifname2;
     }
+    printf("[+] if = %s\n", ifname);
 
-    /* Name */
-    printf("if = %s\n", ifname);
+    /*
+     * Initialize the adapter.
+     */
+    adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
+    if (adapter == 0) {
+        printf("[-] pcap = failed\n");
+        return -1;
+    } else {
+        printf("[+] pcap = opened\n");
+    }
 
     /* IPv4 address */
     ipv4 = rawsock_get_adapter_ip(ifname);
     if (ipv4 == 0) {
-        fprintf(stderr, "get-ip: returned err\n");
+        printf("[-] source-ipv4 = not found (err)\n");
     } else {
-        printf("ip = %u.%u.%u.%u\n",
-            (unsigned char)(ipv4>>24),
-            (unsigned char)(ipv4>>16),
-            (unsigned char)(ipv4>>8),
-            (unsigned char)(ipv4>>0));
+        printf("[+] source-ipv4 = %s\n", ipv4address_fmt(ipv4).string);
     }
 
     /* IPv6 address */
     ipv6 = rawsock_get_adapter_ipv6(ifname);
     if (ipv6address_is_zero(ipv6)) {
-       LOG(0, "ipv6 = [::]\n");
+       printf("[-] source-ipv6 = not found\n");
     } else {
-       LOG(0, "ipv6 = [%s]\n", ipv6address_fmt(ipv6).string);
+       printf("[+] source-ipv6 = [%s]\n", ipv6address_fmt(ipv6).string);
     }
 
     /* MAC address */
     err = rawsock_get_adapter_mac(ifname, mac);
     if (err) {
-        fprintf(stderr, "get-adapter-mac: returned err=%d\n", err);
+        printf("[-] source-mac = not found (err=%d)\n", err);
     } else {
-        printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n",
+        printf("[+] source-mac = %02x-%02x-%02x-%02x-%02x-%02x\n",
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     }
 
-    /* Gateway IP */
+    /* IPv4 router IP address */
     err = rawsock_get_default_gateway(ifname, &router_ipv4);
     if (err) {
-        fprintf(stderr, "get-default-gateway: returned err=%d\n", err);
+        fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
     } else {
+        printf("[-] router-ip = %s\n",ipv4address_fmt(router_ipv4).string);
+    }
+
+    /* IPv4 router MAC address */
+    {
         unsigned char router_mac[6];
-
-        printf("gateway = %u.%u.%u.%u\n",
-            (unsigned char)(router_ipv4>>24),
-            (unsigned char)(router_ipv4>>16),
-            (unsigned char)(router_ipv4>>8),
-            (unsigned char)(router_ipv4>>0));
-
-
-        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
-        if (adapter == 0) {
-            LOG(1, "if:%s: failed\n", ifname);
-            return -1;
-        } else {
-            printf("pcap = opened\n");
-        }
-
+        
         memset(router_mac, 0, 6);
-        arp_resolve_sync(
+        stack_arp_resolve(
                 adapter,
                 ipv4,
                 mac,
@@ -956,7 +944,7 @@ rawsock_selftest_if(const char *ifname)
                 router_mac);
 
         if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-            printf("gateway = %02x-%02x-%02x-%02x-%02x-%02x\n",
+            printf("[+] router-mac-ipv4 = %02x-%02x-%02x-%02x-%02x-%02x\n",
                 router_mac[0],
                 router_mac[1],
                 router_mac[2],
@@ -965,11 +953,39 @@ rawsock_selftest_if(const char *ifname)
                 router_mac[5]
             );
         } else {
-            printf("gateway = [failed to ARP address]\n");
+            printf("[-] router-mac-ipv4 = not found\n");
         }
-        rawsock_close_adapter(adapter);
+    }
+    
+
+    /*
+     * IPv6 router address.
+     */
+    if (!ipv6address_is_zero(ipv6)) {
+        unsigned char router_mac[6];
+        
+        memset(router_mac, 0, 6);
+
+        stack_ndpv6_resolve(
+                adapter,
+                mac,
+                router_mac);
+
+        if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
+            printf("[+] router-mac-ipv6 = %02x-%02x-%02x-%02x-%02x-%02x\n",
+                router_mac[0],
+                router_mac[1],
+                router_mac[2],
+                router_mac[3],
+                router_mac[4],
+                router_mac[5]
+            );
+        } else {
+            printf("[-] router-mac-ipv6 = not found\n");
+        }
     }
 
+    rawsock_close_adapter(adapter);
     return 0;
 }
 

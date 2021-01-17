@@ -29,6 +29,8 @@
 #include "main-ptrace.h"        /* for nmap --packet-trace feature */
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "stack-ndpv6.h"        /* IPv6 Neighbor Discovery Protocol */
+#include "stack-arpv4.h"        /* Handle ARP resolution and requests */
+#include "rawsock-adapter.h"
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
@@ -535,7 +537,7 @@ receive_thread(void *v)
     struct ThreadPair *parms = (struct ThreadPair *)v;
     const struct Masscan *masscan = parms->masscan;
     struct Adapter *adapter = parms->adapter;
-    int data_link = rawsock_datalink(adapter);
+    int data_link = stack_if_datalink(adapter);
     struct Output *out;
     struct DedupTable *dedup;
     struct PcapFile *pcapfile = NULL;
@@ -791,7 +793,7 @@ receive_thread(void *v)
              * a multicast address */
             if (is_ipv6_multicast(ip_me)) {
                 if (parsed.found == FOUND_NDPv6 && parsed.opcode == 135) {
-                    stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+                    stack_ndpv6_incoming_request(stack, &parsed, px, length);
                 }
             }
             continue;
@@ -816,7 +818,7 @@ receive_thread(void *v)
                      * these packets. We need to respond to them, so that the router
                      * can then forward the packets to us. If we don't respond, we'll
                      * get no responses. */
-                    stack_handle_neighbor_solicitation(stack, &parsed, px, length);
+                    stack_ndpv6_incoming_request(stack, &parsed, px, length);
                     continue;
                 case 136: /* Neighbor Advertisment */
                     /* TODO: If doing an --ndpscan, the scanner subsystem needs to deal
@@ -840,7 +842,7 @@ receive_thread(void *v)
                      * for our IP address (as part of our user-mode TCP/IP).
                      * Since we completely bypass the TCP/IP stack, we  have to handle ARPs
                      * ourself, or the router will lose track of us.*/
-                     stack_handle_arp(stack,
+                     stack_arp_incoming_request(stack,
                                       ip_me.ipv4,
                                       parms->adapter_mac,
                                       px, length);
@@ -1259,7 +1261,7 @@ main_scan(struct Masscan *masscan)
                     parms->router_mac,
                     masscan->payloads.udp,
                     masscan->payloads.oproto,
-                    rawsock_datalink(masscan->nic[index].adapter),
+                    stack_if_datalink(masscan->nic[index].adapter),
                     masscan->seed);
 
         /*

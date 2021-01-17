@@ -51,14 +51,6 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_vlan,
                      unsigned vlan_id);
 
-/**
- * Retrieve the datalink type of the adapter
- *
- *  1 = Ethernet
- * 12 = Raw IP (no datalink)
- */
-int
-rawsock_datalink(struct Adapter *adapter);
 
 /**
  * Print to the command-line the list of available adapters. It's called
@@ -151,9 +143,6 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet);
 
-int arp_resolve_sync(struct Adapter *adapter,
-    unsigned my_ipv4, const unsigned char *my_mac_address,
-    unsigned your_ipv4, unsigned char *your_mac_address);
 
 
 /**

@@ -93,7 +93,6 @@
     <ClCompile Include="..\src\rand-blackrock.c" />
     <ClCompile Include="..\src\rand-lcg.c" />
     <ClCompile Include="..\src\rand-primegen.c" />
-    <ClCompile Include="..\src\rawsock-arp.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
     <ClCompile Include="..\src\rawsock-getip6.c" />
@@ -109,6 +108,8 @@
     <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
+    <ClCompile Include="..\src\stack-arpv4.c" />
+    <ClCompile Include="..\src\stack-if.c" />
     <ClCompile Include="..\src\stack-ndpv6.c" />
     <ClCompile Include="..\src\stack-queue.c" />
     <ClCompile Include="..\src\stack-src.c" />
@@ -193,6 +194,7 @@
     <ClInclude Include="..\src\rand-blackrock.h" />
     <ClInclude Include="..\src\rand-lcg.h" />
     <ClInclude Include="..\src\rand-primegen.h" />
+    <ClInclude Include="..\src\rawsock-adapter.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\read-service-probes.h" />
@@ -201,6 +203,7 @@
     <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
+    <ClInclude Include="..\src\stack-arpv4.h" />
     <ClInclude Include="..\src\stack-ndpv6.h" />
     <ClInclude Include="..\src\stack-queue.h" />
     <ClInclude Include="..\src\stack-src.h" />

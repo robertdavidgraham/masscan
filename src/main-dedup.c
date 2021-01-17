@@ -371,7 +371,7 @@ dedup_selftest(void)
         ip_me.version = 6;
         ip_them.version = 6;
         ip_me.ipv6.hi = 0x12345678;
-	ip_me.ipv6.lo = 0x12345678;
+	    ip_me.ipv6.lo = 0x12345678;
         ip_them.ipv6.hi = 0xabcdef0;
         ip_them.ipv6.lo = 0xabcdef0;
 
@@ -381,10 +381,10 @@ dedup_selftest(void)
         }
         if (!dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
             fprintf(stderr, "[-] [%s]:%u -> [%s]:%u\n", 
-			ipaddress_fmt(ip_them).string,
-			port_them,
-			ipaddress_fmt(ip_me).string,
-			port_me);
+			    ipaddress_fmt(ip_them).string,
+			    port_them,
+			    ipaddress_fmt(ip_me).string,
+			    port_me);
             line = __LINE__;
             goto fail;
         }
@@ -461,6 +461,6 @@ dedup_selftest(void)
     return 0; /* success :) */
 
 fail:
-    fprintf(stderr, "[-] selftest: 'dedup' failed, line=%u\n", line);
+    fprintf(stderr, "[-] selftest: 'dedup' failed, file=%s, line=%u\n", __FILE__, line);
     return 1;
 }

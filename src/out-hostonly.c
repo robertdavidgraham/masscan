@@ -12,6 +12,7 @@
 static void
 hostonly_out_open(struct Output *out, FILE *fp)
 {
+    UNUSEDPARM(fp);
     UNUSEDPARM(out);
 }
 
@@ -19,6 +20,7 @@ hostonly_out_open(struct Output *out, FILE *fp)
 static void
 hostonly_out_close(struct Output *out, FILE *fp)
 {
+    UNUSEDPARM(fp);
     UNUSEDPARM(out);
 }
 
@@ -29,8 +31,11 @@ hostonly_out_status(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
     UNUSEDPARM(timestamp);
-
-   fprintf(fp, "%s\n", ipaddress_fmt(ip).string);
+    UNUSEDPARM(ttl);
+    UNUSEDPARM(port);
+    UNUSEDPARM(ip_proto);
+    UNUSEDPARM(status);
+    fprintf(fp, "%s\n", ipaddress_fmt(ip).string);
 }
 
 

@@ -13,13 +13,14 @@
         entry and re-request our address.
 */
 #include "rawsock.h"
-#include "proto-arp.h"
+#include "rawsock-adapter.h"
+#include "stack-src.h"
+#include "stack-arpv4.h"
+#include "stack-queue.h"
 #include "string_s.h"
 #include "logger.h"
 #include "pixie-timer.h"
-#include "stack-queue.h"
 #include "proto-preprocess.h"
-#include "stack-src.h"
 #include "util-checksum.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
@@ -92,7 +93,6 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
     arp->is_valid = 1;
 }
 
-#include "rawsock-adapter.h"
 
 /****************************************************************************
  * Resolve the IP address into a MAC address. Do this synchronously, meaning,
@@ -100,7 +100,7 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
  * but not during then normal asynchronous operation during the scan.
  ****************************************************************************/
 int
-arp_resolve_sync(struct Adapter *adapter,
+stack_arp_resolve(struct Adapter *adapter,
     unsigned my_ipv4, const unsigned char *my_mac_address,
     unsigned your_ipv4, unsigned char *your_mac_address)
 {
@@ -114,11 +114,9 @@ arp_resolve_sync(struct Adapter *adapter,
 
     /*
      * [KLUDGE]
-     *  If this is a VPN connection with raw IPv4, then we don't do any
-     *  ARPing, just return immediately. In other words, there's nothing
-     *  here to ARP
+     *  If this is a VPN connection
      */
-    if (rawsock_datalink(adapter) == 12) {
+    if (stack_if_datalink(adapter) == 12) {
         memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }
@@ -199,12 +197,7 @@ arp_resolve_sync(struct Adapter *adapter,
         /* If we aren't getting a response back to our ARP, then print a
          * status message */
         if (time(0) > start+1 && !is_arp_notice_given) {
-            fprintf(stderr, "ARPing local router %u.%u.%u.%u\n",
-                (unsigned char)(your_ipv4>>24),
-                (unsigned char)(your_ipv4>>16),
-                (unsigned char)(your_ipv4>> 8),
-                (unsigned char)(your_ipv4>> 0)
-                );
+            LOG(0, "[ ] arping local router %s\n", ipv4address_fmt(your_ipv4).string);
             is_arp_notice_given = 1;
         }
 
@@ -234,19 +227,19 @@ arp_resolve_sync(struct Adapter *adapter,
 
         /* Is this an ARP packet? */
         if (!response.is_valid) {
-            LOG(2, "arp: etype=0x%04x, not ARP\n", px[12]*256 + px[13]);
+            LOG(2, "[-] arp: etype=0x%04x, not ARP\n", px[12]*256 + px[13]);
             continue;
         }
 
         /* Is this an ARP "reply"? */
         if (response.opcode != 2) {
-            LOG(2, "arp: opcode=%u, not reply(2)\n", response.opcode);
+            LOG(2, "[-] arp: opcode=%u, not reply(2)\n", response.opcode);
             continue;
         }
 
         /* Is this response directed at us? */
         if (response.ip_dst != my_ipv4) {
-            LOG(2, "arp: dst=%08x, not my ip 0x%08x\n", response.ip_dst, my_ipv4);
+            LOG(2, "[-] arp: dst=%08x, not my ip 0x%08x\n", response.ip_dst, my_ipv4);
             continue;
         }
         if (memcmp(response.mac_dst, my_mac_address, 6) != 0)
@@ -254,7 +247,7 @@ arp_resolve_sync(struct Adapter *adapter,
 
         /* Is this the droid we are looking for? */
         if (response.ip_src != your_ipv4) {
-            LOG(2, "arp: target=%08x, not desired 0x%08x\n", response.ip_src, your_ipv4);
+            LOG(2, "[-] arp: target=%08x, not desired 0x%08x\n", response.ip_src, your_ipv4);
             continue;
         }
 
@@ -264,6 +257,15 @@ arp_resolve_sync(struct Adapter *adapter,
          *  return.
          */
         memcpy(your_mac_address, response.mac_src, 6);
+        LOG(1, "[+] arp: %s == %02-%02-%02-%02-%02-%02\n",
+                ipv4address_fmt(response.ip_src).string,
+                response.mac_src[0],
+                response.mac_src[0],
+                response.mac_src[0],
+                response.mac_src[0],
+                response.mac_src[0],
+                response.mac_src[0]
+                );
         return 0;
     }
 
@@ -274,9 +276,10 @@ arp_resolve_sync(struct Adapter *adapter,
 
 
 /****************************************************************************
+ * Handle an incoming ARP request.
  ****************************************************************************/
 int
-stack_handle_arp( struct stack_t *stack,
+stack_arp_incoming_request( struct stack_t *stack,
     unsigned my_ip, const unsigned char *my_mac,
     const unsigned char *px, unsigned length)
 {

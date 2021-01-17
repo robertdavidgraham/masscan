@@ -7,5 +7,10 @@ handle_oproto(struct Output *out, time_t timestamp,
               struct PreprocessedInfo *parsed,
               uint64_t entropy)
 {
-    
+    UNUSEDPARM(entropy);
+    UNUSEDPARM(parsed);
+    UNUSEDPARM(length);
+    UNUSEDPARM(px);
+    UNUSEDPARM(timestamp);
+    UNUSEDPARM(out);
 }

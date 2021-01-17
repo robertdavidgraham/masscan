@@ -108,9 +108,6 @@
     <ClCompile Include="..\src\proto-arp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rawsock-arp.c">
-      <Filter>Source Files\rawsock</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rawsock-getif.c">
       <Filter>Source Files\rawsock</Filter>
     </ClCompile>
@@ -378,6 +375,12 @@
     <ClCompile Include="..\src\out-hostonly.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\stack-arpv4.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-if.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -643,6 +646,12 @@
     </ClInclude>
     <ClInclude Include="..\src\massip-addr.h">
       <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-arpv4.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-adapter.h">
+      <Filter>Source Files\rawsock</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
