@@ -346,28 +346,14 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     }
 
     if (masscan->nic[i].my_mac_count)
-        fprintf(fp, "adapter-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", idx_str,
-                masscan->nic[i].my_mac[0],
-                masscan->nic[i].my_mac[1],
-                masscan->nic[i].my_mac[2],
-                masscan->nic[i].my_mac[3],
-                masscan->nic[i].my_mac[4],
-                masscan->nic[i].my_mac[5]);
+        fprintf(fp, "adapter-mac%s = %s\n", idx_str, macaddress_fmt(masscan->nic[i].source_mac).string);
     if (masscan->nic[i].router_ip) {
-        fprintf(fp, "router-ip%s = %u.%u.%u.%u\n", idx_str,
-            (masscan->nic[i].router_ip>>24)&0xFF,
-            (masscan->nic[i].router_ip>>16)&0xFF,
-            (masscan->nic[i].router_ip>> 8)&0xFF,
-            (masscan->nic[i].router_ip>> 0)&0xFF
-            );
-    } else if (memcmp(masscan->nic[i].router_mac, "\0\0\0\0\0\0", 6) != 0)
-        fprintf(fp, "router-mac%s = %02x:%02x:%02x:%02x:%02x:%02x\n", idx_str,
-            masscan->nic[i].router_mac[0],
-            masscan->nic[i].router_mac[1],
-            masscan->nic[i].router_mac[2],
-            masscan->nic[i].router_mac[3],
-            masscan->nic[i].router_mac[4],
-            masscan->nic[i].router_mac[5]);
+        fprintf(fp, "router-ip%s = %s\n", idx_str, ipv4address_fmt(masscan->nic[i].router_ip).string);
+    }
+    if (!macaddress_is_zero(masscan->nic[i].router_mac_ipv4))
+        fprintf(fp, "router-mac-ipv4%s = %s\n", idx_str, macaddress_fmt(masscan->nic[i].router_mac_ipv4).string);
+    if (!macaddress_is_zero(masscan->nic[i].router_mac_ipv6))
+        fprintf(fp, "router-mac-ipv6%s = %s\n", idx_str, macaddress_fmt(masscan->nic[i].router_mac_ipv6).string);
 
 }
 
@@ -523,7 +509,7 @@ hexval(char c)
 /***************************************************************************
  ***************************************************************************/
 static int
-parse_mac_address(const char *text, unsigned char *mac)
+parse_mac_address(const char *text, macaddress_t *mac)
 {
     unsigned i;
 
@@ -546,7 +532,7 @@ parse_mac_address(const char *text, unsigned char *mac)
         x |= hexval(c);
         text++;
 
-        mac[i] = (unsigned char)x;
+        mac->addr[i] = (unsigned char)x;
 
         if (ispunct(*text & 0xFF))
             text++;
@@ -1857,36 +1843,70 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("adapter-mac", name) || EQUALS("spoof-mac", name)
                || EQUALS("source-mac", name) || EQUALS("src-mac", name)) {
         /* Send packets FROM this MAC address */
-        unsigned char mac[6];
+        macaddress_t source_mac;
+        int err;
 
-        if (parse_mac_address(value, mac) != 0) {
-            fprintf(stderr, "CONF: bad MAC address: %s=%s\n", name, value);
+        err = parse_mac_address(value, &source_mac);
+        if (err) {
+            LOG(0, "[-] CONF: bad MAC address: %s = %s\n", name, value);
             return;
         }
 
         /* Check for duplicates */
-        if (memcmp(masscan->nic[index].my_mac, mac, 6) == 0)
+        if (macaddress_is_equal(masscan->nic[index].source_mac, source_mac)) {
+            /* supresses warning message about duplicate MAC addresses if
+             * they are in fact the saem */
             return;
+        }
 
         /* Warn if we are overwriting a Mac address */
         if (masscan->nic[index].my_mac_count != 0) {
-            LOG(0, "WARNING: overwriting MAC address\n");
+            LOG(0, "[-] WARNING: overwriting MAC address, was %s, now %s\n",
+                macaddress_fmt(masscan->nic[index].source_mac).string,
+                macaddress_fmt(source_mac).string);
         }
 
-        memcpy(masscan->nic[index].my_mac, mac, 6);
+        masscan->nic[index].source_mac = source_mac;
         masscan->nic[index].my_mac_count = 1;
     }
     else if (EQUALS("router-mac", name) || EQUALS("router", name)
              || EQUALS("dest-mac", name) || EQUALS("destination-mac", name)
              || EQUALS("dst-mac", name) || EQUALS("target-mac", name)) {
-        unsigned char mac[6];
-
-        if (parse_mac_address(value, mac) != 0) {
-            fprintf(stderr, "CONF: bad MAC address: %s=%s\n", name, value);
+        macaddress_t router_mac;
+        int err;
+        
+        err = parse_mac_address(value, &router_mac);
+        if (err) {
+            fprintf(stderr, "[-] CONF: bad MAC address: %s = %s\n", name, value);
             return;
         }
 
-        memcpy(masscan->nic[index].router_mac, mac, 6);
+        masscan->nic[index].router_mac_ipv4 = router_mac;
+        masscan->nic[index].router_mac_ipv6 = router_mac;
+    }
+    else if (EQUALS("router-mac-ipv4", name) || EQUALS("router-ipv4", name)) {
+        macaddress_t router_mac;
+        int err;
+        
+        err = parse_mac_address(value, &router_mac);
+        if (err) {
+            fprintf(stderr, "[-] CONF: bad MAC address: %s = %s\n", name, value);
+            return;
+        }
+
+        masscan->nic[index].router_mac_ipv4 = router_mac;
+    }
+    else if (EQUALS("router-mac-ipv6", name) || EQUALS("router-ipv6", name)) {
+        macaddress_t router_mac;
+        int err;
+        
+        err = parse_mac_address(value, &router_mac);
+        if (err) {
+            fprintf(stderr, "[-] CONF: bad MAC address: %s = %s\n", name, value);
+            return;
+        }
+
+        masscan->nic[index].router_mac_ipv6 = router_mac;
     }
     else if (EQUALS("router-ip", name)) {
         /* Send packets FROM this IP address */

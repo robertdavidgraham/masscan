@@ -443,10 +443,14 @@ static int
 http_selftest(void)
 {
     struct Banner1 *banner1 = NULL;
-    struct ProtocolState pstate[1] = {0};
-    struct BannerOutput banout[1] = {0};
-    struct InteractiveData more[1] = {0};
+    struct ProtocolState pstate[1];
+    struct BannerOutput banout[1];
+    struct InteractiveData more[1];
     
+    memset(pstate, 0, sizeof(pstate[0]));
+    memset(banout, 0, sizeof(banout[0]));
+    memset(more, 0, sizeof(more[0]));
+
     /*
      * Test start
      */

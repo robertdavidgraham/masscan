@@ -130,9 +130,10 @@ struct Masscan
         char ifname[256];
         struct Adapter *adapter;
         struct stack_src_t src;
-        unsigned char my_mac[6];
-        unsigned char router_mac[6];
-        unsigned router_ip;
+        macaddress_t source_mac;
+        macaddress_t router_mac_ipv4;
+        macaddress_t router_mac_ipv6;
+        ipv4address_t router_ip;
         int link_type; /* libpcap definitions */
         unsigned char my_mac_count; /*is there a MAC address? */
         unsigned vlan_id;
@@ -461,12 +462,18 @@ masscan_set_parameter(struct Masscan *masscan,
 
 
 
+/**
+ * Discover the local network adapter parameters, such as whcih
+ * MAC address we are using and the MAC addresses of the
+ * local routers.
+ */
 int
 masscan_initialize_adapter(
     struct Masscan *masscan,
     unsigned index,
-    unsigned char *adapter_mac,
-    unsigned char *router_mac);
+    macaddress_t *source_mac,
+    macaddress_t *router_mac_ipv4,
+    macaddress_t *router_mac_ipv6);
 
 /**
  * Echoes the settings to the command-line. By default, echoes only

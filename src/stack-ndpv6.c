@@ -4,6 +4,7 @@
 #include "util-checksum.h"
 #include "rawsock-adapter.h"
 #include "rawsock.h"
+#include "logger.h"
 #include <string.h>
 
 
@@ -37,7 +38,7 @@ _append_short(unsigned char *buf, size_t *offset, size_t max, unsigned num)
 static inline unsigned
 _read_byte(const unsigned char *buf, size_t *offset, size_t max)
 {
-    if (*offset < max) {
+    if (*offset + 1 < max) {
         return buf[(*offset)++];
     } else
         return (unsigned)~0;
@@ -45,7 +46,7 @@ _read_byte(const unsigned char *buf, size_t *offset, size_t max)
 static inline unsigned
 _read_short(const unsigned char *buf, size_t *offset, size_t max)
 {
-    if (*offset + 1  < max) {
+    if (*offset + 2  <= max) {
         unsigned result;
         result = buf[(*offset)++] << 8;
         result |= buf[(*offset)++];
@@ -57,7 +58,7 @@ _read_short(const unsigned char *buf, size_t *offset, size_t max)
 static inline unsigned
 _read_number(const unsigned char *buf, size_t *offset, size_t max)
 {
-    if (*offset + 1  < max) {
+    if (*offset + 4  <= max) {
         unsigned result;
         result = buf[(*offset)++] << 24;
         result |= buf[(*offset)++] << 16;
@@ -66,6 +67,20 @@ _read_number(const unsigned char *buf, size_t *offset, size_t max)
         return result;
     } else
         return (unsigned)~0;
+}
+
+static inline ipv6address_t
+_read_ipv6(const unsigned char *buf, size_t *offset, size_t max)
+{
+    ipv6address_t result = {0,0};
+    
+    if (*offset + 16 <= max) {
+        result = ipv6address_from_bytes(buf + *offset);
+        *offset += 16;
+    } else {
+        *offset = max;
+    }
+    return result;
 }
 
 
@@ -84,7 +99,7 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
     size_t remaining;
     ipaddress target_ip;
     const unsigned char *target_ip_buf;
-    const unsigned char *target_mac_buf = stack->mac_address;
+    macaddress_t target_mac = stack->source_mac;
     unsigned xsum;
     unsigned char *buf2;
     static const size_t max = sizeof(response->px);
@@ -128,7 +143,7 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
 
     /* Set the source MAC address and source IPv6 address */
     memcpy(buf2 + offset_ip_src, target_ip_buf, 16);
-    memcpy(buf2 + 6, target_mac_buf, 6);
+    memcpy(buf2 + 6, target_mac.addr, 6);
     
     /* Format the response */
     _append(buf2, &offset, max, 136); /* type */
@@ -142,7 +157,7 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
     _append_bytes(buf2, &offset, max, target_ip_buf, 16);
     _append(buf2, &offset, max, 2);
     _append(buf2, &offset, max, 1);
-    _append_bytes(buf2, &offset, max, target_mac_buf, 6);
+    _append_bytes(buf2, &offset, max, target_mac.addr, 6);
 
     xsum = checksum_ipv6(   buf2 + offset_ip_src, 
                             buf2 + offset_ip_dst, 
@@ -164,12 +179,14 @@ static int
 _extract_router_advertisement(
     const unsigned char *buf, 
     size_t length,
-    struct PreprocessedInfo *parsed, 
+    struct PreprocessedInfo *parsed,
+    ipv6address my_ipv6,
     ipv6address *router_ip, 
-    unsigned char *router_mac)
+    macaddress_t *router_mac)
 {
-    unsigned flags;
     size_t offset;
+    int is_same_prefix = 1;
+    int is_mac_explicit = 0;
 
     if (parsed->ip_version != 6)
         return 1;
@@ -193,7 +210,7 @@ _extract_router_advertisement(
     _read_byte(buf, &offset, length);
 
     /* flags */
-    flags = _read_byte(buf, &offset, length);
+    _read_byte(buf, &offset, length);
 
     /* router life time */
     _read_short(buf, &offset, length);
@@ -207,31 +224,83 @@ _extract_router_advertisement(
     while (offset + 8 <= length) {
         unsigned type = buf[offset + 0];
         size_t len2 = buf[offset + 1] * 8;
-        size_t off2 = 0;
+        size_t off2 = 2;
         const unsigned char *buf2 = buf + offset;
 
         switch (type) {
-        case 1:
-            if (len2 == 8) {
-                memcpy(router_mac, buf2 + 2, 6);
-                return 0;
+            case 3: /* prefix info */
+            {
+                unsigned prefix_len;
+                ipv6address prefix;
+                
+                prefix_len = _read_byte(buf2, &off2, len2);
+                _read_byte(buf2, &off2, len2); /* flags */
+                _read_number(buf2, &off2, len2); /* valid lifetime */
+                _read_number(buf2, &off2, len2); /* preferred lifetime */
+                _read_number(buf2, &off2, len2); /* reserved */
+                prefix = _read_ipv6(buf2, &off2, len2);
+                
+                LOG(1, "[+] IPv6.prefix = %s/%u\n",
+                    ipv6address_fmt(prefix).string,
+                    prefix_len);
+                if (ipv6address_is_equal_prefixed(my_ipv6, prefix, prefix_len)) {
+                    is_same_prefix = 1;
+                } else {
+                    LOG(0, "[-] WARNING: our source-ip is %s, but router prefix announces %s/%u\n",
+                                        ipv6address_fmt(my_ipv6).string,
+                                        ipv6address_fmt(prefix).string,
+                                        prefix_len);
+                    is_same_prefix = 0;
+                }
+
             }
-            break;
+                break;
+            case 25: /* recursive DNS server */
+                _read_short(buf2, &off2, len2);
+                _read_number(buf2, &off2, len2);
+                
+                while (off2 + 16 <= len2) {
+                    ipv6address resolver = _read_ipv6(buf2, &off2, len2);
+                    LOG(1, "[+] IPv6.DNS = %s\n", ipv6address_fmt(resolver).string);
+                }
+                break;
+            case 1:
+                if (len2 == 8) {
+                    memcpy(router_mac->addr, buf2 + 2, 6);
+                    is_mac_explicit = 1;
+                }
+                break;
         }
 
         offset += len2;
     }
 
-    memcpy(router_mac, parsed->mac_src, 6);
+    if (!is_mac_explicit) {
+        /* The router advertisement didn't include an explicit
+         * source address. Therefore, pull the response from
+         * the Etherent header of the packet instead */
+        memcpy(router_mac->addr, parsed->mac_src, 6);
+    }
+    
+    if (!is_same_prefix) {
+        /* We had a valid router advertisement, but it didn't
+         * match the IPv6 address we are using. This presumably
+         * means there are multiple possible IPv6 routers on the
+         * network. Therefore, we are going to discard this
+         * packet and wait for another one */
+        return 1;
+    }
+    
     return 0;
 }
 
 /****************************************************************************
  ****************************************************************************/
 int
-stack_ndpv6_resolve(struct Adapter *adapter, 
-    const unsigned char *my_mac_address, 
-    unsigned char *router_mac)
+stack_ndpv6_resolve(struct Adapter *adapter,
+    ipv6address my_ipv6,
+    macaddress_t my_mac_address,
+    macaddress_t *router_mac)
 {
     unsigned char buf[128];
     size_t max = sizeof(buf);
@@ -252,7 +321,7 @@ stack_ndpv6_resolve(struct Adapter *adapter,
      *  If this is a VPN connection, then there is no answer
      */
     if (stack_if_datalink(adapter) == 12) {
-        memcpy(router_mac, "\0\0\0\0\0\2", 6);
+        memcpy(router_mac->addr, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }
 
@@ -261,7 +330,7 @@ stack_ndpv6_resolve(struct Adapter *adapter,
      * Ethernet header
      */
     _append_bytes(buf, &offset, max, "\x33\x33\x00\x00\x00\x02", 6);
-    _append_bytes(buf, &offset, max, my_mac_address, 6);
+    _append_bytes(buf, &offset, max, my_mac_address.addr, 6);
     
     if (adapter->is_vlan) {
         _append_short(buf, &offset, max, 0x8100);
@@ -286,10 +355,10 @@ stack_ndpv6_resolve(struct Adapter *adapter,
     _append_short(buf, &offset, max, 0);
     _append_short(buf, &offset, max, 0);
     _append_short(buf, &offset, max, 0);
-    _append_bytes(buf, &offset, max, my_mac_address, 3);
+    _append_bytes(buf, &offset, max, my_mac_address.addr, 3);
     buf[offset-3] |= 2;
     _append_short(buf, &offset, max, 0xfffe);
-    _append_bytes(buf, &offset, max, my_mac_address+3, 3);
+    _append_bytes(buf, &offset, max, my_mac_address.addr+3, 3);
 
     /* All-routers link local address */
     offset_ip_dst = offset;
@@ -311,7 +380,7 @@ stack_ndpv6_resolve(struct Adapter *adapter,
     _append_short(buf, &offset, max, 0); /* reserved */
     _append(buf, &offset, max, 1); /* option = source link layer address */
     _append(buf, &offset, max, 1); /* length = 2 + 6 / 8*/
-    _append_bytes(buf, &offset, max, my_mac_address, 6);
+    _append_bytes(buf, &offset, max, my_mac_address.addr, 6);
     
     buf[offset_ip + 4] = (unsigned char)( (offset - offset_icmpv6) >> 8);
     buf[offset_ip + 5] = (unsigned char)( (offset - offset_icmpv6) & 0xFF);
@@ -325,7 +394,8 @@ stack_ndpv6_resolve(struct Adapter *adapter,
     rawsock_send_packet(adapter, buf, (unsigned)offset, 1);
 
     /*
-     * Send a shorter version
+     * Send a shorter version after the long version. I don't know
+     * why, but some do this on the Internet.
      */
     offset -= 8;
     buf[offset_ip + 4] = (unsigned char)( (offset - offset_icmpv6) >> 8);
@@ -382,16 +452,22 @@ stack_ndpv6_resolve(struct Adapter *adapter,
             continue;
 
         /*
-         * Parse the packet
+         * Parse the packet. We'll get lots of packets we aren't interested
+         * in,so we'll just loop around and keep searching until we find
+         * one.
          */
         err = preprocess_frame(buf2, length2, 1, &parsed);
         if (err != 1)
             continue;
         if (parsed.found != FOUND_NDPv6)
             continue;
-        err = _extract_router_advertisement(buf2, length2, &parsed, &router_ip, router_mac);
+        
+        /* We've found a packet that may be the one we want, so parse it */
+        err = _extract_router_advertisement(buf2, length2, &parsed, my_ipv6, &router_ip, router_mac);
         if (err)
             continue;
+        
+        /* The previus call found 'router_mac", so now return */
         return 0;
     }
 

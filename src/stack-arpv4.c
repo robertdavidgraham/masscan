@@ -101,8 +101,8 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
  ****************************************************************************/
 int
 stack_arp_resolve(struct Adapter *adapter,
-    unsigned my_ipv4, const unsigned char *my_mac_address,
-    unsigned your_ipv4, unsigned char *your_mac_address)
+    ipv4address_t my_ipv4, macaddress_t my_mac_address,
+    ipv4address_t your_ipv4, macaddress_t *your_mac_address)
 {
     unsigned char xarp_packet[64];
     unsigned char *arp_packet = &xarp_packet[0];
@@ -117,7 +117,7 @@ stack_arp_resolve(struct Adapter *adapter,
      *  If this is a VPN connection
      */
     if (stack_if_datalink(adapter) == 12) {
-        memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
+        memcpy(your_mac_address->addr, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }
 
@@ -131,7 +131,7 @@ stack_arp_resolve(struct Adapter *adapter,
      * Create the request packet
      */
     memcpy(arp_packet +  0, "\xFF\xFF\xFF\xFF\xFF\xFF", 6);
-    memcpy(arp_packet +  6, my_mac_address, 6);
+    memcpy(arp_packet +  6, my_mac_address.addr, 6);
     
     if (adapter->is_vlan) {
         memcpy(arp_packet + 12, "\x81\x00", 2);
@@ -150,7 +150,7 @@ stack_arp_resolve(struct Adapter *adapter,
             "\x00\x01" /* opcode = request */
             , 8);
 
-    memcpy(arp_packet + 22, my_mac_address, 6);
+    memcpy(arp_packet + 22, my_mac_address.addr, 6);
     arp_packet[28] = (unsigned char)(my_ipv4 >> 24);
     arp_packet[29] = (unsigned char)(my_ipv4 >> 16);
     arp_packet[30] = (unsigned char)(my_ipv4 >>  8);
@@ -189,7 +189,7 @@ stack_arp_resolve(struct Adapter *adapter,
 
             /* It's taking too long, so notify the user */
             if (!is_delay_reported) {
-                LOG(0, "[ ] arping router MAC address (may take some time)...\n");
+                LOG(0, "[+] resolving router %s with ARP (may take some time)...\n", ipv4address_fmt(your_ipv4).string);
                 is_delay_reported = 1;
             }
         }
@@ -197,7 +197,7 @@ stack_arp_resolve(struct Adapter *adapter,
         /* If we aren't getting a response back to our ARP, then print a
          * status message */
         if (time(0) > start+1 && !is_arp_notice_given) {
-            LOG(0, "[ ] arping local router %s\n", ipv4address_fmt(your_ipv4).string);
+            LOG(0, "[+] arping local router %s\n", ipv4address_fmt(your_ipv4).string);
             is_arp_notice_given = 1;
         }
 
@@ -242,12 +242,14 @@ stack_arp_resolve(struct Adapter *adapter,
             LOG(2, "[-] arp: dst=%08x, not my ip 0x%08x\n", response.ip_dst, my_ipv4);
             continue;
         }
-        if (memcmp(response.mac_dst, my_mac_address, 6) != 0)
+        if (memcmp(response.mac_dst, my_mac_address.addr, 6) != 0)
             continue;
 
         /* Is this the droid we are looking for? */
         if (response.ip_src != your_ipv4) {
-            LOG(2, "[-] arp: target=%08x, not desired 0x%08x\n", response.ip_src, your_ipv4);
+            LOG(2, "[-] arp: target=%s, not desired %s\n",
+                ipv4address_fmt(response.ip_src).string,
+                ipv4address_fmt(your_ipv4).string);
             continue;
         }
 
@@ -256,16 +258,10 @@ stack_arp_resolve(struct Adapter *adapter,
          *  we've got a valid response, so save the results and
          *  return.
          */
-        memcpy(your_mac_address, response.mac_src, 6);
-        LOG(1, "[+] arp: %s == %02-%02-%02-%02-%02-%02\n",
+        memcpy(your_mac_address->addr, response.mac_src, 6);
+        LOG(1, "[+] arp: %s == %s\n",
                 ipv4address_fmt(response.ip_src).string,
-                response.mac_src[0],
-                response.mac_src[0],
-                response.mac_src[0],
-                response.mac_src[0],
-                response.mac_src[0],
-                response.mac_src[0]
-                );
+                macaddress_fmt(*your_mac_address).string);
         return 0;
     }
 
@@ -280,7 +276,7 @@ stack_arp_resolve(struct Adapter *adapter,
  ****************************************************************************/
 int
 stack_arp_incoming_request( struct stack_t *stack,
-    unsigned my_ip, const unsigned char *my_mac,
+    ipv4address_t my_ip, macaddress_t my_mac,
     const unsigned char *px, unsigned length)
 {
     struct PacketBuffer *response = 0;
@@ -330,7 +326,7 @@ stack_arp_incoming_request( struct stack_t *stack,
      * Create the response packet
      */
     memcpy(response->px +  0, request.mac_src, 6);
-    memcpy(response->px +  6, my_mac, 6);
+    memcpy(response->px +  6, my_mac.addr, 6);
     memcpy(response->px + 12, "\x08\x06", 2);
 
     memcpy(response->px + 14,
@@ -340,7 +336,7 @@ stack_arp_incoming_request( struct stack_t *stack,
             "\x00\x02" /* opcode = reply(2) */
             , 8);
 
-    memcpy(response->px + 22, my_mac, 6);
+    memcpy(response->px + 22, my_mac.addr, 6);
     response->px[28] = (unsigned char)(my_ip >> 24);
     response->px[29] = (unsigned char)(my_ip >> 16);
     response->px[30] = (unsigned char)(my_ip >>  8);

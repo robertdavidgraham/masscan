@@ -152,7 +152,6 @@ int rawsock_recv_packet(
  * of work requiring us to process the flood of packets we generate.
  */
 void rawsock_ignore_transmits(struct Adapter *adapter,
-                              const unsigned char *adapter_mac,
                               const char *ifname);
 
 #endif

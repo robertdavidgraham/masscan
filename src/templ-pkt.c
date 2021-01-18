@@ -1099,7 +1099,7 @@ template_set_target_ipv4(
  * the IPv4 header with the IPv6 header.
  ***************************************************************************/
 static void
-_template_init_ipv6(struct TemplatePacket *tmpl)
+_template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6)
 {
     struct PreprocessedInfo parsed;
     unsigned x;
@@ -1146,6 +1146,10 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
     /* fill the IPv6 header with zeroes */
     memset(buf + offset_ip, 0, 40);
     tmpl->ipv6.length = offset_ip + 40 + payload_length;
+    
+    /* Reset the destination MAC address to be the IPv6 router
+     * instead of the IPv4 router, which sometimes are different */
+    memcpy(buf + 0, router_mac_ipv6.addr, 6);
     
     /* Reset the Ethertype field to 0x86dd (meaning IPv6) */
     buf[12] = 0x86;
@@ -1195,8 +1199,9 @@ _template_init_ipv6(struct TemplatePacket *tmpl)
 static void
 _template_init(
     struct TemplatePacket *tmpl,
-    const unsigned char *mac_source,
-    const unsigned char *mac_dest,
+    macaddress_t source_mac,
+    macaddress_t router_mac_ipv4,
+    macaddress_t router_mac_ipv6,
     const void *packet_bytes,
     size_t packet_size,
     unsigned data_link
@@ -1238,8 +1243,8 @@ _template_init(
     /*
      * Overwrite the MAC and IP addresses
      */
-    memcpy(px+0, mac_dest, 6);
-    memcpy(px+6, mac_source, 6);
+    memcpy(px+0, router_mac_ipv4.addr, 6);
+    memcpy(px+6, source_mac.addr, 6);
     memset((void*)parsed._ip_src, 0, 4);
     memset((void*)parsed._ip_dst, 0, 4);
 
@@ -1251,7 +1256,7 @@ _template_init(
      * configured source IP and MAC addresses.
      */
     if (parsed.found == FOUND_ARP) {
-        memcpy((char*)parsed._ip_src - 6, mac_source, 6);
+        memcpy((char*)parsed._ip_src - 6, source_mac.addr, 6);
         tmpl->proto = Proto_ARP;
         return;
     }
@@ -1326,7 +1331,7 @@ _template_init(
     }
 
     /* Now create an IPv6 template based upon the IPv4 template */
-    _template_init_ipv6(tmpl);
+    _template_init_ipv6(tmpl, router_mac_ipv6);
 
 }
 
@@ -1335,8 +1340,9 @@ _template_init(
 void
 template_packet_init(
     struct TemplateSet *templset,
-    const unsigned char *source_mac,
-    const unsigned char *router_mac,
+    macaddress_t source_mac,
+    macaddress_t router_mac_ipv4,
+    macaddress_t router_mac_ipv6,
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,
@@ -1347,7 +1353,7 @@ template_packet_init(
 
     /* [SCTP] */
     _template_init(&templset->pkts[Proto_SCTP],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_sctp_template,
                    sizeof(default_sctp_template)-1,
                    data_link);
@@ -1355,7 +1361,7 @@ template_packet_init(
 
     /* [TCP] */
     _template_init(&templset->pkts[Proto_TCP],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_tcp_template,
                    sizeof(default_tcp_template)-1,
                    data_link);
@@ -1363,7 +1369,7 @@ template_packet_init(
 
     /* [UDP] */
     _template_init(&templset->pkts[Proto_UDP],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_udp_template,
                    sizeof(default_udp_template)-1,
                    data_link);
@@ -1372,7 +1378,7 @@ template_packet_init(
     
     /* [UDP oproto] */
     _template_init(&templset->pkts[Proto_Oproto],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_udp_template,
                    sizeof(default_udp_template)-1,
                    data_link);
@@ -1382,7 +1388,7 @@ template_packet_init(
 
     /* [ICMP ping] */
     _template_init(&templset->pkts[Proto_ICMP_ping],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_icmp_ping_template,
                    sizeof(default_icmp_ping_template)-1,
                    data_link);
@@ -1390,7 +1396,7 @@ template_packet_init(
 
     /* [ICMP timestamp] */
     _template_init(&templset->pkts[Proto_ICMP_timestamp],
-                   source_mac, router_mac,
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_icmp_timestamp_template,
                    sizeof(default_icmp_timestamp_template)-1,
                    data_link);
@@ -1398,7 +1404,7 @@ template_packet_init(
 
     /* [ARP] */
     _template_init( &templset->pkts[Proto_ARP],
-                    source_mac, router_mac,
+                    source_mac, router_mac_ipv4, router_mac_ipv6,
                     default_arp_template,
                     sizeof(default_arp_template)-1,
                     data_link);
@@ -1407,7 +1413,7 @@ template_packet_init(
     /* [VulnCheck] */
     if (templset->vulncheck) {
         _template_init( &templset->pkts[Proto_VulnCheck],
-                       source_mac, router_mac,
+                       source_mac, router_mac_ipv4, router_mac_ipv6,
                        templset->vulncheck->packet,
                        templset->vulncheck->packet_length,
                        data_link);
@@ -1481,8 +1487,9 @@ template_selftest(void)
     memset(tmplset, 0, sizeof(tmplset[0]));
     template_packet_init(
             tmplset,
-            (const unsigned char*)"\x00\x11\x22\x33\x44\x55",
-            (const unsigned char*)"\x66\x55\x44\x33\x22\x11",
+            macaddress_from_bytes("\x00\x11\x22\x33\x44\x55"),
+            macaddress_from_bytes("\x66\x55\x44\x33\x22\x11"),
+            macaddress_from_bytes("\x66\x55\x44\x33\x22\x11"),
             0,  /* UDP payloads = empty */
             0,  /* Oproto payloads = empty */
             1,  /* Ethernet */

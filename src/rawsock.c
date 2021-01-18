@@ -505,9 +505,8 @@ rawsock_win_name(const char *ifname)
  * still get filtered at a low level.
  ***************************************************************************/
 void
-rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac, const char *ifname)
+rawsock_ignore_transmits(struct Adapter *adapter, const char *ifname)
 {
-    UNUSEDPARM(adapter_mac);
     if (adapter->ring) {
         /* PORTABILITY: don't do anything for PF_RING, because it's
          * actually done when we create the adapter, because we can't
@@ -725,8 +724,8 @@ rawsock_init_adapter(const char *adapter_name,
      *----------------------------------------------------------------*/
     {
         int err;
-        LOG(1, "if:%s: pcap=%s\n", adapter_name, PCAP.lib_version());
-        LOG(2, "if:%s: opening...\n", adapter_name);
+        LOG(1, "[+] if(%s): pcap: %s\n", adapter_name, PCAP.lib_version());
+        LOG(2, "[+] if(%s): opening...\n", adapter_name);
 
         /* This reserves resources, but doesn't actually open the 
          * adapter until we call pcap_activate */
@@ -779,17 +778,17 @@ rawsock_init_adapter(const char *adapter_name,
                 /* drop down below */
                 break;
             case PCAP_ERROR_PERM_DENIED:
-                LOG(0, "FAIL: permission denied\n");
-                LOG(0, " [hint] need to sudo or run as root or something\n");
+                LOG(0, "[-] FAIL: permission denied\n");
+                LOG(0, "    [hint] need to sudo or run as root or something\n");
                 goto pcap_error;
             default:
-	            LOG(0, "if:%s: activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
+	            LOG(0, "[-] if(%s): activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
                 if (err < 0)
                     goto pcap_error;
             }
         }
 
-        LOG(1, "if:%s: successfully opened\n", adapter_name);
+        LOG(1, "[+] if(%s): successfully opened\n", adapter_name);
 
         
 
@@ -867,10 +866,10 @@ int
 rawsock_selftest_if(const char *ifname)
 {
     int err;
-    unsigned ipv4 = 0;
-    ipv6address ipv6;
-    unsigned router_ipv4 = 0;
-    unsigned char mac[6] = {0,0,0,0,0,0};
+    ipv4address_t ipv4 = 0;
+    ipv6address_t ipv6;
+    ipv4address_t router_ipv4 = 0;
+    macaddress_t source_mac = {0,0,0,0,0,0};
     struct Adapter *adapter;
     char ifname2[246];
 
@@ -915,12 +914,11 @@ rawsock_selftest_if(const char *ifname)
     }
 
     /* MAC address */
-    err = rawsock_get_adapter_mac(ifname, mac);
+    err = rawsock_get_adapter_mac(ifname, source_mac.addr);
     if (err) {
         printf("[-] source-mac = not found (err=%d)\n", err);
     } else {
-        printf("[+] source-mac = %02x-%02x-%02x-%02x-%02x-%02x\n",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        printf("[+] source-mac = %s\n", macaddress_fmt(source_mac).string);
     }
 
     /* IPv4 router IP address */
@@ -928,32 +926,24 @@ rawsock_selftest_if(const char *ifname)
     if (err) {
         fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
     } else {
-        printf("[-] router-ip = %s\n",ipv4address_fmt(router_ipv4).string);
+        printf("[+] router-ip = %s\n",ipv4address_fmt(router_ipv4).string);
     }
 
     /* IPv4 router MAC address */
     {
-        unsigned char router_mac[6];
+        macaddress_t router_mac = {0,0,0,0,0,0};
         
-        memset(router_mac, 0, 6);
         stack_arp_resolve(
                 adapter,
                 ipv4,
-                mac,
+                source_mac,
                 router_ipv4,
-                router_mac);
+                &router_mac);
 
-        if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-            printf("[+] router-mac-ipv4 = %02x-%02x-%02x-%02x-%02x-%02x\n",
-                router_mac[0],
-                router_mac[1],
-                router_mac[2],
-                router_mac[3],
-                router_mac[4],
-                router_mac[5]
-            );
-        } else {
+        if (macaddress_is_zero(router_mac)) {
             printf("[-] router-mac-ipv4 = not found\n");
+        } else {
+            printf("[+] router-mac-ipv4 = %s\n", macaddress_fmt(router_mac).string);
         }
     }
     
@@ -962,26 +952,19 @@ rawsock_selftest_if(const char *ifname)
      * IPv6 router address.
      */
     if (!ipv6address_is_zero(ipv6)) {
-        unsigned char router_mac[6];
+        macaddress_t router_mac = {0,0,0,0,0,0};
         
-        memset(router_mac, 0, 6);
-
+        
         stack_ndpv6_resolve(
                 adapter,
-                mac,
-                router_mac);
+                ipv6,
+                source_mac,
+                &router_mac);
 
-        if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-            printf("[+] router-mac-ipv6 = %02x-%02x-%02x-%02x-%02x-%02x\n",
-                router_mac[0],
-                router_mac[1],
-                router_mac[2],
-                router_mac[3],
-                router_mac[4],
-                router_mac[5]
-            );
-        } else {
+        if (macaddress_is_zero(router_mac)) {
             printf("[-] router-mac-ipv6 = not found\n");
+        } else {
+            printf("[+] router-mac-ipv6 = %s\n", macaddress_fmt(router_mac).string);
         }
     }
 

@@ -54,10 +54,10 @@ massip_parse_range(const char *line, size_t *inout_offset, size_t max, struct Ra
  * the operating system stack, when querying addresses from
  * the local network adapters.
  */
-ipv6address
+ipv6address_t
 massip_parse_ipv6(const char *buf);
 
-unsigned
+ipv4address_t
 massip_parse_ipv4(const char *buf);
 
 

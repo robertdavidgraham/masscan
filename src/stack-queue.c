@@ -96,13 +96,13 @@ stack_flush_packets(
 }
 
 struct stack_t *
-stack_create(const unsigned char *adapter_mac, struct stack_src_t *src)
+stack_create(macaddress_t source_mac, struct stack_src_t *src)
 {
     struct stack_t *stack;
     size_t i;
 
     stack = CALLOC(1, sizeof(*stack));
-    stack->mac_address = adapter_mac;
+    stack->source_mac = source_mac;
     stack->src = src;
 
     /*

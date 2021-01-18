@@ -1,6 +1,7 @@
 #ifndef PACKET_QUEUE_H
 #define PACKET_QUEUE_H
 #include "rte-ring.h"
+#include "massip-addr.h"
 #include <limits.h>
 struct stack_src_t;
 struct Adapter;
@@ -15,7 +16,7 @@ struct PacketBuffer {
 struct stack_t {
     PACKET_QUEUE *packet_buffers;
     PACKET_QUEUE *transmit_queue;
-    const unsigned char *mac_address;
+    macaddress_t source_mac;
     struct stack_src_t *src;
 };
 
@@ -42,6 +43,6 @@ stack_flush_packets(
     uint64_t *batchsize);
 
 struct stack_t *
-stack_create(const unsigned char *adapter_mac, struct stack_src_t *src);
+stack_create(macaddress_t source_mac, struct stack_src_t *src);
 
 #endif

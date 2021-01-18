@@ -11,6 +11,9 @@
 		110C79B022833AFA003FAC94 /* proto-oproto.c in Sources */ = {isa = PBXBuildFile; fileRef = 110C79AF22833AF9003FAC94 /* proto-oproto.c */; };
 		110ED16820CB0BC200690C91 /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
 		11126597197A086B00DC5987 /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
+		1124DD6B25B4FF1600EEFC2C /* out-hostonly.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6A25B4FF1600EEFC2C /* out-hostonly.c */; };
+		1124DD6F25B4FF3C00EEFC2C /* stack-if.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6C25B4FF3C00EEFC2C /* stack-if.c */; };
+		1124DD7025B4FF3C00EEFC2C /* stack-arpv4.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */; };
 		112A871A1F9D8DF200D4D240 /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
 		11420DD319A2D47A00DB5BFE /* proto-vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD219A2D47A00DB5BFE /* proto-vnc.c */; };
 		11420DD819A8160500DB5BFE /* proto-ftp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD719A8160500DB5BFE /* proto-ftp.c */; };
@@ -63,7 +66,6 @@
 		11A921E817DBCC7E00DDFD32 /* rand-blackrock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B417DBCC7E00DDFD32 /* rand-blackrock.c */; };
 		11A921E917DBCC7E00DDFD32 /* rand-lcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B617DBCC7E00DDFD32 /* rand-lcg.c */; };
 		11A921EA17DBCC7E00DDFD32 /* rand-primegen.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B817DBCC7E00DDFD32 /* rand-primegen.c */; };
-		11A921EC17DBCC7E00DDFD32 /* rawsock-arp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */; };
 		11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */; };
 		11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */; };
 		11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */; };
@@ -137,6 +139,10 @@
 		110ED16620CB0BC200690C91 /* proto-ntlmssp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-ntlmssp.h"; sourceTree = "<group>"; };
 		110ED16720CB0BC200690C91 /* proto-ntlmssp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-ntlmssp.c"; sourceTree = "<group>"; };
 		11126596197A086B00DC5987 /* out-unicornscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-unicornscan.c"; sourceTree = "<group>"; };
+		1124DD6A25B4FF1600EEFC2C /* out-hostonly.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-hostonly.c"; sourceTree = "<group>"; };
+		1124DD6C25B4FF3C00EEFC2C /* stack-if.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-if.c"; sourceTree = "<group>"; };
+		1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-arpv4.c"; sourceTree = "<group>"; };
+		1124DD6E25B4FF3C00EEFC2C /* stack-arpv4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-arpv4.h"; sourceTree = "<group>"; };
 		112A87191F9D8DF200D4D240 /* out-ndjson.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-ndjson.c"; sourceTree = "<group>"; };
 		113AD3B818208A1900D5E067 /* masscan-status.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "masscan-status.h"; sourceTree = "<group>"; };
 		11420DD219A2D47A00DB5BFE /* proto-vnc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-vnc.c"; sourceTree = "<group>"; };
@@ -240,7 +246,6 @@
 		11A921B717DBCC7E00DDFD32 /* rand-lcg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rand-lcg.h"; sourceTree = "<group>"; };
 		11A921B817DBCC7E00DDFD32 /* rand-primegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rand-primegen.c"; sourceTree = "<group>"; };
 		11A921B917DBCC7E00DDFD32 /* rand-primegen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rand-primegen.h"; sourceTree = "<group>"; };
-		11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-arp.c"; sourceTree = "<group>"; };
 		11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getif.c"; sourceTree = "<group>"; };
 		11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getip.c"; sourceTree = "<group>"; };
 		11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getmac.c"; sourceTree = "<group>"; };
@@ -378,6 +383,9 @@
 		118E114E2585931800618314 /* stack */ = {
 			isa = PBXGroup;
 			children = (
+				1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */,
+				1124DD6E25B4FF3C00EEFC2C /* stack-arpv4.h */,
+				1124DD6C25B4FF3C00EEFC2C /* stack-if.c */,
 				11B6297625995AA100D4786F /* stack-ndpv6.c */,
 				11B6297825995AA100D4786F /* stack-ndpv6.h */,
 				11B6297525995AA100D4786F /* stack-queue.c */,
@@ -421,6 +429,7 @@
 		11A9219217DBCC7E00DDFD32 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				118E114E2585931800618314 /* stack */,
 				112A9A0B258A89FC00D1EEBA /* massip */,
 				118E114F25859CFD00618314 /* util */,
 				114147AC226BD4E1009F9E93 /* stubs */,
@@ -428,7 +437,6 @@
 				11B360CD1F90174B0020F3A3 /* misc */,
 				11B360C71F90166D0020F3A3 /* rawsock */,
 				11B360CC1F90170D0020F3A3 /* crypto */,
-				118E114E2585931800618314 /* stack */,
 				11B360C81F90169F0020F3A3 /* main */,
 				11B360C91F9016AD0020F3A3 /* out */,
 				11B360CB1F9016D80020F3A3 /* pixie */,
@@ -445,7 +453,6 @@
 				11A921C617DBCC7E00DDFD32 /* rawsock.h */,
 				11A921C517DBCC7E00DDFD32 /* rawsock.c */,
 				116806EA1995D421005B0980 /* rawsock-adapter.h */,
-				11A921BC17DBCC7E00DDFD32 /* rawsock-arp.c */,
 				11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */,
 				11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */,
 				11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */,
@@ -488,6 +495,7 @@
 		11B360C91F9016AD0020F3A3 /* out */ = {
 			isa = PBXGroup;
 			children = (
+				1124DD6A25B4FF1600EEFC2C /* out-hostonly.c */,
 				11DD363321067BD300CBE1DE /* out-tcp-services.c */,
 				11DD363221067BD300CBE1DE /* out-tcp-services.h */,
 				112A87191F9D8DF200D4D240 /* out-ndjson.c */,
@@ -748,7 +756,6 @@
 				11A921E817DBCC7E00DDFD32 /* rand-blackrock.c in Sources */,
 				11A921E917DBCC7E00DDFD32 /* rand-lcg.c in Sources */,
 				11A921EA17DBCC7E00DDFD32 /* rand-primegen.c in Sources */,
-				11A921EC17DBCC7E00DDFD32 /* rawsock-arp.c in Sources */,
 				11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */,
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
 				11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */,
@@ -767,6 +774,7 @@
 				11A921F717DBCC7E00DDFD32 /* string_s.c in Sources */,
 				11B6297A25995AA100D4786F /* stack-ndpv6.c in Sources */,
 				11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */,
+				1124DD7025B4FF3C00EEFC2C /* stack-arpv4.c in Sources */,
 				11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */,
 				11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */,
 				11DE129620ABC2650041135D /* proto-smb.c in Sources */,
@@ -794,6 +802,7 @@
 				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
 				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
 				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
+				1124DD6F25B4FF3C00EEFC2C /* stack-if.c in Sources */,
 				11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */,
 				11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */,
 				11B22ED618641DCC00DA5438 /* proto-ssl-test.c in Sources */,
@@ -822,6 +831,7 @@
 				11420DE019A90CB300DB5BFE /* proto-interactive.c in Sources */,
 				11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */,
 				118B9B3425A00FA900F5FB0B /* massip-parse.c in Sources */,
+				1124DD6B25B4FF1600EEFC2C /* out-hostonly.c in Sources */,
 				11DD36382107DE9700CBE1DE /* stub-lua.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

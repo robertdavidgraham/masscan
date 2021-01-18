@@ -109,8 +109,9 @@ struct TemplateSet templ_copy(const struct TemplateSet *templ);
 void
 template_packet_init(
     struct TemplateSet *templset,
-    const unsigned char *source_mac,
-    const unsigned char *router_mac,
+    macaddress_t source_mac,
+    macaddress_t router_mac_ipv4,
+    macaddress_t router_mac_ipv6,
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,

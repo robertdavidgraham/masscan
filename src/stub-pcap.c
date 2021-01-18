@@ -380,16 +380,16 @@ if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
         for (i=0; possible_names[i]; i++) {
             hLibpcap = dlopen(possible_names[i], RTLD_LAZY);
             if (hLibpcap) {
-                LOG(1, "pcap: found library: %s\n", possible_names[i]);
+                LOG(1, "[+] pcap: found library: %s\n", possible_names[i]);
                 break;
             } else {
-                LOG(2, "pcap: failed to load: %s\n", possible_names[i]);
+                LOG(1, "[-] pcap: failed to load: %s\n", possible_names[i]);
             }
         }
      
         if (hLibpcap == NULL) {
-            fprintf(stderr, "pcap: failed to load libpcap shared library\n");
-            fprintf(stderr, "    HINT: you must install libpcap or WinPcap\n");
+            LOG(0, "[-] FAIL: failed to load libpcap shared library\n");
+            LOG(0, "    [hint]: you must install libpcap or WinPcap\n");
         }
     }
     

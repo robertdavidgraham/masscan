@@ -215,6 +215,21 @@ _ipv4_apply_cidr(unsigned *begin, unsigned *end, unsigned bitcount)
     *end = *begin | (unsigned)~mask;
 }
 
+/**
+ * Given an address 'being' and a 'prefix', return the 'begin' and 'end' address of the range.
+ * @param begin
+ *      An in/out parameter. This may have some extra bits somewhere in the range.
+ *      These will be masked off and set to zero when the function returns.
+ * @param end
+ *      An out prameter. This will be set to the last address of the range, meaning
+ *      that all the trailing bits will be set to '1'.
+ * @parame prefix
+ *      The number of bits of the prefix, from [0..128]. If the value is 0,
+ *      then the 'begin' address will be set to all zeroes and the 'end'
+ *      address will be set to all ones. If the value is 128,
+ *      the 'begin' address is unchanged and hte 'end' address
+ *      is set to the same as 'begin'.
+ */
 static void
 _ipv6_apply_cidr(ipv6address *begin, ipv6address *end, unsigned prefix)
 {

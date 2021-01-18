@@ -22,7 +22,7 @@ struct Adapter;
  *      transmission by a transmit thread.
  */
 int stack_arp_incoming_request(struct stack_t *stack,
-        ipv4address my_ip, const unsigned char *my_mac,
+        ipv4address_t my_ip, macaddress_t my_mac,
         const unsigned char *px, unsigned length);
 
 /**
@@ -31,7 +31,7 @@ int stack_arp_incoming_request(struct stack_t *stack,
  * MAC address when given the IPv4 address of the router.
  */
 int stack_arp_resolve(struct Adapter *adapter,
-    ipv4address my_ipv4, const unsigned char *my_mac_address,
-    ipv4address your_ipv4, unsigned char *your_mac_address);
+    ipv4address_t my_ipv4, macaddress_t my_mac_address,
+    ipv4address_t your_ipv4, macaddress_t *your_mac_address);
 
 #endif

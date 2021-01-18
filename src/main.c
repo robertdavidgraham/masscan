@@ -139,8 +139,9 @@ struct ThreadPair {
      */
     struct stack_src_t _src_;
 
-    unsigned char adapter_mac[6];
-    unsigned char router_mac[6];
+    macaddress_t source_mac;
+    macaddress_t router_mac_ipv4;
+    macaddress_t router_mac_ipv6;
 
     unsigned done_transmitting;
     unsigned done_receiving;
@@ -228,7 +229,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
-    LOG(1, "THREAD: xmit: starting thread #%u\n", parms->nic_index);
+    LOG(1, "[+] starting transmit thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
      * that the 'status' system can print the rate of syns we are
@@ -461,7 +462,7 @@ infinite:
     /*
      * Wait until the receive thread realizes the scan is over
      */
-    LOG(1, "THREAD: xmit done, waiting for receive thread to realize this\n");
+    LOG(1, "[+] transmit thread #%u complete\n", parms->nic_index);
 
     /*
      * We are done transmitting. However, response packets will take several
@@ -497,7 +498,7 @@ infinite:
 
     /* Thread is about to exit */
     parms->done_transmitting = 1;
-    LOG(1, "THREAD: xmit: stopping thread #%u\n", parms->nic_index);
+    LOG(1, "[+] exiting transmit thread #%u                    \n", parms->nic_index);
 }
 
 
@@ -562,7 +563,7 @@ receive_thread(void *v)
     *status_tcb_count = 0;
     parms->total_tcbs = status_tcb_count;
 
-    LOG(1, "THREAD: recv: starting thread #%u\n", parms->nic_index);
+    LOG(1, "[+] starting receive thread #%u\n", parms->nic_index);
     
     /* Lock this thread to a CPU. Transmit threads are on even CPUs,
      * receive threads on odd CPUs */
@@ -712,7 +713,7 @@ receive_thread(void *v)
      * Receive packets. This is where we catch any responses and print
      * them to the terminal.
      */
-    LOG(1, "THREAD: recv: starting main loop\n");
+    LOG(2, "[+] THREAD: recv: starting main loop\n");
     while (!is_rx_done) {
         int status;
         unsigned length;
@@ -844,7 +845,7 @@ receive_thread(void *v)
                      * ourself, or the router will lose track of us.*/
                      stack_arp_incoming_request(stack,
                                       ip_me.ipv4,
-                                      parms->adapter_mac,
+                                      parms->source_mac,
                                       px, length);
                     break;
                 case 2: /* response */
@@ -1062,7 +1063,7 @@ receive_thread(void *v)
     }
 
 
-    LOG(1, "THREAD: recv: stopping thread #%u\n", parms->nic_index);
+    LOG(1, "[+] exiting receive thread #%u                    \n", parms->nic_index);
     
     /*
      * cleanup
@@ -1233,8 +1234,9 @@ main_scan(struct Masscan *masscan)
         err = masscan_initialize_adapter(
                             masscan,
                             index,
-                            parms->adapter_mac,
-                            parms->router_mac
+                            &parms->source_mac,
+                            &parms->router_mac_ipv4,
+                            &parms->router_mac_ipv6
                             );
         if (err != 0)
             exit(1);
@@ -1257,8 +1259,9 @@ main_scan(struct Masscan *masscan)
         parms->tmplset->vulncheck = vulncheck;
         template_packet_init(
                     parms->tmplset,
-                    parms->adapter_mac,
-                    parms->router_mac,
+                    parms->source_mac,
+                    parms->router_mac_ipv4,
+                    parms->router_mac_ipv6,
                     masscan->payloads.udp,
                     masscan->payloads.oproto,
                     stack_if_datalink(masscan->nic[index].adapter),
@@ -1274,7 +1277,7 @@ main_scan(struct Masscan *masscan)
             masscan->nic[index].src.port.range = 1;
         }
 
-        stack = stack_create(parms->adapter_mac, &masscan->nic[index].src);
+        stack = stack_create(parms->source_mac, &masscan->nic[index].src);
         parms->stack = stack;
 
         /*
@@ -1292,22 +1295,6 @@ main_scan(struct Masscan *masscan)
          */
         signal(SIGINT, control_c_handler);
 
-
-        
-        /*
-         * Start the scanning thread.
-         * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
-         * RATE OF SPEED.
-         */
-        parms->thread_handle_xmit = pixie_begin_thread(transmit_thread, 0, parms);
-
-
-        /*
-         * Start the MATCHING receive thread. Transmit and receive threads
-         * come in matching pairs.
-         */
-        parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
-
     }
 
     /*
@@ -1320,29 +1307,51 @@ main_scan(struct Masscan *masscan)
         now = time(0);
         gmtime_s(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
-        LOG(0, "\nStarting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n", buffer);
+        LOG(0, "Starting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n",
+            buffer);
 
         if (count_ports == 1 && \
             masscan->targets.ports.list->begin == Templ_ICMP_echo && \
             masscan->targets.ports.list->end == Templ_ICMP_echo)
             { /* ICMP only */
-                LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
+                //LOG(0, " -- forced options: -sn -n --randomize-hosts -v --send-eth\n");
                 LOG(0, "Initiating ICMP Echo Scan\n");
                 LOG(0, "Scanning %u hosts\n",(unsigned)count_ips);
              }
         else /* This could actually also be a UDP only or mixed UDP/TCP/ICMP scan */
             {
-                LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
+                //LOG(0, " -- forced options: -sS -Pn -n --randomize-hosts -v --send-eth\n");
                 LOG(0, "Initiating SYN Stealth Scan\n");
                 LOG(0, "Scanning %u hosts [%u port%s/host]\n",
                     (unsigned)count_ips, (unsigned)count_ports, (count_ports==1)?"":"s");
             }
     }
+    
+    /*
+     * Start all the threads
+     */
+    for (index=0; index<masscan->nic_count; index++) {
+        struct ThreadPair *parms = &parms_array[index];
+        
+        /*
+         * Start the scanning thread.
+         * THIS IS WHERE THE PROGRAM STARTS SPEWING OUT PACKETS AT A HIGH
+         * RATE OF SPEED.
+         */
+        parms->thread_handle_xmit = pixie_begin_thread(transmit_thread, 0, parms);
+
+        /*
+         * Start the MATCHING receive thread. Transmit and receive threads
+         * come in matching pairs.
+         */
+        parms->thread_handle_recv = pixie_begin_thread(receive_thread, 0, parms);
+    }
 
     /*
      * Now wait for <ctrl-c> to be pressed OR for threads to exit
      */
-    LOG(1, "THREAD: status: starting thread\n");
+    pixie_usleep(1000 * 100);
+    LOG(1, "[+] waiting for threads to finish\n");
     status_start(&status);
     status.is_infinite = masscan->is_infinite;
     while (!is_tx_done && masscan->output.is_status_updates) {
@@ -1482,7 +1491,6 @@ main_scan(struct Masscan *masscan)
         break;
     }
 
-    LOG(1, "THREAD: status: stopping thread\n");
 
     /*
      * Now cleanup everything
@@ -1494,6 +1502,9 @@ main_scan(struct Masscan *masscan)
 
         printf("%u milliseconds ellapsed\n", (unsigned)((usec_now - usec_start)/1000));
     }
+    
+    LOG(1, "[+] all threads have exited                    \n");
+
     return 0;
 }
 
