@@ -869,7 +869,7 @@ rawsock_selftest_if(const char *ifname)
     ipv4address_t ipv4 = 0;
     ipv6address_t ipv6;
     ipv4address_t router_ipv4 = 0;
-    macaddress_t source_mac = {0,0,0,0,0,0};
+    macaddress_t source_mac = {{0,0,0,0,0,0}};
     struct Adapter *adapter;
     char ifname2[246];
 
@@ -931,7 +931,7 @@ rawsock_selftest_if(const char *ifname)
 
     /* IPv4 router MAC address */
     {
-        macaddress_t router_mac = {0,0,0,0,0,0};
+        macaddress_t router_mac = {{0,0,0,0,0,0}};
         
         stack_arp_resolve(
                 adapter,
@@ -949,11 +949,13 @@ rawsock_selftest_if(const char *ifname)
     
 
     /*
-     * IPv6 router address.
+     * IPv6 router MAC address.
+     * If it's not configured, then we need to send a (synchronous) query
+     * to the network in order to discover the location of routers on
+     * the local network
      */
     if (!ipv6address_is_zero(ipv6)) {
-        macaddress_t router_mac = {0,0,0,0,0,0};
-        
+        macaddress_t router_mac = {{0,0,0,0,0,0}};
         
         stack_ndpv6_resolve(
                 adapter,

@@ -125,6 +125,10 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
     if (!is_my_ip(stack->src, target_ip))
         return -1;
 
+    LOG(1, "[+] received NDP request from %s for %s\n",
+        ipv6address_fmt(ipv6address_from_bytes(px + offset_ip_src)).string,
+        ipaddress_fmt(target_ip).string);
+
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
@@ -191,6 +195,8 @@ _extract_router_advertisement(
     if (parsed->ip_version != 6)
         return 1;
     
+    *router_ip = parsed->src_ip.ipv6;
+
     if (parsed->ip_protocol != 58)
         return 1;
     offset = parsed->transport_offset;

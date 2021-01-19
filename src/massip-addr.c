@@ -132,7 +132,7 @@ _append_decimal(stream_t *out, unsigned long long n)
 static void
 _append_hex2(stream_t *out, unsigned long long n)
 {
-    static const char hex[16] = "0123456789abcdef";
+    static const char hex[17] = "0123456789abcdef";
     
     _append_char(out, hex[(n>>4)&0xF]);
     _append_char(out, hex[(n>>0)&0xF]);

@@ -170,7 +170,7 @@ print_nmap_help(void)
     printf("Masscan (https://github.com/robertdavidgraham/masscan)\n"
 "Usage: masscan [Options] -p{Target-Ports} {Target-IP-Ranges}\n"
 "TARGET SPECIFICATION:\n"
-"  Can pass only IPv4 address, CIDR networks, or ranges (non-nmap style)\n"
+"  Can pass only IPv4/IPv6 address, CIDR networks, or ranges (non-nmap style)\n"
 "  Ex: 10.0.0.0/8, 192.168.0.1, 10.0.0.1-10.0.0.254\n"
 "  -iL <inputfilename>: Input from list of hosts/networks\n"
 "  --exclude <host1[,host2][,host3],...>: Exclude hosts/networks\n"
