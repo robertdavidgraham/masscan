@@ -17,10 +17,16 @@
 #include <net/if_dl.h>
 #include <ctype.h>
 
-#define ROUNDUP(a)                           \
-((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
-#define ROUNDUPL(a)                           \
-((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+#define ROUNDUP2(a, n)       ((a) > 0 ? (1 + (((a) - 1U) | ((n) - 1))) : (n))
+
+#if defined(__APPLE__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#elif defined(__NetBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(uint64_t))
+#else
+# error unknown platform
+#endif
+
 
 static struct sockaddr *
 get_rt_address(struct rt_msghdr *rtm, int desired)
@@ -33,15 +39,7 @@ get_rt_address(struct rt_msghdr *rtm, int desired)
         if (bitmask & (1 << i)) {
             if ((1<<i) == desired)
                 return sa;
-#ifdef __sun__
-            sa = (struct sockaddr *)(
-                   (char*)sa 
-                   //+ ROUNDUPL(sizeof(struct rt_msghdr)
-                   + ROUNDUPL(sizeof(struct sockaddr_in))
-                   );
-#else
             sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
-#endif
         } else
             ;
     }
@@ -63,13 +61,13 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
      * Requests/responses from the kernel are done with an "rt_msghdr"
      * structure followed by an array of "sockaddr" structures.
      */
-    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
-    rtm = MALLOC(sizeof_buffer);
+    sizeof_buffer = sizeof(*rtm) + 512;
+    rtm = calloc(1, sizeof_buffer);
 
     /*
      * Create a socket for querying the kernel
      */
-    fd = socket(PF_ROUTE, SOCK_RAW, 0);
+    fd = socket(AF_ROUTE, SOCK_RAW, 0);
     if (fd < 0) {
         perror("socket(PF_ROUTE)");
         free(rtm);
@@ -80,17 +78,29 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     /*
      * Format and send request to kernel
      */
-    memset(rtm, 0, sizeof_buffer);
-    rtm->rtm_msglen = sizeof_buffer;
-    rtm->rtm_type = RTM_GET;
-    rtm->rtm_flags = RTF_UP | RTF_GATEWAY;
+    rtm->rtm_msglen = sizeof(*rtm) + sizeof(struct sockaddr_in);
     rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_flags = RTF_UP;
+    rtm->rtm_type = RTM_GET;
+    rtm->rtm_addrs = RTA_DST | RTA_IFP;
+    //rtm->rtm_pid = getpid();
     rtm->rtm_seq = seq;
-    rtm->rtm_addrs = RTA_DST | RTA_NETMASK | RTA_GATEWAY | RTA_IFP;
 
-    err = write(fd, (char *)rtm, sizeof_buffer);
-    if (err != sizeof_buffer) {
-        perror("write(RTM_GET)");
+        /*
+         * Create an empty address
+         */
+        {
+                struct sockaddr_in *sin;
+                sin = (struct sockaddr_in *)(rtm + 1);
+                sin->sin_len = sizeof(*sin);
+                sin->sin_family = AF_INET;
+                sin->sin_addr.s_addr = 0;
+        }
+
+
+    err = write(fd, (char *)rtm, rtm->rtm_msglen);
+    if (err <= 0) {
+        perror("xxxwrite(RTM_GET)");
         printf("----%u %u\n", (unsigned)err, (unsigned)sizeof_buffer);
         close(fd);
         free(rtm);
