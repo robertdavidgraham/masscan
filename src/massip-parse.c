@@ -829,6 +829,7 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     int err;
     bool is_error = false;
     unsigned addr_count = 0;
+    unsigned long long line_number, char_number;
 
     /*
      * Open the file containing IP addresses, which can potentially be
@@ -853,7 +854,6 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     while (!is_error) {
         size_t count;
         size_t offset;
-        unsigned long long line_number, char_number;
 
         count = fread(buf, 1, sizeof(buf), fp);
         if (count <= 0)
@@ -897,20 +897,32 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     fclose(fp);
 
     /* In case the file doesn't end with a newline '\n', then artificially
-     * add one to the end */
+     * add one to the end. This is just a repeat of the code above */
     if (!is_error) {
-        int x;
+        int err;
         size_t offset = 0;
         unsigned begin, end;
-        x = _parser_next(p, "\n", &offset, 1, &begin, &end);
-        if (x < 0) {
-            unsigned long long line_number, char_number;
+        err = _parser_next(p, "\n", &offset, 1, &begin, &end);
+        switch (err) {
+        case Still_Working:
+        case Found_Error:
+        default:
             _parser_err(p, &line_number, &char_number);
-            fprintf(stderr, "%s:%llu:%llu: parse err\n", filename, line_number, char_number);
+            fprintf(stderr, "[-] %s:%llu:%llu: invalid IP address on line #%llu\n", filename, line_number, char_number, line_number);
             is_error = true;
-        } else if (x == 1) {
+            break;
+        case Found_IPv4:
             rangelist_add_range(targets_ipv4, begin, end);
             addr_count++;
+            break;
+        case Found_IPv6:
+            {
+                ipv6address found_begin, found_end;
+                _parser_get_ipv6(p, &found_begin, &found_end);
+                range6list_add_range(targets_ipv6, found_begin, found_end);
+                addr_count++;
+            }
+            break;
         }
     }
 
