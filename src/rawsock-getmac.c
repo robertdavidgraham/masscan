@@ -199,10 +199,11 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
             len = link->sdl_alen;
         }
 
-        LOG(1, "[+] if(%s): family=%u, type=%u\n",
+        LOG(1, "[+] if(%s): family=%u, type=%u, len=%u\n",
                 ifname,
                 link->sdl_family,
-                link->sdl_type);
+                link->sdl_type,
+		len);
 
         memcpy(mac,
                link->sdl_data + link->sdl_nlen,

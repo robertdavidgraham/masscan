@@ -97,12 +97,13 @@ struct ipaddress_formatted ipv6address_fmt(ipv6address a)
     }
 
     /* Call the formatting function */
-    s.buf = out.string;
+    s.buf = out._string;
     s.offset = 0;
-    s.length = sizeof(out.string);
+    s.length = sizeof(out._string);
     _append_ipv6(&s, tmp);
 
     /* Return the static buffer */
+    out.string = &out._string[0];
     return out;
 }
 
@@ -145,9 +146,9 @@ struct ipaddress_formatted ipv4address_fmt(ipv4address ip)
 
 
     /* Call the formatting function */
-    s.buf = out.string;
+    s.buf = out._string;
     s.offset = 0;
-    s.length = sizeof(out.string);
+    s.length = sizeof(out._string);
 
     _append_decimal(&s, (ip >> 24) & 0xFF);
     _append_char(&s, '.');
@@ -158,6 +159,7 @@ struct ipaddress_formatted ipv4address_fmt(ipv4address ip)
     _append_decimal(&s, (ip >> 0) & 0xFF);
 
     /* Return the static buffer */
+    out.string = &out._string[0];
     return out;
 }
 
@@ -168,9 +170,9 @@ struct ipaddress_formatted macaddress_fmt(macaddress_t mac)
 
 
     /* Call the formatting function */
-    s.buf = out.string;
+    s.buf = out._string;
     s.offset = 0;
-    s.length = sizeof(out.string);
+    s.length = sizeof(out._string);
 
     _append_hex2(&s, mac.addr[0]);
     _append_char(&s, '-');
@@ -185,6 +187,7 @@ struct ipaddress_formatted macaddress_fmt(macaddress_t mac)
     _append_hex2(&s, mac.addr[5]);
 
     /* Return the static buffer */
+    out.string = &out._string[0];
     return out;
 }
 
@@ -200,9 +203,9 @@ struct ipaddress_formatted ipaddress_fmt(ipaddress a)
 
 
     /* Call the formatting function */
-    s.buf = out.string;
+    s.buf = out._string;
     s.offset = 0;
-    s.length = sizeof(out.string);
+    s.length = sizeof(out._string);
 
     _append_decimal(&s, (ip >> 24) & 0xFF);
     _append_char(&s, '.');
@@ -213,6 +216,7 @@ struct ipaddress_formatted ipaddress_fmt(ipaddress a)
     _append_decimal(&s, (ip >> 0) & 0xFF);
 
     /* Return the static buffer */
+    out.string = &out._string[0];
     return out;
 }
 

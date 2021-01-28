@@ -140,7 +140,8 @@ static inline int macaddress_is_equal(macaddress_t lhs, macaddress_t rhs)
  * Return a buffer with the formatted address
  */
 struct ipaddress_formatted {
-    char string[48];
+    char *string;
+    char _string[48];
 };
 
 struct ipaddress_formatted ipv6address_fmt(ipv6address a);
