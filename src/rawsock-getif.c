@@ -23,6 +23,8 @@
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
 #elif defined(__NetBSD__)
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(uint64_t))
+#elif defined(__FreeBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
 #else
 # error unknown platform
 #endif
