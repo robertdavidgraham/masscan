@@ -8,6 +8,7 @@
 #include "string_s.h"
 #include "util-malloc.h"
 #include "massip-parse.h"
+#include "logger.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun__)
 #include <unistd.h>
@@ -24,6 +25,8 @@
 #elif defined(__NetBSD__)
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(uint64_t))
 #elif defined(__FreeBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#elif defined(__OpenBSD__)
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
 #else
 # error unknown platform
@@ -108,7 +111,7 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 {
     int fd;
     int seq = (int)time(0);
-    size_t err;
+    ssize_t err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;
 
@@ -130,6 +133,19 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         return errno;
     }
 
+    {
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        err = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_RCVTIMEO: %d %s\n", errno, strerror(errno));
+
+        err = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_SNDTIMEO: %d %s\n", errno, strerror(errno));
+   }
 
     /*
      * Format and send request to kernel
@@ -155,11 +171,8 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 
     err = write(fd, (char *)rtm, rtm->rtm_msglen);
     if (err <= 0) {
-        perror("write(RTM_GET)");
-        printf("----%u %u\n", (unsigned)err, (unsigned)sizeof_buffer);
-        close(fd);
-        free(rtm);
-        return -1;
+        LOG(0, "[-] getroute: write(): returned %d %s\n", errno, strerror(errno));
+        goto fail;
     }
 
     /*
@@ -180,9 +193,7 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         break;
     }
     close(fd);
-
-    //hexdump(rtm+1, err-sizeof(*rtm));
-    //dump_rt_addresses(rtm);
+    fd = -1;
 
     /*
      * Parse our data
@@ -211,6 +222,7 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 
     }
 
+fail:
     free(rtm);
     return -1;
 }

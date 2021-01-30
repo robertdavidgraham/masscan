@@ -25,6 +25,8 @@
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(uint64_t))
 #elif defined(__FreeBSD__)
 # define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#elif defined(__OpenBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
 #else
 # error unknown platform
 #endif
@@ -54,7 +56,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 {
     int fd;
     int seq = (int)time(0);
-    size_t err;
+    ssize_t err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;
 
@@ -75,7 +77,21 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
         free(rtm);
         return errno;
     }
+    LOG(2, "[+] getif: got socket handle\n");
 
+    {
+        struct timeval timeout;      
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        err = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_RCVTIMEO: %d %s\n", errno, strerror(errno));
+
+        err = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_SNDTIMEO: %d %s\n", errno, strerror(errno));
+   }
 
     /*
      * Format and send request to kernel
@@ -85,7 +101,7 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     rtm->rtm_flags = RTF_UP;
     rtm->rtm_type = RTM_GET;
     rtm->rtm_addrs = RTA_DST | RTA_IFP;
-    //rtm->rtm_pid = getpid();
+    rtm->rtm_pid = getpid();
     rtm->rtm_seq = seq;
 
         /*
@@ -100,13 +116,11 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
         }
 
 
+
     err = write(fd, (char *)rtm, rtm->rtm_msglen);
     if (err <= 0) {
-        perror("xxxwrite(RTM_GET)");
-        printf("----%u %u\n", (unsigned)err, (unsigned)sizeof_buffer);
-        close(fd);
-        free(rtm);
-        return -1;
+        LOG(0, "[-] getif: write(): returned %d %s\n", errno, strerror(errno));
+        goto fail;
     }
 
     /*
@@ -114,8 +128,13 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
      */
     for (;;) {
         err = read(fd, (char *)rtm, sizeof_buffer);
-        if (err <= 0)
-            break;
+        if (err <= 0) {
+            LOG(0, "[-] getif: read(): returned %d %s\n", errno, strerror(errno));
+            goto fail;
+        }
+
+        LOG(2, "[+] getif: got response, len=%d\n", err);
+
         if (rtm->rtm_seq != seq) {
             printf("seq: %u %u\n", rtm->rtm_seq, seq);
             continue;
@@ -127,15 +146,12 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
         break;
     }
     close(fd);
-
-    //hexdump(rtm+1, err-sizeof(*rtm));
-    //dump_rt_addresses(rtm);
+    fd = -1;
 
     /*
      * Parse our data
      */
     {
-        //struct sockaddr_in *sin;
         struct sockaddr_dl *sdl;
 
         sdl = (struct sockaddr_dl *)get_rt_address(rtm, RTA_IFP);
@@ -148,17 +164,12 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
             free(rtm);
             return 0;
         }
-
-        /*sin = (struct sockaddr_in *)get_rt_address(rtm, RTA_GATEWAY);
-        if (sin) {
-            *ipv4 = ntohl(sin->sin_addr.s_addr);
-            free(rtm);
-            return 0;
-        }*/
-
     }
 
+fail:
     free(rtm);
+    if (fd > 0)
+	close(fd);
     return -1;
 }
 
