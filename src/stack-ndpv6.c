@@ -125,10 +125,14 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
     if (!is_my_ip(stack->src, target_ip))
         return -1;
 
-    LOG(1, "[+] received NDP request from %s for %s\n",
-        ipv6address_fmt(ipv6address_from_bytes(px + offset_ip_src)).string,
-        ipaddress_fmt(target_ip).string);
-
+    /* Print a log message */
+    {
+        ipv6address_t a = ipv6address_from_bytes(px + offset_ip_src);
+        ipaddress_formatted_t fmt1 = ipv6address_fmt(a);
+        ipaddress_formatted_t fmt2 = ipaddress_fmt(target_ip);
+        LOG(1, "[+] received NDP request from %s for %s\n", fmt1.string, fmt2.string);
+    }
+    
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
@@ -238,6 +242,7 @@ _extract_router_advertisement(
             {
                 unsigned prefix_len;
                 ipv6address prefix;
+                ipaddress_formatted_t fmt;
                 
                 prefix_len = _read_byte(buf2, &off2, len2);
                 _read_byte(buf2, &off2, len2); /* flags */
@@ -246,16 +251,16 @@ _extract_router_advertisement(
                 _read_number(buf2, &off2, len2); /* reserved */
                 prefix = _read_ipv6(buf2, &off2, len2);
                 
-                LOG(1, "[+] IPv6.prefix = %s/%u\n",
-                    ipv6address_fmt(prefix).string,
-                    prefix_len);
+                fmt = ipv6address_fmt(prefix);
+                LOG(1, "[+] IPv6.prefix = %s/%u\n", fmt.string, prefix_len);
                 if (ipv6address_is_equal_prefixed(my_ipv6, prefix, prefix_len)) {
                     is_same_prefix = 1;
                 } else {
+                    ipaddress_formatted_t fmt1 = ipv6address_fmt(my_ipv6);
+                    ipaddress_formatted_t fmt2 = ipv6address_fmt(prefix);
+                    
                     LOG(0, "[-] WARNING: our source-ip is %s, but router prefix announces %s/%u\n",
-                                        ipv6address_fmt(my_ipv6).string,
-                                        ipv6address_fmt(prefix).string,
-                                        prefix_len);
+                            fmt1.string, fmt2.string, prefix_len);
                     is_same_prefix = 0;
                 }
 
@@ -267,7 +272,8 @@ _extract_router_advertisement(
                 
                 while (off2 + 16 <= len2) {
                     ipv6address resolver = _read_ipv6(buf2, &off2, len2);
-                    LOG(1, "[+] IPv6.DNS = %s\n", ipv6address_fmt(resolver).string);
+                    ipaddress_formatted_t fmt = ipv6address_fmt(resolver);
+                    LOG(1, "[+] IPv6.DNS = %s\n", fmt.string);
                 }
                 break;
             case 1:

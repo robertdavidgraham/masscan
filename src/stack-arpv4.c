@@ -189,7 +189,8 @@ stack_arp_resolve(struct Adapter *adapter,
 
             /* It's taking too long, so notify the user */
             if (!is_delay_reported) {
-                LOG(0, "[+] resolving router %s with ARP (may take some time)...\n", ipv4address_fmt(your_ipv4).string);
+                ipaddress_formatted_t fmt = ipv4address_fmt(your_ipv4);
+                LOG(0, "[+] resolving router %s with ARP (may take some time)...\n", fmt.string);
                 is_delay_reported = 1;
             }
         }
@@ -197,7 +198,8 @@ stack_arp_resolve(struct Adapter *adapter,
         /* If we aren't getting a response back to our ARP, then print a
          * status message */
         if (time(0) > start+1 && !is_arp_notice_given) {
-            LOG(0, "[+] arping local router %s\n", ipv4address_fmt(your_ipv4).string);
+            ipaddress_formatted_t fmt = ipv4address_fmt(your_ipv4);
+            LOG(0, "[+] arping local router %s\n", fmt.string);
             is_arp_notice_given = 1;
         }
 
@@ -247,9 +249,9 @@ stack_arp_resolve(struct Adapter *adapter,
 
         /* Is this the droid we are looking for? */
         if (response.ip_src != your_ipv4) {
-            LOG(2, "[-] arp: target=%s, not desired %s\n",
-                ipv4address_fmt(response.ip_src).string,
-                ipv4address_fmt(your_ipv4).string);
+            ipaddress_formatted_t fmt1 = ipv4address_fmt(response.ip_src);
+            ipaddress_formatted_t fmt2 = ipv4address_fmt(your_ipv4);
+            LOG(2, "[-] arp: target=%s, not desired %s\n", fmt1.string, fmt2.string);
             continue;
         }
 
@@ -259,9 +261,11 @@ stack_arp_resolve(struct Adapter *adapter,
          *  return.
          */
         memcpy(your_mac_address->addr, response.mac_src, 6);
-        LOG(1, "[+] arp: %s == %s\n",
-                ipv4address_fmt(response.ip_src).string,
-                macaddress_fmt(*your_mac_address).string);
+        {
+            ipaddress_formatted_t fmt1 = ipv4address_fmt(response.ip_src);
+            ipaddress_formatted_t fmt2 = macaddress_fmt(*your_mac_address);
+            LOG(1, "[+] arp: %s == %s\n", fmt1.string, fmt2.string);
+        }
         return 0;
     }
 

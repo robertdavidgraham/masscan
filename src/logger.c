@@ -51,8 +51,9 @@ vLOGip(int level, ipaddress ip, unsigned port, const char *fmt, va_list marker)
 {
     if (level <= global_debug_level) {
         char sz_ip[64];
+        ipaddress_formatted_t fmt1 = ipaddress_fmt(ip);
 
-        sprintf_s(sz_ip, sizeof(sz_ip), "%s", ipaddress_fmt(ip).string);
+        sprintf_s(sz_ip, sizeof(sz_ip), "%s", fmt1.string);
         fprintf(stderr, "%-15s:%5u: ", sz_ip, port);
         vfprintf(stderr, fmt, marker);
         fflush(stderr);

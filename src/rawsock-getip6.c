@@ -72,7 +72,6 @@ rawsock_get_adapter_ipv6(const char *ifname)
 
         result = addr;
         break;
-        //printf(" %s 0x%x\n", ipv6address_fmt(result).string, ifa->ifa_flags);
     }
 
     freeifaddrs(list);
@@ -246,7 +245,6 @@ rawsock_get_adapter_ipv6(const char *ifname)
 
         result = addr;
         break;
-        //printf(" %s 0x%x\n", ipv6address_fmt(result).string, ifa->ifa_flags);
     }
 
     freeifaddrs(list);

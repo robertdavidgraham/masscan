@@ -30,6 +30,7 @@ static void
 text_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(ttl);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
@@ -39,7 +40,7 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
         status_string(status),
         name_from_ip_proto(ip_proto),
         port,
-        ipaddress_fmt(ip).string,
+        fmt.string,
         (unsigned)timestamp
         );
 }
@@ -54,6 +55,7 @@ text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
 
     UNUSEDPARM(out);
@@ -63,7 +65,7 @@ text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         "banner",
         name_from_ip_proto(ip_proto),
         port,
-        ipaddress_fmt(ip).string,
+        fmt.string,
         (unsigned)timestamp,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))

@@ -899,12 +899,12 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     /* In case the file doesn't end with a newline '\n', then artificially
      * add one to the end. This is just a repeat of the code above */
     if (!is_error) {
-        int err;
         size_t offset = 0;
         unsigned begin, end;
         err = _parser_next(p, "\n", &offset, 1, &begin, &end);
         switch (err) {
         case Still_Working:
+                break;
         case Found_Error:
         default:
             _parser_err(p, &line_number, &char_number);
@@ -1181,15 +1181,15 @@ rangefile6_test_buffer(struct massip_parser *parser,
     
         /* Test to see if the parsed address equals the expected address */
         if (!ipv6address_is_equal(found_begin, expected_begin)) {
-            fprintf(stderr, "[-] begin mismatch: found=[%s], expected=[%s]\n",
-                ipv6address_fmt(found_begin).string,
-                ipv6address_fmt(expected_begin).string);
+            ipaddress_formatted_t fmt1 = ipv6address_fmt(found_begin);
+            ipaddress_formatted_t fmt2 = ipv6address_fmt(expected_begin);
+            fprintf(stderr, "[-] begin mismatch: found=[%s], expected=[%s]\n", fmt1.string, fmt2.string);
             goto fail;
         }
         if (!ipv6address_is_equal(found_end, expected_end)) {
-            fprintf(stderr, "[-] end mismatch: found=[%s], expected=[%s]\n",
-                ipv6address_fmt(found_end).string,
-                ipv6address_fmt(expected_end).string);
+            ipaddress_formatted_t fmt1 = ipv6address_fmt(found_end);
+            ipaddress_formatted_t fmt2 = ipv6address_fmt(expected_end);
+            fprintf(stderr, "[-] end mismatch: found=[%s], expected=[%s]\n", fmt1.string, fmt2.string);
             goto fail;
         }
         break;

@@ -380,11 +380,11 @@ dedup_selftest(void)
             goto fail;
         }
         if (!dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
+            ipaddress_formatted_t fmt1 = ipaddress_fmt(ip_them);
+            ipaddress_formatted_t fmt2 = ipaddress_fmt(ip_me);
             fprintf(stderr, "[-] [%s]:%u -> [%s]:%u\n", 
-			    ipaddress_fmt(ip_them).string,
-			    port_them,
-			    ipaddress_fmt(ip_me).string,
-			    port_me);
+			    fmt1.string, port_them,
+			    fmt2.string, port_me);
             line = __LINE__;
             goto fail;
         }

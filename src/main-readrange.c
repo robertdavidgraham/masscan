@@ -81,13 +81,15 @@ main_readrange(struct Masscan *masscan)
 
     for (i=0; i<list6->count; i++) {
         struct Range6 range = list6->list[i];
-        fprintf(fp, "%s", ipv6address_fmt(range.begin).string);
+        ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
+        fprintf(fp, "%s", fmt.string);
         if (!ipv6address_is_equal(range.begin, range.end)) {
             unsigned cidr_bits = count_cidr6_bits(range);
             if (cidr_bits) {
                 fprintf(fp, "/%u", cidr_bits);
             } else {
-                fprintf(fp, "-%s", ipv6address_fmt(range.end).string);
+                fmt = ipv6address_fmt(range.end);
+                fprintf(fp, "-%s", fmt.string);
             }
         }
         fprintf(fp, "\n");

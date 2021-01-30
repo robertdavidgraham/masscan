@@ -32,6 +32,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
+    ipaddress_formatted_t fmt;
     UNUSEDPARM(out);
     //UNUSEDPARM(timestamp);
 
@@ -44,7 +45,8 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
         out->is_first_record_seen = 1;
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"ip\": \"%s\", ", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "  \"ip\": \"%s\", ", fmt.string);
     fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"status\": \"%s\","
                 " \"reason\": \"%s\", \"ttl\": %u} ] ",
                 (int) timestamp,
@@ -104,6 +106,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                const unsigned char *px, unsigned length)
 {
     char banner_buffer[65536];
+    ipaddress_formatted_t fmt;
 
     UNUSEDPARM(ttl);
 
@@ -116,7 +119,8 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         out->is_first_record_seen = 1;
     
     fprintf(fp, "{ ");
-    fprintf(fp, "  \"ip\": \"%s\", ", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "  \"ip\": \"%s\", ", fmt.string);
     fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
             (int) timestamp,
             port,

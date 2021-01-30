@@ -932,9 +932,9 @@ receive_thread(void *v)
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (cookie != seqno_me - 1) {
+                    ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
                     LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                        ipaddress_fmt(ip_them).string,
-                        seqno_me-1, cookie);
+                        fmt.string, seqno_me-1, cookie);
                     continue;
                 }
 
@@ -979,12 +979,14 @@ receive_thread(void *v)
                         0, 0, secs, usecs, seqno_them);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
+                ipaddress_formatted_t fmt;
                 /*
                  * NO TCB!
                  *  This happens when we've sent a FIN, deleted our connection,
                  *  but the other side didn't get the packet.
                  */
-                LOG(4, "%s: received FIN but no TCB\n", ipaddress_fmt(ip_them).string);
+                fmt = ipaddress_fmt(ip_them);
+                LOG(4, "%s: received FIN but no TCB\n", fmt.string);
                 if (TCP_IS_RST(px, parsed.transport_offset))
                     ; /* ignore if it's own TCP flag is set */
                 else {
@@ -1018,8 +1020,9 @@ receive_thread(void *v)
 
             /* verify: syn-cookies */
             if (cookie != seqno_me - 1) {
+                ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
                 LOG(5, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                    ipaddress_fmt(ip_them).string, seqno_me-1, cookie);
+                    fmt.string, seqno_me-1, cookie);
                 continue;
             }
 

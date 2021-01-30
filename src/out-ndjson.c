@@ -32,10 +32,12 @@ ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                  ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
+    ipaddress_formatted_t fmt;
     UNUSEDPARM(out);
 
     fprintf(fp, "{");
-    fprintf(fp, "\"ip\":\"%s\",", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\"ip\":\"%s\",", fmt.string);
     fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"status\",\"data\":{\"status\":\"%s\","
                 "\"reason\":\"%s\",\"ttl\":%u}",
                 (int) timestamp,
@@ -100,12 +102,14 @@ ndjson_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                  const unsigned char *px, unsigned length)
 {
     char banner_buffer[65536];
+    ipaddress_formatted_t fmt;
 
     UNUSEDPARM(ttl);
     //UNUSEDPARM(timestamp);
 
     fprintf(fp, "{");
-    fprintf(fp, "\"ip\":\"%s\",", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\"ip\":\"%s\",", fmt.string);
     fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"banner\",\"data\":{\"service_name\":\"%s\",\"banner\":\"%s\"}",
             (int) timestamp,
             port,

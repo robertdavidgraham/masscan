@@ -141,6 +141,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     const char *service;
+    ipaddress_formatted_t fmt;
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(reason);
@@ -155,7 +156,8 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     
     fprintf(fp, "Timestamp: %lu", timestamp);
 
-    fprintf(fp, "\tHost: %s ()", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\tHost: %s ()", fmt.string);
     fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"
@@ -180,13 +182,15 @@ grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
-
+    ipaddress_formatted_t fmt;
+    
     UNUSEDPARM(ttl);
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(ip_proto);
     
-    fprintf(fp, "Host: %s ()", ipaddress_fmt(ip).string);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "Host: %s ()", fmt.string);
     fprintf(fp, "\tPort: %u", port);
 
     fprintf(fp, "\tService: %s", masscan_app_to_string(proto));

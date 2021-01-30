@@ -30,7 +30,7 @@ masscan_initialize_adapter(
     unsigned adapter_ip = 0;
     unsigned is_usable_ipv4 = !massip_has_ipv4_targets(&masscan->targets); /* I don't understand this line, seems opposite */
     unsigned is_usable_ipv6 = !massip_has_ipv6_targets(&masscan->targets); /* I don't understand this line, seems opposite */
-
+    ipaddress_formatted_t fmt;
 
     /*
      * ADAPTER/NETWORK-INTERFACE
@@ -77,7 +77,9 @@ masscan_initialize_adapter(
             return -1;
         }
     }
-    LOG(1, "[+] if(%s): source-mac = %s\n", ifname, macaddress_fmt(*source_mac).string);
+    
+    fmt = macaddress_fmt(*source_mac);
+    LOG(1, "[+] if(%s): source-mac = %s\n", ifname, fmt.string);
 
     /*
      * START ADAPTER
@@ -128,7 +130,10 @@ masscan_initialize_adapter(
                 return -1;
             }
         }
-        LOG(1, "[+] source-ip = %s\n", ipv4address_fmt(adapter_ip).string);
+        
+        fmt = ipv4address_fmt(adapter_ip);
+        LOG(1, "[+] source-ip = %s\n", fmt.string);
+        
         if (adapter_ip != 0)
             is_usable_ipv4 = 1;
         
@@ -155,7 +160,8 @@ masscan_initialize_adapter(
             if (router_ipv4 == 0)
                 err = rawsock_get_default_gateway(ifname, &router_ipv4);
             if (err == 0) {
-                LOG(1, "[+] router-ip = %s\n", ipv4address_fmt(router_ipv4).string);
+                fmt = ipv4address_fmt(router_ipv4);
+                LOG(1, "[+] router-ip = %s\n", fmt.string);
                 LOG(2, "[+] if(%s):arp: resolving IPv4 address\n", ifname);
                 
                 stack_arp_resolve(
@@ -166,9 +172,12 @@ masscan_initialize_adapter(
                         router_mac_ipv4);
             }
         }
-        LOG(1, "[+] router-mac-ipv4 = %s\n", macaddress_fmt(*router_mac_ipv4).string);
+        
+        fmt = macaddress_fmt(*router_mac_ipv4);
+        LOG(1, "[+] router-mac-ipv4 = %s\n", fmt.string);
         if (macaddress_is_zero(*router_mac_ipv4)) {
-            LOG(0, "[-] FAIL: ARP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, ipv4address_fmt(masscan->nic[index].router_ip).string);
+            fmt = ipv4address_fmt(masscan->nic[index].router_ip);
+            LOG(0, "[-] FAIL: ARP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, fmt.string);
             LOG(0, "    [hint] try \"--router ip 192.0.2.1\" to specify different router\n");
             LOG(0, "    [hint] try \"--router-mac 66-55-44-33-22-11\" instead to bypass ARP\n");
             LOG(0, "    [hint] try \"--interface eth0\" to change interface\n");
@@ -201,7 +210,8 @@ masscan_initialize_adapter(
                             "\"--souce-ip 2001:3b8::1234\"\n");
             return -1;
         }
-        LOG(1, "[+] source-ip = [%s]\n", ipv6address_fmt(adapter_ipv6).string);
+        fmt = ipv6address_fmt(adapter_ipv6);
+        LOG(1, "[+] source-ip = [%s]\n", fmt.string);
         is_usable_ipv6 = 1;
         
         /*
@@ -221,9 +231,12 @@ masscan_initialize_adapter(
                     *source_mac,
                     router_mac_ipv6);
         }
-        LOG(1, "[+] router-mac-ipv6 = %s\n", macaddress_fmt(*router_mac_ipv6).string);
+        
+        fmt = macaddress_fmt(*router_mac_ipv6);
+        LOG(1, "[+] router-mac-ipv6 = %s\n", fmt.string);
         if (macaddress_is_zero(*router_mac_ipv6)) {
-            LOG(0, "[-] FAIL: NDP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, ipv4address_fmt(masscan->nic[index].router_ip).string);
+            fmt = ipv4address_fmt(masscan->nic[index].router_ip);
+            LOG(0, "[-] FAIL: NDP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, fmt.string);
             LOG(0, "    [hint] try \"--router-mac-ipv6 66-55-44-33-22-11\" instead to bypass ARP\n");
             LOG(0, "    [hint] try \"--interface eth0\" to change interface\n");
             return -1;

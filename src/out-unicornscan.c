@@ -28,20 +28,21 @@ static void
 unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
     UNUSEDPARM(timestamp);
 
     if (ip_proto == 6) {
-      fprintf(fp,"TCP %s\t%16s[%5d]\t\tfrom %s  ttl %-3d\n",
+        fprintf(fp,"TCP %s\t%16s[%5d]\t\tfrom %s  ttl %-3d\n",
               status_string(status),
               tcp_service_name(port),
               port,
-              ipaddress_fmt(ip).string,
+              fmt.string,
               ttl);
     } else {
         /* unicornscan is TCP only, so just use grepable format for other protocols */
-        fprintf(fp, "Host: %s ()", ipaddress_fmt(ip).string);
+        fprintf(fp, "Host: %s ()", fmt.string);
         fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"

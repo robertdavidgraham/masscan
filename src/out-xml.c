@@ -67,6 +67,8 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
+    
     UNUSEDPARM(out);
     fprintf(fp, "<host endtime=\"%u\">"
                     "<address addr=\"%s\" addrtype=\"ipv4\"/>"
@@ -78,7 +80,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
-        ipaddress_fmt(ip).string,
+        fmt.string,
         name_from_ip_proto(ip_proto),
         port,
         status_string(status),
@@ -98,6 +100,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
 {
     char banner_buffer[4096];
     const char *reason;
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     switch (proto) {
     case 6: reason = "syn-ack"; break;
@@ -117,7 +120,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
-        ipaddress_fmt(ip).string,
+        fmt.string,
         name_from_ip_proto(ip_proto),
         port,
         reason, ttl,

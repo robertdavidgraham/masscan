@@ -193,7 +193,6 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         break;
     }
     close(fd);
-    fd = -1;
 
     /*
      * Parse our data

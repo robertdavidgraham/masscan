@@ -716,6 +716,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 {
     FILE *fp = out->fp;
     time_t now = time(0);
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     global_now = now;
 
@@ -737,7 +738,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        ipaddress_fmt(ip).string,
+                        fmt.string,
                         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
                         oui_from_mac(mac)
                         );
@@ -747,7 +748,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        ipaddress_fmt(ip).string
+                        fmt.string
                         );
         }
 
@@ -852,6 +853,7 @@ output_report_banner(struct Output *out, time_t now,
                 const unsigned char *px, unsigned length)
 {
     FILE *fp = out->fp;
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     /* If we aren't doing banners, then don't do anything. That's because
      * when doing UDP scans, we'll still get banner information from
@@ -868,7 +870,7 @@ output_report_banner(struct Output *out, time_t now,
         count = fprintf(stdout, "Banner on port %u/%s on %s: [%s] %s",
             port,
             name_from_ip_proto(ip_proto),
-            ipaddress_fmt(ip).string,
+            fmt.string,
             masscan_app_to_string(proto),
             normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );

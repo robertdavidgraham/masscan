@@ -51,13 +51,15 @@ infinite:
              */
             printf("%u,%u\n",(addr.ipv4>>8)&0xFF, (addr.ipv4>>0)&0xFF);
         } else if (masscan->targets.count_ports == 1) {
+            ipaddress_formatted_t fmt = ipaddress_fmt(addr);
             /* This is the normal case */
-            printf("%s\n", ipaddress_fmt(addr).string);
+            printf("%s\n", fmt.string);
         } else {
+            ipaddress_formatted_t fmt = ipaddress_fmt(addr);
             if (addr.version == 6)
-                printf("[%s]:%u\n", ipaddress_fmt(addr).string, port);
+                printf("[%s]:%u\n", fmt.string, port);
             else
-                printf("%s:%u\n", ipaddress_fmt(addr).string, port);
+                printf("%s:%u\n", fmt.string, port);
         }
 
         i += increment; /* <------ increment by 1 normally, more with shards/nics */

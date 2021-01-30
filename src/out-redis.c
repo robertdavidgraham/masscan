@@ -208,8 +208,9 @@ redis_out_status(struct Output *out, FILE *fp, time_t timestamp,
     size_t count;
     char values[64];
     int values_length;
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
-    ip_string_length = sprintf_s(ip_string, sizeof(ip_string), "%s", ipaddress_fmt(ip).string);
+    ip_string_length = sprintf_s(ip_string, sizeof(ip_string), "%s", fmt.string);
     port_string_length = sprintf_s(port_string, sizeof(port_string), "%u/%s", port, name_from_ip_proto(ip_proto));
 
 /**3

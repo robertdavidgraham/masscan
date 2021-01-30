@@ -872,6 +872,7 @@ rawsock_selftest_if(const char *ifname)
     macaddress_t source_mac = {{0,0,0,0,0,0}};
     struct Adapter *adapter;
     char ifname2[246];
+    ipaddress_formatted_t fmt;
 
     /*
      * Get the interface
@@ -902,15 +903,17 @@ rawsock_selftest_if(const char *ifname)
     if (ipv4 == 0) {
         printf("[-] source-ipv4 = not found (err)\n");
     } else {
-        printf("[+] source-ipv4 = %s\n", ipv4address_fmt(ipv4).string);
+        fmt = ipv4address_fmt(ipv4);
+        printf("[+] source-ipv4 = %s\n", fmt.string);
     }
 
     /* IPv6 address */
     ipv6 = rawsock_get_adapter_ipv6(ifname);
     if (ipv6address_is_zero(ipv6)) {
-       printf("[-] source-ipv6 = not found\n");
+        printf("[-] source-ipv6 = not found\n");
     } else {
-       printf("[+] source-ipv6 = [%s]\n", ipv6address_fmt(ipv6).string);
+        fmt = ipv6address_fmt(ipv6);
+        printf("[+] source-ipv6 = [%s]\n", fmt.string);
     }
 
     /* MAC address */
@@ -918,7 +921,8 @@ rawsock_selftest_if(const char *ifname)
     if (err) {
         printf("[-] source-mac = not found (err=%d)\n", err);
     } else {
-        printf("[+] source-mac = %s\n", macaddress_fmt(source_mac).string);
+        fmt = macaddress_fmt(source_mac);
+        printf("[+] source-mac = %s\n", fmt.string);
     }
 
     /* IPv4 router IP address */
@@ -926,7 +930,8 @@ rawsock_selftest_if(const char *ifname)
     if (err) {
         fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
     } else {
-        printf("[+] router-ip = %s\n",ipv4address_fmt(router_ipv4).string);
+        fmt = ipv4address_fmt(router_ipv4);
+        printf("[+] router-ip = %s\n", fmt.string);
     }
 
     /* IPv4 router MAC address */
@@ -943,7 +948,8 @@ rawsock_selftest_if(const char *ifname)
         if (macaddress_is_zero(router_mac)) {
             printf("[-] router-mac-ipv4 = not found\n");
         } else {
-            printf("[+] router-mac-ipv4 = %s\n", macaddress_fmt(router_mac).string);
+            fmt = macaddress_fmt(router_mac);
+            printf("[+] router-mac-ipv4 = %s\n", fmt.string);
         }
     }
     
@@ -966,7 +972,8 @@ rawsock_selftest_if(const char *ifname)
         if (macaddress_is_zero(router_mac)) {
             printf("[-] router-mac-ipv6 = not found\n");
         } else {
-            printf("[+] router-mac-ipv6 = %s\n", macaddress_fmt(router_mac).string);
+            fmt = macaddress_fmt(router_mac);
+            printf("[+] router-mac-ipv6 = %s\n", fmt.string);
         }
     }
 

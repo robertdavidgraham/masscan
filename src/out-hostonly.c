@@ -28,6 +28,7 @@ static void
 hostonly_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
     UNUSEDPARM(timestamp);
@@ -35,7 +36,7 @@ hostonly_out_status(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(port);
     UNUSEDPARM(ip_proto);
     UNUSEDPARM(status);
-    fprintf(fp, "%s\n", ipaddress_fmt(ip).string);
+    fprintf(fp, "%s\n", fmt.string);
 }
 
 
@@ -47,6 +48,7 @@ hostonly_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         enum ApplicationProtocol proto, unsigned ttl,
         const unsigned char *px, unsigned length)
 { /* SYN only - no banner */
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(out);
     UNUSEDPARM(ttl);
     UNUSEDPARM(port);
@@ -57,7 +59,7 @@ hostonly_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(proto);
     UNUSEDPARM(px);
     UNUSEDPARM(length);
-    fprintf(fp, "%s\n", ipaddress_fmt(ip).string);
+    fprintf(fp, "%s\n", fmt.string);
 
     return;
 } 

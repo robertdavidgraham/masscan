@@ -594,11 +594,12 @@ tcpcon_destroy_tcb(
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
+    ipaddress_formatted_t fmt;
     
     UNUSEDPARM(reason);
 
-    LOG(1, "%s %u - closing\n",
-            ipaddress_fmt(tcb->ip_them).string, tcb->port_them);
+    fmt = ipaddress_fmt(tcb->ip_them);
+    LOG(1, "%s %u - closing\n", fmt.string, tcb->port_them);
 
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
@@ -784,6 +785,8 @@ tcb_lookup(
     unsigned index;
     struct TCP_Control_Block tmp;
     struct TCP_Control_Block *tcb;
+    ipaddress_formatted_t fmt1;
+    ipaddress_formatted_t fmt2;
 
     tmp.ip_me = ip_me;
     tmp.ip_them = ip_them;
@@ -792,10 +795,12 @@ tcb_lookup(
 
     index = tcb_hash(ip_me, port_me, ip_them, port_them, tcpcon->entropy);
 
+    fmt1 = ipaddress_fmt(ip_me);
+    fmt2 = ipaddress_fmt(ip_them);
     LOG(1, "tcb_hash(0x%08x) = %s %u %s %u\n", 
         (unsigned)index,
-        ipaddress_fmt(ip_me).string, port_me,
-        ipaddress_fmt(ip_them).string, port_them);
+        fmt1.string, port_me,
+        fmt2.string, port_them);
 
     /* Hash to an entry in the table, then follow a linked list from
      * that point forward. */
@@ -1080,11 +1085,11 @@ handle_ack(
     uint32_t ackno)
 {
 
-    LOG(4,  "%s - %u-sending, %u-reciving\n",
-            ipaddress_fmt(tcb->ip_them).string,
+    /*LOG(4,  "%s - %u-sending, %u-reciving\n",
+            fmt.string,
             tcb->seqno_me - ackno,
             ackno - tcb->ackno_them
-            );
+            );*/
 
     /* Normal: just discard repeats */
     if (ackno == tcb->ackno_them) {
@@ -1094,10 +1099,11 @@ handle_ack(
     /* Make sure this isn't a duplicate ACK from past
      * WRAPPING of 32-bit arithmetic happens here */
     if (ackno - tcb->ackno_them > 10000) {
+        ipaddress_formatted_t fmt = ipaddress_fmt(tcb->ip_them);
         LOG(4,  "%s - "
                 "tcb: ackno from past: "
                 "old ackno = 0x%08x, this ackno = 0x%08x\n",
-                ipaddress_fmt(tcb->ip_them).string,
+                fmt.string,
                 tcb->ackno_me, ackno);
         return 0;
     }
@@ -1105,10 +1111,11 @@ handle_ack(
     /* Make sure this isn't invalid ACK from the future
      * WRAPPING of 32-bit arithmatic happens here */
     if (tcb->seqno_me - ackno > 10000) {
+        ipaddress_formatted_t fmt = ipaddress_fmt(tcb->ip_them);
         LOG(4, "%s - "
                 "tcb: ackno from future: "
                 "my seqno = 0x%08x, their ackno = 0x%08x\n",
-                ipaddress_fmt(tcb->ip_them).string,
+                fmt.string,
                 tcb->seqno_me, ackno);
         return 0;
     }
