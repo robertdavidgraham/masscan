@@ -20,6 +20,7 @@
 #include "vulncheck.h"
 #include "util-checksum.h"
 #include "util-malloc.h"
+#include "stub-pcap-dlt.h" /* data link types, like NULL, RAW, or ETHERNET */
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -1104,7 +1105,7 @@ template_set_target_ipv4(
  * the IPv4 header with the IPv6 header.
  ***************************************************************************/
 static void
-_template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, unsigned data_link)
+_template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, unsigned data_link_type)
 {
     struct PreprocessedInfo parsed;
     unsigned x;
@@ -1121,7 +1122,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
     }
 
     /* Parse the existing IPv4 packet */
-    x = preprocess_frame(tmpl->ipv4.packet, tmpl->ipv4.length, data_link, &parsed);
+    x = preprocess_frame(tmpl->ipv4.packet, tmpl->ipv4.length, data_link_type, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
         LOG(0, "ERROR: bad packet template\n");
         exit(1);
@@ -1152,12 +1153,14 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
     memset(buf + offset_ip, 0, 40);
     tmpl->ipv6.length = offset_ip + 40 + payload_length;
     
-    switch (data_link) {
-        case 0: /* Null VPN tunnel */
+    switch (data_link_type) {
+        case PCAP_DLT_NULL: /* Null VPN tunnel */
             /* FIXME: insert platform dependent value here */
             *(int*)buf = AF_INET6;
             break;
-        case 1: /* Etherent */
+	case PCAP_DLT_RAW: /* Raw (nothing before IP header) */
+	    break;
+        case PCAP_DLT_ETHERNET: /* Etherent */
             /* Reset the destination MAC address to be the IPv6 router
              * instead of the IPv4 router, which sometimes are different */
             memcpy(buf + 0, router_mac_ipv6.addr, 6);
@@ -1194,9 +1197,9 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
     buf[offset_ip + 7] = 0xFF;
 
     /* Parse our newly construct IPv6 packet */
-    x = preprocess_frame(buf, tmpl->ipv6.length, data_link, &parsed);
+    x = preprocess_frame(buf, tmpl->ipv6.length, data_link_type, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
-        LOG(0, "ERROR: bad packet template\n");
+        LOG(0, "[-] FAILED: bad packet template\n");
         exit(1);
     }
     tmpl->ipv6.offset_ip = parsed.ip_offset;
@@ -1218,7 +1221,7 @@ _template_init(
     macaddress_t router_mac_ipv6,
     const void *packet_bytes,
     size_t packet_size,
-    unsigned data_link
+    unsigned data_link_type
     )
 {
     unsigned char *px;
@@ -1334,7 +1337,7 @@ _template_init(
      * the correct way to do this, but I'm too lazy to refactor code
      * for the right way, so we'll do it this way now.
      */
-    if (data_link == 0 /* Null VPN tunnel */) {
+    if (data_link_type == PCAP_DLT_NULL /* Null VPN tunnel */) {
         int linkproto = 2; /* AF_INET */
         tmpl->ipv4.length -= tmpl->ipv4.offset_ip - sizeof(int);
         tmpl->ipv4.offset_tcp -= tmpl->ipv4.offset_ip - sizeof(int);
@@ -1344,7 +1347,7 @@ _template_init(
                 tmpl->ipv4.length);
         tmpl->ipv4.offset_ip = 4;
         memcpy(tmpl->ipv4.packet, &linkproto, sizeof(int));
-    } else if (data_link == 12 /* Raw IP */) {
+    } else if (data_link_type == PCAP_DLT_RAW /* Raw IP */) {
         tmpl->ipv4.length -= tmpl->ipv4.offset_ip;
         tmpl->ipv4.offset_tcp -= tmpl->ipv4.offset_ip;
         tmpl->ipv4.offset_app -= tmpl->ipv4.offset_ip;
@@ -1352,11 +1355,16 @@ _template_init(
                 tmpl->ipv4.packet + tmpl->ipv4.offset_ip,
                 tmpl->ipv4.length);
         tmpl->ipv4.offset_ip = 0;
+    } else if (data_link_type == PCAP_DLT_ETHERNET) {
+	/* the default, do nothing */
+    } else {
+	LOG(0, "[-] FAILED: bad packet template, unknown data link type\n");
+        LOG(0, "    [hint] masscan doesn't know how to format packets for this interface\n");
+	exit(1);
     }
 
     /* Now create an IPv6 template based upon the IPv4 template */
-    _template_init_ipv6(tmpl, router_mac_ipv6, data_link);
-
+    _template_init_ipv6(tmpl, router_mac_ipv6, data_link_type);
 }
 
 /***************************************************************************

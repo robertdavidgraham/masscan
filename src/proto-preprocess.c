@@ -531,7 +531,12 @@ parse_linktype:
             }
             return 0;
         case 1:     goto parse_ethernet;
-        case 12:    goto parse_ipv4;
+        case 12:
+            switch (px[offset]>>4) {
+		case 4: goto parse_ipv4;
+                case 6: goto parse_ipv6;
+            }
+            return 0;
         case 0x69:  goto parse_wifi;
         case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
         case 119:   goto parse_prism_header;

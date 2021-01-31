@@ -4,7 +4,7 @@
 #include "rawsock-adapter.h"
 #include "stack-arpv4.h"
 #include "stack-ndpv6.h"
-
+#include "stub-pcap-dlt.h"
 
 
 /***************************************************************************
@@ -77,6 +77,7 @@ masscan_initialize_adapter(
         return -1;
     }
     masscan->nic[index].link_type = masscan->nic[index].adapter->link_type;
+    LOG(1, "[+] interface-type = %u\n", masscan->nic[index].link_type);
     rawsock_ignore_transmits(masscan->nic[index].adapter, ifname);
 
     /*
@@ -86,8 +87,10 @@ masscan_initialize_adapter(
      * matter what this address is, but to be a "responsible" citizen we
      * try to use the hardware address in the network card.
      */
-    if (masscan->nic[index].link_type == 0) {
-        LOG(1, "[+] if(%s): source-mac = %s\n", ifname, "none");
+    if (masscan->nic[index].link_type == PCAP_DLT_NULL) {
+        LOG(1, "[+] source-mac = %s\n", "none");
+    } else if (masscan->nic[index].link_type == PCAP_DLT_RAW) {
+        LOG(1, "[+] source-mac = %s\n", "none");
     } else {
         *source_mac = masscan->nic[index].source_mac;
         if (masscan->nic[index].my_mac_count == 0) {
@@ -105,7 +108,7 @@ masscan_initialize_adapter(
         }
         
         fmt = macaddress_fmt(*source_mac);
-        LOG(1, "[+] if(%s): source-mac = %s\n", ifname, fmt.string);
+        LOG(1, "[+] source-mac = %s\n", fmt.string);
     }
     
 
@@ -158,7 +161,10 @@ masscan_initialize_adapter(
             /* If we are doing offline benchmarking/testing, then create
              * a fake MAC address fro the router */
             memcpy(router_mac_ipv4->addr, "\x66\x55\x44\x33\x22\x11", 6);
-        } else if (masscan->nic[index].link_type == 0) {
+        } else if (masscan->nic[index].link_type == PCAP_DLT_NULL) {
+            /* If it's a VPN tunnel, then there is no Ethernet MAC address */
+            LOG(1, "[+] router-mac-ipv4 = %s\n", "implicit");
+	} else if (masscan->nic[index].link_type == PCAP_DLT_RAW) {
             /* If it's a VPN tunnel, then there is no Ethernet MAC address */
             LOG(1, "[+] router-mac-ipv4 = %s\n", "implicit");
         } else if (macaddress_is_zero(*router_mac_ipv4)) {
