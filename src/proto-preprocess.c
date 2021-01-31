@@ -513,13 +513,30 @@ parse_linktype:
      * The "link-type" is the same as specified in "libpcap" headers
      */
     switch (link_type) {
-    case 1:     goto parse_ethernet;
-    case 12:    goto parse_ipv4;
-    case 0x69:  goto parse_wifi;
-    case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
-    case 119:   goto parse_prism_header;
-    case 127:   goto parse_radiotap_header;
-    default:    return 0;
+        case 0:
+            offset += 4;
+            switch (ex32be(px)) {
+                case 0x02000000:
+                case 0x00000002:
+                    goto parse_ipv4;
+                /* Depending on operating system, these can have
+                 different values: 24, 28, or 30 */
+                case 0x18000000:
+                case 0x00000018:
+                case 0x1c000000:
+                case 0x0000001c:
+                case 0x1e000000:
+                case 0x0000001e:
+                    goto parse_ipv6;
+            }
+            return 0;
+        case 1:     goto parse_ethernet;
+        case 12:    goto parse_ipv4;
+        case 0x69:  goto parse_wifi;
+        case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
+        case 119:   goto parse_prism_header;
+        case 127:   goto parse_radiotap_header;
+        default:    return 0;
     }
     
 parse_linux_sll:

@@ -795,17 +795,21 @@ rawsock_init_adapter(const char *adapter_name,
         /* Figure out the link-type. We suport Ethernet and IP */
         adapter->link_type = PCAP.datalink(adapter->pcap);
         switch (adapter->link_type) {
-        case -1:
-            PCAP.perror(adapter->pcap, "if: datalink");
-            goto pcap_error;
-        case 1: /* Ethernet */
-        case 12: /* IP Raw */
-            break;
-        default:
-            LOG(0, "pcap: unknown data link type: %u(%s)\n",
-                    adapter->link_type, 
-                    PCAP.datalink_val_to_name(adapter->link_type));
-            break;
+            case -1:
+                PCAP.perror(adapter->pcap, "if: datalink");
+                goto pcap_error;
+            case 0: /* Null/Loopback [VPN tunnel] */
+                LOG(1, "[+] if(%s): VPN tunnel interface found\n", adapter_name);
+                break;
+            case 1: /* Ethernet */
+            case 12: /* IP Raw */
+                break;
+            default:
+                LOG(0, "[-] if(%s): unknown data link type: %u(%s)\n",
+                        adapter_name,
+                        adapter->link_type,
+                        PCAP.datalink_val_to_name(adapter->link_type));
+                break;
         }
 
     }
@@ -925,58 +929,65 @@ rawsock_selftest_if(const char *ifname)
         printf("[+] source-mac = %s\n", fmt.string);
     }
 
-    /* IPv4 router IP address */
-    err = rawsock_get_default_gateway(ifname, &router_ipv4);
-    if (err) {
-        fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
-    } else {
-        fmt = ipv4address_fmt(router_ipv4);
-        printf("[+] router-ip = %s\n", fmt.string);
-    }
-
-    /* IPv4 router MAC address */
-    {
-        macaddress_t router_mac = {{0,0,0,0,0,0}};
-        
-        stack_arp_resolve(
-                adapter,
-                ipv4,
-                source_mac,
-                router_ipv4,
-                &router_mac);
-
-        if (macaddress_is_zero(router_mac)) {
-            printf("[-] router-mac-ipv4 = not found\n");
+    switch (adapter->link_type) {
+    case 0:
+            printf("[+] router-ip = implicit\n");
+            printf("[+] router-mac = implicit\n");
+            break;
+    default:
+        /* IPv4 router IP address */
+        err = rawsock_get_default_gateway(ifname, &router_ipv4);
+        if (err) {
+            fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
         } else {
-            fmt = macaddress_fmt(router_mac);
-            printf("[+] router-mac-ipv4 = %s\n", fmt.string);
+            fmt = ipv4address_fmt(router_ipv4);
+            printf("[+] router-ip = %s\n", fmt.string);
+        }
+
+        /* IPv4 router MAC address */
+        {
+            macaddress_t router_mac = {{0,0,0,0,0,0}};
+            
+            stack_arp_resolve(
+                    adapter,
+                    ipv4,
+                    source_mac,
+                    router_ipv4,
+                    &router_mac);
+
+            if (macaddress_is_zero(router_mac)) {
+                printf("[-] router-mac-ipv4 = not found\n");
+            } else {
+                fmt = macaddress_fmt(router_mac);
+                printf("[+] router-mac-ipv4 = %s\n", fmt.string);
+            }
+        }
+        
+
+        /*
+         * IPv6 router MAC address.
+         * If it's not configured, then we need to send a (synchronous) query
+         * to the network in order to discover the location of routers on
+         * the local network
+         */
+        if (!ipv6address_is_zero(ipv6)) {
+            macaddress_t router_mac = {{0,0,0,0,0,0}};
+            
+            stack_ndpv6_resolve(
+                    adapter,
+                    ipv6,
+                    source_mac,
+                    &router_mac);
+
+            if (macaddress_is_zero(router_mac)) {
+                printf("[-] router-mac-ipv6 = not found\n");
+            } else {
+                fmt = macaddress_fmt(router_mac);
+                printf("[+] router-mac-ipv6 = %s\n", fmt.string);
+            }
         }
     }
     
-
-    /*
-     * IPv6 router MAC address.
-     * If it's not configured, then we need to send a (synchronous) query
-     * to the network in order to discover the location of routers on
-     * the local network
-     */
-    if (!ipv6address_is_zero(ipv6)) {
-        macaddress_t router_mac = {{0,0,0,0,0,0}};
-        
-        stack_ndpv6_resolve(
-                adapter,
-                ipv6,
-                source_mac,
-                &router_mac);
-
-        if (macaddress_is_zero(router_mac)) {
-            printf("[-] router-mac-ipv6 = not found\n");
-        } else {
-            fmt = macaddress_fmt(router_mac);
-            printf("[+] router-mac-ipv6 = %s\n", fmt.string);
-        }
-    }
-
     rawsock_close_adapter(adapter);
     return 0;
 }

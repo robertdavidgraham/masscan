@@ -1093,13 +1093,18 @@ template_set_target_ipv4(
     }
 }
 
+#if defined(WIN32) || defined(_WIN32)
+#define AF_INET6 23
+#else
+#include <sys/socket.h>
+#endif
 
 /***************************************************************************
  * Creates an IPv6 packet from an IPv4 template, by simply replacing
  * the IPv4 header with the IPv6 header.
  ***************************************************************************/
 static void
-_template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6)
+_template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, unsigned data_link)
 {
     struct PreprocessedInfo parsed;
     unsigned x;
@@ -1116,7 +1121,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6)
     }
 
     /* Parse the existing IPv4 packet */
-    x = preprocess_frame(tmpl->ipv4.packet, tmpl->ipv4.length, 1 /*enet*/, &parsed);
+    x = preprocess_frame(tmpl->ipv4.packet, tmpl->ipv4.length, data_link, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
         LOG(0, "ERROR: bad packet template\n");
         exit(1);
@@ -1147,13 +1152,22 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6)
     memset(buf + offset_ip, 0, 40);
     tmpl->ipv6.length = offset_ip + 40 + payload_length;
     
-    /* Reset the destination MAC address to be the IPv6 router
-     * instead of the IPv4 router, which sometimes are different */
-    memcpy(buf + 0, router_mac_ipv6.addr, 6);
+    switch (data_link) {
+        case 0: /* Null VPN tunnel */
+            /* FIXME: insert platform dependent value here */
+            *(int*)buf = AF_INET6;
+            break;
+        case 1: /* Etherent */
+            /* Reset the destination MAC address to be the IPv6 router
+             * instead of the IPv4 router, which sometimes are different */
+            memcpy(buf + 0, router_mac_ipv6.addr, 6);
+            
+            /* Reset the Ethertype field to 0x86dd (meaning IPv6) */
+            buf[12] = 0x86;
+            buf[13] = 0xdd;
+            break;
+    }
     
-    /* Reset the Ethertype field to 0x86dd (meaning IPv6) */
-    buf[12] = 0x86;
-    buf[13] = 0xdd;
 
     /* IP.version = 6 */
     buf[offset_ip + 0] = 0x60; 
@@ -1180,7 +1194,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6)
     buf[offset_ip + 7] = 0xFF;
 
     /* Parse our newly construct IPv6 packet */
-    x = preprocess_frame(buf, tmpl->ipv6.length, 1 /*enet*/, &parsed);
+    x = preprocess_frame(buf, tmpl->ipv6.length, data_link, &parsed);
     if (!x || parsed.found == FOUND_NOTHING) {
         LOG(0, "ERROR: bad packet template\n");
         exit(1);
@@ -1320,7 +1334,17 @@ _template_init(
      * the correct way to do this, but I'm too lazy to refactor code
      * for the right way, so we'll do it this way now.
      */
-    if (data_link == 12 /* Raw IP */) {
+    if (data_link == 0 /* Null VPN tunnel */) {
+        int linkproto = 2; /* AF_INET */
+        tmpl->ipv4.length -= tmpl->ipv4.offset_ip - sizeof(int);
+        tmpl->ipv4.offset_tcp -= tmpl->ipv4.offset_ip - sizeof(int);
+        tmpl->ipv4.offset_app -= tmpl->ipv4.offset_ip - sizeof(int);
+        memmove(tmpl->ipv4.packet + sizeof(int),
+                tmpl->ipv4.packet + tmpl->ipv4.offset_ip,
+                tmpl->ipv4.length);
+        tmpl->ipv4.offset_ip = 4;
+        memcpy(tmpl->ipv4.packet, &linkproto, sizeof(int));
+    } else if (data_link == 12 /* Raw IP */) {
         tmpl->ipv4.length -= tmpl->ipv4.offset_ip;
         tmpl->ipv4.offset_tcp -= tmpl->ipv4.offset_ip;
         tmpl->ipv4.offset_app -= tmpl->ipv4.offset_ip;
@@ -1331,7 +1355,7 @@ _template_init(
     }
 
     /* Now create an IPv6 template based upon the IPv4 template */
-    _template_init_ipv6(tmpl, router_mac_ipv6);
+    _template_init_ipv6(tmpl, router_mac_ipv6, data_link);
 
 }
 

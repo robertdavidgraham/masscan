@@ -1,8 +1,10 @@
 #include "masscan.h"
 #include "logger.h"
 #include "rawsock.h"
+#include "rawsock-adapter.h"
 #include "stack-arpv4.h"
 #include "stack-ndpv6.h"
+
 
 
 /***************************************************************************
@@ -55,32 +57,6 @@ masscan_initialize_adapter(
     }
     LOG(1, "[+] interface = %s\n", ifname);
 
-
-    /*
-     * MAC ADDRESS
-     *
-     * This is the address we send packets from. It actually doesn't really
-     * matter what this address is, but to be a "responsible" citizen we
-     * try to use the hardware address in the network card.
-     */
-    *source_mac = masscan->nic[index].source_mac;
-    if (masscan->nic[index].my_mac_count == 0) {
-        if (macaddress_is_zero(*source_mac)) {
-            rawsock_get_adapter_mac(ifname, source_mac->addr);
-        }
-        /* If still zero, then print error message */
-        if (macaddress_is_zero(*source_mac)) {
-            fprintf(stderr, "[-] FAIL: failed to detect MAC address of interface:"
-                    " \"%s\"\n", ifname);
-            fprintf(stderr, " [hint] try something like "
-                    "\"--source-mac 00-11-22-33-44-55\"\n");
-            return -1;
-        }
-    }
-    
-    fmt = macaddress_fmt(*source_mac);
-    LOG(1, "[+] if(%s): source-mac = %s\n", ifname, fmt.string);
-
     /*
      * START ADAPTER
      *
@@ -100,7 +76,37 @@ masscan_initialize_adapter(
         LOG(0, "[-] if:%s:init: failed\n", ifname);
         return -1;
     }
+    masscan->nic[index].link_type = masscan->nic[index].adapter->link_type;
     rawsock_ignore_transmits(masscan->nic[index].adapter, ifname);
+
+    /*
+     * MAC ADDRESS
+     *
+     * This is the address we send packets from. It actually doesn't really
+     * matter what this address is, but to be a "responsible" citizen we
+     * try to use the hardware address in the network card.
+     */
+    if (masscan->nic[index].link_type == 0) {
+        LOG(1, "[+] if(%s): source-mac = %s\n", ifname, "none");
+    } else {
+        *source_mac = masscan->nic[index].source_mac;
+        if (masscan->nic[index].my_mac_count == 0) {
+            if (macaddress_is_zero(*source_mac)) {
+                rawsock_get_adapter_mac(ifname, source_mac->addr);
+            }
+            /* If still zero, then print error message */
+            if (macaddress_is_zero(*source_mac)) {
+                fprintf(stderr, "[-] FAIL: failed to detect MAC address of interface:"
+                        " \"%s\"\n", ifname);
+                fprintf(stderr, " [hint] try something like "
+                        "\"--source-mac 00-11-22-33-44-55\"\n");
+                return -1;
+            }
+        }
+        
+        fmt = macaddress_fmt(*source_mac);
+        LOG(1, "[+] if(%s): source-mac = %s\n", ifname, fmt.string);
+    }
     
 
     /*
@@ -149,9 +155,13 @@ masscan_initialize_adapter(
          */
         *router_mac_ipv4 = masscan->nic[index].router_mac_ipv4;
         if (masscan->is_offline) {
+            /* If we are doing offline benchmarking/testing, then create
+             * a fake MAC address fro the router */
             memcpy(router_mac_ipv4->addr, "\x66\x55\x44\x33\x22\x11", 6);
-        }
-        if (macaddress_is_zero(*router_mac_ipv4)) {
+        } else if (masscan->nic[index].link_type == 0) {
+            /* If it's a VPN tunnel, then there is no Ethernet MAC address */
+            LOG(1, "[+] router-mac-ipv4 = %s\n", "implicit");
+        } else if (macaddress_is_zero(*router_mac_ipv4)) {
             ipv4address_t router_ipv4 = masscan->nic[index].router_ip;
             int err = 0;
 
@@ -171,19 +181,18 @@ masscan_initialize_adapter(
                         router_ipv4,
                         router_mac_ipv4);
             }
+            
+            fmt = macaddress_fmt(*router_mac_ipv4);
+            LOG(1, "[+] router-mac-ipv4 = %s\n", fmt.string);
+            if (macaddress_is_zero(*router_mac_ipv4)) {
+                fmt = ipv4address_fmt(masscan->nic[index].router_ip);
+                LOG(0, "[-] FAIL: ARP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, fmt.string);
+                LOG(0, "    [hint] try \"--router ip 192.0.2.1\" to specify different router\n");
+                LOG(0, "    [hint] try \"--router-mac 66-55-44-33-22-11\" instead to bypass ARP\n");
+                LOG(0, "    [hint] try \"--interface eth0\" to change interface\n");
+                return -1;
+            }
         }
-        
-        fmt = macaddress_fmt(*router_mac_ipv4);
-        LOG(1, "[+] router-mac-ipv4 = %s\n", fmt.string);
-        if (macaddress_is_zero(*router_mac_ipv4)) {
-            fmt = ipv4address_fmt(masscan->nic[index].router_ip);
-            LOG(0, "[-] FAIL: ARP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, fmt.string);
-            LOG(0, "    [hint] try \"--router ip 192.0.2.1\" to specify different router\n");
-            LOG(0, "    [hint] try \"--router-mac 66-55-44-33-22-11\" instead to bypass ARP\n");
-            LOG(0, "    [hint] try \"--interface eth0\" to change interface\n");
-            return -1;
-        }
-
     }
         
 
