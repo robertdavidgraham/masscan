@@ -133,6 +133,8 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         return errno;
     }
 
+    /* Needs a timeout. Sometimes it'll hang indefinitely waiting for a 
+     * response that will never arrive */
     {
         struct timeval timeout;
         timeout.tv_sec = 1;
@@ -158,16 +160,16 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
     rtm->rtm_pid = getpid();
     rtm->rtm_seq = seq;
 
-        /*
-         * Create an empty address
-         */
-        {
-                struct sockaddr_in *sin;
-                sin = (struct sockaddr_in *)(rtm + 1);
-                sin->sin_len = sizeof(*sin);
-                sin->sin_family = AF_INET;
-                sin->sin_addr.s_addr = 0;
-        }
+    /*
+     * Create an empty address of 0.0.0.0 to query the route
+     */
+    {
+        struct sockaddr_in *sin;
+        sin = (struct sockaddr_in *)(rtm + 1);
+        sin->sin_len = sizeof(*sin);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = 0;
+    }
 
     err = write(fd, (char *)rtm, rtm->rtm_msglen);
     if (err <= 0) {

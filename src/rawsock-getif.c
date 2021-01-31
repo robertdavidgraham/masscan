@@ -79,6 +79,8 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     }
     LOG(2, "[+] getif: got socket handle\n");
 
+    /* Needs a timeout. Sometimes it'll hang indefinitely waiting for a 
+     * response that will never arrive */
     {
         struct timeval timeout;      
         timeout.tv_sec = 1;
@@ -104,16 +106,16 @@ rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
     rtm->rtm_pid = getpid();
     rtm->rtm_seq = seq;
 
-        /*
-         * Create an empty address
-         */
-        {
-                struct sockaddr_in *sin;
-                sin = (struct sockaddr_in *)(rtm + 1);
-                sin->sin_len = sizeof(*sin);
-                sin->sin_family = AF_INET;
-                sin->sin_addr.s_addr = 0;
-        }
+    /*
+     * Create an empty address of 0.0.0.0
+     */
+    {
+        struct sockaddr_in *sin;
+        sin = (struct sockaddr_in *)(rtm + 1);
+        sin->sin_len = sizeof(*sin);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = 0;
+    }
 
 
 
