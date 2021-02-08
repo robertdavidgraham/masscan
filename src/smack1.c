@@ -1422,7 +1422,7 @@ smack_search_next(      struct SMACK *  smack,
     current_matches = (*current_state)>>24;
  
     /* 'for all bytes in this block' */
-    if (!current_matches) {
+    if (current_matches == 0 /*no previous matches*/) {
         /*if ((length-i) & 1)
             i += inner_match(px + i, 
                              length - i,
@@ -1467,8 +1467,8 @@ smack_search_next(      struct SMACK *  smack,
 
     /* If we broke early because we found a match, return that match */
     if (current_matches) {
-        id = match[row].m_ids[current_matches-1];
         current_matches--;
+        id = match[row].m_ids[current_matches];
     }
 
     *current_state = row | (current_matches<<24);
@@ -1528,6 +1528,61 @@ smack_search_end(       struct SMACK *  smack,
 
     *current_state = row;
     return found_count;
+}
+
+size_t
+smack_search_next_end(  struct SMACK *  smack,
+                        unsigned *      current_state)
+{
+    transition_t *table = smack->table;
+    unsigned row_shift = smack->row_shift;
+    unsigned row = *current_state & 0xFFFFFF;
+    unsigned current_matches = (*current_state)>>24;
+    const struct SmackMatches *match = smack->m_match;
+    unsigned column = smack->char_to_symbol[CHAR_ANCHOR_END];
+    size_t id = SMACK_NOT_FOUND;
+
+    /*
+     * We can enumerate more than one matching end patterns. When we
+     * reach the end of that list, return NOT FOUND.
+     */
+    if (current_matches == 0xFF) {
+        return SMACK_NOT_FOUND;
+    }
+
+
+    /*
+     * If we've already returned the first result in our list,
+     * then return the next result.
+     */
+    if (current_matches) {
+        current_matches -= 1;
+        id = match[row].m_ids[current_matches];
+    } else {
+        /*
+         * This is the same logic as for "smack_search()", except there is
+         * only one byte of input -- the virtual character ($) that represents
+         * the anchor at the end of some patterns.
+         */
+        row = *(table + (row<<row_shift) + column);
+        if (match[row].m_count == 0) {
+            /* There was no match, so therefore return NOT FOUND */
+            return SMACK_NOT_FOUND;
+        }
+
+
+        /*
+         * If we reach this point, we have found matches, but
+         * haven't started returning them. So start returning
+         * them. This returns the first one in the list.
+         */
+        current_matches = match[row].m_count;
+        id = match[row].m_ids[current_matches - 1];
+        current_matches--;
+    }
+    
+    *current_state = row | (current_matches<<24);
+    return id;
 }
 
 /*****************************************************************************
@@ -1619,66 +1674,110 @@ int
 smack_selftest(void)
 {
     struct SMACK *s;
+    const char *patterns[] = {
+        "GET",      "PUT",      "POST",     "OPTIONS",
+        "HEAD",     "DELETE",   "TRACE",    "CONNECT",
+        "PROPFIND", "PROPPATCH","MKCOL",    "MKWORKSPACE",
+        "MOVE",     "LOCK",     "UNLOCK",   "VERSION-CONTROL",
+        "REPORT",   "CHECKOUT", "CHECKIN",  "UNCHECKOUT",
+        "COPY",     "UPDATE",   "LABEL",    "BASELINE-CONTROL",
+        "MERGE",    "SEARCH",   "ACL",      "ORDERPATCH",
+        "PATCH",    "MKACTIVITY", 0};
+    unsigned i;
+    const char *text = "ahpropfindhf;orderpatchposearchmoversion-controlockasldhf";
+    unsigned text_length = (unsigned)strlen(text);
+    size_t id, id2;
+    unsigned state = 0;
+    static const size_t END_TEST_THINGY1 = 9001;
+    static const size_t END_TEST_THINGY2 = 9002;
 
-    
-        const char *patterns[] = {
-            "GET",      "PUT",      "POST",     "OPTIONS",
-            "HEAD",     "DELETE",   "TRACE",    "CONNECT",
-            "PROPFIND", "PROPPATCH","MKCOL",    "MKWORKSPACE",
-            "MOVE",     "LOCK",     "UNLOCK",   "VERSION-CONTROL",
-            "REPORT",   "CHECKOUT", "CHECKIN",  "UNCHECKOUT",
-            "COPY",     "UPDATE",   "LABEL",    "BASELINE-CONTROL",
-            "MERGE",    "SEARCH",   "ACL",      "ORDERPATCH",
-            "PATCH",    "MKACTIVITY", 0};
-        unsigned i;
-        const char *text = "ahpropfinddf;orderpatchposearchmoversion-controlockasldhf";
-        unsigned text_length = (unsigned)strlen(text);
-        size_t id;
-        unsigned state = 0;
+    /*
+     * using SMACK is 5 steps:
+     * #1 create an instance at program startup
+     * #2 add patterns to it
+     * #3 compile the patterns
+     * #4 do your searches while running the program
+     * #5 destroy the instance at program exit
+     */
+    s = smack_create("test1", 1);
 
-        /*
-         * using SMACK is 5 steps:
-         * #1 create an instance at program startup
-         * #2 add patterns to it
-         * #3 compile the patterns
-         * #4 do your searches while running the program
-         * #5 destroy the instance at program exit
-         */
-        s = smack_create("test1", 1);
+    for (i=0; patterns[i]; i++)
+        smack_add_pattern(s, patterns[i], (unsigned)strlen(patterns[i]), i, 0);
 
-        for (i=0; patterns[i]; i++)
-            smack_add_pattern(s, patterns[i], (unsigned)strlen(patterns[i]), i, 0);
+    /* additional pattern for testing the end condition */
+    smack_add_pattern(s, "dhf",  3, END_TEST_THINGY1, SMACK_ANCHOR_END);
+    smack_add_pattern(s, "ldhf", 4, END_TEST_THINGY2, SMACK_ANCHOR_END);
 
-        smack_compile(s);
+    smack_compile(s);
 
-        i = 0;
+    i = 0;
 #define TEST(pat, offset, str) if (pat != id || offset != i) return 1 + fprintf(stderr, "smack: fail %s\n", str)
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST(  8,  10, "PROPFIND");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 28,  23, "PATCH");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 27,  23, "ORDERPATCH");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 25,  31, "SEARCH");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 12,  35, "MOVE");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 15,  48, "VERSION-CONTROL");
-        id = smack_search_next(s,&state,text, &i,text_length);
-        TEST( 13,  51, "LOCK");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST(  8,  10, "PROPFIND");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 28,  23, "PATCH");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 27,  23, "ORDERPATCH");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 25,  31, "SEARCH");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 12,  35, "MOVE");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 15,  48, "VERSION-CONTROL");
+    id = smack_search_next(s,&state,text, &i,text_length);
+    TEST( 13,  51, "LOCK");
 
-        /*{
-            unsigned i;
-            for (i=0; i<s->m_state_count; i++) {
-                if (s->m_match[i].m_count)
-                    printf("*");
-                else
-                    printf(".");
-            }
-            printf("\n");
-        }*/
-        smack_destroy(s);
+    /* SMACK_ANCHOR_END test
+     * The next patterns we should find are at the end of the string
+     * ("dhf" and "ldhf"). However, simply doing a search with "next"
+     * won't find them, because when we call this function call, we
+     * can't know that we've reached the end of input yet. We have
+     * to explicitly make a "search end" call before they are found */
+    id = smack_search_next(s,&state,text, &i,text_length);
+    if (id != SMACK_NOT_FOUND) {
+        /* At this point, we should no more patterns, and reach the end
+         * of the string */
+        fprintf(stderr, "[-] smack: fail: line=%u, file=%s\n", __LINE__, __FILE__);
+        return 1;
+    }
+    
+    /* SMACK_ANCHOR_END search end test
+     * We've reached the end of input, so now we tell this to the module.
+     * The only purpose for calling this is if we have "ANCHOR_END"
+     * patterns that won't match until we tell the system we've
+     * reached the end of input. */
+    id = smack_search_next_end(s, &state);
+    if (id != END_TEST_THINGY1 && id != END_TEST_THINGY2) {
+        /* We didn't find one of the two end-patterns we were looking for, so fail */
+        fprintf(stderr, "[-] smack: fail: line=%u, file=%s\n", __LINE__, __FILE__);
+        return 1;
+    }
+    
+    /* We have TWO end patterns that will match. We need to make sure the
+     * second also was triggered, and that it's different from the first.
+     * Note that this text is agnostic which of the two ending patterns
+     * is found first. The order is undefined, and may change in future
+     * versions. */
+    id2 = smack_search_next_end(s, &state);
+    if (id2 != END_TEST_THINGY1 && id2 != END_TEST_THINGY2) {
+        fprintf(stderr, "[-] smack: fail: line=%u, file=%s\n", __LINE__, __FILE__);
+        return 1;
+    } else if (id2 == id) {
+        /* The two ending patterns should give two different results */
+        fprintf(stderr, "[-] smack: fail: line=%u, file=%s\n", __LINE__, __FILE__);
+        return 1;
+    }
+    
+    /* We have only two ending patterns, so if we try for a third, we'll get
+     * a NOT FOUND */
+    id2 = smack_search_next_end(s, &state);
+    if (id2 != SMACK_NOT_FOUND) {
+        fprintf(stderr, "[-] smack: fail: line=%u, file=%s\n", __LINE__, __FILE__);
+        return 1;
+    }
+
+
+    smack_destroy(s);
 
     
 
