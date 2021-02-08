@@ -111,8 +111,19 @@ parse_ipv4:
 
         /* Save off pseudo header for checksum calculation */
         info->ip_version = (px[offset]>>4)&0xF;
-        info->ip_src = px+offset+12;
-        info->ip_dst = px+offset+16;
+        info->_ip_src = px+offset+12;
+        info->_ip_dst = px+offset+16;
+        info->src_ip.ipv4 = px[offset+12] << 24
+                            | px[offset+13] << 16
+                            | px[offset+14] << 8
+                            | px[offset+15] << 0;
+        info->src_ip.version = 4;
+        info->dst_ip.ipv4 = px[offset+16] << 24
+                            | px[offset+17] << 16
+                            | px[offset+18] << 8
+                            | px[offset+19] << 0;
+        info->dst_ip.version = 4;
+        
         info->ip_ttl = px[offset+8];
         info->ip_protocol = px[offset+9];
         info->ip_length = total_length;
@@ -122,8 +133,11 @@ parse_ipv4:
         /* next protocol */
         offset += header_length;
         info->transport_offset = offset;
+        info->transport_length = length - info->transport_offset;
+
         switch (info->ip_protocol) {
         case   1: goto parse_icmp;
+        case   2: goto parse_igmp;
         case   6: goto parse_tcp;
         case  17: goto parse_udp;
         case 132: goto parse_sctp;
@@ -143,8 +157,7 @@ parse_tcp:
         info->port_dst = ex16be(px+offset+2);
         info->app_offset = offset + tcp_length;
         info->app_length = length - info->app_offset;
-        info->transport_length = length - info->transport_offset;
-        assert(info->app_length < 2000);
+        //assert(info->app_length < 2000);
 
         return 1;
     }
@@ -152,7 +165,7 @@ parse_tcp:
 parse_udp:
     {
         VERIFY_REMAINING(8, FOUND_UDP);
-
+        
         info->port_src = ex16be(px+offset+0);
         info->port_dst = ex16be(px+offset+2);
         offset += 8;
@@ -171,6 +184,14 @@ parse_icmp:
         VERIFY_REMAINING(4, FOUND_ICMP);
         info->port_src = px[offset+0];
         info->port_dst = px[offset+1];
+        return 1;
+    }
+
+parse_igmp:
+    {
+        VERIFY_REMAINING(4, FOUND_IGMP);
+        info->port_src = 0;
+        info->port_dst = px[offset+0];
         return 1;
     }
 
@@ -195,6 +216,7 @@ parse_ipv6:
     {
         unsigned payload_length;
 
+        info->ip_offset = offset;
         VERIFY_REMAINING(40, FOUND_IPV6);
 
         /* Check version */
@@ -209,12 +231,56 @@ parse_ipv6:
 
         /* Save off pseudo header for checksum calculation */
         info->ip_version = (px[offset]>>4)&0xF;
-        info->ip_src = px+offset+8;
-        info->ip_dst = px+offset+8+16;
+        info->_ip_src = px+offset+8;
+        info->_ip_dst = px+offset+8+16;
         info->ip_protocol = px[offset+6];
+
+        info->src_ip.version = 6;
+        info->src_ip.ipv6.hi = 0ULL
+                            | (uint64_t)px[offset +  8] << 56ULL
+                            | (uint64_t)px[offset +  9] << 48ULL
+                            | (uint64_t)px[offset + 10] << 40ULL
+                            | (uint64_t)px[offset + 11] << 32ULL
+                            | (uint64_t)px[offset + 12] << 24ULL
+                            | (uint64_t)px[offset + 13] << 16ULL
+                            | (uint64_t)px[offset + 14] <<  8ULL
+                            | (uint64_t)px[offset + 15] <<  0ULL;
+        info->src_ip.ipv6.lo = 0ULL
+                            | (uint64_t)px[offset + 16] << 56ULL
+                            | (uint64_t)px[offset + 17] << 48ULL
+                            | (uint64_t)px[offset + 18] << 40ULL
+                            | (uint64_t)px[offset + 19] << 32ULL
+                            | (uint64_t)px[offset + 20] << 24ULL
+                            | (uint64_t)px[offset + 21] << 16ULL
+                            | (uint64_t)px[offset + 22] <<  8ULL
+                            | (uint64_t)px[offset + 23] <<  0ULL;
+
+        info->dst_ip.version = 6;
+        info->dst_ip.ipv6.hi = 0ULL
+                            | (uint64_t)px[offset + 24] << 56ULL
+                            | (uint64_t)px[offset + 25] << 48ULL
+                            | (uint64_t)px[offset + 26] << 40ULL
+                            | (uint64_t)px[offset + 27] << 32ULL
+                            | (uint64_t)px[offset + 28] << 24ULL
+                            | (uint64_t)px[offset + 29] << 16ULL
+                            | (uint64_t)px[offset + 30] <<  8ULL
+                            | (uint64_t)px[offset + 31] <<  0ULL;
+        info->dst_ip.ipv6.lo = 0ULL
+                            | (uint64_t)px[offset + 32] << 56ULL
+                            | (uint64_t)px[offset + 33] << 48ULL
+                            | (uint64_t)px[offset + 34] << 40ULL
+                            | (uint64_t)px[offset + 35] << 32ULL
+                            | (uint64_t)px[offset + 36] << 24ULL
+                            | (uint64_t)px[offset + 37] << 16ULL
+                            | (uint64_t)px[offset + 38] <<  8ULL
+                            | (uint64_t)px[offset + 39] <<  0ULL;
+
+
 
         /* next protocol */
         offset += 40;
+        info->transport_offset = offset;
+        info->transport_length = length - info->transport_offset;
 
 parse_ipv6_next:
         switch (info->ip_protocol) {
@@ -222,6 +288,7 @@ parse_ipv6_next:
         case 6: goto parse_tcp;
         case 17: goto parse_udp;
         case 58: goto parse_icmpv6;
+        case 132: goto parse_sctp;
         case 0x2c: /* IPv6 fragmetn */
             return 0;
         default:
@@ -240,10 +307,28 @@ parse_ipv6_hop_by_hop:
 
         VERIFY_REMAINING(len, FOUND_IPV6_HOP);
         offset += len;
+        info->transport_offset = offset;
+        info->transport_length = length - info->transport_offset;
     }
     goto parse_ipv6_next;
 
 parse_icmpv6:
+    {
+        unsigned icmp_type;
+        unsigned icmp_code;
+
+        VERIFY_REMAINING(4, FOUND_ICMP);
+        
+        icmp_type = px[offset+0];
+        icmp_code = px[offset+1];
+
+        info->port_src = icmp_type;
+        info->port_dst = icmp_code;
+
+        if (133 <= icmp_type && icmp_type <= 136) {
+            info->found = FOUND_NDPv6;
+        }
+    }
     return 1;
 
 parse_vlan8021q:
@@ -428,13 +513,35 @@ parse_linktype:
      * The "link-type" is the same as specified in "libpcap" headers
      */
     switch (link_type) {
-    case 1:     goto parse_ethernet;
-    case 12:    goto parse_ipv4;
-    case 0x69:  goto parse_wifi;
-    case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
-    case 119:   goto parse_prism_header;
-    case 127:   goto parse_radiotap_header;
-    default:    return 0;
+        case 0:
+            offset += 4;
+            switch (ex32be(px)) {
+                case 0x02000000:
+                case 0x00000002:
+                    goto parse_ipv4;
+                /* Depending on operating system, these can have
+                 different values: 24, 28, or 30 */
+                case 0x18000000:
+                case 0x00000018:
+                case 0x1c000000:
+                case 0x0000001c:
+                case 0x1e000000:
+                case 0x0000001e:
+                    goto parse_ipv6;
+            }
+            return 0;
+        case 1:     goto parse_ethernet;
+        case 12:
+            switch (px[offset]>>4) {
+		case 4: goto parse_ipv4;
+                case 6: goto parse_ipv6;
+            }
+            return 0;
+        case 0x69:  goto parse_wifi;
+        case 113:   goto parse_linux_sll; /* LINKTYPE_LINUX_SLL DLT_LINUX_SLL */
+        case 119:   goto parse_prism_header;
+        case 127:   goto parse_radiotap_header;
+        default:    return 0;
     }
     
 parse_linux_sll:
@@ -495,13 +602,26 @@ parse_arp:
         hardware_length = px[offset+4];
         protocol_length = px[offset+5];
         opcode = px[offset+6]<<8 | px[offset+7];
+        info->opcode = opcode;
+        info->ip_protocol = opcode;
         offset += 8;
 
         VERIFY_REMAINING(2*hardware_length + 2*protocol_length, FOUND_ARP);
 
-        info->ip_src = px + offset + hardware_length;
-        info->ip_dst = px + offset + 2*hardware_length + protocol_length;
-        info->ip_protocol = opcode;
+        info->_ip_src = px + offset + hardware_length;
+        info->_ip_dst = px + offset + 2*hardware_length + protocol_length;
+
+        info->src_ip.version = 4;
+        info->src_ip.ipv4 = px[offset + hardware_length + 0] << 24
+                            | px[offset + hardware_length + 1] << 16
+                            | px[offset + hardware_length + 2] << 8
+                            | px[offset + hardware_length + 3] << 0;
+        info->dst_ip.version = 4;
+        info->dst_ip.ipv4 = px[offset + 2*hardware_length + protocol_length + 0] << 24
+                            | px[offset + 2*hardware_length + protocol_length + 1] << 16
+                            | px[offset + 2*hardware_length + protocol_length + 2] << 8
+                            | px[offset + 2*hardware_length + protocol_length + 3] << 0;
+        
         info->found_offset = info->ip_offset;
         return 1;
     }

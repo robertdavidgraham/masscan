@@ -20,10 +20,15 @@
  * so instead we are simply going to define our own structure. This should
  * match the binary definition within the operating system
  */
+#if __NetBSD__
+#include <sys/time.h>
+#define pcap_timeval timeval
+#else
 struct pcap_timeval {
         long    tv_sec;         /* seconds */
         long    tv_usec;        /* and microseconds */
 };
+#endif
 
 /* Forward reference of opaque 'pcap_t' structure */
 struct pcap;

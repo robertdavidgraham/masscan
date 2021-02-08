@@ -26,30 +26,23 @@ unicornscan_out_close(struct Output *out, FILE *fp)
 
 static void
 unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(reason);
     UNUSEDPARM(out);
     UNUSEDPARM(timestamp);
 
     if (ip_proto == 6) {
-      fprintf(fp,"TCP %s\t%16s[%5d]\t\tfrom %u.%u.%u.%u  ttl %-3d\n",
+        fprintf(fp,"TCP %s\t%16s[%5d]\t\tfrom %s  ttl %-3d\n",
               status_string(status),
               tcp_service_name(port),
               port,
-              (ip>>24)&0xFF,
-              (ip>>16)&0xFF,
-              (ip>> 8)&0xFF,
-              (ip>> 0)&0xFF,
+              fmt.string,
               ttl);
     } else {
         /* unicornscan is TCP only, so just use grepable format for other protocols */
-        fprintf(fp, "Host: %u.%u.%u.%u ()",
-                (unsigned char)(ip>>24),
-                (unsigned char)(ip>>16),
-                (unsigned char)(ip>> 8),
-                (unsigned char)(ip>> 0)
-                );
+        fprintf(fp, "Host: %s ()", fmt.string);
         fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"
@@ -67,7 +60,7 @@ unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 static void
 unicornscan_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-        unsigned ip, unsigned ip_proto, unsigned port,
+        ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
         const unsigned char *px, unsigned length)
 { /* SYN only - no banner */

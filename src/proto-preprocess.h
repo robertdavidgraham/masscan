@@ -1,6 +1,8 @@
 /* Copyright: (c) 2009-2010 by Robert David Graham */
 #ifndef PREPROCESS_H
 #define PREPROCESS_H
+#include "massip-addr.h"
+
 
 enum {
     FOUND_NOTHING=0,
@@ -23,6 +25,8 @@ enum {
     FOUND_ARP,
     FOUND_SLL, /* Linux SLL */
     FOUND_OPROTO, /* some other IP protocol */
+    FOUND_IGMP,
+    FOUND_NDPv6,
 };
 struct PreprocessedInfo {
     const unsigned char *mac_src;
@@ -33,11 +37,16 @@ struct PreprocessedInfo {
     unsigned ip_protocol;   /* 6 for TCP, 11 for UDP */
     unsigned ip_length;     /* length of total packet */
     unsigned ip_ttl;
-    const unsigned char *ip_src;
-    const unsigned char *ip_dst;
+    const unsigned char *_ip_src;
+    const unsigned char *_ip_dst;
+    ipaddress src_ip;
+    ipaddress dst_ip;
     unsigned transport_offset;  /* 34 for normal Ethernet */
     unsigned transport_length;
-    unsigned port_src;
+    union {
+        unsigned port_src;
+        unsigned opcode;
+    };
     unsigned port_dst;
 
     unsigned app_offset; /* start of TCP payload */

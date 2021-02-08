@@ -1,7 +1,7 @@
 #ifndef PROTO_TCP_H
 #define PROTO_TCP_H
-
-#include "packet-queue.h"
+#include "massip-addr.h"
+#include "stack-queue.h"
 #include "output.h"
 
 struct Adapter;
@@ -47,8 +47,7 @@ void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
  */
 struct TCP_ConnectionTable *
 tcpcon_create_table(    size_t entry_count,
-                        struct rte_ring *transmit_queue,
-                        struct rte_ring *packet_buffers,
+                        struct stack_t *stack,
                         struct TemplatePacket *pkt_template,
                         OUTPUT_REPORT_BANNER report_banner,
                         struct Output *out,
@@ -58,6 +57,7 @@ tcpcon_create_table(    size_t entry_count,
 
 void tcpcon_set_banner_flags(struct TCP_ConnectionTable *tcpcon,
     unsigned is_capture_cert,
+    unsigned is_capture_servername,
     unsigned is_capture_html,
     unsigned is_capture_heartbleed,
 	unsigned is_capture_ticketbleed);
@@ -87,8 +87,8 @@ enum TCP_What {
     TCP_WHAT_DATA,
 };
 
-void
-tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
+int
+stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
     int what, const void *p, size_t length,
     unsigned secs, unsigned usecs,
     unsigned seqno_them);
@@ -98,9 +98,9 @@ tcpcon_handle(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entr
  * Lookup a connection record based on IP/ports.
  */
 struct TCP_Control_Block *
-tcpcon_lookup_tcb(
+tcb_lookup(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_src, unsigned ip_dst,
+    ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst);
 
 /**
@@ -109,7 +109,7 @@ tcpcon_lookup_tcb(
 struct TCP_Control_Block *
 tcpcon_create_tcb(
     struct TCP_ConnectionTable *tcpcon,
-    unsigned ip_src, unsigned ip_dst,
+    ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
     unsigned ttl);
@@ -121,13 +121,13 @@ tcpcon_create_tcb(
 void
 tcpcon_send_FIN(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them);
 void
 tcpcon_send_RST(
                 struct TCP_ConnectionTable *tcpcon,
-                unsigned ip_me, unsigned ip_them,
+                ipaddress ip_me, ipaddress ip_them,
                 unsigned port_me, unsigned port_them,
                 uint32_t seqno_them, uint32_t ackno_them);
 
@@ -138,9 +138,8 @@ tcpcon_send_RST(
 void
 tcp_send_RST(
     struct TemplatePacket *templ,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue,
-    unsigned ip_them, unsigned ip_me,
+    struct stack_t *stack,
+    ipaddress ip_them, ipaddress ip_me,
     unsigned port_them, unsigned port_me,
     unsigned seqno_them, unsigned seqno_me
 );

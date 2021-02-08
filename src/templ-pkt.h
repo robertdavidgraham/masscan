@@ -2,6 +2,7 @@
 #define TCP_PACKET_H
 #include <stdio.h>
 #include <stdint.h>
+#include "massip-addr.h"
 struct PayloadsUDP;
 struct MassVulnCheck;
 
@@ -43,14 +44,26 @@ udp_checksum2(const unsigned char *px, unsigned offset_ip,
  * bits, like the destination IP address and port
  */
 struct TemplatePacket {
-    unsigned length;
-    unsigned offset_ip;
-    unsigned offset_tcp;
-    unsigned offset_app;
-    unsigned char *packet;
-    unsigned checksum_ip;
-    unsigned checksum_tcp;
-    unsigned ip_id;
+    struct {
+        unsigned length;
+        unsigned offset_ip;
+        unsigned offset_tcp;
+        unsigned offset_app;
+        unsigned char *packet;
+        unsigned checksum_ip;
+        unsigned checksum_tcp;
+        unsigned ip_id;
+    } ipv4;
+    struct {
+        unsigned length;
+        unsigned offset_ip;
+        unsigned offset_tcp;
+        unsigned offset_app;
+        unsigned char *packet;
+        unsigned checksum_ip;
+        unsigned checksum_tcp;
+        unsigned ip_id;
+    } ipv6;
     enum TemplateProtocol proto;
     struct PayloadsUDP *payloads;
 };
@@ -63,9 +76,9 @@ struct TemplatePacket {
 struct TemplateSet
 {
     unsigned count;
-    struct TemplatePacket pkts[Proto_Count];
     struct MassVulnCheck *vulncheck;
     uint64_t entropy;
+    struct TemplatePacket pkts[Proto_Count];
 };
 
 struct TemplateSet templ_copy(const struct TemplateSet *templ);
@@ -96,8 +109,9 @@ struct TemplateSet templ_copy(const struct TemplateSet *templ);
 void
 template_packet_init(
     struct TemplateSet *templset,
-    const unsigned char *source_mac,
-    const unsigned char *router_mac,
+    macaddress_t source_mac,
+    macaddress_t router_mac_ipv4,
+    macaddress_t router_mac_ipv6,
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,
@@ -133,10 +147,18 @@ template_packet_init(
  *      this will be the transaction ID of the SNMP request template.
  */
 void
-template_set_target(
+template_set_target_ipv4(
     struct TemplateSet *templset,
-    unsigned ip_them, unsigned port_them,
-    unsigned ip_me, unsigned port_me,
+    ipv4address ip_them, unsigned port_them,
+    ipv4address ip_me, unsigned port_me,
+    unsigned seqno,
+    unsigned char *px, size_t sizeof_px, size_t *r_length);
+
+void
+template_set_target_ipv6(
+    struct TemplateSet *templset,
+    ipv6address ip_them, unsigned port_them,
+    ipv6address ip_me, unsigned port_me,
     unsigned seqno,
     unsigned char *px, size_t sizeof_px, size_t *r_length);
 
@@ -148,8 +170,8 @@ template_set_target(
 size_t
 tcp_create_packet(
         struct TemplatePacket *pkt,
-        unsigned ip_them, unsigned port_them,
-        unsigned ip_me, unsigned port_me,
+        ipaddress ip_them, unsigned port_them,
+        ipaddress ip_me, unsigned port_me,
         unsigned seqno, unsigned ackno,
         unsigned flags,
         const unsigned char *payload, size_t payload_length,
@@ -163,10 +185,7 @@ tcp_create_packet(
 void
 tcp_set_window(unsigned char *px, size_t px_length, unsigned window);
 
-unsigned template_get_source_port(struct TemplateSet *tmplset);
-unsigned template_get_source_ip(struct TemplateSet *tmplset);
 
-void template_set_source_port(struct TemplateSet *tmplset, unsigned port);
 void template_set_ttl(struct TemplateSet *tmplset, unsigned ttl);
 void template_set_vlan(struct TemplateSet *tmplset, unsigned vlan);
 

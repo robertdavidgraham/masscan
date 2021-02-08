@@ -102,6 +102,22 @@ smack_search_next(      struct SMACK *  smack,
                         );
 
 /**
+ * Called to terminate a search (after multiple calls to `smack_search_next()`.
+ * This triggers any patterns that SMACK_ANCHOR_END attribute on them.
+ * If more than one pattern can match at the end of the search text, then
+ * this should be called multiple times until SMACK_NOT_FOUND is
+ * returned.
+ * @return The 'id' field of a pattenr registered with the SMACK_ANCHOR_END
+ *      attribute if that was found in the searched buffer, or SMACK_NOT_FOUND.
+ */
+size_t
+smack_search_next_end(      struct SMACK *  smack,
+                        unsigned *      state
+                     );
+
+#define smack_search_start(state) (*(state)) = 0
+
+/**
  * If there are multiple matches at the current state, returns the next
  * one. Otherwise, returns NOT_FOUND. Used with "smack_search_next()".
  */

@@ -3,7 +3,7 @@
 #include "masscan-version.h"
 #include "masscan-status.h"
 #include "out-tcp-services.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "string_s.h"
 
 
@@ -17,7 +17,7 @@ count_type(const struct RangeList *ports, int start_type, int end_type)
     unsigned i;
     unsigned result = 0;
 
-    for (i=0; i<ports->count; ports++) {
+    for (i=0; i<ports->count; i++) {
         struct Range r = ports->list[i];
         if (r.begin > max_port)
             continue;
@@ -45,7 +45,7 @@ print_port_list(const struct RangeList *ports, int type, FILE *fp)
     unsigned max_port = type + 65535;
     unsigned i;
 
-    for (i=0; i<ports->count; ports++) {
+    for (i=0; i<ports->count; i++) {
         struct Range r = ports->list[i];
         if (r.begin > max_port)
             continue;
@@ -84,26 +84,26 @@ grepable_out_open(struct Output *out, FILE *fp)
     fprintf(fp, "# Masscan " MASSCAN_VERSION " scan initiated %s\n", 
                 timestamp);
 
-    count = count_type(&out->masscan->ports, Templ_TCP, Templ_TCP_last);
+    count = count_type(&out->masscan->targets.ports, Templ_TCP, Templ_TCP_last);
     fprintf(fp, "# Ports scanned: TCP(%u;", count);
     if (count)
-        print_port_list(&out->masscan->ports, Templ_TCP, fp);
+        print_port_list(&out->masscan->targets.ports, Templ_TCP, fp);
 
-    count = count_type(&out->masscan->ports, Templ_UDP, Templ_UDP_last);
+    count = count_type(&out->masscan->targets.ports, Templ_UDP, Templ_UDP_last);
     fprintf(fp, ") UDP(%u;", count);
     if (count)
-        print_port_list(&out->masscan->ports, Templ_UDP, fp);
+        print_port_list(&out->masscan->targets.ports, Templ_UDP, fp);
     
     
-    count = count_type(&out->masscan->ports, Templ_SCTP, Templ_SCTP_last);
+    count = count_type(&out->masscan->targets.ports, Templ_SCTP, Templ_SCTP_last);
     fprintf(fp, ") SCTP(%u;", count);
     if (count)
-        print_port_list(&out->masscan->ports, Templ_SCTP, fp);
+        print_port_list(&out->masscan->targets.ports, Templ_SCTP, fp);
 
-    count = count_type(&out->masscan->ports, Templ_Oproto_first, Templ_Oproto_last);
+    count = count_type(&out->masscan->targets.ports, Templ_Oproto_first, Templ_Oproto_last);
     fprintf(fp, ") PROTOCOLS(%u;", count);
     if (count)
-        print_port_list(&out->masscan->ports, Templ_Oproto_first, fp);
+        print_port_list(&out->masscan->targets.ports, Templ_Oproto_first, fp);
     
     fprintf(fp, ")\n");
 }
@@ -138,9 +138,10 @@ grepable_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     const char *service;
+    ipaddress_formatted_t fmt;
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(reason);
@@ -155,12 +156,8 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     
     fprintf(fp, "Timestamp: %lu", timestamp);
 
-    fprintf(fp, "\tHost: %u.%u.%u.%u ()",
-                    (unsigned char)(ip>>24),
-                    (unsigned char)(ip>>16),
-                    (unsigned char)(ip>> 8),
-                    (unsigned char)(ip>> 0)
-                    );
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\tHost: %s ()", fmt.string);
     fprintf(fp, "\tPorts: %u/%s/%s/%s/%s/%s/%s\n",
                 port,
                 status_string(status),      //"open", "closed"
@@ -180,23 +177,20 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 static void
 grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-        unsigned ip, unsigned ip_proto, unsigned port,
+        ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
-
+    ipaddress_formatted_t fmt;
+    
     UNUSEDPARM(ttl);
     UNUSEDPARM(timestamp);
     UNUSEDPARM(out);
     UNUSEDPARM(ip_proto);
     
-    fprintf(fp, "Host: %u.%u.%u.%u ()",
-                    (unsigned char)(ip>>24),
-                    (unsigned char)(ip>>16),
-                    (unsigned char)(ip>> 8),
-                    (unsigned char)(ip>> 0)
-                    );
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "Host: %s ()", fmt.string);
     fprintf(fp, "\tPort: %u", port);
 
     fprintf(fp, "\tService: %s", masscan_app_to_string(proto));

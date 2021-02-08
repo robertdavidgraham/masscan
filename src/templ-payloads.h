@@ -2,7 +2,7 @@
 #define TEMPL_PAYLOADS_H
 #include <stdio.h>
 #include <stdint.h>
-struct RangeList;
+struct MassIP;
 
 /**
  * Regression test this module.
@@ -51,10 +51,10 @@ payloads_read_pcap(const char *filename, struct PayloadsUDP *payloads, struct Pa
  * lookups faster when generating packets.
  */
 void
-payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *ports);
+payloads_udp_trim(struct PayloadsUDP *payloads, const struct MassIP *targets);
 
 void
-payloads_oproto_trim(struct PayloadsUDP *payloads, const struct RangeList *ports);
+payloads_oproto_trim(struct PayloadsUDP *payloads, const struct MassIP *targets);
 
 
 /**

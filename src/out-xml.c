@@ -64,12 +64,14 @@ xml_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-               unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+               ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
+    
     UNUSEDPARM(out);
     fprintf(fp, "<host endtime=\"%u\">"
-                    "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
+                    "<address addr=\"%s\" addrtype=\"ipv4\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
                     "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
@@ -78,10 +80,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
-        (ip>>24)&0xFF,
-        (ip>>16)&0xFF,
-        (ip>> 8)&0xFF,
-        (ip>> 0)&0xFF,
+        fmt.string,
         name_from_ip_proto(ip_proto),
         port,
         status_string(status),
@@ -94,13 +93,14 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
  ****************************************************************************/
 static void
 xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-        unsigned ip, unsigned ip_proto, unsigned port,
+        ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, 
         unsigned ttl,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[4096];
     const char *reason;
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     switch (proto) {
     case 6: reason = "syn-ack"; break;
@@ -110,7 +110,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(out);
 
     fprintf(fp, "<host endtime=\"%u\">"
-                    "<address addr=\"%u.%u.%u.%u\" addrtype=\"ipv4\"/>"
+                    "<address addr=\"%s\" addrtype=\"ipv4\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
                       "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
@@ -120,10 +120,7 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                 "</host>"
                 "\r\n",
         (unsigned)timestamp,
-        (ip>>24)&0xFF,
-        (ip>>16)&0xFF,
-        (ip>> 8)&0xFF,
-        (ip>> 0)&0xFF,
+        fmt.string,
         name_from_ip_proto(ip_proto),
         port,
         reason, ttl,

@@ -3,10 +3,11 @@
 */
 #ifndef RAWSOCK_H
 #define RAWSOCK_H
+#include "massip-addr.h"
 #include <stdio.h>
 struct Adapter;
 struct TemplateSet;
-#include "packet-queue.h"
+#include "stack-queue.h"
 
 
 /**
@@ -50,14 +51,6 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned is_vlan,
                      unsigned vlan_id);
 
-/**
- * Retrieve the datalink type of the adapter
- *
- *  1 = Ethernet
- * 12 = Raw IP (no datalink)
- */
-int
-rawsock_datalink(struct Adapter *adapter);
 
 /**
  * Print to the command-line the list of available adapters. It's called
@@ -66,14 +59,32 @@ rawsock_datalink(struct Adapter *adapter);
 void rawsock_list_adapters(void);
 
 void
-rawsock_send_probe(
+rawsock_send_probe_ipv4(
     struct Adapter *adapter,
-    unsigned ip_them, unsigned port_them,
-    unsigned ip_me, unsigned port_me,
+    ipv4address ip_them, unsigned port_them,
+    ipv4address ip_me, unsigned port_me,
     unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset);
 
+void
+rawsock_send_probe_ipv6(
+    struct Adapter *adapter,
+    ipv6address ip_them, unsigned port_them,
+    ipv6address ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
+    struct TemplateSet *tmplset);
+
+/**
+ * Queries the operating-system's network-stack in order to discover
+ * the best IPv4 address to use inside our own custom network-stack.
+ */
 unsigned rawsock_get_adapter_ip(const char *ifname);
+
+/**
+ * Queries the operating-system's network-stack in order to discover
+ * the best IPv6 address to use inside our own custom network-stack.
+ */
+ipv6address rawsock_get_adapter_ipv6(const char *ifname);
 
 /**
  * Given the network adapter name, like 'eth0', find the hardware
@@ -132,9 +143,6 @@ int rawsock_recv_packet(
     unsigned *usecs,
     const unsigned char **packet);
 
-int arp_resolve_sync(struct Adapter *adapter,
-    unsigned my_ipv4, const unsigned char *my_mac_address,
-    unsigned your_ipv4, unsigned char *your_mac_address);
 
 
 /**
@@ -144,7 +152,6 @@ int arp_resolve_sync(struct Adapter *adapter,
  * of work requiring us to process the flood of packets we generate.
  */
 void rawsock_ignore_transmits(struct Adapter *adapter,
-                              const unsigned char *adapter_mac,
                               const char *ifname);
 
 #endif

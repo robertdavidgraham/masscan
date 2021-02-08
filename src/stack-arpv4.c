@@ -13,11 +13,15 @@
         entry and re-request our address.
 */
 #include "rawsock.h"
-#include "proto-arp.h"
+#include "rawsock-adapter.h"
+#include "stack-src.h"
+#include "stack-arpv4.h"
+#include "stack-queue.h"
 #include "string_s.h"
 #include "logger.h"
 #include "pixie-timer.h"
-#include "packet-queue.h"
+#include "proto-preprocess.h"
+#include "util-checksum.h"
 
 #define VERIFY_REMAINING(n) if (offset+(n) > max) return;
 
@@ -40,6 +44,7 @@ struct ARP_IncomingRequest
     const unsigned char *mac_src;
     const unsigned char *mac_dst;
 };
+
 
 /****************************************************************************
  ****************************************************************************/
@@ -88,7 +93,6 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
     arp->is_valid = 1;
 }
 
-#include "rawsock-adapter.h"
 
 /****************************************************************************
  * Resolve the IP address into a MAC address. Do this synchronously, meaning,
@@ -96,9 +100,9 @@ proto_arp_parse(struct ARP_IncomingRequest *arp,
  * but not during then normal asynchronous operation during the scan.
  ****************************************************************************/
 int
-arp_resolve_sync(struct Adapter *adapter,
-    unsigned my_ipv4, const unsigned char *my_mac_address,
-    unsigned your_ipv4, unsigned char *your_mac_address)
+stack_arp_resolve(struct Adapter *adapter,
+    ipv4address_t my_ipv4, macaddress_t my_mac_address,
+    ipv4address_t your_ipv4, macaddress_t *your_mac_address)
 {
     unsigned char xarp_packet[64];
     unsigned char *arp_packet = &xarp_packet[0];
@@ -110,12 +114,10 @@ arp_resolve_sync(struct Adapter *adapter,
 
     /*
      * [KLUDGE]
-     *  If this is a VPN connection with raw IPv4, then we don't do any
-     *  ARPing, just return immediately. In other words, there's nothing
-     *  here to ARP
+     *  If this is a VPN connection
      */
-    if (rawsock_datalink(adapter) == 12) {
-        memcpy(your_mac_address, "\0\0\0\0\0\2", 6);
+    if (stack_if_datalink(adapter) == 12) {
+        memcpy(your_mac_address->addr, "\0\0\0\0\0\2", 6);
         return 0; /* success */
     }
 
@@ -129,7 +131,7 @@ arp_resolve_sync(struct Adapter *adapter,
      * Create the request packet
      */
     memcpy(arp_packet +  0, "\xFF\xFF\xFF\xFF\xFF\xFF", 6);
-    memcpy(arp_packet +  6, my_mac_address, 6);
+    memcpy(arp_packet +  6, my_mac_address.addr, 6);
     
     if (adapter->is_vlan) {
         memcpy(arp_packet + 12, "\x81\x00", 2);
@@ -148,7 +150,7 @@ arp_resolve_sync(struct Adapter *adapter,
             "\x00\x01" /* opcode = request */
             , 8);
 
-    memcpy(arp_packet + 22, my_mac_address, 6);
+    memcpy(arp_packet + 22, my_mac_address.addr, 6);
     arp_packet[28] = (unsigned char)(my_ipv4 >> 24);
     arp_packet[29] = (unsigned char)(my_ipv4 >> 16);
     arp_packet[30] = (unsigned char)(my_ipv4 >>  8);
@@ -187,7 +189,8 @@ arp_resolve_sync(struct Adapter *adapter,
 
             /* It's taking too long, so notify the user */
             if (!is_delay_reported) {
-                LOG(0, "...arping router MAC address...\n");
+                ipaddress_formatted_t fmt = ipv4address_fmt(your_ipv4);
+                LOG(0, "[+] resolving router %s with ARP (may take some time)...\n", fmt.string);
                 is_delay_reported = 1;
             }
         }
@@ -195,12 +198,8 @@ arp_resolve_sync(struct Adapter *adapter,
         /* If we aren't getting a response back to our ARP, then print a
          * status message */
         if (time(0) > start+1 && !is_arp_notice_given) {
-            fprintf(stderr, "ARPing local router %u.%u.%u.%u\n",
-                (unsigned char)(your_ipv4>>24),
-                (unsigned char)(your_ipv4>>16),
-                (unsigned char)(your_ipv4>> 8),
-                (unsigned char)(your_ipv4>> 0)
-                );
+            ipaddress_formatted_t fmt = ipv4address_fmt(your_ipv4);
+            LOG(0, "[+] arping local router %s\n", fmt.string);
             is_arp_notice_given = 1;
         }
 
@@ -230,27 +229,29 @@ arp_resolve_sync(struct Adapter *adapter,
 
         /* Is this an ARP packet? */
         if (!response.is_valid) {
-            LOG(2, "arp: etype=0x%04x, not ARP\n", px[12]*256 + px[13]);
+            LOG(2, "[-] arp: etype=0x%04x, not ARP\n", px[12]*256 + px[13]);
             continue;
         }
 
         /* Is this an ARP "reply"? */
         if (response.opcode != 2) {
-            LOG(2, "arp: opcode=%u, not reply(2)\n", response.opcode);
+            LOG(2, "[-] arp: opcode=%u, not reply(2)\n", response.opcode);
             continue;
         }
 
         /* Is this response directed at us? */
         if (response.ip_dst != my_ipv4) {
-            LOG(2, "arp: dst=%08x, not my ip 0x%08x\n", response.ip_dst, my_ipv4);
+            LOG(2, "[-] arp: dst=%08x, not my ip 0x%08x\n", response.ip_dst, my_ipv4);
             continue;
         }
-        if (memcmp(response.mac_dst, my_mac_address, 6) != 0)
+        if (memcmp(response.mac_dst, my_mac_address.addr, 6) != 0)
             continue;
 
         /* Is this the droid we are looking for? */
         if (response.ip_src != your_ipv4) {
-            LOG(2, "arp: target=%08x, not desired 0x%08x\n", response.ip_src, your_ipv4);
+            ipaddress_formatted_t fmt1 = ipv4address_fmt(response.ip_src);
+            ipaddress_formatted_t fmt2 = ipv4address_fmt(your_ipv4);
+            LOG(2, "[-] arp: target=%s, not desired %s\n", fmt1.string, fmt2.string);
             continue;
         }
 
@@ -259,25 +260,31 @@ arp_resolve_sync(struct Adapter *adapter,
          *  we've got a valid response, so save the results and
          *  return.
          */
-        memcpy(your_mac_address, response.mac_src, 6);
+        memcpy(your_mac_address->addr, response.mac_src, 6);
+        {
+            ipaddress_formatted_t fmt1 = ipv4address_fmt(response.ip_src);
+            ipaddress_formatted_t fmt2 = macaddress_fmt(*your_mac_address);
+            LOG(1, "[+] arp: %s == %s\n", fmt1.string, fmt2.string);
+        }
         return 0;
     }
 
     return 1;
 }
 
+    
+
+
 /****************************************************************************
+ * Handle an incoming ARP request.
  ****************************************************************************/
 int
-arp_response(
-    unsigned my_ip, const unsigned char *my_mac,
-    const unsigned char *px, unsigned length,
-    PACKET_QUEUE *packet_buffers,
-    PACKET_QUEUE *transmit_queue)
+stack_arp_incoming_request( struct stack_t *stack,
+    ipv4address_t my_ip, macaddress_t my_mac,
+    const unsigned char *px, unsigned length)
 {
     struct PacketBuffer *response = 0;
     struct ARP_IncomingRequest request;
-    int err;
 
     memset(&request, 0, sizeof(request));
 
@@ -285,15 +292,9 @@ arp_response(
     /* Get a buffer for sending the response packet. This thread doesn't
      * send the packet itself. Instead, it formats a packet, then hands
      * that packet off to a transmit thread for later transmission. */
-    for (err=1; err; ) {
-        err = rte_ring_sc_dequeue(packet_buffers, (void**)&response);
-        if (err != 0) {
-            //LOG(0, "packet buffers empty (should be impossible)\n");
-            pixie_usleep(100);
-        }
-    }
+    response = stack_get_packetbuffer(stack);
     if (response == NULL)
-        return -1; /* just to supress warnings */
+        return -1;
 
     /* ARP packets are too short, so increase the packet size to
      * the Ethernet minimum */
@@ -329,7 +330,7 @@ arp_response(
      * Create the response packet
      */
     memcpy(response->px +  0, request.mac_src, 6);
-    memcpy(response->px +  6, my_mac, 6);
+    memcpy(response->px +  6, my_mac.addr, 6);
     memcpy(response->px + 12, "\x08\x06", 2);
 
     memcpy(response->px + 14,
@@ -339,7 +340,7 @@ arp_response(
             "\x00\x02" /* opcode = reply(2) */
             , 8);
 
-    memcpy(response->px + 22, my_mac, 6);
+    memcpy(response->px + 22, my_mac.addr, 6);
     response->px[28] = (unsigned char)(my_ip >> 24);
     response->px[29] = (unsigned char)(my_ip >> 16);
     response->px[30] = (unsigned char)(my_ip >>  8);
@@ -355,13 +356,7 @@ arp_response(
     /*
      * Now queue the packet up for transmission
      */
-    for (err=1; err; ) {
-        err = rte_ring_sp_enqueue(transmit_queue, response);
-        if (err) {
-            LOG(0, "transmit queue full (should be impossible)\n");
-            pixie_usleep(10000000);
-        }
-    }
+    stack_transmit_packetbuffer(stack, response);
 
     return 0;
 }

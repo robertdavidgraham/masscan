@@ -5,12 +5,12 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "ranges.h" /*for parsing IPv4 addresses */
 #include "string_s.h"
 #include "util-malloc.h"
+#include "massip-parse.h"
+#include "logger.h"
 
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__sun__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun__)
 #include <unistd.h>
 #include <sys/socket.h>
 #include <net/route.h>
@@ -18,8 +18,19 @@
 #include <net/if_dl.h>
 #include <ctype.h>
 
-#define ROUNDUP(a)                           \
-((a) > 0 ? (1 + (((a) - 1) | (sizeof(int) - 1))) : sizeof(int))
+#define ROUNDUP2(a, n)       ((a) > 0 ? (1 + (((a) - 1U) | ((n) - 1))) : (n))
+
+#if defined(__APPLE__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#elif defined(__NetBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(uint64_t))
+#elif defined(__FreeBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#elif defined(__OpenBSD__)
+# define ROUNDUP(a)           ROUNDUP2((a), sizeof(int))
+#else
+# error unknown platform
+#endif
 
 static struct sockaddr *
 get_rt_address(struct rt_msghdr *rtm, int desired)
@@ -32,10 +43,7 @@ get_rt_address(struct rt_msghdr *rtm, int desired)
         if (bitmask & (1 << i)) {
             if ((1<<i) == desired)
                 return sa;
-#ifdef __sun__
-#else
             sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
-#endif
         } else
             ;
     }
@@ -90,12 +98,9 @@ dump_rt_addresses(struct rt_msghdr *rtm)
 
     for (i = 0; i < RTAX_MAX; i++) {
         if (bitmask & (1 << i)) {
-#ifdef __sun__
-#else
             printf("b=%u fam=%u len=%u\n", (1<<i), sa->sa_family, sa->sa_len);
             hexdump(sa, sa->sa_len + sizeof(sa->sa_family));
             sa = (struct sockaddr *)(ROUNDUP(sa->sa_len) + (char *)sa);
-#endif
         } else
             ;
     }
@@ -106,7 +111,7 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 {
     int fd;
     int seq = (int)time(0);
-    size_t err;
+    ssize_t err;
     struct rt_msghdr *rtm;
     size_t sizeof_buffer;
 
@@ -115,38 +120,61 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
      * Requests/responses from the kernel are done with an "rt_msghdr"
      * structure followed by an array of "sockaddr" structures.
      */
-    sizeof_buffer = sizeof(*rtm) + sizeof(struct sockaddr_in)*16;
-    rtm = MALLOC(sizeof_buffer);
+    sizeof_buffer = sizeof(*rtm) + 512;
+    rtm = calloc(1, sizeof_buffer);
     
     /*
      * Create a socket for querying the kernel
      */
-    fd = socket(PF_ROUTE, SOCK_RAW, 0);
+    fd = socket(AF_ROUTE, SOCK_RAW, 0);
     if (fd < 0) {
-        perror("socket(PF_ROUTE)");
+        perror("socket(AF_ROUTE)");
         free(rtm);
         return errno;
     }
 
+    /* Needs a timeout. Sometimes it'll hang indefinitely waiting for a 
+     * response that will never arrive */
+    {
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        err = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_RCVTIMEO: %d %s\n", errno, strerror(errno));
+
+        err = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+        if (err < 0)
+            LOG(0, "[-] SO_SNDTIMEO: %d %s\n", errno, strerror(errno));
+   }
 
     /*
      * Format and send request to kernel
      */
-    memset(rtm, 0, sizeof_buffer);
-    rtm->rtm_msglen = sizeof_buffer;
-    rtm->rtm_type = RTM_GET;
-    rtm->rtm_flags = RTF_UP | RTF_GATEWAY;
+    rtm->rtm_msglen = sizeof(*rtm) + sizeof(struct sockaddr_in);
     rtm->rtm_version = RTM_VERSION;
+    rtm->rtm_flags = RTF_UP;
+    rtm->rtm_type = RTM_GET;
+    rtm->rtm_addrs = RTA_DST | RTA_IFP;
+    rtm->rtm_pid = getpid();
     rtm->rtm_seq = seq;
-    rtm->rtm_addrs = RTA_DST | RTA_NETMASK | RTA_GATEWAY | RTA_IFP;
 
-    err = write(fd, (char *)rtm, sizeof_buffer);
-    if (err != sizeof_buffer) {
-        perror("write(RTM_GET)");
-        printf("----%u %u\n", (unsigned)err, (unsigned)sizeof_buffer);
-        close(fd);
-        free(rtm);
-        return -1;
+    /*
+     * Create an empty address of 0.0.0.0 to query the route
+     */
+    {
+        struct sockaddr_in *sin;
+        sin = (struct sockaddr_in *)(rtm + 1);
+        sin->sin_len = sizeof(*sin);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = 0;
+    }
+
+    err = write(fd, (char *)rtm, rtm->rtm_msglen);
+    if (err <= 0) {
+        LOG(0, "[-] getroute: write(): returned %d %s\n", errno, strerror(errno));
+        goto fail;
     }
 
     /*
@@ -167,9 +195,6 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
         break;
     }
     close(fd);
-
-    //hexdump(rtm+1, err-sizeof(*rtm));
-    //dump_rt_addresses(rtm);
 
     /*
      * Parse our data
@@ -198,6 +223,7 @@ rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 
     }
 
+fail:
     free(rtm);
     return -1;
 }
@@ -514,26 +540,21 @@ again:
         {
             const IP_ADDR_STRING *addr;
 
-            for (addr = &pAdapter->GatewayList;
-                    addr;
-                    addr = addr->Next) {
-                struct Range range;
-
-                range = range_parse_ipv4(addr->IpAddress.String, 0, 0);
-                if (range.begin != 0 && range.begin == range.end) {
-                    *ipv4 = range.begin;
+            for (addr = &pAdapter->GatewayList; addr; addr = addr->Next) {
+                unsigned x = massip_parse_ipv4(addr->IpAddress.String);
+                if (x != 0xFFFFFFFF) {
+                    *ipv4 = x;
+                    goto end;
                 }
-
-
             }
         }
 
 
         //printf("\n");
     }
+end:
     if (pAdapterInfo)
         free(pAdapterInfo);
-
     return 0;
 }
 

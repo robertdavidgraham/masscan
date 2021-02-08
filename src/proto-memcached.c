@@ -13,7 +13,7 @@
 #include "proto-ssl.h"
 #include "proto-udp.h"
 #include "syn-cookie.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "util-malloc.h"
 #include <ctype.h>
 #include <string.h>
@@ -302,8 +302,8 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
             uint64_t entropy
             )
 {
-    unsigned ip_them;
-    unsigned ip_me;
+    ipaddress ip_them;
+    ipaddress ip_me;
     unsigned port_them = parsed->port_src;
     unsigned port_me = parsed->port_dst;
     unsigned request_id = 0;
@@ -344,10 +344,8 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
         goto not_memcached;
 
     /* Grab IP addresses */
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
+    ip_them = parsed->src_ip;
+    ip_me = parsed->dst_ip;
 
     /* Validate the "syn-cookie" style information. In the case of SNMP,
      * this will be held in the "request-id" field. If the cookie isn't

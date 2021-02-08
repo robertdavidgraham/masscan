@@ -21,8 +21,6 @@ struct RangeList
     unsigned count;
     unsigned max;
     unsigned *picker;
-    unsigned *picker_hash;
-    unsigned picker_mask;
     unsigned is_sorted:1;
 };
 
@@ -61,7 +59,7 @@ rangelist_is_contains(const struct RangeList *task, unsigned number);
  * by putting 'begin' after the 'end'
  */
 int
-range_is_valid(const struct Range range);
+range_is_valid(struct Range range);
 
 /**
  * Parses IPv4 addresses out of a string. A number of formats are allowed,
@@ -94,7 +92,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max);
  */
 void
 rangelist_exclude(  struct RangeList *targets,
-              const struct RangeList *excludes);
+                    struct RangeList *excludes);
 
 
 /**

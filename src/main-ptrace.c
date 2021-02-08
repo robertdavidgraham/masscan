@@ -12,15 +12,14 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
 {
     unsigned x;
     struct PreprocessedInfo parsed;
-    unsigned src_ip;
-    unsigned dst_ip;
-    char from[32];
-    char to[32];
+    char from[64];
+    char to[64];
     char sz_type[32];
     unsigned type;
     double timestamp = 1.0 * pixie_gettime() / 1000000.0;
     unsigned offset;
     const char *direction;
+    ipaddress_formatted_t fmt;
 
     if (is_sent)
         direction = "SENT";
@@ -33,25 +32,13 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
         return;
     offset = parsed.found_offset;
 
-    src_ip = parsed.ip_src[0] << 24
-        | parsed.ip_src[1] << 16
-        | parsed.ip_src[2] << 8
-        | parsed.ip_src[3];
-    dst_ip = parsed.ip_dst[0] << 24
-        | parsed.ip_dst[1] << 16
-        | parsed.ip_dst[2] << 8
-        | parsed.ip_dst[3];
 
     /* format the IP addresses into fixed-width fields */
-    sprintf_s(from, sizeof(from), "%u.%u.%u.%u:%u",
-              (src_ip>>24)&0xFF, (src_ip>>16)&0xFF,
-              (src_ip>>8)&0xFF, (src_ip>>0)&0xFF,
-              parsed.port_src);
+    fmt = ipaddress_fmt(parsed.src_ip);
+    sprintf_s(from, sizeof(from), "[%s]:%u", fmt.string, parsed.port_src);
 
-    sprintf_s(to, sizeof(to), "%u.%u.%u.%u:%u",
-              (dst_ip>>24)&0xFF, (dst_ip>>16)&0xFF,
-              (dst_ip>>8)&0xFF, (dst_ip>>0)&0xFF,
-              parsed.port_dst);
+    fmt = ipaddress_fmt(parsed.dst_ip);
+    sprintf_s(to, sizeof(to), "[%s]:%u", fmt.string, parsed.port_dst);
 
     switch (parsed.found) {
         case FOUND_ARP:

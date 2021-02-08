@@ -43,6 +43,15 @@
     <Filter Include="Source Files\vulncheck">
       <UniqueIdentifier>{8ad0f675-466a-4fb9-bac6-6fa0c868aefb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\massip">
+      <UniqueIdentifier>{1621e340-1943-47fa-b12e-336a46d19b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{1d9cb2b4-1715-44d0-98e9-745f236c7872}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stack">
+      <UniqueIdentifier>{26588af1-2234-4000-96fc-72f774f584f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\proto-banner1.c">
@@ -99,9 +108,6 @@
     <ClCompile Include="..\src\proto-arp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rawsock-arp.c">
-      <Filter>Source Files\rawsock</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\rawsock-getif.c">
       <Filter>Source Files\rawsock</Filter>
     </ClCompile>
@@ -155,9 +161,6 @@
     </ClCompile>
     <ClCompile Include="..\src\proto-ssl.c">
       <Filter>Source Files\proto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\main-src.c">
-      <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rand-blackrock.c">
       <Filter>Source Files\crypto</Filter>
@@ -324,26 +327,59 @@
     <ClCompile Include="..\src\read-service-probes.c">
       <Filter>Source Files\versioning</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\util-malloc.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\proto-coap.c">
       <Filter>Source Files\proto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ranges.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ranges6.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\range-file.c">
-      <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-tcp-rdp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\proto-oproto.c">
       <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\misc-rstfilter.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getip6.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-checksum.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-malloc.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-src.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-ndpv6.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-queue.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-parse.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-rangesv4.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-rangesv6.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-addr.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-hostonly.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-arpv4.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-if.c">
+      <Filter>Source Files\stack</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -433,9 +469,6 @@
     </ClInclude>
     <ClInclude Include="..\src\masscan.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\main-src.h">
-      <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\rand-primegen.h">
       <Filter>Source Files\crypto</Filter>
@@ -569,29 +602,56 @@
     <ClInclude Include="..\src\read-service-probes.h">
       <Filter>Source Files\versioning</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\util-malloc.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-coap.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\util-bool.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ranges6.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ranges.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\range-file.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\proto-tcp-rdp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-oproto.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\misc-rstfilter.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-checksum.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-malloc.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-src.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-ndpv6.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-queue.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-parse.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-rangesv4.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-rangesv6.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-addr.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-arpv4.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-adapter.h">
+      <Filter>Source Files\rawsock</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

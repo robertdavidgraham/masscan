@@ -47,13 +47,13 @@ LOG(int level, const char *fmt, ...)
 /***************************************************************************
  ***************************************************************************/
 static void
-vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
+vLOGip(int level, ipaddress ip, unsigned port, const char *fmt, va_list marker)
 {
     if (level <= global_debug_level) {
-        char sz_ip[16];
+        char sz_ip[64];
+        ipaddress_formatted_t fmt1 = ipaddress_fmt(ip);
 
-        sprintf_s(sz_ip, sizeof(sz_ip), "%u.%u.%u.%u",
-            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>>8)&0xFF, (ip>>0)&0xFF);
+        sprintf_s(sz_ip, sizeof(sz_ip), "%s", fmt1.string);
         fprintf(stderr, "%-15s:%5u: ", sz_ip, port);
         vfprintf(stderr, fmt, marker);
         fflush(stderr);
@@ -64,7 +64,7 @@ vLOGip(int level, unsigned ip, unsigned port, const char *fmt, va_list marker)
 /***************************************************************************
  ***************************************************************************/
 void
-LOGip(int level, unsigned ip, unsigned port, const char *fmt, ...)
+LOGip(int level, ipaddress ip, unsigned port, const char *fmt, ...)
 {
     va_list marker;
 

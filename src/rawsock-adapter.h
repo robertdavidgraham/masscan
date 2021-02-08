@@ -13,4 +13,14 @@ struct Adapter
     int link_type;
 };
 
+
+/**
+ * Retrieve the datalink type of the adapter
+ *
+ *  1 = Ethernet
+ * 12 = Raw IP (no datalink)
+ */
+int
+stack_if_datalink(struct Adapter *adapter);
+
 #endif

@@ -29,15 +29,15 @@ ndjson_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
-                 unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+                 ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
+    ipaddress_formatted_t fmt;
     UNUSEDPARM(out);
-    //UNUSEDPARM(timestamp);
 
     fprintf(fp, "{");
-    fprintf(fp, "\"ip\":\"%u.%u.%u.%u\",",
-            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\"ip\":\"%s\",", fmt.string);
     fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"status\",\"data\":{\"status\":\"%s\","
                 "\"reason\":\"%s\",\"ttl\":%u}",
                 (int) timestamp,
@@ -96,19 +96,20 @@ normalize_ndjson_string(const unsigned char *px, size_t length,
  ******************************************************************************/
 static void
 ndjson_out_banner(struct Output *out, FILE *fp, time_t timestamp,
-                 unsigned ip, unsigned ip_proto, unsigned port,
+                 ipaddress ip, unsigned ip_proto, unsigned port,
                  enum ApplicationProtocol proto,
                  unsigned ttl,
                  const unsigned char *px, unsigned length)
 {
     char banner_buffer[65536];
+    ipaddress_formatted_t fmt;
 
     UNUSEDPARM(ttl);
     //UNUSEDPARM(timestamp);
 
     fprintf(fp, "{");
-    fprintf(fp, "\"ip\":\"%u.%u.%u.%u\",",
-            (ip>>24)&0xFF, (ip>>16)&0xFF, (ip>> 8)&0xFF, (ip>> 0)&0xFF);
+    fmt = ipaddress_fmt(ip);
+    fprintf(fp, "\"ip\":\"%s\",", fmt.string);
     fprintf(fp, "\"timestamp\":\"%d\",\"port\":%u,\"proto\":\"%s\",\"rec_type\":\"banner\",\"data\":{\"service_name\":\"%s\",\"banner\":\"%s\"}",
             (int) timestamp,
             port,

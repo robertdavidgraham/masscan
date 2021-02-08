@@ -9,7 +9,7 @@ masscan <ip addresses/ranges> -p <ports> <options>
 
 **masscan** is an Internet-scale port scanner, useful for large scale surveys
 of the Internet, or of internal networks. While the default transmit rate
-is only 100 packets/second, it can optional go as fast as 25 million
+is only 100 packets/second, it can optionally go as fast as 25 million
 packets/second, a rate sufficient to scan the Internet in 3 minutes for
 one port.
 
@@ -17,12 +17,12 @@ one port.
 
   * `<ip/range>`: anything on the command-line not prefixed with a '-' is
     assumed to be an IP address or range. There are three valid formats.
-	The first is a single IPv4 address like "192.168.0.1". The second
-	is a range like "10.0.0.1-10.0.0.100". The third is a CIDR address,
-	like "0.0.0.0/0". At least one target must be specified. Multiple 
+	The first is a single IP address like `192.168.0.1` or `2001:db8::1`. The second
+	is a range like `10.0.0.1-10.0.0.100`. The third is a CIDR address,
+	like `0.0.0.0/0` or `2001:db8::/90`. At least one target must be specified. Multiple 
 	targets can be specified. This can be specified as multiple options
 	separated by space, or can be separated by a comma as a single option,
-	such as `10.0.0.0/8,192.168.0.1`.
+	such as `10.0.0.0/8,192.168.0.1,2001:db8::1`.
 
   * `--range <ip/range>`: the same as target range spec described above,
     except as a named parameter instead of an unnamed one.
@@ -33,9 +33,9 @@ one port.
 	`-p80,20-25`. UDP ports can also be specified, like
 	`--ports U:161,U:1024-1100`.
 
-  * `--banners`: specifies that banners should be grabbed, like HTTP server
-    versions, HTML title fields, and so forth. Only a few protocols are 
-	supported.
+  * `--banners`: specifies that banners should be grabbed after establishing
+	a TCP connection. Protocols supported include HTTP, FTP, IMAP4, memcached,
+	POP3, SMTP, SSH, SSL, SMB, Telnet, RDP, and VNC.
 
   * `--rate <packets-per-second>`: specifies the desired rate for transmitting
     packets. This can be very small numbers, like `0.1` for transmitting 
@@ -45,12 +45,14 @@ one port.
     versions of Linux can do 2.5 million packets per second. The PF_RING driver
     is needed to get to 25 million packets/second.
 
-  * `-c <filename>`, `--conf <filename>`: reads in a configuration file. The
-    format of the configuration file is described below.
+  * `-c <filename>`, `--conf <filename>`: reads in a configuration file. 
+    If not specified, then will read from `/etc/masscan/masscan.conf` by default.
+	The format is described below under 'CONFIGURATION FILE'.
 
   * `--resume <filename>`: the same as `--conf`, except that a few options
     are automatically set, such as `--append-output`. The format of the 
-	configuration file is described below.
+	configuration file is described below. The purpose is to resume a scan
+	saved in `paused.conf` that was interupted with [ctrl-c].
 
   * `--echo`: don't run, but instead dump the current configuration to a file.
     This file can then be used with the `-c` option. The format of this
@@ -60,7 +62,7 @@ one port.
 	such as "eth0" or "dna1". If not specified, the first network interface
 	found with a default gateway will be used.
 
-  * `--adapter-ip <ip-address>`: send packets using this IP address. If not
+  * `--adapter-ip <ip-address>`, `--source-ip`: send packets using this IP address. If not
     specified, then the first IP address bound to the network interface
 	will be used. Instead of a single IP address, a range may be specified.
 	NOTE: The size of the range must be an even power of 2, such as 1, 2, 4,
@@ -96,22 +98,21 @@ one port.
     target format described above. These ranges override any targets,
 	preventing them from being scanned.
 
-  * `--includefile <filename>`: reads in a list of ranges to scan, in the same
-    target format described above. Each line is a range by itself, so that
-    you don't need to prefix them all with `range =`.
-
-  * `-iL <filename>`: same as `--includefile`
+  * `-iL <filename>`, `--includefile <filename>`: reads in a list of ranges to scan, in the same
+    target format described above for IP addresses and ranges. This file can contain
+	millions of addresses and ranges.
 
   * `--append-output`: causes output to append to file, rather than
-    overwriting the file.
+    overwriting the file. Useful for when resumeing scans (see `--resume`).
 
-  * `--iflist`: list the available network interfaces, and then exits.
+  * `--iflist`: list the available network interfaces, and then exits. The
+    `-e <ifname>` can then be used with one of the listed adapters.
 
   * `--retries`: the number of retries to send, at 1 second intervals. Note
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
-  * `--nmap`: print help aobut nmap-compatibility alternatives for these
+  * `--nmap`: print help about nmap-compatibility alternatives for these
     options.
 
   * `--pcap-payloads`: read packets from a libpcap file containing packets
@@ -180,7 +181,7 @@ one port.
     Using a different seed will cause packets to be sent in a different
 	random order. Instead of an integer, the string `time` can be specified,
 	which seeds using the local timestamp, automatically generating a 
-	differnet random order of scans. If no seed specified, `time` is the
+	different random order of scans. If no seed specified, `time` is the
 	default.
 
   * `--regress`: run a regression test, returns '0' on success and '1' on
@@ -216,26 +217,26 @@ one port.
 	`xml` will be used.
 		   
   * `-oB <filename>`: sets the output format to binary and saves the output in
-    the given filename. This is equivelent to using the `--output-format` and
+    the given filename. This is equivalent to using the `--output-format` and
     `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
-    equivelents, but require a separate step to convert back into XML or
+    equivalents, but require a separate step to convert back into XML or
     another readable format.
 	
   * `-oX <filename>`: sets the output format to XML and saves the output in the
-    given filename. This is equivelent to using the `--output-format xml` and
+    given filename. This is equivalent to using the `--output-format xml` and
     `--output-filename` parameters.
 	
   * `-oG <filename>`: sets the output format to grepable and saves the output 
-	  in the given filename. This is equivelent to using the --output-format grepable 
+	  in the given filename. This is equivalent to using the --output-format grepable 
 	  and --output-filename parameters.
   
   * `-oJ <filename>`: sets the output format to JSON and saves the output in 
-	  the given filename. This is equivelent to using the --output-format json 
+	  the given filename. This is equivalent to using the --output-format json 
 	  and --output-filename parameters.
   
   * `-oL <filename>`: sets the output format to a simple list format and saves 
-	  the output in the given filename. This is equivelent to using 
+	  the output in the given filename. This is equivalent to using 
 	  the --output-format list and --output-filename parameters.
 
   *  `--readscan <binary-files>`: reads the files created by the `-oB` option
@@ -329,7 +330,7 @@ If the user-mode stack shares the same IP address as the operating-system,
 then the kernel will send RST packets during a scan. This can cause
 unnecessary traffic during a simple port scan, and will terminate TCP
 connections when doing a `--banners` scan. To prevent, this, the built-in
-firewall should be used to filte the source ports. On Linux, this can be done
+firewall should be used to filter the source ports. On Linux, this can be done
 by doing something like:
 
     # iptables -A INPUT -i eth0 -p tcp --dport 44444 -j DROP
@@ -375,7 +376,7 @@ using the following command-lines:
 	# masscan 0.0.0.0/0 -p0-65535 --shard 3/3
 
 An alternative is with the "resume" feature. A scan has an internal index that
-goes from zero to the number of ports times then number of IP addresses. The
+goes from zero to the number of ports times the number of IP addresses. The
 following example shows splitting up a scan into chunks of a 1000 items each:
 
 	# masscan 0.0.0.0/0 -p0-65535 --resume-index 0 --resume-count 1000
@@ -448,7 +449,8 @@ Despite the Internet being a public, end-to-end network, you are still
 ## COMPATIBILITY
 
 While not listed in this document, a lot of parameters compatible with
-`nmap` will also work.
+`nmap` will also work. It runs on macOS, Linux, and Windows. It's compiled
+in fairly portable C language. It supports IPv4 and IPv6.
 
 ## SEE ALSO
 

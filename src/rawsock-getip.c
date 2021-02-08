@@ -13,7 +13,7 @@
 */
 #include "rawsock.h"
 #include "string_s.h"
-#include "ranges.h" /*for parsing IPv4 addresses */
+#include "massip-parse.h"
 
 /*****************************************************************************
  *****************************************************************************/
@@ -70,13 +70,14 @@ rawsock_get_adapter_ip(const char *ifname)
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD err;
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
+    unsigned result = 0;
 
     ifname = rawsock_win_name(ifname);
 
     /*
      * Allocate a proper sized buffer
      */
-    pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof (IP_ADAPTER_INFO));
+    pAdapterInfo = malloc(sizeof (IP_ADAPTER_INFO));
     if (pAdapterInfo == NULL) {
         fprintf(stderr, "error:malloc(): for GetAdaptersinfo\n");
         return 0;
@@ -115,26 +116,26 @@ again:
     if (pAdapter) {
         const IP_ADDR_STRING *addr;
 
-        for (addr = &pAdapter->IpAddressList;
-                addr;
-                addr = addr->Next) {
-            struct Range range;
+        for (addr = &pAdapter->IpAddressList; addr; addr = addr->Next) {
+            unsigned x;
 
-            range = range_parse_ipv4(addr->IpAddress.String, 0, 0);
-            if (range.begin != 0 && range.begin == range.end) {
-                return range.begin;
+            x = massip_parse_ipv4(addr->IpAddress.String);
+            if (x != 0xFFFFFFFF) {
+                result = x;
+                goto end;
             }
         }
     }
 
+end:
     if (pAdapterInfo)
         free(pAdapterInfo);
 
-    return 0;
+    return result;
 }
 /*****************************************************************************
  *****************************************************************************/
-#elif defined(__APPLE__) || defined(__FreeBSD__) || 1
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || 1
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>

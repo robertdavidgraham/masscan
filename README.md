@@ -3,47 +3,54 @@
 # MASSCAN: Mass IP port scanner
 
 This is an Internet-scale port scanner. It can scan the entire Internet
-in under 6 minutes, transmitting 10 million packets per second,
+in under 5 minutes, transmitting 10 million packets per second,
 from a single machine.
 
-It's input/output is similar to `nmap`, the most famous port scanner.
-When in doubt, try one of those features.
+Its usage (parameters, output) is similar to `nmap`, the most famous port scanner.
+When in doubt, try one of those features -- features that support widespread
+scanning of many machines are supported, while in-depth scanning of single
+machines aren't.
 
-Internally, it uses asynchronous tranmissions, similar to port scanners
+Internally, it uses asynchronous transmission, similar to port scanners
 like  `scanrand`, `unicornscan`, and `ZMap`. It's more flexible, allowing
 arbitrary port and address ranges.
 
-NOTE: masscan uses a its own **custom TCP/IP stack**. Anything other than
+NOTE: masscan uses its own **ad hoc TCP/IP stack**. Anything other than
 simple port scans may cause conflict with the local TCP/IP stack. This means you 
-need to either the `--src-ip` option to run from a different IP address, or
+need to use either the `--src-ip` option to run from a different IP address, or
 use `--src-port` to configure which source ports masscan uses, then also
 configure the internal firewall (like `pf` or `iptables`) to firewall those ports
 from the rest of the operating system.
 
-This tool is free, but consider contributing money to its developement:
+This tool is free, but consider contributing money to its development:
 Bitcoin wallet address: 1MASSCANaHUiyTtR3bJ2sLGuMw5kDBaj4T
 
 
 # Building
 
-On Debian/Ubuntu, it goes something like this:
+On Debian/Ubuntu, it goes something like the following. It doesn't
+really have any dependencies other than a C compiler (such as `gcc`
+or `clang`).
 
-	$ sudo apt-get install git gcc make libpcap-dev
-	$ git clone https://github.com/robertdavidgraham/masscan
-	$ cd masscan
-	$ make
+	sudo apt-get --assume-yes install git make gcc
+	git clone https://github.com/robertdavidgraham/masscan
+	cd masscan
+	make
 
-This puts the program in the `masscan/bin` subdirectory. You'll have to
-manually copy it to something like `/usr/local/bin` if you want to
-install it elsewhere on the system.
+This puts the program in the `masscan/bin` subdirectory. 
+To install it (on Linux) run:
+
+    make install
 
 The source consists of a lot of small files, so building goes a lot faster
-by using the multi-threaded build:
+by using the multi-threaded build. This requires more than 2gigs on a 
+Raspberry Pi (and breaks), so you might use a smaller number, like `-j4` rather than
+all possible threads.
 
-	$ make -j
+	make -j
 
 While Linux is the primary target platform, the code runs well on many other
-systems. Here's some additional build info:
+systems (Windows, macOS, etc.). Here's some additional build info:
 
   * Windows w/ Visual Studio: use the VS10 project
   * Windows w/ MingGW: just type `make`
@@ -51,68 +58,26 @@ systems. Here's some additional build info:
   * Mac OS X /w XCode: use the XCode4 project
   * Mac OS X /w cmdline: just type `make`
   * FreeBSD: type `gmake`
-  * other: try just compiling all the files together
+  * other: try just compiling all the files together, `cc src/*.c -o bin/masscan`
 
-
-## PF_RING
-
-To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
-adapter and a special driver known as ["PF_RING ZC" from ntop](http://www.ntop.org/products/packet-capture/pf_ring/pf_ring-zc-zero-copy/). Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
-you need to build the following components:
-
-  * `libpfring.so` (installed in /usr/lib/libpfring.so)
-  * `pf_ring.ko` (their kernel driver)
-  * `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
-
-You don't need to build their version of `libpcap.so`.
-
-When Masscan detects that an adapter is named something like `zc:enp1s0` instead
-of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
-
-## Regression testing
-The project contains a built-in self-test:
-
-	$ make regress
-	bin/masscan --regress
-	selftest: success!
-
-This tests a lot of tricky bits of the code. You should do this after building.
-
-
-## Performance testing
-
-To test performance, run something like the following:
-
-	$ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --router-mac 66-55-44-33-22-11
-
-The bogus `--router-mac` keeps packets on the local network segments so that
-they won't go out to the Internet.
-
-You can also test in "offline" mode, which is how fast the program runs
-without the transmit overhead:
-
-	$ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --offline
-    
-This second benchmark shows roughly how fast the program would run if it were
-using PF_RING, which has near zero overhead.
-
+On macOS, the x86 binaries seem to work just as fast under ARM emulation.
 
 # Usage
 
 Usage is similar to `nmap`. To scan a network segment for some ports:
 
-	# masscan -p80,8000-8100 10.0.0.0/8
+	# masscan -p80,8000-8100 10.0.0.0/8 2603:3001:2d00:da00::/112
 
 This will:
-* scan the 10.x.x.x subnet, all 16 million addresses
-* scans port 80 and the range 8000 to 8100, or 102 addresses total
+* scan the `10.x.x.x` subnet, and `2603:3001:2d00:da00::x` subnets
+* scans port 80 and the range 8000 to 8100, or 102 ports total, on both subnets
 * print output to `<stdout>` that can be redirected to a file
 
 To see the complete list of options, use the `--echo` feature. This
 dumps the current configuration and exits. This output can be used as input back
 into the program:
 
-	# masscan -p80,8000-8100 10.0.0.0/8 --echo > xxx.conf
+	# masscan -p80,8000-8100 10.0.0.0/8 2603:3001:2d00:da00::/112 --echo > xxx.conf
 	# masscan -c xxx.conf --rate 1000
 
 
@@ -122,18 +87,36 @@ Masscan can do more than just detect whether ports are open. It can also
 complete the TCP connection and interaction with the application at that
 port in order to grab simple "banner" information.
 
+Masscan supports banner checking on the following protocols:
+  * FTP
+  * HTTP
+  * IMAP4
+  * memcached
+  * POP3
+  * SMTP
+  * SSH
+  * SSL
+  * SMBv1
+  * SMBv2
+  * Telnet
+  * RDP
+  * VNC
+
 The problem with this is that masscan contains its own TCP/IP stack
 separate from the system you run it on. When the local system receives
 a SYN-ACK from the probed target, it responds with a RST packet that kills
 the connection before masscan can grab the banner.
 
 The easiest way to prevent this is to assign masscan a separate IP
-address. This would look like the following:
+address. This would look like one of the following examples:
 
 	# masscan 10.0.0.0/8 -p80 --banners --source-ip 192.168.1.200
+      # masscan 2a00:1450:4007:810::/112 -p80 --banners --source-ip 2603:3001:2d00:da00:91d7:b54:b498:859d
 
 The address you choose has to be on the local subnet and not otherwise
-be used by another system.
+be used by another system. Masscan will warn you that you've made a
+mistake, but you might've messed up the other machine's communications
+for several minutes, so be careful.
 
 In some cases, such as WiFi, this isn't possible. In those cases, you can
 firewall the port that masscan uses. This prevents the local TCP/IP stack
@@ -154,7 +137,7 @@ you should choose ports either below 32768 or 61000 and above.
 
 Setting an `iptables` rule only lasts until the next reboot. You need to lookup how to
 save the configuration depending upon your distro, such as using `iptables-save` 
-and/or `iptables-persistant`.
+and/or `iptables-persistent`.
 
 On Mac OS X and BSD, there are similar steps. To find out the ranges to avoid,
 use a command like the following:
@@ -182,7 +165,7 @@ with the following command:
 
 Windows doesn't respond with RST packets, so neither of these techniques
 are necessary. However, masscan is still designed to work best using its
-own IP address, so you should run that way when possible, even when its
+own IP address, so you should run that way when possible, even when it is
 not strictly necessary.
 
 The same thing is needed for other checks, such as the `--heartbleed` check,
@@ -250,7 +233,8 @@ This also makes things easier when you repeat a scan.
 By default, masscan first loads the configuration file 
 `/etc/masscan/masscan.conf`. Any later configuration parameters override what's
 in this default configuration file. That's where I put my "excludefile" 
-parameter, so that I don't ever forget it. It just works automatically.
+parameter so that I don't ever forget it. It just works automatically.
+
 
 ## Getting output
 
@@ -260,10 +244,10 @@ to convert them into any other format. There are five supported output formats:
 1. xml:  Just use the parameter `-oX <filename>`. 
 	Or, use the parameters `--output-format xml` and `--output-filename <filename>`.
 
-2. binary: This is the masscan builtin format. It produces much smaller files, so that
+2. binary: This is the masscan builtin format. It produces much smaller files so that
 when I scan the Internet my disk doesn't fill up. They need to be parsed,
-though. The command line option `--readscan` will read binary scan files.
-Using `--readscan` with the `-oX` option will produce a XML version of the 
+though. The command-line option `--readscan` will read binary scan files.
+Using `--readscan` with the `-oX` option will produce an XML version of the 
 results file.
 
 3. grepable: This is an implementation of the Nmap -oG
@@ -284,11 +268,15 @@ per line. Just use the parameter `-oL <filename>`. Or, use the parameters
 	open tcp 80 XXX.XXX.XXX.XXX 1390380064
 	```	
 
+
 ## Comparison with Nmap
 
 Where reasonable, every effort has been taken to make the program familiar
-to `nmap` users, even though it's fundamentally different. Two important
-differences are:
+to `nmap` users, even though it's fundamentally different. Masscan is tuned
+for wide range scanning of a lot of machines, whereas nmap is designed for
+intensive scanning of a single machine or a small range.
+
+Two important differences are:
 
 * no default ports to scan, you must specify `-p <ports>`
 * target hosts are IP addresses or simple ranges, not DNS names, nor 
@@ -299,7 +287,7 @@ enabled:
 * `-sS`: this does SYN scan only (currently, will change in the future)
 * `-Pn`: doesn't ping hosts first, which is fundamental to the async operation
 * `-n`: no DNS resolution happens
-* `--randomize-hosts`: scan completely randomized
+* `--randomize-hosts`: scan completely randomized, always, you can't change this
 * `--send-eth`: sends using raw `libpcap`
 
 If you want a list of additional `nmap` compatible settings, use the following
@@ -320,11 +308,20 @@ IP addresses so that it shouldn't overwhelm any distant network.
 By default, the rate is set to 100 packets/second. To increase the rate to
 a million use something like `--rate 1000000`.
 
+When scanning the IPv4 Internet, you'll be scanning lots of subnets,
+so even though there's a high rate of packets going out, each
+target subnet will receive a small rate of incoming packets.
+
+However, with IPv6 scanning, you'll tend to focus on a single
+target subnet with billions of addresses. Thus, your default
+behavior will overwhelm the target network. Networks often
+crash under the load that masscan can generate.
 
 
 # Design
 
 This section describes the major design issues of the program.
+
 
 ## Code Layout
 
@@ -333,6 +330,7 @@ contains the `transmit_thread()` and `receive_thread()` functions. These
 functions have been deliberately flattened and heavily commented so that you
 can read the design of the program simply by stepping line-by-line through
 each of these.
+
 
 ## Asynchronous
 
@@ -375,7 +373,7 @@ or exclude a lot of sub-ranges. This chops up the desired range into hundreds
 of smaller ranges.
 
 This leads to one of the slowest parts of the code. We transmit 10 million
-packets per second, and have to convert an index variable to an IP address
+packets per second and have to convert an index variable to an IP address
 for each and every probe. We solve this by doing a "binary search" in a small
 amount of memory. At this packet rate, cache efficiencies start to dominate
 over algorithm efficiencies. There are a lot of more efficient techniques in
@@ -405,7 +403,7 @@ instructions are around 90 clock cycles, or 30 nanoseconds, on x86 CPUs. When
 transmitting at a rate of 10 million packets/second, we have only
 100 nanoseconds per packet. I see no way to optimize this any better. Luckily,
 though, two such operations can be executed simultaneously, so doing two 
-of these as shown above is no more expensive than doing one.
+of these, as shown above, is no more expensive than doing one.
 
 There are actually some easy optimizations for the above performance problems,
 but they all rely upon `i++`, the fact that the index variable increases one
@@ -415,7 +413,7 @@ heck out of target networks that aren't built for this level of speed. We
 need to spread our traffic evenly over the target.
 
 The way we randomize is simply by encrypting the index variable. By definition,
-encryption is random, and creates a 1-to-1 mapping between the original index
+encryption is random and creates a 1-to-1 mapping between the original index
 variable and the output. This means that while we linearly go through the
 range, the output IP addresses are completely random. In code, this looks like:
 
@@ -434,7 +432,7 @@ MODULUS (%). In my current benchmarks, it's taking 40 nanoseconds to
 encrypt the variable.
 
 This architecture allows for lots of cool features. For example, it supports
-"shards". You can setup 5 machines each doing a fifth of the scan, or
+"shards". You can set up 5 machines each doing a fifth of the scan or
 `range / shard_count`. Shards can be multiple machines, or simply multiple
 network adapters on the same machine, or even (if you want) multiple IP
 source addresses on the same network adapter.
@@ -457,7 +455,6 @@ as the index. One of these days I'm going to do a study of the Internet,
 and differentiate "back-to-back", "1 second", "10 second", and "1 minute"
 retransmits this way in order to see if there is any difference in what
 gets dropped.
-
 
 
 ## C10 Scalability
@@ -485,7 +482,7 @@ Masscan has no "mutex". Modern mutexes (aka. futexes) are mostly user-mode,
 but they have two problems. The first problem is that they cause cache-lines
 to bounce quickly back-and-forth between CPUs. The second is that when there
 is contention, they'll do a system call into the kernel, which kills
-performance. Mutexes on the fast path of a program severely limits scalability.
+performance. A mutex on the fast path of a program severely limits scalability.
 Instead, Masscan uses "rings" to synchronize things, such as when the
 user-mode TCP stack in the receive thread needs to transmit a packet without
 interfering with the transmit thread.
@@ -494,7 +491,7 @@ interfering with the transmit thread.
 ## Portability
 
 The code runs well on Linux, Windows, and Mac OS X. All the important bits are
-in standard C (C90). It therefore compiles on Visual Studio with Microsoft's
+in standard C (C90). Therefore, it compiles on Visual Studio with Microsoft's
 compiler, the Clang/LLVM compiler on Mac OS X, and GCC on Linux.
 
 Windows and Macs aren't tuned for packet transmit, and get only about 300,000
@@ -519,9 +516,86 @@ A lot of effort has gone into making the input/output look like `nmap`, which
 everyone who does port scans is (or should be) familiar with.
 
 
+## IPv6 and IPv4 coexistence
+
+Masscan supports IPv6, but there is no special mode, both are supported
+at the same time. (There is no `-6` option -- it's always available).
+
+In any example you see of masscan usage,
+simply put an IPv6 address where you see an IPv4 address. You can include
+IPv4 and IPv6 addresses simultaneously in the same scan. Output includes
+the appropriate address at the same location, with no special marking.
+
+Just remember that IPv6 address space is really big. You probably don't want to scan
+for big ranges, except maybe the first 64k addresses of a subnet that were assigned
+via DHCPv6.
+
+Instead, you'll probably want to scan large lists of addresses stored
+in a file (`--include-file filename.txt`) that you got from other sources.
+Like everywhere else, this file can contain lists of both IPv4 and IPv6 addresses.
+The test file I use contains 8 million addresses. Files of that size need a couple
+extra seconds to be read on startup (masscan sorts the addresses and removes
+duplicates before scanning).
+
+Remember that masscan contains its own network stack. Thus, the local machine
+you run masscan from does not need to be IPv6 enabled -- though the local
+network needs to be able to route IPv6 packets.
+
+
+## PF_RING
+
+To get beyond 2 million packets/second, you need an Intel 10-gbps Ethernet
+adapter and a special driver known as ["PF_RING ZC" from ntop](http://www.ntop.org/products/packet-capture/pf_ring/pf_ring-zc-zero-copy/). Masscan doesn't need to be rebuilt in order to use PF_RING. To use PF_RING,
+you need to build the following components:
+
+  * `libpfring.so` (installed in /usr/lib/libpfring.so)
+  * `pf_ring.ko` (their kernel driver)
+  * `ixgbe.ko` (their version of the Intel 10-gbps Ethernet driver)
+
+You don't need to build their version of `libpcap.so`.
+
+When Masscan detects that an adapter is named something like `zc:enp1s0` instead
+of something like `enp1s0`, it'll automatically switch to PF_RING ZC mode.
+
+A more detail discussion can be found in **PoC||GTFO 0x15**.
+
+
+## Regression testing
+
+The project contains a built-in unit test:
+
+    $ make test
+    bin/masscan --selftest
+    selftest: success!
+
+This tests a lot of tricky bits of the code. You should do this after building.
+
+
+## Performance testing
+
+To test performance, run something like the following to a throw-away address,
+to avoid overloading your local router:
+
+    $ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --router-mac 66-55-44-33-22-11
+
+The bogus `--router-mac` keeps packets on the local network segments so that
+they won't go out to the Internet.
+
+You can also test in "offline" mode, which is how fast the program runs
+without the transmit overhead:
+
+    $ bin/masscan 0.0.0.0/4 -p80 --rate 100000000 --offline
+    
+This second benchmark shows roughly how fast the program would run if it were
+using PF_RING, which has near zero overhead.
+
+By the way, the randomization algorithm makes heavy use of "integer arithmetic",
+a chromically slow operation on CPUs. Modern CPUs have doubled the speed
+at which they perform this calculation, making `masscan` much faster.
+
+
 # Authors
 
 This tool created by Robert Graham:
 email: robert_david_graham@yahoo.com
 twitter: @ErrataRob
-

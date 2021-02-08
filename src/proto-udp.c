@@ -29,15 +29,11 @@ default_udp_parse(struct Output *out, time_t timestamp,
            struct PreprocessedInfo *parsed,
            uint64_t entropy)
 {
-    unsigned ip_them;
-    //unsigned ip_me;
+    ipaddress ip_them = parsed->src_ip;
     unsigned port_them = parsed->port_src;
-    //unsigned port_me = parsed->port_dst;
     
     UNUSEDPARM(entropy);
 
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16 | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-    //ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16 | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
 
     if (length > 64)
         length = 64;
@@ -59,13 +55,9 @@ handle_udp(struct Output *out, time_t timestamp,
         const unsigned char *px, unsigned length, 
         struct PreprocessedInfo *parsed, uint64_t entropy)
 {
-    unsigned ip_them;
+    ipaddress ip_them = parsed->src_ip;
     unsigned port_them = parsed->port_src;
     unsigned status = 0;
-
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-
 
 
     switch (port_them) {

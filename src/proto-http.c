@@ -120,7 +120,7 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
  ***************************************************************************/
 static const char
 http_hello[] =      "GET / HTTP/1.0\r\n"
-                    "User-Agent: masscan/1.0 (https://github.com/robertdavidgraham/masscan)\r\n"
+                    "User-Agent: masscan/1.3 (https://github.com/robertdavidgraham/masscan)\r\n"
                     "Accept: */*\r\n"
                     //"Connection: Keep-Alive\r\n"
                     //"Content-Length: 0\r\n"
@@ -343,6 +343,8 @@ http_parse(
         }
         switch (id) {
         case HTTPFIELD_SERVER:
+            banout_append(banout, PROTO_HTTP_SERVER, &px[i], 1);
+            break;
         case HTTPFIELD_LOCATION:
         case HTTPFIELD_VIA:
             //banner_append(&px[i], 1, banout);
@@ -419,12 +421,73 @@ http_parse(
                 | (state & 0xFF);
 }
 
+static const char *test_response =
+    "HTTP/1.0 200 OK\r\n"
+    "Date: Wed, 13 Jan 2021 18:18:25 GMT\r\n"
+    "Expires: -1\r\n"
+    "Cache-Control: private, max-age=0\r\n"
+    "Content-Type: text/html; charset=ISO-8859-1\r\n"
+    "P3P: CP=\x22This is not a P3P policy! See g.co/p3phelp for more info.\x22\r\n"
+    "Server: gws\r\n"
+    "X-XSS-Protection: 0\r\n"
+    "X-Frame-Options: SAMEORIGIN\r\n"
+    "Set-Cookie: 1P_JAR=2021-01-13-18; expires=Fri, 12-Feb-2021 18:18:25 GMT; path=/; domain=.google.com; Secure\r\n"
+    "Set-Cookie: NID=207=QioO2ZqRsR6k1wtvXjuuhLrXYtl6ki8SQhf56doo_wcADvldNoHfnKvFk1YXdxSVTWnmqHQVPC6ZudGneMs7vDftJ6vB36B0OCDy_KetZ3sOT_ZAHcmi1pAGeO0VekZ0SYt_UXMjcDhuvNVW7hbuHEeXQFSgBywyzB6mF2EVN00; expires=Thu, 15-Jul-2021 18:18:25 GMT; path=/; domain=.google.com; HttpOnly\r\n"
+    "Accept-Ranges: none\r\n"
+    "Vary: Accept-Encoding\r\n"
+    "\r\n";
 
 /***************************************************************************
  ***************************************************************************/
 static int
 http_selftest(void)
 {
+    struct Banner1 *banner1 = NULL;
+    struct ProtocolState pstate[1];
+    struct BannerOutput banout[1];
+    struct InteractiveData more[1];
+    
+    memset(pstate, 0, sizeof(pstate[0]));
+    memset(banout, 0, sizeof(banout[0]));
+    memset(more, 0, sizeof(more[0]));
+
+    /*
+     * Test start
+     */
+    banner1 = banner1_create();
+    banner1->is_capture_servername = 1;
+    memset(pstate, 0, sizeof(pstate[0]));
+    banout_init(banout);
+
+    /*
+     * Run Test
+     */
+    http_parse(banner1, 0, pstate, (const unsigned  char *)test_response, strlen(test_response), banout, more);
+    
+    
+    /*
+     * Verify results
+     */
+    {
+        const unsigned char *string;
+        size_t length;
+        
+        string = banout_string(banout, PROTO_HTTP_SERVER);
+        length = banout_string_length(banout, PROTO_HTTP_SERVER);
+        
+        if (length != 3 || memcmp(string, "gws", 3) != 0) {
+            fprintf(stderr, "[-] HTTP parser failed: %s %u\n", __FILE__, __LINE__);
+            return 1;
+        }
+        //printf("Server: %.*s\n", (unsigned)length, (const char *)string);
+    }
+
+    /*
+     * Test end
+     */
+    banner1_destroy(banner1);
+    banout_release(banout);
+    
     return 0;
 }
 

@@ -4,14 +4,14 @@
 #include "logger.h"
 #include "output.h"
 #include "masscan-status.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "main-dedup.h"
 
 
 /***************************************************************************
  ***************************************************************************/
 static int
-matches_me(struct Output *out, unsigned ip, unsigned port)
+matches_me(struct Output *out, ipaddress ip, unsigned port)
 {
     unsigned i;
 
@@ -62,8 +62,8 @@ handle_icmp(struct Output *out, time_t timestamp,
     unsigned type = parsed->port_src;
     unsigned code = parsed->port_dst;
     unsigned seqno_me;
-    unsigned ip_me;
-    unsigned ip_them;
+    ipaddress ip_me = parsed->dst_ip;
+    ipaddress ip_them = parsed->src_ip;
     unsigned cookie;
 
     /* dedup ICMP echo replies as well as SYN/ACK replies */
@@ -73,11 +73,6 @@ handle_icmp(struct Output *out, time_t timestamp,
     if (!echo_reply_dedup)
         echo_reply_dedup = dedup_create();
 
-    ip_me = parsed->ip_dst[0]<<24 | parsed->ip_dst[1]<<16
-            | parsed->ip_dst[2]<< 8 | parsed->ip_dst[3]<<0;
-    ip_them = parsed->ip_src[0]<<24 | parsed->ip_src[1]<<16
-            | parsed->ip_src[2]<< 8 | parsed->ip_src[3]<<0;
-
     seqno_me = px[parsed->transport_offset+4]<<24
                 | px[parsed->transport_offset+5]<<16
                 | px[parsed->transport_offset+6]<<8
@@ -85,6 +80,7 @@ handle_icmp(struct Output *out, time_t timestamp,
 
     switch (type) {
     case 0: /* ICMP echo reply */
+    case 129:
         cookie = (unsigned)syn_cookie(ip_them, Templ_ICMP_echo, ip_me, 0, entropy);
         if ((cookie & 0xFFFFFFFF) != seqno_me)
             return; /* not my response */
@@ -123,14 +119,19 @@ handle_icmp(struct Output *out, time_t timestamp,
             break;
         case 3: /* port unreachable */
             if (length - parsed->transport_offset > 8) {
-                unsigned ip_me2, ip_them2, port_me2, port_them2;
+                ipaddress ip_me2;
+                ipaddress ip_them2;
+                unsigned port_me2, port_them2;
                 unsigned ip_proto;
                 int err;
+
+                ip_me2.version = 4;
+                ip_them2.version = 4;
 
                 err = parse_port_unreachable(
                     px + parsed->transport_offset + 8,
                     length - parsed->transport_offset + 8,
-                    &ip_me2, &ip_them2, &port_me2, &port_them2,
+                    &ip_me2.ipv4, &ip_them2.ipv4, &port_me2, &port_them2,
                     &ip_proto);
 
                 if (err)

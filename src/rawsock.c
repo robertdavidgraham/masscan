@@ -13,6 +13,9 @@
 #include "stub-pfring.h"
 #include "pixie-timer.h"
 #include "main-globals.h"
+#include "proto-preprocess.h"
+#include "stack-arpv4.h"
+#include "stack-ndpv6.h"
 
 #include "unusedparm.h"
 #include "util-malloc.h"
@@ -284,6 +287,9 @@ rawsock_send_packet(
     unsigned length,
     unsigned flush)
 {
+
+    /* Why: this happens in "offline mode", when we are benchmarking the
+     * core algorithms without sending packets. */
     if (adapter == 0)
         return 0;
 
@@ -398,10 +404,10 @@ int rawsock_recv_packet(
  * Step 2: send it in a portable manner
  ***************************************************************************/
 void
-rawsock_send_probe(
+rawsock_send_probe_ipv4(
     struct Adapter *adapter,
-    unsigned ip_them, unsigned port_them,
-    unsigned ip_me, unsigned port_me,
+    ipv4address ip_them, unsigned port_them,
+    ipv4address ip_me, unsigned port_me,
     unsigned seqno, unsigned flush,
     struct TemplateSet *tmplset)
 {
@@ -411,7 +417,7 @@ rawsock_send_probe(
     /*
      * Construct the destination packet
      */
-    template_set_target(tmplset, ip_them, port_them, ip_me, port_me, seqno,
+    template_set_target_ipv4(tmplset, ip_them, port_them, ip_me, port_me, seqno,
         px, sizeof(px), &packet_length);
     
     /*
@@ -420,6 +426,28 @@ rawsock_send_probe(
     rawsock_send_packet(adapter, px, (unsigned)packet_length, flush);
 }
 
+void
+rawsock_send_probe_ipv6(
+    struct Adapter *adapter,
+    ipv6address ip_them, unsigned port_them,
+    ipv6address ip_me, unsigned port_me,
+    unsigned seqno, unsigned flush,
+    struct TemplateSet *tmplset)
+{
+    unsigned char px[2048];
+    size_t packet_length;
+
+    /*
+     * Construct the destination packet
+     */
+    template_set_target_ipv6(tmplset, ip_them, port_them, ip_me, port_me, seqno,
+        px, sizeof(px), &packet_length);
+    
+    /*
+     * Send it
+     */
+    rawsock_send_packet(adapter, px, (unsigned)packet_length, flush);
+}
 
 /***************************************************************************
  * Used on Windows: network adapters have horrible names, so therefore we
@@ -477,9 +505,8 @@ rawsock_win_name(const char *ifname)
  * still get filtered at a low level.
  ***************************************************************************/
 void
-rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_mac, const char *ifname)
+rawsock_ignore_transmits(struct Adapter *adapter, const char *ifname)
 {
-    UNUSEDPARM(adapter_mac);
     if (adapter->ring) {
         /* PORTABILITY: don't do anything for PF_RING, because it's
          * actually done when we create the adapter, because we can't
@@ -491,7 +518,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const unsigned char *adapter_m
         int err;
         err = PCAP.setdirection(adapter->pcap, PCAP_D_IN);
         if (err) {
-            PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
+            ; //PCAP.perror(adapter->pcap, "if: pcap_setdirection(IN)");
         } else {
             LOG(2, "if:%s: not receiving transmits\n", ifname);
         }
@@ -560,17 +587,6 @@ is_pfring_dna(const char *name)
 }
 
 
-/***************************************************************************
- ***************************************************************************/
-int
-rawsock_datalink(struct Adapter *adapter)
-{
-    if (adapter->ring)
-        return 1; /* ethernet */
-    else {
-        return adapter->link_type;
-    }
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -708,8 +724,8 @@ rawsock_init_adapter(const char *adapter_name,
      *----------------------------------------------------------------*/
     {
         int err;
-        LOG(1, "if:%s: pcap=%s\n", adapter_name, PCAP.lib_version());
-        LOG(2, "if:%s: opening...\n", adapter_name);
+        LOG(1, "[+] if(%s): pcap: %s\n", adapter_name, PCAP.lib_version());
+        LOG(2, "[+] if(%s): opening...\n", adapter_name);
 
         /* This reserves resources, but doesn't actually open the 
          * adapter until we call pcap_activate */
@@ -762,34 +778,38 @@ rawsock_init_adapter(const char *adapter_name,
                 /* drop down below */
                 break;
             case PCAP_ERROR_PERM_DENIED:
-                LOG(0, "FAIL: permission denied\n");
-                LOG(0, " [hint] need to sudo or run as root or something\n");
+                LOG(0, "[-] FAIL: permission denied\n");
+                LOG(0, "    [hint] need to sudo or run as root or something\n");
                 goto pcap_error;
             default:
-	            LOG(0, "if:%s: activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
+	            LOG(0, "[-] if(%s): activate:%d: %s\n", adapter_name, err, PCAP.geterr(adapter->pcap));
                 if (err < 0)
                     goto pcap_error;
             }
         }
 
-        LOG(1, "if:%s: successfully opened\n", adapter_name);
+        LOG(1, "[+] if(%s): successfully opened\n", adapter_name);
 
         
 
         /* Figure out the link-type. We suport Ethernet and IP */
         adapter->link_type = PCAP.datalink(adapter->pcap);
         switch (adapter->link_type) {
-        case -1:
-            PCAP.perror(adapter->pcap, "if: datalink");
-            goto pcap_error;
-        case 1: /* Ethernet */
-        case 12: /* IP Raw */
-            break;
-        default:
-            LOG(0, "pcap: unknown data link type: %u(%s)\n",
-                    adapter->link_type, 
-                    PCAP.datalink_val_to_name(adapter->link_type));
-            break;
+            case -1:
+                PCAP.perror(adapter->pcap, "if: datalink");
+                goto pcap_error;
+            case 0: /* Null/Loopback [VPN tunnel] */
+                LOG(1, "[+] if(%s): VPN tunnel interface found\n", adapter_name);
+                break;
+            case 1: /* Ethernet */
+            case 12: /* IP Raw */
+                break;
+            default:
+                LOG(0, "[-] if(%s): unknown data link type: %u(%s)\n",
+                        adapter_name,
+                        adapter->link_type,
+                        PCAP.datalink_val_to_name(adapter->link_type));
+                break;
         }
 
     }
@@ -850,90 +870,125 @@ int
 rawsock_selftest_if(const char *ifname)
 {
     int err;
-    unsigned ipv4 = 0;
-    unsigned router_ipv4 = 0;
-    unsigned char mac[6] = {0,0,0,0,0,0};
+    ipv4address_t ipv4 = 0;
+    ipv6address_t ipv6;
+    ipv4address_t router_ipv4 = 0;
+    macaddress_t source_mac = {{0,0,0,0,0,0}};
     struct Adapter *adapter;
     char ifname2[246];
+    ipaddress_formatted_t fmt;
 
+    /*
+     * Get the interface
+     */
     if (ifname == NULL || ifname[0] == 0) {
         err = rawsock_get_default_interface(ifname2, sizeof(ifname2));
         if (err) {
-            fprintf(stderr, "get-default-if: returned err %d\n", err);
+            printf("[-] if = not found (err=%d)\n", err);
             return -1;
         }
         ifname = ifname2;
     }
+    printf("[+] if = %s\n", ifname);
 
-    /* Name */
-    printf("if = %s\n", ifname);
+    /*
+     * Initialize the adapter.
+     */
+    adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
+    if (adapter == 0) {
+        printf("[-] pcap = failed\n");
+        return -1;
+    } else {
+        printf("[+] pcap = opened\n");
+    }
 
-    /* IP address */
+    /* IPv4 address */
     ipv4 = rawsock_get_adapter_ip(ifname);
     if (ipv4 == 0) {
-        fprintf(stderr, "get-ip: returned err\n");
+        printf("[-] source-ipv4 = not found (err)\n");
     } else {
-        printf("ip = %u.%u.%u.%u\n",
-            (unsigned char)(ipv4>>24),
-            (unsigned char)(ipv4>>16),
-            (unsigned char)(ipv4>>8),
-            (unsigned char)(ipv4>>0));
+        fmt = ipv4address_fmt(ipv4);
+        printf("[+] source-ipv4 = %s\n", fmt.string);
+    }
+
+    /* IPv6 address */
+    ipv6 = rawsock_get_adapter_ipv6(ifname);
+    if (ipv6address_is_zero(ipv6)) {
+        printf("[-] source-ipv6 = not found\n");
+    } else {
+        fmt = ipv6address_fmt(ipv6);
+        printf("[+] source-ipv6 = [%s]\n", fmt.string);
     }
 
     /* MAC address */
-    err = rawsock_get_adapter_mac(ifname, mac);
+    err = rawsock_get_adapter_mac(ifname, source_mac.addr);
     if (err) {
-        fprintf(stderr, "get-adapter-mac: returned err=%d\n", err);
+        printf("[-] source-mac = not found (err=%d)\n", err);
     } else {
-        printf("mac = %02x-%02x-%02x-%02x-%02x-%02x\n",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        fmt = macaddress_fmt(source_mac);
+        printf("[+] source-mac = %s\n", fmt.string);
     }
 
-    /* Gateway IP */
-    err = rawsock_get_default_gateway(ifname, &router_ipv4);
-    if (err) {
-        fprintf(stderr, "get-default-gateway: returned err=%d\n", err);
-    } else {
-        unsigned char router_mac[6];
-
-        printf("gateway = %u.%u.%u.%u\n",
-            (unsigned char)(router_ipv4>>24),
-            (unsigned char)(router_ipv4>>16),
-            (unsigned char)(router_ipv4>>8),
-            (unsigned char)(router_ipv4>>0));
-
-
-        adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, 0, 0, 0);
-        if (adapter == 0) {
-            LOG(1, "if:%s: failed\n", ifname);
-            return -1;
+    switch (adapter->link_type) {
+    case 0:
+            printf("[+] router-ip = implicit\n");
+            printf("[+] router-mac = implicit\n");
+            break;
+    default:
+        /* IPv4 router IP address */
+        err = rawsock_get_default_gateway(ifname, &router_ipv4);
+        if (err) {
+            fprintf(stderr, "[-] router-ip = not found(err=%d)\n", err);
         } else {
-            printf("pcap = opened\n");
+            fmt = ipv4address_fmt(router_ipv4);
+            printf("[+] router-ip = %s\n", fmt.string);
         }
 
-        memset(router_mac, 0, 6);
-        arp_resolve_sync(
-                adapter,
-                ipv4,
-                mac,
-                router_ipv4,
-                router_mac);
+        /* IPv4 router MAC address */
+        {
+            macaddress_t router_mac = {{0,0,0,0,0,0}};
+            
+            stack_arp_resolve(
+                    adapter,
+                    ipv4,
+                    source_mac,
+                    router_ipv4,
+                    &router_mac);
 
-        if (memcmp(router_mac, "\0\0\0\0\0\0", 6) != 0) {
-            printf("gateway = %02x-%02x-%02x-%02x-%02x-%02x\n",
-                router_mac[0],
-                router_mac[1],
-                router_mac[2],
-                router_mac[3],
-                router_mac[4],
-                router_mac[5]
-            );
-        } else {
-            printf("gateway = [failed to ARP address]\n");
+            if (macaddress_is_zero(router_mac)) {
+                printf("[-] router-mac-ipv4 = not found\n");
+            } else {
+                fmt = macaddress_fmt(router_mac);
+                printf("[+] router-mac-ipv4 = %s\n", fmt.string);
+            }
         }
-        rawsock_close_adapter(adapter);
+        
+
+        /*
+         * IPv6 router MAC address.
+         * If it's not configured, then we need to send a (synchronous) query
+         * to the network in order to discover the location of routers on
+         * the local network
+         */
+        if (!ipv6address_is_zero(ipv6)) {
+            macaddress_t router_mac = {{0,0,0,0,0,0}};
+            
+            stack_ndpv6_resolve(
+                    adapter,
+                    ipv6,
+                    source_mac,
+                    &router_mac);
+
+            if (macaddress_is_zero(router_mac)) {
+                printf("[-] router-mac-ipv6 = not found\n");
+            } else {
+                fmt = macaddress_fmt(router_mac);
+                printf("[+] router-mac-ipv6 = %s\n", fmt.string);
+            }
+        }
     }
-
+    
+    rawsock_close_adapter(adapter);
     return 0;
 }
 

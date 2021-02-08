@@ -10,10 +10,9 @@
 
  */
 #include "templ-payloads.h"
-#include "templ-port.h"
+#include "massip-port.h"
 #include "rawsock-pcapfile.h"   /* for reading payloads from pcap files */
 #include "proto-preprocess.h"   /* parse packets */
-#include "ranges.h"             /* for parsing IP addresses */
 #include "logger.h"
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
 #include "proto-snmp.h"
@@ -22,6 +21,7 @@
 #include "proto-ntp.h"
 #include "proto-dns.h"
 #include "util-malloc.h"
+#include "massip.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -254,7 +254,7 @@ payloads_udp_destroy(struct PayloadsUDP *payloads)
  * faster, ideally looking up only zero or one rather than twenty.
  ***************************************************************************/
 void
-payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *target_ports)
+payloads_udp_trim(struct PayloadsUDP *payloads, const struct MassIP *targets)
 {
     unsigned i;
     struct PayloadUDP_Item **list2;
@@ -267,8 +267,7 @@ payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *target_p
     for (i=0; i<payloads->count; i++) {
         unsigned found;
 
-        found = rangelist_is_contains(  target_ports,
-                                        payloads->list[i]->port + Templ_UDP);
+        found = massip_has_port(targets, payloads->list[i]->port + Templ_UDP);
         if (found) {
             list2[count2++] = payloads->list[i];
         } else {
@@ -284,7 +283,7 @@ payloads_udp_trim(struct PayloadsUDP *payloads, const struct RangeList *target_p
 }
 
 void
-payloads_oproto_trim(struct PayloadsUDP *payloads, const struct RangeList *target_ports)
+payloads_oproto_trim(struct PayloadsUDP *payloads, const struct MassIP *targets)
 {
     unsigned i;
     struct PayloadUDP_Item **list2;
@@ -297,8 +296,7 @@ payloads_oproto_trim(struct PayloadsUDP *payloads, const struct RangeList *targe
     for (i=0; i<payloads->count; i++) {
         unsigned found;
         
-        found = rangelist_is_contains(  target_ports,
-                                      payloads->list[i]->port + Templ_Oproto_first);
+        found = massip_has_port(targets, payloads->list[i]->port + Templ_Oproto_first);
         if (found) {
             list2[count2++] = payloads->list[i];
         } else {

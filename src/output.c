@@ -180,7 +180,7 @@ open_rotate(struct Output *out, const char *filename)
                 LOG(0, "redis: socket() failed to create socket\n");
                 exit(1);
             }
-            sin.sin_addr.s_addr = htonl(out->redis.ip);
+            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: ipv6 */
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
             x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
@@ -441,6 +441,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_Redis:
         out->funcs = &redis_output;
         break;
+    case Output_Hostonly:
+        out->funcs = &hostonly_output;
+        break;
     case Output_None:
         out->funcs = &null_output;
         break;
@@ -501,8 +504,8 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
 static FILE *
 output_do_rotate(struct Output *out, int is_closing)
 {
-    const char *dir = out->rotate.directory;
-    const char *filename = out->filename;
+    const char *dir;
+    const char *filename;
     char *new_filename;
     size_t new_filename_size;
     struct tm tm;
@@ -512,15 +515,21 @@ output_do_rotate(struct Output *out, int is_closing)
     if (out == NULL || out->fp == NULL)
         return NULL;
 
+    dir = out->rotate.directory;
+    filename = out->filename;
+
     /* Make sure that all output has been flushed to the file */
     fflush(out->fp);
 
     /* Remove directory prefix from filename, we just want the root filename
      * to start with */
-    while (strchr(filename, '/') || strchr(filename, '\\')) {
+    while (strchr(filename, '/')) {
         filename = strchr(filename, '/');
         if (*filename == '/')
             filename++;
+    }
+
+    while (strchr(filename, '\\')) {
         filename = strchr(filename, '\\');
         if (*filename == '\\')
             filename++;
@@ -702,11 +711,12 @@ oui_from_mac(const unsigned char mac[6])
  ***************************************************************************/
 void
 output_report_status(struct Output *out, time_t timestamp, int status,
-        unsigned ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
+        ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
         const unsigned char mac[6])
 {
     FILE *fp = out->fp;
     time_t now = time(0);
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     global_now = now;
 
@@ -724,27 +734,21 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 
         switch (ip_proto) {
         case 0: /* ARP */
-            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u (%02x:%02x:%02x:%02x:%02x:%02x) %s",
+            count = fprintf(stdout, "Discovered %s port %u/%s on %s (%02x:%02x:%02x:%02x:%02x:%02x) %s",
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        (ip>>24)&0xFF,
-                        (ip>>16)&0xFF,
-                        (ip>> 8)&0xFF,
-                        (ip>> 0)&0xFF,
+                        fmt.string,
                         mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
                         oui_from_mac(mac)
                         );
             break;
         default:
-            count = fprintf(stdout, "Discovered %s port %u/%s on %u.%u.%u.%u",
+            count = fprintf(stdout, "Discovered %s port %u/%s on %s",
                         status_string(status),
                         port,
                         name_from_ip_proto(ip_proto),
-                        (ip>>24)&0xFF,
-                        (ip>>16)&0xFF,
-                        (ip>> 8)&0xFF,
-                        (ip>> 0)&0xFF
+                        fmt.string
                         );
         }
 
@@ -843,12 +847,13 @@ output_report_status(struct Output *out, time_t timestamp, int status,
  ***************************************************************************/
 void
 output_report_banner(struct Output *out, time_t now,
-                unsigned ip, unsigned ip_proto, unsigned port,
+                ipaddress ip, unsigned ip_proto, unsigned port,
                 unsigned proto, 
                 unsigned ttl, 
                 const unsigned char *px, unsigned length)
 {
     FILE *fp = out->fp;
+    ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
     /* If we aren't doing banners, then don't do anything. That's because
      * when doing UDP scans, we'll still get banner information from
@@ -862,13 +867,10 @@ output_report_banner(struct Output *out, time_t now,
         unsigned count;
         char banner_buffer[4096];
 
-        count = fprintf(stdout, "Banner on port %u/%s on %u.%u.%u.%u: [%s] %s",
+        count = fprintf(stdout, "Banner on port %u/%s on %s: [%s] %s",
             port,
             name_from_ip_proto(ip_proto),
-            (ip>>24)&0xFF,
-            (ip>>16)&0xFF,
-            (ip>> 8)&0xFF,
-            (ip>> 0)&0xFF,
+            fmt.string,
             masscan_app_to_string(proto),
             normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
             );

@@ -13,10 +13,10 @@
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"
-#include "ranges.h" /*parse port ranges*/
 #include "syn-cookie.h"
-#include "templ-port.h"
 #include "unusedparm.h"
+#include "massip-rangesv4.h" /* kludge: todo: fixme: change this */
+#include "massip-port.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
