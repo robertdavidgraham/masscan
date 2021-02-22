@@ -466,6 +466,16 @@ struct ProtocolParserStream banner_ms_sql_s = {
     NULL,
 };
 
+static const char
+afp_hello[] = "\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x0f\x00";
+
+struct ProtocolParserStream banner_afp = {
+    "banner-afp", 548, afp_hello, sizeof(afp_hello) - 1, 0,
+    NULL,
+    NULL,
+    NULL,
+};
+
 
 /***************************************************************************
  * Create the --banners systems
@@ -582,6 +592,8 @@ banner1_create(void)
     b->payloads.tcp[8728] = (void*)&banner_notes_rpc;
     b->payloads.tcp[22001] = (void*)&banner_notes_rpc;
     b->payloads.tcp[1433] = (void*)&banner_ms_sql_s;
+    /* AFP */
+    b->payloads.tcp[548] = (void*)&banner_afp;
 
     /* 
      * This goes down the list of all the TCP protocol handlers and initializes
