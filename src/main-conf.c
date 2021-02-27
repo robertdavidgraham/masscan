@@ -1549,7 +1549,7 @@ static int SET_rotate_directory(struct Masscan *masscan, const char *name, const
              value);
     /* strip trailing slashes */
     p = masscan->output.rotate.directory;
-    while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
+    while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '\\')) /* Fix for #561 */
         p[strlen(p)-1] = '\0';
     return CONF_OK;
 }
@@ -2181,6 +2181,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_status_updates = 1;
     } else if (EQUALS("nostatus", name)) {
         masscan->output.is_status_updates = 0;
+    } else if (EQUALS("json-status", name)) {
+        masscan->output.is_json_status = 1;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -2397,6 +2399,7 @@ is_singleton(const char *name)
         "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
         "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
+        "json-status",
         0};
     size_t i;
 

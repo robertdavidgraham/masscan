@@ -1395,7 +1395,7 @@ main_scan(struct Masscan *masscan)
         if (masscan->output.is_status_updates)
             status_print(&status, min_index, range, rate,
                 total_tcbs, total_synacks, total_syns,
-                0);
+                0, masscan->output.is_json_status);
 
         /* Sleep for almost a second */
         pixie_mssleep(750);
@@ -1455,7 +1455,8 @@ main_scan(struct Masscan *masscan)
         if (masscan->output.is_status_updates) {
             status_print(&status, min_index, range, rate,
                 total_tcbs, total_synacks, total_syns,
-                masscan->wait - (time(0) - now));
+                masscan->wait - (time(0) - now),
+                masscan->output.is_json_status);
 
             for (i=0; i<masscan->nic_count; i++) {
                 struct ThreadPair *parms = &parms_array[i];

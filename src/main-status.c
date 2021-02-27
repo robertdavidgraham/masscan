@@ -27,11 +27,12 @@ status_print(
     struct Status *status,
     uint64_t count,
     uint64_t max_count,
-    double x,
+    double pps,
     uint64_t total_tcbs,
     uint64_t total_synacks,
     uint64_t total_syns,
-    uint64_t exiting)
+    uint64_t exiting,
+    uint8_t json_status)
 {
     double elapsed_time;
     double rate;
@@ -44,7 +45,84 @@ status_print(
     double tcb_rate = 0.0;
     double synack_rate = 0.0;
     double syn_rate = 0.0;
+    double kpps = pps / 1000;
+    const char *fmt;
 
+    /* Support for --json-status; does not impact legacy/default output */
+    
+    /**
+     * {"state":"*","rate":{"kpps":24.99,"pps":24985.49,"synps": 27763,"ackps":4,"tcbps":4},"tcb": 33,"syn":246648}
+     */
+    const char* json_fmt_infinite =
+    "{"
+        "\"state\":\"*\","
+        "\"rate\":"
+        "{"
+            "\"kpps\":%.2f,"
+            "\"pps\":%6$.2f,"
+            "\"synps\":%.0f,"
+            "\"ackps\":%.0f,"
+            "\"tcbps\":%.0f"
+        "},"
+        "\"tcb\":%5$" PRIu64 ","
+        "\"syn\":%7$" PRIu64
+    "}\n";
+    
+    /**
+     * {"state":"waiting","rate":{"kpps":0.00,"pps":0.00},"progress":{"percent":21.87,"seconds":4,"found":56,"syn":{"sent": 341436,"total":1561528,"remaining":1220092}}}
+     */
+    const char *json_fmt_waiting = 
+    "{"
+        "\"state\":\"waiting\","
+        "\"rate\":"
+        "{"
+            "\"kpps\":%.2f,"
+            "\"pps\":%5$.2f"
+        "},"
+        "\"progress\":"
+        "{"
+            "\"percent\":%.2f,"
+            "\"seconds\":%d,"
+            "\"found\":%" PRIu64 ","
+            "\"syn\":"
+            "{"
+                "\"sent\":%6$" PRIu64 ","
+                "\"total\":%7$" PRIu64 ","
+                "\"remaining\":%8$" PRIu64
+            "}" 
+        "}"
+    "}\n";
+
+    /**
+     * {"state":"running","rate":{"kpps":24.92,"pps":24923.07},"progress":{"percent":9.77,"eta":{
+     *      "hours":0,"mins":0,"seconds":55},"syn":{"sent": 152510,"total": 1561528,"remaining": 1409018},"found": 27}}
+     */
+    const char *json_fmt_running = 
+    "{"
+        "\"state\":\"running\","
+        "\"rate\":"
+        "{"
+            "\"kpps\":%.2f,"
+            "\"pps\":%7$.2f"
+        "},"
+        "\"progress\":"
+        "{"
+            "\"percent\":%.2f,"
+            "\"eta\":"
+            "{"
+                "\"hours\":%u,"
+                "\"mins\":%u,"
+                "\"seconds\":%u"
+            "},"
+            "\"syn\":"
+            "{"
+                "\"sent\":%8$" PRIu64 ","
+                "\"total\":%9$" PRIu64 ","
+                "\"remaining\":%10$" PRIu64
+            "}," 
+            "\"found\":%6$" PRIu64
+        "}"
+    "}\n";
 
     /*
      * ####  FUGGLY TIME HACK  ####
@@ -124,41 +202,62 @@ status_print(
         syn_rate = (1.0*current_syns)/elapsed_time;
     }
 
-
     /*
      * Print the message to <stderr> so that <stdout> can be redirected
      * to a file (<stdout> reports what systems were found).
      */
+
     if (status->is_infinite) {
+        if (json_status == 1)
+            fmt = json_fmt_infinite;
+        else
+            fmt = "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %" PRIu64 "-tcbs,         \r";
+
         fprintf(stderr,
-                "rate:%6.2f-kpps, syn/s=%.0f ack/s=%.0f tcb-rate=%.0f, %" PRIu64 "-tcbs,         \r",
-                        x/1000.0,
-                        syn_rate,
-                        synack_rate,
-                        tcb_rate,
-                        total_tcbs
-                        );
+            fmt,
+                kpps,
+                syn_rate,
+                synack_rate,
+                tcb_rate,
+                total_tcbs,
+                pps,
+                count);
     } else {
         if (is_tx_done) {
-            
+            if (json_status == 1)
+                fmt = json_fmt_waiting;
+            else
+                fmt = "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r";
+
             fprintf(stderr,
-                        "rate:%6.2f-kpps, %5.2f%% done, waiting %d-secs, found=%" PRIu64 "       \r",
-                        x/1000.0,
-                        percent_done,
-                        (int)exiting,
-                        total_synacks
-                       );
+                    fmt,
+                    pps/1000.0,
+                    percent_done,
+                    (int)exiting,
+                    total_synacks,
+                    pps,
+                    count,
+                    max_count,
+                    max_count-count);
             
         } else {
+            if (json_status == 1)
+                fmt = json_fmt_running;
+            else
+                fmt = "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       \r";
+
             fprintf(stderr,
-                "rate:%6.2f-kpps, %5.2f%% done,%4u:%02u:%02u remaining, found=%" PRIu64 "       \r",
-                        x/1000.0,
-                        percent_done,
-                        (unsigned)(time_remaining/60/60),
-                        (unsigned)(time_remaining/60)%60,
-                        (unsigned)(time_remaining)%60,
-                        total_synacks
-                       );
+                fmt,
+                pps/1000.0,
+                percent_done,
+                (unsigned)(time_remaining/60/60),
+                (unsigned)(time_remaining/60)%60,
+                (unsigned)(time_remaining)%60,
+                total_synacks,
+                pps,
+                count,
+                max_count,
+                max_count-count);
         }
     }
     fflush(stderr);
