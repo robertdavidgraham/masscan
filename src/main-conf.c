@@ -1112,6 +1112,19 @@ static int SET_hello_timeout(struct Masscan *masscan, const char *name, const ch
     return CONF_OK;
 }
 
+static int SET_status_json(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+
+    if (masscan->echo) {
+        if (masscan->output.is_json_status || masscan->echo_all)
+            fprintf(masscan->echo, "json-status = %s\n", masscan->output.is_json_status?"true":"false");
+        return 0;
+    }
+    masscan->output.is_json_status = parseBoolean(value);
+    return CONF_OK;
+}
+
 static int SET_min_packet(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1705,6 +1718,7 @@ struct ConfigParameter config_parameters[] = {
     {"hello-file",      SET_hello_file,         0,      {"hello-filename",0}},
     {"hello-string",    SET_hello_string,       0,      {0}},
     {"hello-timeout",   SET_hello_timeout,      0,      {0}},
+    {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
     {"capture",         SET_capture,            0,      {0}},
     {"SPACE",           SET_space,              0,      {0}},
@@ -2181,8 +2195,6 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->output.is_status_updates = 1;
     } else if (EQUALS("nostatus", name)) {
         masscan->output.is_status_updates = 0;
-    } else if (EQUALS("json-status", name)) {
-        masscan->output.is_json_status = 1;
     } else if (EQUALS("ip-options", name)) {
         fprintf(stderr, "nmap(%s): unsupported: maybe soon\n", name);
         exit(1);
@@ -2399,7 +2411,6 @@ is_singleton(const char *name)
         "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
         "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
-        "json-status",
         0};
     size_t i;
 
