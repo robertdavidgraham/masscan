@@ -285,6 +285,17 @@ struct Masscan
         unsigned is_append:1;
         
         /**
+         * --json-status
+         * Print each status update line to stderr as JSON ending with a newline
+         *
+         * This only applies to the three types of status lines that are printed
+         * in status_print(); it does *not* apply to things like startup messages,
+         * error messages or discovery of individual ports
+         *
+         */
+        unsigned is_json_status:1;
+
+        /**
          * --open
          * --open-only
          * --show open
