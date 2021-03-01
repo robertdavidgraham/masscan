@@ -293,7 +293,7 @@ struct Masscan
          * error messages or discovery of individual ports
          *
          */
-        unsigned is_json_status:1;
+        unsigned is_status_ndjson:1;
 
         /**
          * --open
