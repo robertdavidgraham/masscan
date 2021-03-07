@@ -1112,6 +1112,31 @@ static int SET_hello_timeout(struct Masscan *masscan, const char *name, const ch
     return CONF_OK;
 }
 
+static int SET_status_ndjson(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+
+    if (masscan->echo) {
+        if (masscan->output.is_status_ndjson || masscan->echo_all)
+            fprintf(masscan->echo, "ndjson-status = %s\n", masscan->output.is_status_ndjson?"true":"false");
+        return 0;
+    }
+    masscan->output.is_status_ndjson = parseBoolean(value);
+    return CONF_OK;
+}
+static int SET_status_json(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+
+    if (masscan->echo) {
+        return 0;
+    }
+    fprintf(stderr, "[-] FAIL: %s not supported, use --status-ndjson\n", name);
+    fprintf(stderr, "    hint: new-line delimited JSON status is what we use\n");
+    exit(1);
+    return CONF_ERR;
+}
+
 static int SET_min_packet(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1549,7 +1574,7 @@ static int SET_rotate_directory(struct Masscan *masscan, const char *name, const
              value);
     /* strip trailing slashes */
     p = masscan->output.rotate.directory;
-    while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '/'))
+    while (*p && (p[strlen(p)-1] == '/' || p[strlen(p)-1] == '\\')) /* Fix for #561 */
         p[strlen(p)-1] = '\0';
     return CONF_OK;
 }
@@ -1705,6 +1730,8 @@ struct ConfigParameter config_parameters[] = {
     {"hello-file",      SET_hello_file,         0,      {"hello-filename",0}},
     {"hello-string",    SET_hello_string,       0,      {0}},
     {"hello-timeout",   SET_hello_timeout,      0,      {0}},
+    {"ndjson-status",   SET_status_ndjson,      F_BOOL, {"status-ndjson", 0}},
+    {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
     {"capture",         SET_capture,            0,      {0}},
     {"SPACE",           SET_space,              0,      {0}},
