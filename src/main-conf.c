@@ -978,6 +978,8 @@ static int SET_capture(struct Masscan *masscan, const char *name, const char *va
     } else if (EQUALS("nocapture", name)) {
         if (EQUALS("cert", value))
             masscan->is_capture_cert = 0;
+        else if (EQUALS("servername", value))
+            masscan->is_capture_servername = 0;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 0;
         else if (EQUALS("heartbleed", value))
