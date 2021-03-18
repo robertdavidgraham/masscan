@@ -23,6 +23,9 @@
 #if __NetBSD__
 #include <sys/time.h>
 #define pcap_timeval timeval
+#elif __OpenBSD__
+#include <net/bpf.h>
+#define pcap_timeval bpf_timeval
 #else
 struct pcap_timeval {
         long    tv_sec;         /* seconds */
