@@ -1621,6 +1621,10 @@ smack_benchmark(void)
 
     /* Fill a buffer full of junk */
     buf = (char*)malloc(BUF_SIZE);
+    if (buf == NULL) {
+        fprintf(stderr, "%s: out of memory error\n", "smack");
+        exit(1);
+    }          
     for (i=0; i<BUF_SIZE; i++)
         buf[i] = (char)r_rand(&seed)&0x7F;
 
