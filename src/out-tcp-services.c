@@ -24,7 +24,7 @@ tcp_service_name(int port)
     if (tcp_services[port])
         return tcp_services[port];
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(__TERMUX__)
     int r;
     struct servent result_buf;
     struct servent *result;
@@ -56,7 +56,7 @@ udp_service_name(int port)
 {
     if (udp_services[port])
         return udp_services[port];
-#ifdef __linux__
+#if defined(__linux__) && !defined(__TERMUX__)
     int r;
     struct servent result_buf;
     struct servent *result;
