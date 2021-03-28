@@ -978,6 +978,8 @@ static int SET_capture(struct Masscan *masscan, const char *name, const char *va
     } else if (EQUALS("nocapture", name)) {
         if (EQUALS("cert", value))
             masscan->is_capture_cert = 0;
+        else if (EQUALS("servername", value))
+            masscan->is_capture_servername = 0;
         else if (EQUALS("html", value))
             masscan->is_capture_html = 0;
         else if (EQUALS("heartbleed", value))
@@ -1734,6 +1736,7 @@ struct ConfigParameter config_parameters[] = {
     {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
     {"capture",         SET_capture,            0,      {0}},
+    {"nocapture",       SET_capture,            0,      {0}},
     {"SPACE",           SET_space,              0,      {0}},
     {"output-filename", SET_output_filename,    0,      {"output-file",0}},
     {"output-format",   SET_output_format,      0,      {0}},
