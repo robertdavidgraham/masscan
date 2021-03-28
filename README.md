@@ -590,7 +590,7 @@ This second benchmark shows roughly how fast the program would run if it were
 using PF_RING, which has near zero overhead.
 
 By the way, the randomization algorithm makes heavy use of "integer arithmetic",
-a chromically slow operation on CPUs. Modern CPUs have doubled the speed
+a chronically slow operation on CPUs. Modern CPUs have doubled the speed
 at which they perform this calculation, making `masscan` much faster.
 
 
