@@ -74,7 +74,7 @@ pixie_cpu_set_affinity(unsigned processor)
     if (result == 0) {
         fprintf(stderr, "set_affinity: returned error win32:%u\n", (unsigned)GetLastError());
     }
-#elif defined(__linux__) && defined(__GNUC__)
+#elif defined(__linux__) && defined(__GNUC__) && !defined(__TERMUX__)
     int x;
     pthread_t thread = pthread_self();
     cpu_set_t cpuset;

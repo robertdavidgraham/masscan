@@ -835,10 +835,15 @@ massip_parse_file(struct MassIP *massip, const char *filename)
      * Open the file containing IP addresses, which can potentially be
      * many megabytes in size
      */
-    err = fopen_s(&fp, filename, "rb");
-    if (err || fp == NULL) {
-        perror(filename);
-        exit(1);
+    if (strcmp(filename, "-") == 0) {
+        fp = stdin;
+        err = 0;
+    } else {
+        err = fopen_s(&fp, filename, "rb");
+        if (err || fp == NULL) {
+            perror(filename);
+            exit(1);
+        }
     }
 
     /*
@@ -894,7 +899,10 @@ massip_parse_file(struct MassIP *massip, const char *filename)
             }
         }
     }
-    fclose(fp);
+    
+    /* Close the file, unless we are reading from <stdin> */
+    if (fp != stdin && fp != NULL)
+        fclose(fp);
 
     /* In case the file doesn't end with a newline '\n', then artificially
      * add one to the end. This is just a repeat of the code above */
