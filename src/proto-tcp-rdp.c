@@ -373,7 +373,7 @@ static const char rdp_hello[] =
 /***************************************************************************
  ***************************************************************************/
 const struct ProtocolParserStream banner_rdp = {
-    "telnet", 3389, rdp_hello, sizeof(rdp_hello)-1, 0,
+    "rdp", 3389, rdp_hello, sizeof(rdp_hello)-1, 0,
     rdp_selftest,
     rdp_init,
     rdp_parse,
