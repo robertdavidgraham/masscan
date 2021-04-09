@@ -60,7 +60,7 @@ struct TelnetOptions options[] = {
     {37, "auth"},       /* 0x25  % Authentication Option  */
     {38, "encrypt"},    /* 0x26  & Encryption Option */
     {39, "new-env"},    /* 0x27  ' */
-    
+
     {46, "starttls"},   /* 0x2e  . STARTTLS */
 /*
     255     Extended-Options-List                              [109,JBP]
@@ -260,13 +260,13 @@ telnet_parse(  const struct Banner1 *banner1,
                 break;
         }
     }
-    
+
     {
 #define r_length (256*3*4)
         unsigned char reply[r_length];
         size_t r_offset = 0;
         size_t i;
-        
+
         for (i=0; i<256 && r_offset + 3 < r_length; i++) {
             if (nego[i] & FLAG_WILL) {
                 reply[r_offset++] = 0xFF; /* IAC */
@@ -290,7 +290,7 @@ telnet_parse(  const struct Banner1 *banner1,
             }
         }
         if (r_offset) {
-            unsigned char *outbuf = MALLOC(r_offset);
+            unsigned char *outbuf = (unsigned char *) MALLOC(r_offset);
             memcpy(outbuf, reply, r_offset);
             tcp_transmit(more, outbuf, r_offset, 1);
         }
@@ -318,14 +318,14 @@ telnet_selftest_item(const char *input, const char *output)
     struct BannerOutput banout1[1];
     struct InteractiveData more;
     int x;
-    
+
     /*
      * Initiate a pseudo-environment for the parser
      */
     banner1 = banner1_create();
     banout_init(banout1);
     memset(&pstate[0], 0, sizeof(pstate[0]));
-    
+
     /*
      * Parse the input payload
      */
@@ -347,7 +347,7 @@ telnet_selftest_item(const char *input, const char *output)
         printf("telnet parser failure: %s\n", output);
     banner1_destroy(banner1);
     banout_release(banout1);
-    
+
     return (x==0)?1:0;
 }
 
@@ -371,7 +371,7 @@ telnet_selftest(void)
             "\x72\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x0d\x0a\x0d\x0a"
             ,
             "User Access"
-            
+
         },
         {   "\xff\xfd\x01\xff\xfd\x1f\xff\xfd\x21\xff\xfb\x01\xff\xfb\x03\x46"
             "\x36\x37\x30\x0d\x0a\x0d\x4c\x6f\x67\x69\x6e\x3a\x20",
@@ -380,10 +380,10 @@ telnet_selftest(void)
         {0,0}
     };
     size_t i;
-    
+
     for (i=0; tests[i].input; i++) {
         int err;
-        
+
         err = telnet_selftest_item(tests[i].input, tests[i].output);
         if (err) {
             fprintf(stderr, "telnet: selftest fail, item %u\n", (unsigned)i);

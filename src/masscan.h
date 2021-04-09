@@ -445,7 +445,7 @@ struct Masscan
 
 int mainconf_selftest(void);
 void masscan_read_config_file(struct Masscan *masscan, const char *filename);
-void masscan_command_line(struct Masscan *masscan, int argc, char *argv[]);
+void masscan_command_line(struct Masscan *masscan, int argc, const char *argv[]);
 void masscan_usage(void);
 void masscan_save_state(struct Masscan *masscan);
 void main_listscan(struct Masscan *masscan);
@@ -462,7 +462,7 @@ void masscan_load_database_files(struct Masscan *masscan);
  * Pre-scan the command-line looking for options that may affect how
  * previous options are handled. This is a bit of a kludge, really.
  */
-int masscan_conf_contains(const char *x, int argc, char **argv);
+int masscan_conf_contains(const char *x, int argc, const char **argv);
 
 /**
  * Called to set a <name=value> pair.

@@ -7,7 +7,7 @@
     contain bulk data, such as BASE64 encoded X.509 certificates from
     SSL.
 
-    One complication is that since we can extract multiple types of 
+    One complication is that since we can extract multiple types of
     information from the same connection, we can have more than one
     banner for the same connection.
 */
@@ -23,7 +23,7 @@ void
 banout_init(struct BannerOutput *banout)
 {
     banout->length = 0;
-    banout->protocol = 0;
+    banout->protocol = PROTO_NONE;
     banout->next = 0;
     banout->max_length = sizeof(banout->banner);
 }
@@ -45,7 +45,7 @@ banout_release(struct BannerOutput *banout)
 /***************************************************************************
  ***************************************************************************/
 static struct BannerOutput *
-banout_find_proto(struct BannerOutput *banout, unsigned proto)
+banout_find_proto(struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     while (banout && banout->protocol != proto)
         banout = banout->next;
@@ -55,7 +55,7 @@ banout_find_proto(struct BannerOutput *banout, unsigned proto)
 /***************************************************************************
  ***************************************************************************/
 const unsigned char *
-banout_string(const struct BannerOutput *banout, unsigned proto)
+banout_string(const struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     while (banout && (banout->protocol&0xFFFF) != proto)
         banout = banout->next;
@@ -69,7 +69,7 @@ banout_string(const struct BannerOutput *banout, unsigned proto)
 /***************************************************************************
  ***************************************************************************/
 unsigned
-banout_is_equal(const struct BannerOutput *banout, unsigned proto,
+banout_is_equal(const struct BannerOutput *banout, enum ApplicationProtocol proto,
                 const char *string)
 {
     const unsigned char *string2;
@@ -85,20 +85,20 @@ banout_is_equal(const struct BannerOutput *banout, unsigned proto,
 
     if (string == NULL)
         return 0;
-    
+
     string_length = strlen(string);
     string2_length = banout_string_length(banout, proto);
 
     if (string_length != string2_length)
         return 0;
-    
+
     return memcmp(string, string2, string2_length) == 0;
 }
 
 /***************************************************************************
  ***************************************************************************/
 unsigned
-banout_is_contains(const struct BannerOutput *banout, unsigned proto,
+banout_is_contains(const struct BannerOutput *banout, enum ApplicationProtocol proto,
                 const char *string)
 {
     const unsigned char *string2;
@@ -115,13 +115,13 @@ banout_is_contains(const struct BannerOutput *banout, unsigned proto,
 
     if (string == NULL)
         return 0;
-    
+
     string_length = strlen(string);
     string2_length = banout_string_length(banout, proto);
 
     if (string_length > string2_length)
         return 0;
-    
+
     for (i=0; i<string2_length-string_length+1; i++) {
         if (memcmp(string, string2+i, string_length) == 0)
             return 1;
@@ -132,7 +132,7 @@ banout_is_contains(const struct BannerOutput *banout, unsigned proto,
 /***************************************************************************
  ***************************************************************************/
 unsigned
-banout_string_length(const struct BannerOutput *banout, unsigned proto)
+banout_string_length(const struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     while (banout && banout->protocol != proto)
         banout = banout->next;
@@ -146,7 +146,7 @@ banout_string_length(const struct BannerOutput *banout, unsigned proto)
 /***************************************************************************
  ***************************************************************************/
 void
-banout_newline(struct BannerOutput *banout, unsigned proto)
+banout_newline(struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     struct BannerOutput *p;
 
@@ -159,20 +159,20 @@ banout_newline(struct BannerOutput *banout, unsigned proto)
 /***************************************************************************
  ***************************************************************************/
 void
-banout_end(struct BannerOutput *banout, unsigned proto)
+banout_end(struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     struct BannerOutput *p;
 
     p = banout_find_proto(banout, proto);
     if (p && p->length) {
-        p->protocol |= 0x80000000;
+        p->protocol = (enum ApplicationProtocol) (p->protocol | 0x80000000);
     }
 }
 
 /***************************************************************************
  ***************************************************************************/
 void
-banout_append_char(struct BannerOutput *banout, unsigned proto, int c)
+banout_append_char(struct BannerOutput *banout, enum ApplicationProtocol proto, int c)
 {
     char cc = (char)c;
     banout_append(banout, proto, &cc, 1);
@@ -181,14 +181,14 @@ banout_append_char(struct BannerOutput *banout, unsigned proto, int c)
 /***************************************************************************
  ***************************************************************************/
 void
-banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long long number, int digits)
+banout_append_hexint(struct BannerOutput *banout, enum ApplicationProtocol proto, unsigned long long number, int digits)
 {
     if (digits == 0) {
         for (digits=16; digits>0; digits--)
             if (number>>((digits-1)*4) & 0xF)
                 break;
     }
-    
+
     for (;digits>0; digits--) {
         char c = "0123456789abcdef"[(number>>(unsigned long long)((digits-1)*4)) & 0xF];
         banout_append_char(banout, proto, c);
@@ -199,7 +199,7 @@ banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long 
  * Output either a normal character, or the hex form of a UTF-8 string
  ***************************************************************************/
 void
-banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c)
+banout_append_unicode(struct BannerOutput *banout, enum ApplicationProtocol proto, unsigned c)
 {
     if (c & ~0xFFFF) {
         unsigned c2;
@@ -234,16 +234,16 @@ banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c)
 /***************************************************************************
  ***************************************************************************/
 static struct BannerOutput *
-banout_new_proto(struct BannerOutput *banout, unsigned proto)
+banout_new_proto(struct BannerOutput *banout, enum ApplicationProtocol proto)
 {
     struct BannerOutput *p;
 
-    if (banout->protocol == 0 && banout->length == 0) {
+    if (banout->protocol == PROTO_NONE && banout->length == 0) {
         banout->protocol = proto;
         return banout;
     }
 
-    p = CALLOC(1, sizeof(*p));
+    p = (struct BannerOutput *) CALLOC(1, sizeof(*p));
     p->protocol = proto;
     p->max_length = sizeof(p->banner);
     p->next = banout->next;
@@ -260,7 +260,7 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
     struct BannerOutput *n;
 
     /* Double the space */
-    n = MALLOC(  offsetof(struct BannerOutput, banner)
+    n = (struct BannerOutput *) MALLOC(  offsetof(struct BannerOutput, banner)
                  + 2 * p->max_length);
 
     /* Copy the old structure */
@@ -270,7 +270,7 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
     if (p == banout) {
         /* 'p' is the head of the linked list, so we can't free it */
         banout->next = n;
-        p->protocol = 0;
+        p->protocol = PROTO_NONE;
         p->length = 0;
     } else {
         /* 'p' is not the head, so replace it in the list with 'n',
@@ -287,14 +287,14 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
 /***************************************************************************
  ***************************************************************************/
 void
-banout_append(struct BannerOutput *banout, unsigned proto, 
+banout_append(struct BannerOutput *banout, enum ApplicationProtocol proto,
               const void *px, size_t length)
 {
     struct BannerOutput *p;
 
     if (length == AUTO_LEN)
         length = strlen((const char*)px);
-    
+
     /*
      * Get the matching record for the protocol (e.g. HTML, SSL, etc.).
      * If it doesn't already exist, add the protocol object to the linked
@@ -313,8 +313,8 @@ banout_append(struct BannerOutput *banout, unsigned proto,
         p = banout_expand(banout, p);
     }
 
-    
-    
+
+
     /*
      * Now that we are assured there is enough space, do the copy
      */
@@ -344,7 +344,7 @@ banout_init_base64(struct BannerBase64 *base64)
 /*****************************************************************************
  *****************************************************************************/
 void
-banout_append_base64(struct BannerOutput *banout, unsigned proto,
+banout_append_base64(struct BannerOutput *banout, enum ApplicationProtocol proto,
                      const void *vpx, size_t length,
                      struct BannerBase64 *base64)
 {
@@ -352,7 +352,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
     size_t i;
     unsigned x = base64->temp;
     unsigned state = base64->state;
-    
+
     for (i=0; i<length; i++) {
         switch (state) {
             case 0:
@@ -372,7 +372,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
                 banout_append_char(banout, proto, b64[(x>> 0)&0x3F]);
         }
     }
-    
+
     base64->temp = x;
     base64->state = state;
 }
@@ -380,7 +380,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
 /*****************************************************************************
  *****************************************************************************/
 void
-banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
+banout_finalize_base64(struct BannerOutput *banout, enum ApplicationProtocol proto,
                        struct BannerBase64 *base64)
 {
     unsigned x = base64->temp;
@@ -407,13 +407,13 @@ banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
 /*****************************************************************************
  *****************************************************************************/
 static int
-banout_string_equals(struct BannerOutput *banout, unsigned proto,
+banout_string_equals(struct BannerOutput *banout, enum ApplicationProtocol proto,
                      const char *rhs)
 {
     const unsigned char *lhs = banout_string(banout, proto);
     size_t lhs_length = banout_string_length(banout, proto);
     size_t rhs_length = strlen(rhs);
-    
+
     if (lhs_length != rhs_length)
         return 0;
     return memcmp(lhs, rhs, rhs_length) == 0;
@@ -430,26 +430,26 @@ banout_selftest(void)
     {
         struct BannerOutput banout[1];
         unsigned i;
-        
+
         banout_init(banout);
-        
+
         for (i=0; i<10; i++) {
-            banout_append(banout, 1, "xxxx", 4);
-            banout_append(banout, 2, "yyyyy", 5);
+            banout_append(banout, PROTO_HEUR, "xxxx", 4);
+            banout_append(banout, PROTO_SSH1, "yyyyy", 5);
         }
-        
+
         if (banout->next == 0)
             return 1;
-        if (banout_string_length(banout, 1) != 40)
+        if (banout_string_length(banout, PROTO_HEUR) != 40)
             return 1;
-        if (banout_string_length(banout, 2) != 50)
+        if (banout_string_length(banout, PROTO_SSH1) != 50)
             return 1;
-        
+
         banout_release(banout);
         if (banout->next != 0)
             return 1;
     }
-    
+
     /*
      * Test BASE64 encoding. We are going to do strings of various lengths
      * in order to test the boundary condition of finalizing various strings
@@ -458,45 +458,44 @@ banout_selftest(void)
     {
         struct BannerOutput banout[1];
         struct BannerBase64 base64[1];
-    
+
         banout_init(banout);
 
         banout_init_base64(base64);
-        banout_append_base64(banout, 1, "x", 1, base64);
-        banout_finalize_base64(banout, 1, base64);
-        
+        banout_append_base64(banout, PROTO_HEUR, "x", 1, base64);
+        banout_finalize_base64(banout, PROTO_HEUR, base64);
+
         banout_init_base64(base64);
-        banout_append_base64(banout, 2, "bc", 2, base64);
-        banout_finalize_base64(banout, 2, base64);
-        
+        banout_append_base64(banout, PROTO_SSH1, "bc", 2, base64);
+        banout_finalize_base64(banout, PROTO_SSH1, base64);
+
         banout_init_base64(base64);
-        banout_append_base64(banout, 3, "mno", 3, base64);
-        banout_finalize_base64(banout, 3, base64);
-        
+        banout_append_base64(banout, PROTO_SSH2, "mno", 3, base64);
+        banout_finalize_base64(banout, PROTO_SSH2, base64);
+
         banout_init_base64(base64);
-        banout_append_base64(banout, 4, "stuv", 4, base64);
-        banout_finalize_base64(banout, 4, base64);
-        
+        banout_append_base64(banout, PROTO_HTTP, "stuv", 4, base64);
+        banout_finalize_base64(banout, PROTO_HTTP, base64);
+
         banout_init_base64(base64);
-        banout_append_base64(banout, 5, "fghij", 5, base64);
-        banout_finalize_base64(banout, 5, base64);
-        
-        
-        if (!banout_string_equals(banout, 1, "eA=="))
+        banout_append_base64(banout, PROTO_FTP, "fghij", 5, base64);
+        banout_finalize_base64(banout, PROTO_FTP, base64);
+
+        if (!banout_string_equals(banout, PROTO_HEUR, "eA=="))
             return 1;
-        if (!banout_string_equals(banout, 2, "YmM="))
+        if (!banout_string_equals(banout, PROTO_SSH1, "YmM="))
             return 1;
-        if (!banout_string_equals(banout, 3, "bW5v"))
+        if (!banout_string_equals(banout, PROTO_SSH2, "bW5v"))
             return 1;
-        if (!banout_string_equals(banout, 4, "c3R1dg=="))
+        if (!banout_string_equals(banout, PROTO_HTTP, "c3R1dg=="))
             return 1;
-        if (!banout_string_equals(banout, 5, "ZmdoaWo="))
+        if (!banout_string_equals(banout, PROTO_FTP, "ZmdoaWo="))
             return 1;
 
         banout_release(banout);
     }
-    
-    
+
+
     return 0;
 }
 

@@ -34,7 +34,7 @@
 
 
 /***************************************************************************
- * The timeout system is a circular ring. We move an index around the 
+ * The timeout system is a circular ring. We move an index around the
  * ring. At each slot in the ring is a linked-list of all entries at
  * that time index. Because the ring can wrap, not everything at a given
  * entry will be the same timestamp. Therefore, when doing the timeout
@@ -70,8 +70,8 @@ timeouts_create(uint64_t timestamp)
     /*
      * Allocate memory and initialize it to zero
      */
-    timeouts = CALLOC(1, sizeof(*timeouts));
-    
+    timeouts = (struct Timeouts *) CALLOC(1, sizeof(*timeouts));
+
     /*
      * We just mask off the low order bits to determine wrap. I'm using
      * a variable here because one of these days I'm going to make
@@ -107,7 +107,7 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     timeout_unlink(entry);
 
     if (entry->prev) {
-        LOG(1, "***CHANGE %d-seconds\n", 
+        LOG(1, "***CHANGE %d-seconds\n",
                     (int)((timestamp-entry->timestamp)/TICKS_PER_SECOND));
     }
 

@@ -279,7 +279,7 @@ stack_arp_resolve(struct Adapter *adapter,
  * Handle an incoming ARP request.
  ****************************************************************************/
 int
-stack_arp_incoming_request( struct stack_t *stack,
+stack_arp_incoming_request( struct our_stack_t *stack,
     ipv4address_t my_ip, macaddress_t my_mac,
     const unsigned char *px, unsigned length)
 {
@@ -356,7 +356,7 @@ stack_arp_incoming_request( struct stack_t *stack,
     /*
      * Now queue the packet up for transmission
      */
-    stack_transmit_packetbuffer(stack, response);
+    our_stack_transmit_packetbuffer(stack, response);
 
     return 0;
 }

@@ -285,13 +285,13 @@ blackrock2_init(struct BlackRock *br, uint64_t range, uint64_t seed, unsigned ro
 
 /***************************************************************************
  * The inner round/mixer function. In DES, it's a series of S-box lookups,
- * which 
+ * which
  ***************************************************************************/
 static inline uint64_t
 ROUND(uint64_t r, uint64_t R, uint64_t seed)
 {
 #define GETBYTE(R,n) ((uint64_t)(((((R)>>(n*8ULL)))&0xFFULL)))
-#if 0    
+#if 0
     uint64_t r0, r1, r2, r3;
 #endif
     uint64_t T, Y;
@@ -308,7 +308,7 @@ ROUND(uint64_t r, uint64_t R, uint64_t seed)
         Y = SB7[ (T      ) & 0x3F ] ^              \
              SB5[ (T >>  8) & 0x3F ] ^              \
              SB3[ (T >> 16) & 0x3F ] ^              \
-             SB1[ (T >> 24) & 0x3F ]; 
+             SB1[ (T >> 24) & 0x3F ];
     }
     return Y;
 #if 0
@@ -451,8 +451,8 @@ verify(struct BlackRock *br, uint64_t max)
     uint64_t range = br->range;
 
     /* Allocate a list of 1-byte counters */
-    list = CALLOC(1, (size_t)((range<max)?range:max));
-    
+    list = (unsigned char *) CALLOC(1, (size_t)((range<max)?range:max));
+
     /* For all numbers in the range, verify increment the counter for the
      * the output. */
     for (i=0; i<range; i++) {

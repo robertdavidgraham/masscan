@@ -97,7 +97,7 @@ typedef unsigned    (*PCAP_DATALINK)(void *hPcap);
 typedef unsigned    (*PCAP_DISPATCH)(void *hPcap, unsigned how_many_packets, PCAP_HANDLE_PACKET handler, void *handle_data);
 typedef int         (*PCAP_FINDALLDEVS)(pcap_if_t **alldevs, char *errbuf);
 typedef const char *(*PCAP_LIB_VERSION)(void);
-typedef char *      (*PCAP_LOOKUPDEV)(char *errbuf);
+typedef const char *(*PCAP_LOOKUPDEV)(char *errbuf);
 typedef int         (*PCAP_MAJOR_VERSION)(void *p);
 typedef int         (*PCAP_MINOR_VERSION)(void *p);
 typedef void *      (*PCAP_OPEN_LIVE)(const char *devicename, unsigned snap_length, unsigned is_promiscuous, unsigned read_timeout, char *errbuf);
@@ -107,7 +107,7 @@ typedef int         (*PCAP_SENDPACKET)(pcap_t *p, const unsigned char *buf, int 
 typedef const unsigned char *(*PCAP_NEXT)(pcap_t *p, struct pcap_pkthdr *h);
 typedef int         (*PCAP_SETDIRECTION)(pcap_t *, pcap_direction_t);
 typedef const char *(*PCAP_DATALINK_VAL_TO_NAME)(int dlt);
-typedef void        (*PCAP_PERROR)(pcap_t *p, char *prefix);
+typedef void        (*PCAP_PERROR)(pcap_t *p, const char *prefix);
 typedef const char *(*PCAP_GETERR)(pcap_t *p);
 typedef const char *(*PCAP_DEV_NAME)(const pcap_if_t *dev);
 typedef const char *(*PCAP_DEV_DESCRIPTION)(const pcap_if_t *dev);

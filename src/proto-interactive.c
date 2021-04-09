@@ -15,7 +15,7 @@ tcp_transmit_alloc(struct InteractiveData *more, size_t length)
      * memory pools instead of heap malloc(), which will use this parameter */
     UNUSEDPARM(more);
 
-    return MALLOC(length);
+    return (unsigned char *) MALLOC(length);
 }
 
 void
@@ -35,7 +35,7 @@ tcp_transmit(struct InteractiveData *more, const void *payload, size_t length, u
 {
     more->m_payload = payload;
     more->m_length = (unsigned)length;
-    
+
     if (flags & TCPTRAN_DYNAMIC)
         more->is_payload_dynamic = 1;
 }

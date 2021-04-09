@@ -26,7 +26,7 @@ unicornscan_out_close(struct Output *out, FILE *fp)
 
 static void
 unicornscan_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    enum PortStatus status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     ipaddress_formatted_t fmt = ipaddress_fmt(ip);
     UNUSEDPARM(reason);
@@ -76,8 +76,8 @@ unicornscan_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(length);
 
     return;
-} 
- 
+}
+
 
 
 /****************************************************************************

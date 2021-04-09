@@ -310,8 +310,8 @@ duplicate_string(const char *str)
         length = strlen(str);
 
     /* Allocate memory for the string */
-    result = MALLOC(length + 1);
-    
+    result = (char *) MALLOC(length + 1);
+
 
     /* Copy the string */
     if (str)
@@ -352,8 +352,8 @@ indexed_filename(const char *filename, unsigned index)
         ext = len;
 
     /* allocate memory */
-    new_filename = MALLOC(new_length);
-    
+    new_filename = (char *) MALLOC(new_length);
+
 
     /* format the new name */
     sprintf_s(new_filename, new_length, "%.*s.%02u%s",
@@ -377,7 +377,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     unsigned i;
 
     /* allocate/initialize memory */
-    out = CALLOC(1, sizeof(*out));
+    out = (struct Output *) CALLOC(1, sizeof(*out));
     out->masscan = masscan;
     out->when_scan_started = time(0);
     out->is_virgin_file = 1;
@@ -543,7 +543,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen(filename)
                             + 1  /* - */
                             + 1; /* nul */
-    new_filename = MALLOC(new_filename_size);
+    new_filename = (char *) MALLOC(new_filename_size);
 
     /* Get the proper timestamp for the file */
     if (out->is_gmt) {
@@ -710,7 +710,7 @@ oui_from_mac(const unsigned char mac[6])
  * back.
  ***************************************************************************/
 void
-output_report_status(struct Output *out, time_t timestamp, int status,
+output_report_status(struct Output *out, time_t timestamp, enum PortStatus status,
         ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
         const unsigned char mac[6])
 {
@@ -848,8 +848,8 @@ output_report_status(struct Output *out, time_t timestamp, int status,
 void
 output_report_banner(struct Output *out, time_t now,
                 ipaddress ip, unsigned ip_proto, unsigned port,
-                unsigned proto, 
-                unsigned ttl, 
+                enum ApplicationProtocol proto,
+                unsigned ttl,
                 const unsigned char *px, unsigned length)
 {
     FILE *fp = out->fp;

@@ -1,17 +1,17 @@
 /*
     CoAP - Constrained Application Protocol
     https://en.wikipedia.org/wiki/Constrained_Application_Protocol
- 
+
  This is a very simple protocol for interacting with IoT devices
  that have a minimal amount of resources, such as less than a
  megabyte of RAM.
- 
+
  From a scanner point of view, we want to execute the equivelent
  of:
     GET /.well-known/core
  This will return the list of additional items that we can access
  on the target device.
- 
+
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -67,7 +67,7 @@ response_code(unsigned code)
         case CODE(2,3): return "Valid";
         case CODE(2,4): return "Changed";
         case CODE(2,5): return "Content";
-        
+
         case CODE(4,0): return "Bad Request";
         case CODE(4,1): return "Unauthorized";
         case CODE(4,2): return "Bad Option";
@@ -78,7 +78,7 @@ response_code(unsigned code)
         case CODE(4,12): return "Precondition Failed";
         case CODE(4,13): return "Request Too Large";
         case CODE(4,15): return "Unsupported Content-Format";
-            
+
         case CODE(5,0): return "Internal Server Error";
         case CODE(5,1): return "Not Implemented";
         case CODE(5,2): return "Bad Gateway";
@@ -86,7 +86,7 @@ response_code(unsigned code)
         case CODE(5,4): return "Gateway Timeout";
         case CODE(5,5): return "Proxying Not Supported";
     }
-    
+
     switch (code>>5) {
         case 2: return "Okay";
         case 4: return "Error";
@@ -136,18 +136,18 @@ parse_links(const unsigned char *px, unsigned offset, unsigned length, size_t *r
         PARM_VALUE,
         INVALID
     } state = LINK_BEGIN;
-    
+
     /* For selftesting purposes, we pass in nul-terminated strings,
      * indicated by a length of (~0) */
-    if (length == ~0)
+    if (length == ~0u)
         length = (unsigned)strlen((const char *)px);
-    
+
     /* Allocate space for at least one result */
-    links = CALLOC(1, sizeof(*links));
+    links = (struct CoapLink *) CALLOC(1, sizeof(*links));
     l = &links[0];
     l->parms_offset = offset;
     l->link_offset = offset;
-    
+
     for (; offset < length; offset++)
     switch (state) {
         case INVALID:
@@ -157,26 +157,26 @@ parse_links(const unsigned char *px, unsigned offset, unsigned length, size_t *r
             /* Ignore leading whitespace */
             if (isspace(px[offset]))
                 continue;
-            
+
             /* Links must start with "<" character */
             if (px[offset] != '<') {
                 state = INVALID;
                 break;
             }
-            
-            
+
+
             /* Reserve space for next link */
-            links = REALLOCARRAY(links, ++count+1, sizeof(*links));
+            links = (struct CoapLink *) REALLOCARRAY(links, ++count+1, sizeof(*links));
             links[count].link_offset = length; /* indicate end-of-list by pointing to end-of-input */
             links[count].link_length = 0;
             links[count].parms_offset = length;
             links[count].parms_length = 0;
-            
+
             /* Grab a pointer to this <link> */
             l = &links[count-1];
             l->link_offset = offset+1;
             l->parms_offset = l->link_offset;
-            
+
             state = LINK_VALUE;
             break;
         case LINK_VALUE:
@@ -275,7 +275,7 @@ parse_links(const unsigned char *px, unsigned offset, unsigned length, size_t *r
             fprintf(stderr, "invalid state\n");
             state = INVALID;
             break;
-                        
+
     }
 
     /* Return an array of links and a count of the number of links */
@@ -304,7 +304,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
         LOG(3, "[-] CoAP: short length\n");
         goto not_this_protocol;
     }
-    
+
     /*
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      |Ver| T |  TKL  |      Code     |          Message ID           |
@@ -318,37 +318,37 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
      */
     version = (px[0]>>6) & 3;
     type = (px[0]>>4) & 3;
-    
+
     token_length = px[0] & 0x0F;
     code = px[1];
     *request_id = px[2]<<8 | px[3];
-    
+
     /* Only version supported is v1 */
     if (version != 1) {
         LOG(3, "[-] CoAP: version=%u\n", version);
         goto not_this_protocol;
     }
-    
+
     /* Only ACKs suported */
     if (type != 2) {
         LOG(3, "[-] CoAP: type=%u\n", type);
         goto not_this_protocol;
     }
-    
+
     /* Only token lengths up to 8 bytes are supported.
      * Token length must fit within the packet */
     if (token_length > 8 || 4 + token_length > length) {
         LOG(3, "[-] CoAP: token-length=%u\n", token_length);
         goto not_this_protocol;
     }
-    
+
     token = 0;
     for (i=0; i<token_length; i++) {
         token = token << 8ULL;
         token = token | (unsigned long long)px[i];
     }
-    
-    
+
+
     /* Response code */
     {
         char buf[64];
@@ -356,18 +356,18 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
         banout_append(banout, PROTO_COAP, buf, AUTO_LEN);
         //code >>= 5;
     }
-    
-    
+
+
     /* If there was a token, the print it. */
     if (token) {
         char buf[64];
         sprintf_s(buf, sizeof(buf), " token=0x%llu", token);
         banout_append(banout, PROTO_COAP, buf, AUTO_LEN);
     }
-    
+
     /*
      * Now process the options fields
-     
+
      0   1   2   3   4   5   6   7
      +---------------+---------------+
      |               |               |
@@ -398,14 +398,14 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
         unsigned delta;
         unsigned opt;
         unsigned optlen;
-        
+
         /* Get the 'opt' byte */
         opt = px[offset++];
         if (opt == 0xFF)
             break;
         optlen = (opt>>0) & 0x0F;
         delta = (opt>>4) & 0x0F;
-        
+
         /* Decode the delta field */
         switch (delta) {
             default:
@@ -436,7 +436,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
                     banout_append(banout, PROTO_COAP, " PARSE_ERR", AUTO_LEN);
                 optnum = 0xFFFFFFFF;
         }
-        
+
         /* Decode the optlen field */
         switch (optlen) {
             default:
@@ -464,7 +464,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
             banout_append(banout, PROTO_COAP, " PARSE_ERR", AUTO_LEN);
             optnum = 0xFFFFFFFF;
         }
-        
+
         /* Process the option contents */
         switch (optnum) {
             case 0xFFFFFFFF:
@@ -479,7 +479,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
             case 12:
                 banout_append(banout, PROTO_COAP, " /Content-Format/", AUTO_LEN);
                 content_format = 0;
-                
+
                 for (i=0; i<optlen; i++) {
                     content_format = content_format<<8 | px[offset+i];
                 }
@@ -492,15 +492,15 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
             case 39: banout_append(banout, PROTO_COAP, " /Proxy-Scheme/", AUTO_LEN); break;
             case 60: banout_append(banout, PROTO_COAP, " /Size1/", AUTO_LEN); break;
             default: banout_append(banout, PROTO_COAP, " /(Unknown)/", AUTO_LEN); break;
-                
+
         }
-        
+
         if (optnum == 0xFFFFFFFF)
             break;
-        
+
         offset += optlen;
     }
-    
+
     switch (content_format) {
         case  0: banout_append(banout, PROTO_COAP, " text-plain", AUTO_LEN); break;
         case 40:
@@ -508,7 +508,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
         {
             struct CoapLink *links;
             size_t count = 0;
-            
+
             links = parse_links(px, offset, (unsigned)length, &count);
             for (i=0; i<count; i++) {
                 banout_append(banout, PROTO_COAP, " ", AUTO_LEN);
@@ -547,30 +547,30 @@ coap_handle_response(struct Output *out, time_t timestamp,
     unsigned cookie;
     struct BannerOutput banout[1];
     bool is_valid;
-    
+
     LOG(1, "[+] COAP\n");
-    
+
     /* Initialize the "banner output" module that we'll use to print
      * pretty text in place of the raw packet */
     banout_init(banout);
-    
+
     /*
      * Do the protocol parsing
      */
     is_valid = coap_parse(px, length, banout, &message_id);
-    
-    
+
+
     /* Validate the "syn-cookie" style information, which should match the "Message ID field*/
     cookie = (unsigned)syn_cookie(ip_them, port_them | Templ_UDP, ip_me, port_me, entropy);
     /*if ((seqno&0xffff) != message_id)
      goto not_this_protocol;*/
-    
+
     /* See if cookies match. So far, we are allowing responses with the
      * wrong cookie */
     if ((cookie&0xffff) != message_id)
         banout_append(banout, PROTO_COAP, " IP-MISMATCH", AUTO_LEN);
 
-    
+
     /* Print the banner information, or save to a file, depending */
     if (is_valid) {
         output_report_banner(
@@ -625,7 +625,7 @@ test_is_link(const char *name, const unsigned char *vinput, struct CoapLink *lin
     size_t i;
     size_t name_length = strlen(name);
     const char *input = (const char *)vinput;
-    
+
     for (i=0; i<count; i++) {
         const char *name2;
         if (name_length != links[i].link_length)
@@ -635,7 +635,7 @@ test_is_link(const char *name, const unsigned char *vinput, struct CoapLink *lin
             continue;
         return 1; /* found */
     }
-    
+
     fprintf(stderr, "[-] proto-coap failed at line number %d\n", line_number);
     return 0; /* not found */
 }
@@ -645,8 +645,8 @@ test_is_link(const char *name, const unsigned char *vinput, struct CoapLink *lin
 int
 proto_coap_selftest(void)
 {
-    
-    
+
+
     struct CoapLink *links;
     size_t count=0;
 
@@ -690,7 +690,7 @@ proto_coap_selftest(void)
         if (!test_is_link("/firmware/v2.1", input, links, count, __LINE__))
             return 1;
     }
-    
+
     /* Now test an entire packet */
     {
         const char input[] =
@@ -704,7 +704,7 @@ proto_coap_selftest(void)
         struct BannerOutput banout[1];
         bool is_valid;
         banout_init(banout);
-        
+
         /* parse a test packet */
         is_valid = coap_parse( (const unsigned char*)input,
                    sizeof(input)-1,
@@ -712,22 +712,22 @@ proto_coap_selftest(void)
                    &request_id
                    );
         //fprintf(stderr, "[+] %.*s\n", (int)banout_string_length(banout, PROTO_COAP), banout_string(banout, PROTO_COAP));
-        
+
         if (!is_valid)
             return 1;
         if (request_id != 462)
             return 1;
-        
+
         {
             const unsigned char *str = banout_string(banout, PROTO_COAP);
             size_t str_length = banout_string_length(banout, PROTO_COAP);
             if (str_length <= 16 && memcmp(str, "rsp=2.5(Content)", 16) != 0)
                 return 1;
         }
-        
+
         banout_release(banout);
 
     }
-    
+
     return 0;
 }

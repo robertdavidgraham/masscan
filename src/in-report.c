@@ -30,7 +30,7 @@ static const char *
 cndb_lookup(unsigned ip)
 {
     const struct CNDB_Entry *entry;
-    
+
     if (db == NULL)
         return 0;
 
@@ -53,14 +53,14 @@ cndb_add(unsigned ip, const unsigned char *name, size_t name_length)
 
     if (name_length == 0)
         return;
-    
+
     if (db == NULL) {
-        db = CALLOC(1, sizeof(*db));
+        db = (struct CNDB_Database *) CALLOC(1, sizeof(*db));
     }
-        
-    entry = MALLOC(sizeof(*entry));
+
+    entry = (struct CNDB_Entry *) MALLOC(sizeof(*entry));
     entry->ip =ip;
-    entry->name = MALLOC(name_length+1);
+    entry->name = (char *) MALLOC(name_length+1);
     memcpy(entry->name, name, name_length+1);
     entry->name[name_length] = '\0';
     entry->next = db->entries[ip&0xFFFF];
@@ -77,15 +77,15 @@ cndb_add_cn(unsigned ip, const unsigned char *data, size_t length)
     size_t offset = 0;
     size_t name_offset;
     size_t name_length;
-    
+
     if (length < 7)
         return;
-    
+
     /*cipher:0x39 , safe-we1.dyndns.org*/
     if (memcmp(data+offset, "cipher:", 7) != 0)
         return;
     offset += 7;
-    
+
     /* skip to name */
     while (offset < length && data[offset] != ',')
         offset++;
@@ -97,13 +97,13 @@ cndb_add_cn(unsigned ip, const unsigned char *data, size_t length)
         offset++;
     if (offset >= length)
         return;
-    
+
     /* we should have a good name */
     name_offset = offset;
     while (offset < length && data[offset] != ',')
         offset++;
     name_length = offset - name_offset;
-    
+
     /* now insert into database */
     cndb_add(ip, data+name_offset, name_length);
 }
@@ -116,7 +116,7 @@ static unsigned
 found(const char *str, size_t str_len, const unsigned char *p, size_t length)
 {
     size_t i;
-  
+
     if (str_len > length)
         return 0;
 
@@ -181,9 +181,9 @@ struct Names {
 /* raspberry pi */
 /* issuer[Debian */
 
-    
-    
-    
+
+
+
 
 
     {XNas,   9, "nasend~~]"},
@@ -198,14 +198,14 @@ struct Names {
     {Xav,   16, "issuer[Kaspersky"},
     {XFW,   17, "subject[Fortinet]"},
     {XFW,   17, "issuer[ICC-FW CA]"},
-    {XCam,  17, "issuer[HIKVISION]"}, 
+    {XCam,  17, "issuer[HIKVISION]"},
     {Xprint,17, "subject[SHARP MX-"},
     {X509,  18, "issuer[GANDI SAS]"},
     {XFW,   18, "subject[FortiGate]"},
     {XFW,   18, "issuer[watchguard]"},
-    {XVM,   18, "issuer[VMware Inc]"}, 
+    {XVM,   18, "issuer[VMware Inc]"},
     {Xbox,  19, "issuer[eBox Server]"},
-    {XFW,   19, "subject[WatchGuard]"}, 
+    {XFW,   19, "subject[WatchGuard]"},
     {X509,  19, "issuer[RapidSSL CA]"},
     {X509,  19, "issuer[AddTrust AB]"},
     {XCom,  19, "issuer[Cisco SSCA2]"},
@@ -217,7 +217,7 @@ struct Names {
     {XMail, 20, "issuer[EQ-MT-RAPTOR]"},
     {X509,  20, "issuer[DigiCert Inc]"},
     {X509,  21, "issuer[TERENA SSL CA]"},
-    {XFW,   21, "issuer[WatchGuard CA]"},  
+    {XFW,   21, "issuer[WatchGuard CA]"},
     {XVPN,  21, "issuer[OpenVPN Web CA"},
     {X509,  21, "issuer[GeoTrust Inc.]"},
     {XNas,  21, "issuer[TS Series NAS]"},
@@ -227,9 +227,9 @@ struct Names {
    {Xdefault,21,"issuer[XX] issuer[XX]"},
     {XWiFi, 21, "2Wire]Gateway Device]"},
     {X509,  21, "subject[DigiCert Inc]"},
-    {XCam,  22, "issuer[SamsungTechwin]"}, 
+    {XCam,  22, "issuer[SamsungTechwin]"},
     {X509,  22, "issuer[TAIWAN-CA INC.]"},
-    {X509,  22, "issuer[GeoTrust, Inc.]"},    
+    {X509,  22, "issuer[GeoTrust, Inc.]"},
     {X509,  22, "issuer[ValiCert, Inc.]"},
     {0,     22, "issuer[Apache Friends]"},
     {X509,  22, "issuer[VeriSign, Inc.]"},
@@ -242,7 +242,7 @@ struct Names {
     {X509,  24, "issuer[GlobalSign nv-sa]"},
     {XVPN,  24, "SonicWALL, Inc.]SSL-VPN]"},
     {X509,  25, "issuer[Comodo CA Limited]"},
-    {X509,  25, "issuer[COMODO CA Limited]"},    
+    {X509,  25, "issuer[COMODO CA Limited]"},
     {X509,  25, "issuer[GoDaddy.com, Inc.]"},
     {Xbox,  26, "subject[Barracuda Networks]"},
     {X509,  26, "issuer[Equifax Secure Inc.]"},
@@ -266,7 +266,7 @@ struct Names {
     {XVPN,  35, "SonicWALL, Inc.]Secure Remote Access]"},
     {X509,  40, "issuer[Secure Digital Certificate Signing]"},
     {X509,  40, "issuer[Equifax Secure Certificate Authority]"},
-    {XVM,   40, "subject[VMware ESX Server Default Certificate]"}, 
+    {XVM,   40, "subject[VMware ESX Server Default Certificate]"},
     {XCam,  40, "issuer[Cisco Systems] issuer[Cisco Manufacturing CA]"},
     {0,0, 0}
 };
@@ -318,7 +318,7 @@ found_type(const unsigned char *banner, size_t banner_length)
                                         (unsigned)banner_length);
     if (id == SMACK_NOT_FOUND)
         return 0;
-    
+
     counts[id]++;
 
     return 1;
@@ -335,7 +335,7 @@ readscan_report(  unsigned ip,
 
 
     if (app_proto == PROTO_X509_CERT) {
-        unsigned char *der = MALLOC(data_length);
+        unsigned char *der = (unsigned char *) MALLOC(data_length);
         struct CertDecode x;
         size_t der_length;
         struct BannerOutput banout[1];
@@ -345,7 +345,7 @@ readscan_report(  unsigned ip,
         banout_init(banout);
 
         der_length = base64_decode(der, data_length, data, data_length);
-        
+
         x509_decode_init(&x, data_length);
         x.is_capture_issuer = 1;
         x.is_capture_subject = 1;
@@ -364,7 +364,7 @@ readscan_report(  unsigned ip,
         cndb_add(ip, data, data_length);*/
     } else if (app_proto == PROTO_VULN) {
         const char *name = cndb_lookup(ip);
-        
+
         if (data_length == 15 && memcmp(data, "SSL[heartbeat] ", 15) == 0)
             return;
 

@@ -432,7 +432,7 @@ ASN1_skip(struct CertDecode *x, unsigned *i, size_t length)
  * the certificate has a corresponding state value. This massive enum
  * is for all those states.
  * DANGER NOTE NOTE NOTE NOTE DANGER NOTE DANGER NOTE
- *  These states are in a specific order. We'll just do 'state++' sometimes
+ *  These states are in a specific order. We'll just do 'state = (enum X509state)(state+1)' sometimes
  *  to go the next state. Therefore, you can't chane the order wihtout
  *  changing the code.
  ****************************************************************************/
@@ -547,7 +547,7 @@ x509_decode(struct CertDecode *x,
             struct BannerOutput *banout)
 {
     unsigned i;
-    enum X509state state = x->state;
+    enum X509state state = (enum X509state) x->state;
 
 
 #define GOTO_ERROR(state, i, length) (state)=0xFFFFFFFF;(i)=(length);continue
@@ -567,7 +567,7 @@ x509_decode(struct CertDecode *x,
         while (x->stack.remainings[0] == 0) {
             if (x->stack.depth == 0)
                 return;
-            state = ASN1_pop(x);
+            state = (enum X509state)ASN1_pop(x);
         }
         
         /*
@@ -584,51 +584,51 @@ x509_decode(struct CertDecode *x,
                 state = ERROR;
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case ISSUERNAME_TAG:
             if (px[i] != 0x13 && px[i] != 0x0c) {
-                state++;
+                state = (enum X509state)(state+1);
                 continue;
             }
             if (x->is_capture_issuer) {
                 banout_append(banout, PROTO_SSL3, " issuer[", AUTO_LEN);
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case SUBJECTNAME_TAG:
             if (px[i] != 0x13 && px[i] != 0x0c) {
-                state++;
+                state = (enum X509state)(state+1);
                 continue;
             }
             if (x->is_capture_subject) {
                 banout_append(banout, PROTO_SSL3, " subject[", AUTO_LEN);
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case ISSUER1_TAG:
         case SUBJECT1_TAG:
             x->subject.type = 0;
             if (px[i] != 0x31) {
-                state++;
+                state = (enum X509state)(state+1);
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case VNBEFORE_TAG:
         case VNAFTER_TAG:
             if (px[i] != 0x17) {
-                state++;
+                state = (enum X509state)(state+1);
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case VERSION0_TAG:
             if (px[i] != 0xa0) {
                 state = ERROR;
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case SIG1_TAG:
         case ISSUERID_TAG:
@@ -639,7 +639,7 @@ x509_decode(struct CertDecode *x,
                 state = ERROR;
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case VERSION1_TAG:
         case SERIAL_TAG:
@@ -648,7 +648,7 @@ x509_decode(struct CertDecode *x,
                 continue;
             }
             x->u.num = 0;
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case ISSUERNAME_CONTENTS:
             if (x->is_capture_issuer) {
@@ -678,7 +678,7 @@ x509_decode(struct CertDecode *x,
         case ALGOID1_CONTENTS0:
         case SIG1_CONTENTS0:
             memset(&x->u.oid, 0, sizeof(x->u.oid));
-            state++;
+            state = (enum X509state)(state+1);
         case ISSUERID_CONTENTS1:
         case SUBJECTID_CONTENTS1:
         case EXTENSION_ID_CONTENTS1:
@@ -769,14 +769,14 @@ x509_decode(struct CertDecode *x,
                 state = ERROR;
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
         case EXTENSIONS_A_TAG:
             if (px[i] != 0xa3) {
                 state = ERROR;
                 continue;
             }
-            state++;
+            state = (enum X509state)(state+1);
             break;
 
         /*
@@ -816,7 +816,7 @@ x509_decode(struct CertDecode *x,
                 state = PADDING;
                 break;
             case 4:
-                state++;
+                state = (enum X509state)(state+1);
                 break;
             }
             break;
@@ -865,12 +865,12 @@ x509_decode(struct CertDecode *x,
             if (px[i] & 0x80) {
                 x->u.tag.length_of_length = px[i]&0x7F;
                 x->u.tag.remaining = 0;
-                state++;
+                state = (enum X509state)(state+1);
                 break;
             } else {
                 x->u.tag.remaining = px[i];
                 ASN1_push(x, kludge_next(state), x->u.tag.remaining);
-                state += 2;
+                state = (enum X509state)(state + 2);
                 memset(&x->u, 0, sizeof(x->u));
                 break;
             }
@@ -937,7 +937,7 @@ x509_decode(struct CertDecode *x,
              * stack, then decend into the child field.
              */
             ASN1_push(x, kludge_next(state-1), x->u.tag.remaining);
-            state++;
+            state = (enum X509state)(state+1);
             memset(&x->u, 0, sizeof(x->u));
             break;
 
@@ -946,51 +946,51 @@ x509_decode(struct CertDecode *x,
             switch (x->u.timestamp.state) {
             case 0:
                 x->u.timestamp.year = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 1:
                 x->u.timestamp.year += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 2:
                 x->u.timestamp.month = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 3:
                 x->u.timestamp.month += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 4:
                 x->u.timestamp.day = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 5:
                 x->u.timestamp.day += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 6:
                 x->u.timestamp.hour = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 7:
                 x->u.timestamp.hour += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 8:
                 x->u.timestamp.minute = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 9:
                 x->u.timestamp.minute += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 10:
                 x->u.timestamp.second = (px[i] - '0') * 10;
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 break;
             case 11:
                 x->u.timestamp.second += (px[i] - '0');
-                x->u.timestamp.state++;
+                x->u.timestamp.state = (enum X509state)(state+1);
                 {
                     struct tm tm;
                     time_t now;

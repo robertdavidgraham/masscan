@@ -32,9 +32,9 @@
 struct Patterns patterns[] = {
     {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
     {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
-    
+
     {"\x82\x00\x00\x00", 4, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Positive Session Response */
-    
+
     {"\x83\x00\x00\x01\x80", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Not listening on called name */
     {"\x83\x00\x00\x01\x81", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Not listening for calling name */
     {"\x83\x00\x00\x01\x82", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Called name not present */
@@ -62,16 +62,16 @@ struct Patterns patterns[] = {
     {"RFB 003.003\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* default version for everything */
     {"RFB 003.005\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* broken, same as 003.003 */
     {"RFB 003.006\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 3}, /* broken, same as 003.003 */
-    {"RFB 003.007\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 7}, 
-    {"RFB 003.008\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, 
+    {"RFB 003.007\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 7},
+    {"RFB 003.008\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
     {"RFB 003.889\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Apple's remote desktop, 003.007 */
-    {"RFB 003.009\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, 
+    {"RFB 003.009\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
     {"RFB 004.000\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* Intel AMT KVM */
     {"RFB 004.001\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8}, /* RealVNC 4.6 */
     {"RFB 004.002\n", 12, PROTO_VNC_RFB, SMACK_ANCHOR_BEGIN, 8},
     {"STAT pid ",      9, PROTO_MEMCACHED,SMACK_ANCHOR_BEGIN, 0}, /* memcached stat response */
-    
-    
+
+
     {"\xff\xfb\x01\xff\xf0", 5, PROTO_TELNET, 0, 0},
     {"\xff\xfb\x01\xff\xfb", 5, PROTO_TELNET, 0, 0},
     {"\xff\xfb\x01\xff\xfc", 5, PROTO_TELNET, 0, 0},
@@ -93,7 +93,7 @@ struct Patterns patterns[] = {
     {"\xff\xfb\x01login",    8, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
     {"login:",               6, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
     {"password:",            9, PROTO_TELNET, SMACK_ANCHOR_BEGIN, 0},
-    
+
     {"\x03\x00\x00\x13\x0e\xd0\xbe\xef\x12\x34\x00\x02\x0f\x08\x00\x00\x00\x00\x00",
         12, PROTO_RDP, SMACK_ANCHOR_BEGIN, 0},
     {"\x03\x00\x00\x13\x0e\xd0\x00\x00\x12\x34\x00\x02\x0f\x08\x00\x00\x00\x00\x00",
@@ -197,7 +197,7 @@ banner1_parse(
                               banout,
                               more);
             break;
-            
+
         case PROTO_TELNET:
             banner_telnet.parse(   banner1,
                               banner1->http_fields,
@@ -230,7 +230,7 @@ banner1_parse(
                               banout,
                               more);
             break;
-            
+
     case PROTO_SSH1:
     case PROTO_SSH2:
         /* generic text-based parser
@@ -322,8 +322,8 @@ banner1_create(void)
     struct Banner1 *b;
     unsigned i;
 
-    b = CALLOC(1, sizeof(*b));
-    
+    b = (struct Banner1 *) CALLOC(1, sizeof(*b));
+
 
     /*
      * This creates a pattern-matching blob for heuristically determining
@@ -345,27 +345,27 @@ banner1_create(void)
      */
     b->payloads.tcp[80] = &banner_http;
     b->payloads.tcp[8080] = &banner_http;
-    b->payloads.tcp[139] = (void*)&banner_smb0;
-    b->payloads.tcp[445] = (void*)&banner_smb1;
-    b->payloads.tcp[443] = (void*)&banner_ssl;   /* HTTP/s */
-    b->payloads.tcp[465] = (void*)&banner_ssl;   /* SMTP/s */
-    b->payloads.tcp[990] = (void*)&banner_ssl;   /* FTP/s */
-    b->payloads.tcp[991] = (void*)&banner_ssl;
-    b->payloads.tcp[992] = (void*)&banner_ssl;   /* Telnet/s */
-    b->payloads.tcp[993] = (void*)&banner_ssl;   /* IMAP4/s */
-    b->payloads.tcp[994] = (void*)&banner_ssl;
-    b->payloads.tcp[995] = (void*)&banner_ssl;   /* POP3/s */
-    b->payloads.tcp[2083] = (void*)&banner_ssl;  /* cPanel - SSL */
-    b->payloads.tcp[2087] = (void*)&banner_ssl;  /* WHM - SSL */
-    b->payloads.tcp[2096] = (void*)&banner_ssl;  /* cPanel webmail - SSL */
-    b->payloads.tcp[8443] = (void*)&banner_ssl;  /* Plesk Control Panel - SSL */
-    b->payloads.tcp[9050] = (void*)&banner_ssl;  /* Tor */
-    b->payloads.tcp[8140] = (void*)&banner_ssl;  /* puppet */
-    b->payloads.tcp[11211] = (void*)&banner_memcached;
-    b->payloads.tcp[23] = (void*)&banner_telnet;
-    b->payloads.tcp[3389] = (void*)&banner_rdp;
-    
-    /* 
+    b->payloads.tcp[139] = (struct ProtocolParserStream *)&banner_smb0;
+    b->payloads.tcp[445] = (struct ProtocolParserStream *)&banner_smb1;
+    b->payloads.tcp[443] = (struct ProtocolParserStream *)&banner_ssl;   /* HTTP/s */
+    b->payloads.tcp[465] = (struct ProtocolParserStream *)&banner_ssl;   /* SMTP/s */
+    b->payloads.tcp[990] = (struct ProtocolParserStream *)&banner_ssl;   /* FTP/s */
+    b->payloads.tcp[991] = (struct ProtocolParserStream *)&banner_ssl;
+    b->payloads.tcp[992] = (struct ProtocolParserStream *)&banner_ssl;   /* Telnet/s */
+    b->payloads.tcp[993] = (struct ProtocolParserStream *)&banner_ssl;   /* IMAP4/s */
+    b->payloads.tcp[994] = (struct ProtocolParserStream *)&banner_ssl;
+    b->payloads.tcp[995] = (struct ProtocolParserStream *)&banner_ssl;   /* POP3/s */
+    b->payloads.tcp[2083] = (struct ProtocolParserStream *)&banner_ssl;  /* cPanel - SSL */
+    b->payloads.tcp[2087] = (struct ProtocolParserStream *)&banner_ssl;  /* WHM - SSL */
+    b->payloads.tcp[2096] = (struct ProtocolParserStream *)&banner_ssl;  /* cPanel webmail - SSL */
+    b->payloads.tcp[8443] = (struct ProtocolParserStream *)&banner_ssl;  /* Plesk Control Panel - SSL */
+    b->payloads.tcp[9050] = (struct ProtocolParserStream *)&banner_ssl;  /* Tor */
+    b->payloads.tcp[8140] = (struct ProtocolParserStream *)&banner_ssl;  /* puppet */
+    b->payloads.tcp[11211] = (struct ProtocolParserStream *)&banner_memcached;
+    b->payloads.tcp[23] = (struct ProtocolParserStream *)&banner_telnet;
+    b->payloads.tcp[3389] = (struct ProtocolParserStream *)&banner_rdp;
+
+    /*
      * This goes down the list of all the TCP protocol handlers and initializes
      * them.
      */
@@ -382,7 +382,7 @@ banner1_create(void)
     banner_telnet.init(b);
     banner_rdp.init(b);
     banner_vnc.init(b);
-    
+
     /* scripting/versioning come after the rest */
     banner_scripting.init(b);
     banner_versioning.init(b);
@@ -550,31 +550,31 @@ banner1_selftest()
             fprintf(stderr, "SSL banner: selftest failed\n");
             return 1;
         }
-        
+
         x = banner_smb1.selftest();
         if (x) {
             fprintf(stderr, "SMB banner: selftest failed\n");
             return 1;
         }
-        
+
         x = banner_http.selftest();
         if (x) {
             fprintf(stderr, "HTTP banner: selftest failed\n");
             return 1;
         }
-        
+
         x = banner_telnet.selftest();
         if (x) {
             fprintf(stderr, "Telnet banner: selftest failed\n");
             return 1;
         }
-        
+
         x = banner_rdp.selftest();
         if (x) {
             fprintf(stderr, "RDP banner: selftest failed\n");
             return 1;
         }
-        
+
         return x;
     }
 }

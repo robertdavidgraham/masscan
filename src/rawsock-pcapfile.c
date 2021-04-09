@@ -575,7 +575,8 @@ struct PcapFile *pcapfile_openread(const char *capfilename)
      * speciality systems that hint at other features, such as a 64-bit
      * version of the file.
      */
-    switch (buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3]) {
+    uint32_t actualSig = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
+    switch (actualSig) {
     case 0xa1b2c3d4:   byte_order = CAPFILE_BIGENDIAN; break;
     case 0xd4c3b2a1:   byte_order = CAPFILE_LITTLEENDIAN; break;
     default:
@@ -759,7 +760,8 @@ struct PcapFile *pcapfile_openappend(const char *capfilename, unsigned linktype)
 
 
     /* Find out the byte order */
-    switch (buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3]) {
+    uint32_t actualSig = buf[0]<<24 | buf[1]<<16 | buf[2]<<8 | buf[3];
+    switch (actualSig) {
     case 0xa1b2c3d4:   byte_order = CAPFILE_BIGENDIAN; break;
     case 0xd4c3b2a1:   byte_order = CAPFILE_LITTLEENDIAN; break;
     default:

@@ -6,7 +6,6 @@
 #include "massip-port.h"
 #include "string_s.h"
 
-
 /****************************************************************************
  ****************************************************************************/
 static unsigned
@@ -138,7 +137,7 @@ grepable_out_close(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    enum PortStatus status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     const char *service;
     ipaddress_formatted_t fmt;

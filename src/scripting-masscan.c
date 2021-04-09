@@ -24,7 +24,7 @@ static int mass_setconfig(struct lua_State *L)
     const char *name;
     const char *value;
     
-    wrapper = luaL_checkudata(L, 1, MASSCAN_CLASS);
+    wrapper = (struct MasscanWrapper *) luaL_checkudata(L, 1, MASSCAN_CLASS);
     masscan = wrapper->masscan;
     name = luaL_checkstring(L, 2);
     value = luaL_checkstring(L, 3);
@@ -81,7 +81,7 @@ void scripting_masscan_init(struct Masscan *masscan)
     lua_pop(L, 1);
     
     /* Lua: create a  wrapper object and push it onto the stack */
-    wrapper = lua_newuserdata(L, sizeof(*wrapper));
+    wrapper = (struct MasscanWrapper *) lua_newuserdata(L, sizeof(*wrapper));
     memset(wrapper, 0, sizeof(*wrapper));
     wrapper->masscan = masscan;
     

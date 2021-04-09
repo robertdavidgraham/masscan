@@ -69,7 +69,7 @@ masscan_initialize_adapter(
                                             masscan->is_sendq,
                                             masscan->nmap.packet_trace,
                                             masscan->is_offline,
-                                            (void*)masscan->bpf_filter,
+                                            (const char*)masscan->bpf_filter,
                                             masscan->nic[index].is_vlan,
                                             masscan->nic[index].vlan_id);
     if (masscan->nic[index].adapter == 0) {
@@ -106,11 +106,11 @@ masscan_initialize_adapter(
                 return -1;
             }
         }
-        
+
         fmt = macaddress_fmt(*source_mac);
         LOG(1, "[+] source-mac = %s\n", fmt.string);
     }
-    
+
 
     /*
      * IPv4 ADDRESS
@@ -139,13 +139,13 @@ masscan_initialize_adapter(
                 return -1;
             }
         }
-        
+
         fmt = ipv4address_fmt(adapter_ip);
         LOG(1, "[+] source-ip = %s\n", fmt.string);
-        
+
         if (adapter_ip != 0)
             is_usable_ipv4 = 1;
-        
+
         /*
          * ROUTER MAC ADDRESS
          *
@@ -179,7 +179,7 @@ masscan_initialize_adapter(
                 fmt = ipv4address_fmt(router_ipv4);
                 LOG(1, "[+] router-ip = %s\n", fmt.string);
                 LOG(2, "[+] if(%s):arp: resolving IPv4 address\n", ifname);
-                
+
                 stack_arp_resolve(
                         masscan->nic[index].adapter,
                         adapter_ip,
@@ -187,7 +187,7 @@ masscan_initialize_adapter(
                         router_ipv4,
                         router_mac_ipv4);
             }
-            
+
             fmt = macaddress_fmt(*router_mac_ipv4);
             LOG(1, "[+] router-mac-ipv4 = %s\n", fmt.string);
             if (macaddress_is_zero(*router_mac_ipv4)) {
@@ -200,7 +200,7 @@ masscan_initialize_adapter(
             }
         }
     }
-        
+
 
     /*
      * IPv6 ADDRESS
@@ -228,7 +228,7 @@ masscan_initialize_adapter(
         fmt = ipv6address_fmt(adapter_ipv6);
         LOG(1, "[+] source-ip = [%s]\n", fmt.string);
         is_usable_ipv6 = 1;
-        
+
         /*
          * ROUTER MAC ADDRESS
          */
@@ -246,7 +246,7 @@ masscan_initialize_adapter(
                     *source_mac,
                     router_mac_ipv6);
         }
-        
+
         fmt = macaddress_fmt(*router_mac_ipv6);
         LOG(1, "[+] router-mac-ipv6 = %s\n", fmt.string);
         if (macaddress_is_zero(*router_mac_ipv6)) {

@@ -64,7 +64,7 @@ parse_status(struct Output *out,
     case 53:
     case 123:
     case 137:
-    case 161: 
+    case 161:
         record.ip_proto = 17;
         break;
     case 36422:
@@ -166,7 +166,7 @@ _get_integer(const unsigned char *buf, size_t length, size_t *r_offset)
     unsigned result;
     size_t offset = *r_offset;
     (*r_offset) += 4;
-    
+
     if (offset + 4 <= length) {
         result = buf[offset+0]<<24
                 | buf[offset+1]<<16
@@ -183,7 +183,7 @@ _get_short(const unsigned char *buf, size_t length, size_t *r_offset)
     unsigned short result;
     size_t offset = *r_offset;
     (*r_offset) += 2;
-    
+
     if (offset + 2 <= length) {
         result = buf[offset+0]<<8
         | buf[offset+1]<<0;
@@ -199,7 +199,7 @@ _get_long(const unsigned char *buf, size_t length, size_t *r_offset)
     unsigned long long result;
     size_t offset = *r_offset;
     (*r_offset) += 8;
-    
+
     if (offset + 8 <= length) {
         result =
           (unsigned long long)buf[offset+0]<<56ULL
@@ -286,7 +286,7 @@ parse_banner6(struct Output *out, unsigned char *buf, size_t length,
     record.timestamp = _get_integer(buf, length, &offset);
     record.ip_proto  = _get_byte(buf, length, &offset);
     record.port      = _get_short(buf, length, &offset);
-    record.app_proto = _get_short(buf, length, &offset);
+    record.app_proto = (enum ApplicationProtocol) _get_short(buf, length, &offset);
     record.ttl       = _get_byte(buf, length, &offset);
     record.ip.version= _get_byte(buf, length, &offset);
     if (record.ip.version != 6) {
@@ -295,18 +295,18 @@ parse_banner6(struct Output *out, unsigned char *buf, size_t length,
     }
     record.ip.ipv6.hi = _get_long(buf, length, &offset);
     record.ip.ipv6.lo = _get_long(buf, length, &offset);
-    
+
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
 
-    
+
     /*
      * Filter out records if requested
      */
     if (!readscan_filter_pass(record.ip, record.port, record.app_proto,
               filter, btypes))
           return;
-    
+
     /*
      * Now print the output
      */
@@ -343,7 +343,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
     record.ip.ipv4   = buf[4]<<24 | buf[5]<<16 | buf[6]<<8 | buf[7];
     record.ip.version = 4;
     record.port      = buf[8]<<8 | buf[9];
-    record.app_proto = buf[10]<<8 | buf[11];
+    record.app_proto = (enum ApplicationProtocol) (buf[10]<<8 | buf[11]);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -383,7 +383,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
     record.ip.version = 4;
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
-    record.app_proto = buf[11]<<8 | buf[12];
+    record.app_proto = (enum ApplicationProtocol) (buf[11]<<8 | buf[12]);
 
     if (out->when_scan_started == 0)
         out->when_scan_started = record.timestamp;
@@ -426,7 +426,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
     record.ip.version = 4;
     record.ip_proto  = buf[8];
     record.port      = buf[9]<<8 | buf[10];
-    record.app_proto = buf[11]<<8 | buf[12];
+    record.app_proto = (enum ApplicationProtocol) (buf[11]<<8 | buf[12]);
     record.ttl       = buf[13];
 
     if (out->when_scan_started == 0)
@@ -445,7 +445,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
     if (!readscan_filter_pass(record.ip, record.port, record.app_proto,
               filter, btypes))
           return;
-    
+
     /*
      * Now print the output
      */
@@ -476,7 +476,7 @@ _binaryfile_parse(struct Output *out, const char *filename,
     int x;
 
     /* Allocate a buffer of up to one megabyte per record */
-    buf = MALLOC(BUF_MAX);
+    buf = (unsigned char *) MALLOC(BUF_MAX);
 
     /* Open the file */
     x = fopen_s(&fp, filename, "rb");
@@ -642,7 +642,7 @@ end:
  *****************************************************************************/
 void
 read_binary_scanfile(struct Masscan *masscan,
-                     int arg_first, int arg_max, char *argv[])
+                     int arg_first, int arg_max, const char *argv[])
 {
     struct Output *out;
     int i;
@@ -651,7 +651,7 @@ read_binary_scanfile(struct Masscan *masscan,
 
 
     out = output_create(masscan, 0);
-    
+
     /*
      * Set the start time to zero. We'll read it from the first file
      * that we parse
