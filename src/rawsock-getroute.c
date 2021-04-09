@@ -253,7 +253,7 @@ struct route_info {
 };
 
 static int
-read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, int pId)
+read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, unsigned int seqNum, unsigned int pId)
 {
     struct nlmsghdr *nlHdr;
     int readLen = 0, msgLen = 0;

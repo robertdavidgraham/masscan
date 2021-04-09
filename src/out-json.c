@@ -28,7 +28,7 @@ json_out_close(struct Output *out, FILE *fp)
 /****************************************************************************
  ****************************************************************************/
 static void
-json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
+json_out_status(struct Output *out, FILE *fp, time_t timestamp, enum PortStatus status,
                ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
@@ -43,7 +43,7 @@ json_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
         fprintf(fp, ",\n");
     else
         out->is_first_record_seen = 1;
-    
+
     fprintf(fp, "{ ");
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "  \"ip\": \"%s\", ", fmt.string);
@@ -117,7 +117,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         fprintf(fp, ",\n");
     else
         out->is_first_record_seen = 1;
-    
+
     fprintf(fp, "{ ");
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "  \"ip\": \"%s\", ", fmt.string);

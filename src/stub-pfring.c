@@ -9,6 +9,7 @@
 #include "stub-pfring.h"
 #include "string_s.h"
 #include "logger.h"
+#include "stubtools.h"
 
 struct PFRING PFRING;
 
@@ -72,7 +73,7 @@ PFRING_init(void)
     } else
         LOG(2, "pfring: found 'libpfring.so'!\n");
 
-#define LOADSYM(name) if ((PFRING.name = dlsym(h, "pfring_"#name)) == 0) {LOG(2, "pfring_%s: not found in 'libpfring.so': %s\n", #name, strerror_x(errno));err=1;}
+#define LOADSYM(name) if ((PFRING.name = CAST_TYPE(PFRING.name) dlsym(h, "pfring_"#name)) == 0) {LOG(2, "pfring_%s: not found in 'libpfring.so': %s\n", #name, strerror_x(errno));err=1;}
     LOADSYM(open);
     LOADSYM(close);
     LOADSYM(enable_ring);

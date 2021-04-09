@@ -145,7 +145,7 @@ static void null_PCAP_FREEALLDEVS(pcap_if_t *alldevs)
 }
 
 
-static char *null_PCAP_LOOKUPDEV(char *errbuf)
+static const char *null_PCAP_LOOKUPDEV(char *errbuf)
 {
 #ifdef STATICPCAP
     return pcap_lookupdev(errbuf);
@@ -212,9 +212,9 @@ static void *my_null(int x, ...)
 static pcap_t *null_PCAP_OPEN_OFFLINE(const char *fname, char *errbuf)
 {
 #ifdef STATICPCAP
-    return pcap_open_offline(fname, errbuf);
+    return (pcap_t *) pcap_open_offline(fname, errbuf);
 #endif
-    return my_null(2, fname, errbuf);
+    return (pcap_t *) my_null(2, fname, errbuf);
 }
 static int null_PCAP_SENDPACKET(pcap_t *p, const unsigned char *buf, int size)
 {
@@ -249,7 +249,7 @@ static const char *null_PCAP_DATALINK_VAL_TO_NAME(int dlt)
 	my_null(1, dlt);
     return 0;
 }
-static void null_PCAP_PERROR(pcap_t *p, char *prefix)
+static void null_PCAP_PERROR(pcap_t *p, const char *prefix)
 {
 #ifdef STATICPCAP
     pcap_perror(p, prefix);

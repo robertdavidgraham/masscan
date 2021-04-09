@@ -63,12 +63,12 @@ xml_out_close(struct Output *out, FILE *fp)
 /****************************************************************************
  ****************************************************************************/
 static void
-xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
+xml_out_status(struct Output *out, FILE *fp, time_t timestamp, enum PortStatus status,
                ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
     ipaddress_formatted_t fmt = ipaddress_fmt(ip);
-    
+
     UNUSEDPARM(out);
     fprintf(fp, "<host endtime=\"%u\">"
                     "<address addr=\"%s\" addrtype=\"ipv4\"/>"
@@ -94,7 +94,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
 static void
 xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
-        enum ApplicationProtocol proto, 
+        enum ApplicationProtocol proto,
         unsigned ttl,
         const unsigned char *px, unsigned length)
 {

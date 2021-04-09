@@ -8,11 +8,11 @@
 #include "stack-src.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
+#include "masscan-status.h"
 
 struct Masscan;
 struct Output;
 enum ApplicationProtocol;
-enum PortStatus;
 
 /**
  * Output plugins
@@ -28,8 +28,8 @@ struct OutputType {
     void (*open)(struct Output *out, FILE *fp);
     void (*close)(struct Output *out, FILE *fp);
     void (*status)(struct Output *out, FILE *fp,
-                   time_t timestamp, int status,
-                   ipaddress ip, unsigned ip_proto, unsigned port, 
+                   time_t timestamp, enum PortStatus status,
+                   ipaddress ip, unsigned ip_proto, unsigned port,
                    unsigned reason, unsigned ttl);
     void (*banner)(struct Output *out, FILE *fp,
                    time_t timestamp, ipaddress ip, unsigned ip_proto,
@@ -61,7 +61,7 @@ struct Output
      * the file header until we've actually go something to write
      */
     unsigned is_virgin_file:1;
-    
+
     /**
      * used by json output to test if the first record has been seen, in order
      * to determine if it needs a , comma before the record
@@ -162,21 +162,21 @@ output_create(const struct Masscan *masscan, unsigned thread_index);
 void output_destroy(struct Output *output);
 
 void output_report_status(struct Output *output, time_t timestamp,
-    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
+    enum PortStatus status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl,
     const unsigned char mac[6]);
 
 
 typedef void (*OUTPUT_REPORT_BANNER)(
-                struct Output *output, time_t timestamp,
-                ipaddress ip, unsigned ip_proto, unsigned port,
-                unsigned proto, unsigned ttl,
-                const unsigned char *px, unsigned length);
+        struct Output *out, time_t now,
+        ipaddress ip, unsigned ip_proto, unsigned port,
+        enum ApplicationProtocol proto,
+        unsigned ttl,
+        const unsigned char *px, unsigned length);
 
-void output_report_banner(
-                struct Output *output,
-                time_t timestamp,
+void
+output_report_banner(struct Output *out, time_t now,
                 ipaddress ip, unsigned ip_proto, unsigned port,
-                unsigned proto,
+                enum ApplicationProtocol proto,
                 unsigned ttl,
                 const unsigned char *px, unsigned length);
 

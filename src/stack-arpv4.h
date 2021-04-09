@@ -21,7 +21,7 @@ struct Adapter;
  *      I put the formatted response onto this queue for later
  *      transmission by a transmit thread.
  */
-int stack_arp_incoming_request(struct stack_t *stack,
+int stack_arp_incoming_request(struct our_stack_t *stack,
         ipv4address_t my_ip, macaddress_t my_mac,
         const unsigned char *px, unsigned length);
 

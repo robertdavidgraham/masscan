@@ -1,19 +1,19 @@
 /*
     IPv4 and port ranges
- 
+
  This is one of the more integral concepts to how masscan works internally.
  We combine all the input addresses and address ranges into a sorted list
  of 'target' IP addresses. This allows us to enumerate all the addresses
  in order by incrementing a simple index. It is that index that we randomize
  in order to produce random output, but internally, everything is sorted.
- 
+
  Sorting the list allows us to remove duplicates. It also allows us to
  apply the 'exludes' directly to the input list. In other words, other
  scanners typically work by selecting an IP address at random, then checking
  to see if it's been excluded, then skipping it. In this scanner, however,
  we remove all the excluded address from the targets list before we start
  scanning.
- 
+
  This module has been tuned to support mass lists of millions of target
  IPv4 addresses and excludes. This has required:
     - a fast way to parse the address from a file (see range-file.c)
@@ -24,7 +24,7 @@
  Large lists can still take a bit to process. On a fast server with
  7-million input ranges/addresse and 5000 exclude ranges/addresses,
  it takes almost 3 seconds to process everything before starting.
- 
+
 */
 #include "massip-rangesv4.h"
 #include "massip-port.h"
@@ -154,21 +154,21 @@ rangelist_sort(struct RangeList *targets)
         targets->is_sorted = 1;
         return;
     }
-    
+
     /* If it's already sorted, then skip this */
     if (targets->is_sorted) {
         return;
     }
-    
-    
+
+
     /* First, sort the list */
     LOG(3, "[+] range:sort: sorting...\n");
     qsort(  targets->list,              /* the array to sort */
             targets->count,             /* number of elements to sort */
             sizeof(targets->list[0]),   /* size of element */
             range_compare);
-    
-    
+
+
     /* Second, combine all overlapping ranges. We do this by simply creating
      * a new list from a sorted list, so we don't have to remove things in the
      * middle when collapsing overlapping entries together, which is painfully
@@ -177,7 +177,7 @@ rangelist_sort(struct RangeList *targets)
     for (i=0; i<targets->count; i++) {
         rangelist_add_range(&newlist, targets->list[i].begin, targets->list[i].end);
     }
-    
+
     LOG(3, "[+] range:sort: combined from %u elements to %u elements\n", original_count, newlist.count);
     free(targets->list);
     targets->list = newlist.list;
@@ -203,7 +203,7 @@ rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
     /* auto-expand the list if necessary */
     if (targets->count + 1 >= targets->max) {
         targets->max = targets->max * 2 + 1;
-        targets->list = REALLOCARRAY(targets->list, targets->max, sizeof(targets->list[0]));
+        targets->list = (struct Range *) REALLOCARRAY(targets->list, targets->max, sizeof(targets->list[0]));
     }
 
     /* If empty list, then add this one */
@@ -247,7 +247,7 @@ void
 rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
 {
     unsigned i;
-    
+
     for (i=0; i<list2->count; i++) {
         rangelist_add_range(list1, list2->list[i].begin, list2->list[i].end);
     }
@@ -513,12 +513,12 @@ rangelist_exclude2(  struct RangeList *targets,
                   const struct RangeList *excludes)
 {
     unsigned i;
-    
+
     for (i=0; i<excludes->count; i++) {
         struct Range range = excludes->list[i];
         rangelist_remove_range(targets, range.begin, range.end);
     }
-    
+
     /* Since chopping up large ranges can split ranges, this can
      * grow the list so we need to re-sort it */
     rangelist_sort(targets);
@@ -548,26 +548,26 @@ range_apply_exclude(const struct Range exclude, struct Range *target, struct Ran
     if (target->begin > exclude.end || target->end < exclude.begin) {
         return;
     }
-    
+
     /* Case 2: complete overlap, mark target as invalid and return */
     if (target->begin >= exclude.begin && target->end <= exclude.end) {
         target->begin = 2;
         target->end = 1;
         return;
     }
-    
+
     /* Case 3: overlap at start */
     if (target->begin >= exclude.begin && target->end > exclude.end) {
         target->begin = exclude.end + 1;
         return;
     }
-    
+
     /* Case 4: overlap at end */
     if (target->begin < exclude.begin && target->end <= exclude.end) {
         target->end = exclude.begin - 1;
         return;
     }
-    
+
     /* Case 5: this range needs to be split */
     if (target->begin < exclude.begin && target->end > exclude.end) {
         split->end = target->end;
@@ -575,7 +575,7 @@ range_apply_exclude(const struct Range exclude, struct Range *target, struct Ran
         target->end = exclude.begin - 1;
         return;
     }
-    
+
     /* No other condition should be possible */
     assert(!"possible");
 }
@@ -600,42 +600,42 @@ rangelist_exclude(  struct RangeList *targets,
     unsigned i;
     unsigned x;
     struct RangeList newlist = {0};
-    
+
     /* Both lists must be sorted */
     rangelist_sort(targets);
     rangelist_sort(excludes);
-    
+
     /* Go through all target ranges, apply excludes to them
      * (which may split into two ranges), and add them to the
      * the new target list */
     x = 0;
     for (i=0; i<targets->count; i++) {
         struct Range range = targets->list[i];
-        
+
         /* Move the exclude forward until we find a potentially
          * overlapping candidate */
         while (x < excludes->count && excludes->list[x].end < range.begin)
             x++;
-        
+
         /* Keep applying excludes to this range as long as there are overlaps */
         while (x < excludes->count && excludes->list[x].begin <= range.end) {
             struct Range split = INVALID_RANGE;
-            
+
             range_apply_exclude(excludes->list[x], &range, &split);
-            
+
             /* If there is a split, then add the original range to our list
              * and then set that range to the splitted portion */
             if (range_is_valid(split)) {
                 rangelist_add_range(&newlist, range.begin, range.end);
                 memcpy(&range, &split, sizeof(range));
             }
-            
+
             if (excludes->list[x].begin > range.end)
                 break;
-            
+
             x++;
         }
-        
+
         /* If the range hasn't been completely excluded, then add the remnants */
         if (range_is_valid(range)) {
             rangelist_add_range(&newlist, range.begin, range.end);
@@ -648,7 +648,7 @@ rangelist_exclude(  struct RangeList *targets,
     targets->count = newlist.count;
     newlist.list = NULL;
     newlist.count = 0;
-    
+
     /* Since chopping up large ranges can split ranges, this can
      * grow the list so we need to re-sort it */
     rangelist_sort(targets);
@@ -765,7 +765,7 @@ rangelist_optimize(struct RangeList *targets)
     if (targets->picker)
         free(targets->picker);
 
-    picker = REALLOCARRAY(NULL, targets->count, sizeof(*picker));
+    picker = (unsigned int *) REALLOCARRAY(NULL, targets->count, sizeof(*picker));
 
     for (i=0; i<targets->count; i++) {
         picker[i] = total;
@@ -864,7 +864,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
 
     if (is_error == NULL)
         is_error = &tmp;
-    
+
     *is_error = 0;
     while (*p) {
         unsigned port;
@@ -917,8 +917,8 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
             break;
         }
 
-        /* 
-         * Get the end of the range 
+        /*
+         * Get the end of the range
          */
         if (*p == '-') {
             p++;
@@ -977,7 +977,7 @@ rangelist_copy(struct RangeList *dst, const struct RangeList *src)
     free(dst->list);
     free(dst->picker);
     memset(dst, 0, sizeof(*dst));
-    dst->list = CALLOC(src->count, sizeof(src->list[0]));
+    dst->list = (struct Range *) CALLOC(src->count, sizeof(src->list[0]));
     memcpy(dst->list, src->list, src->count * sizeof(src->list[0]));
     dst->count = src->count;
     dst->max = dst->count;
@@ -992,7 +992,7 @@ static bool
 rangelist_is_equal(const struct RangeList *lhs, const struct RangeList *rhs)
 {
     unsigned i;
-    
+
     if (lhs->count != rhs->count)
         return false;
     for (i=0; i<lhs->count; i++) {
@@ -1003,7 +1003,7 @@ rangelist_is_equal(const struct RangeList *lhs, const struct RangeList *rhs)
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -1026,7 +1026,7 @@ exclude_selftest(void)
     struct RangeList excludes = {0};
     unsigned addr = 0;
     size_t i;
-    
+
     /* In my initial tests, simply using 10 as the count seems to
      * catch all the combinations. On the other hand, 100,000 takes
      * a long time to complete, because it's O(n2) quadratic time.
@@ -1034,7 +1034,7 @@ exclude_selftest(void)
      * any possibility, yet fast enough to complete quickly even on
      * a Raspberry Pi */
     static const unsigned MAXCOUNT = 1000;
-    
+
     /* Fill the include list. This is designed to make short ranges
      * that are a short distance apart. We'll do the same for the
      * same for the excludes, using a different random seed. This
@@ -1046,16 +1046,16 @@ exclude_selftest(void)
     for (i=0; i<MAXCOUNT; i++) {
         unsigned begin;
         unsigned end;
-        
+
         addr += lcgrand(&seed) & 0xF;
         begin = addr;
         addr += lcgrand(&seed) & 0xF;
         end = addr;
-        
+
         rangelist_add_range(&includes1, begin, end);
     }
     rangelist_sort(&includes1);
-    
+
     /* Fill the exlcude list, using the same algorithm as above for
      * includes, but now with a different seed. This creates lots of
      * conflicts. */
@@ -1064,16 +1064,16 @@ exclude_selftest(void)
     for (i=0; i<MAXCOUNT; i++) {
         unsigned begin;
         unsigned end;
-        
+
         addr += lcgrand(&seed) & 0xF;
         begin = addr;
         addr += lcgrand(&seed) & 0xF;
         end = addr;
-        
+
         rangelist_add_range(&excludes, begin, end);
     }
     rangelist_sort(&excludes);
-    
+
     /* Now create a copy of the include list, because we want to
      * apply excludes using two different algorithms to see if the
      * results match */
@@ -1081,14 +1081,14 @@ exclude_selftest(void)
     if (!rangelist_is_equal(&includes1, &includes2))
         return 1;
 
-    
+
     /* Now apply the exclude alogirthms, both new and old, to the
      * the include lists. */
     rangelist_exclude(&includes1, &excludes);
     rangelist_exclude2(&includes2, &excludes);
     if (!rangelist_is_equal(&includes1, &includes2))
         return 1; /* fail */
-    
+
     /* If we reach this point, the selftest has succeeded */
     return 0;
 
@@ -1108,7 +1108,7 @@ ranges_selftest(void)
     /* Do a spearate test of the 'exclude' feature */
     if (exclude_selftest())
         return 1;
-    
+
     memset(targets, 0, sizeof(targets[0]));
 #define ERROR() LOG(0, "selftest: failed %s:%u\n", __FILE__, __LINE__);
 

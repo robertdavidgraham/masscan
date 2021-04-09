@@ -22,7 +22,7 @@ struct PreprocessedInfo;
  * back our MAC address.
  */
 int
-stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length);
+stack_ndpv6_incoming_request(struct our_stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length);
 
 /**
  * Find the MAC address for the local router.

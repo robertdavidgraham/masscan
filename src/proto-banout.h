@@ -2,6 +2,8 @@
 #define PROTO_BANOUT_H
 struct BannerBase64;
 
+#include "masscan-app.h"
+
 /**
  * A structure for tracking one or more banners from a target.
  * There can be multiple banner information from a target, such
@@ -14,7 +16,7 @@ struct BannerBase64;
  */
 struct BannerOutput {
     struct BannerOutput *next;
-    unsigned protocol;
+    enum ApplicationProtocol protocol;
     unsigned length;
     unsigned max_length;
     unsigned char banner[200];
@@ -40,7 +42,7 @@ banout_release(struct BannerOutput *banout);
  * more interesting, which is why it's a separate function.
  */
 void
-banout_newline(struct BannerOutput *banout, unsigned proto);
+banout_newline(struct BannerOutput *banout, enum ApplicationProtocol proto);
 
 /**
  * End the banner of the current. This is called when the protocol parser
@@ -49,31 +51,31 @@ banout_newline(struct BannerOutput *banout, unsigned proto);
  * banner.
  */
 void
-banout_end(struct BannerOutput *banout, unsigned proto);
+banout_end(struct BannerOutput *banout, enum ApplicationProtocol proto);
 
 /**
  * Append text onto the banner. If this exceeds the buffer, then the
  * buffer will be expanded.
  */
 void
-banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_t length);
+banout_append(struct BannerOutput *banout, enum ApplicationProtocol proto, const void *px, size_t length);
 #define AUTO_LEN ((size_t)~0)
 
 /**
  * Append a single character to the banner.
  */
 void
-banout_append_char(struct BannerOutput *banout, unsigned proto, int c);
+banout_append_char(struct BannerOutput *banout, enum ApplicationProtocol proto, int c);
 
 /**
  * Append an integer, with hex digits, with the specified number of
  * digits
  */
 void
-banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long long number, int digits);
+banout_append_hexint(struct BannerOutput *banout, enum ApplicationProtocol proto, unsigned long long number, int digits);
 
 void
-banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c);
+banout_append_unicode(struct BannerOutput *banout, enum ApplicationProtocol proto, unsigned c);
 
 /**
  * Select a specific string (of the specified protocol).
@@ -83,14 +85,14 @@ banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c);
  * specific protocol instead.
  */
 const unsigned char *
-banout_string(const struct BannerOutput *banout, unsigned proto);
+banout_string(const struct BannerOutput *banout, enum ApplicationProtocol proto);
 
 /**
  * Get the length of a specific string of the specified protocol.
  * This is the matching function to banout_string.
  */
 unsigned
-banout_string_length(const struct BannerOutput *banout, unsigned proto);
+banout_string_length(const struct BannerOutput *banout, enum ApplicationProtocol proto);
 
 
 /**
@@ -107,7 +109,7 @@ banout_init_base64(struct BannerBase64 *base64);
  * fragment
  */
 void
-banout_append_base64(struct BannerOutput *banout, unsigned proto,
+banout_append_base64(struct BannerOutput *banout, enum ApplicationProtocol proto,
                      const void *px, size_t length,
                      struct BannerBase64 *base64);
 
@@ -116,7 +118,7 @@ banout_append_base64(struct BannerOutput *banout, unsigned proto,
  * end if necessary
  */
 void
-banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
+banout_finalize_base64(struct BannerOutput *banout, enum ApplicationProtocol proto,
                        struct BannerBase64 *base64);
 
 /**
@@ -125,11 +127,11 @@ banout_finalize_base64(struct BannerOutput *banout, unsigned proto,
  * expected banners.
  */
 unsigned
-banout_is_equal(const struct BannerOutput *banout, unsigned proto,
+banout_is_equal(const struct BannerOutput *banout, enum ApplicationProtocol proto,
                 const char *string);
 
 unsigned
-banout_is_contains(const struct BannerOutput *banout, unsigned proto,
+banout_is_contains(const struct BannerOutput *banout, enum ApplicationProtocol proto,
                 const char *string);
 
 /**

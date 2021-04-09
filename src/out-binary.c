@@ -17,7 +17,7 @@ binary_out_open(struct Output *out, FILE *fp)
 
 
     memset(firstrecord, 0, 2+'a');
-    sprintf_s(firstrecord, 2+'a', "masscan/1.1\ns:%u\n", 
+    sprintf_s(firstrecord, 2+'a', "masscan/1.1\ns:%u\n",
         (unsigned)out->when_scan_started);
     bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
     if (bytes_written != 2+'a') {
@@ -108,7 +108,7 @@ binary_out_status_ipv6(struct Output *out, FILE *fp, time_t timestamp,
     size_t offset = 0;
     size_t bytes_written;
 
- 
+
     /* [TYPE] field */
     switch (status) {
     case PortStatus_Open:
@@ -136,9 +136,9 @@ binary_out_status_ipv6(struct Output *out, FILE *fp, time_t timestamp,
     _put_byte(buf, max, &offset, ip.version);
     _put_long(buf, max, &offset, ip.ipv6.hi);
     _put_long(buf, max, &offset, ip.ipv6.lo);
-    
+
     assert(offset == 2 + 26);
-    
+
     bytes_written = fwrite(buf, 1, offset, fp);
     if (bytes_written != offset) {
         perror("output");
@@ -152,7 +152,7 @@ binary_out_status_ipv6(struct Output *out, FILE *fp, time_t timestamp,
  ****************************************************************************/
 static void
 binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
-    int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
+    enum PortStatus status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     unsigned char foo[256];
     size_t bytes_written;
@@ -162,7 +162,7 @@ binary_out_status(struct Output *out, FILE *fp, time_t timestamp,
         binary_out_status_ipv6(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
         return;
     }
- 
+
     /* [TYPE] field */
     switch (status) {
     case PortStatus_Open:
@@ -224,7 +224,7 @@ binary_out_banner_ipv6(struct Output *out, FILE *fp, time_t timestamp,
     size_t bytes_written;
     static const unsigned HeaderLength = 14 + 13;
 
-    
+
     /* [TYPE] field */
     foo[0] = Out_Banner6; /*banner*/
 
@@ -305,7 +305,7 @@ binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         binary_out_banner_ipv6(out, fp, timestamp, ip, ip_proto, port, proto, ttl, px, length);
         return;
     }
-    
+
     /* [TYPE] field */
     foo[0] = Out_Banner9; /*banner*/
 

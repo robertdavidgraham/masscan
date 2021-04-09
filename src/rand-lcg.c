@@ -178,7 +178,7 @@ lcg_verify(uint64_t a, uint64_t c, uint64_t range, uint64_t max)
     unsigned is_success = 1;
 
     /* Allocate a list of 1-byte counters */
-    list = CALLOC(1, (size_t)((range<max)?range:max));
+    list = (unsigned char *) CALLOC(1, (size_t)((range<max)?range:max));
     
     /* For all numbers in the range, verify increment the counter for the
      * the output. */

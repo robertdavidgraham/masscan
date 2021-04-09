@@ -1,8 +1,8 @@
 /*
     SSL parser
- 
+
     This parses SSL packets from the server. It is built in multiple levels:
- 
+
     RECORDS - ssl_parse_record()
       |
       +---> heartbeat
@@ -22,15 +22,15 @@
                                  +---> subject name (banner)
                                  |
                                  +---> certificate (banner)
- 
+
 
     For "heartbeat", we grab the so-called "heartbleed" exploit info.
     For "server hello", we grab which cipher is used
     For "certificate", we grab the szubjectName of the server
- 
- 
+
+
     !!!!!!!!!!!!  BIZARRE CODE ALERT !!!!!!!!!!!!!!!
-    
+
     This module uses a "streaming state-machine" to parse the SSL protocol.
     In other words, this does not "reasemble" fragments. Instead, it allows
     state to cross packet-boundaries. Thus, it supports both fragmentation
@@ -38,10 +38,10 @@
     things. Only in the output, in the gathered "banners", does reassembly
     happen -- in other words, reassembly happens after OSI Layer 7 rather
     than OSI Layer 4.
- 
+
     As many are unfamiliar with this technique, they'll find it a little
     weird.
- 
+
     The upshot of doing things this way is that we can support 10 million
     open TCP connections with minimal memory usage.
  */
@@ -55,6 +55,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+
+#include "proto-ssl-test.h"
 
 
 
@@ -74,7 +76,7 @@ BANNER_CIPHER(struct BannerOutput *banout, unsigned cipher_suite)
     char foo[64];
     sprintf_s(foo, sizeof(foo), "cipher:0x%x", cipher_suite);
     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
-    
+
     /*switch (cipher_suite) {
      case 0x0005: notes = "(_/RSA/RC4/SHA)"; break;
      case 0x0035: notes = "(_/RSA/AES-CBC/SHA)"; break;
@@ -82,7 +84,7 @@ BANNER_CIPHER(struct BannerOutput *banout, unsigned cipher_suite)
      case 0xc013: notes = "(ECDHE/RSA/AES-CBC/SHA)"; break;
      }
      banout_append(banout, PROTO_SSL3, notes, AUTO_LEN);*/
-    
+
 }
 /*****************************************************************************
  *****************************************************************************/
@@ -110,7 +112,7 @@ BANNER_VERSION(struct BannerOutput *banout, unsigned version_major,
             banout_append(banout, PROTO_SSL3, "TLS/1.3 ", AUTO_LEN);
             break;
         default:
-            sprintf_s(foo, sizeof(foo), "SSLver[%u,%u] ", 
+            sprintf_s(foo, sizeof(foo), "SSLver[%u,%u] ",
                       version_major,
                       version_minor);
             banout_append(banout, PROTO_SSL3, foo, strlen(foo));
@@ -267,7 +269,7 @@ parse_server_hello(
         remaining <<= 8;
         remaining |= px[i];
         DROPDOWN(i,length,state);
-  
+
     case EXT_TAG0:
     ext_tag:
         if (remaining < 4) {
@@ -277,7 +279,7 @@ parse_server_hello(
         hello->ext_tag = px[i]<<8;
         remaining--;
         DROPDOWN(i,length,state);
-            
+
     case EXT_TAG1:
         hello->ext_tag |= px[i];
         remaining--;
@@ -296,7 +298,7 @@ parse_server_hello(
                 continue;
         }
         DROPDOWN(i,length,state);
-        
+
     case EXT_DATA:
         if (hello->ext_remaining == 0) {
             state = EXT_TAG0;
@@ -327,7 +329,7 @@ parse_server_hello(
         state = EXT_DATA;
         continue;
 
-    
+
 
     case UNKNOWN:
     default:
@@ -441,8 +443,8 @@ parse_server_cert(
 
             /* parse the certificate */
             if (banner1->is_capture_cert) {
-                banout_append_base64(banout, 
-                             PROTO_X509_CERT, 
+                banout_append_base64(banout,
+                             PROTO_X509_CERT,
                              px+i, len,
                              &pstate->base64);
             }
@@ -458,9 +460,9 @@ parse_server_cert(
                 /* We've reached the end of the certificate, so make
                  * a record of it */
                 if (banner1->is_capture_cert) {
-                    banout_finalize_base64(banout, 
-                                           PROTO_X509_CERT, 
-                                           &pstate->base64);        
+                    banout_finalize_base64(banout,
+                                           PROTO_X509_CERT,
+                                           &pstate->base64);
                     banout_end(banout, PROTO_X509_CERT);
                 }
                 state = CLEN0;
@@ -534,7 +536,7 @@ parse_handshake(
      */
     for (i=0; i<length; i++)
     switch (state) {
-            
+
     /* There are 20 or so handshaking sub-messages, indicates by it's own
      * 'type' field, which we parse out here */
     case START:
@@ -544,14 +546,14 @@ parse_handshake(
         }
         /* remember the 'type' field for use later in the CONTENT state */
         ssl->handshake.type = px[i];
-        
+
         /* initialize the state variable that will be used by the inner
          * parsers */
         ssl->x.all.state = 0;
         DROPDOWN(i,length,state);
 
     /* This grabs the 'length' field. Note that unlike other length fields,
-     * this one is 3 bytes long. That's because a single certificate 
+     * this one is 3 bytes long. That's because a single certificate
      * packet can contain so many certificates in a chain that it exceeds
      * 64k kilobytes in size. */
     case LENGTH0:
@@ -570,7 +572,7 @@ parse_handshake(
          * length, so we can't process this below in the CONTENT state
          * but have to do it here at the end of the LENGTH2 state */
         if (ssl->handshake.type == 2 && banner1->is_heartbleed) {
-            static const char heartbleed_request[] = 
+            static const char heartbleed_request[] =
                 "\x15\x03\x02\x00\x02\x01\x80"
                 "\x18\x03\x02\x00\x03\x01" "\x40\x00";
             tcp_transmit(more, heartbleed_request, sizeof(heartbleed_request)-1, 0);
@@ -604,7 +606,7 @@ parse_handshake(
                 default:
                     /* don't parse these types, just skip them */
                     break;
-                    
+
                 case 2: /* server hello */
                     parse_server_hello( banner1,
                                        banner1_private,
@@ -642,7 +644,7 @@ parse_handshake(
 
 
 /*****************************************************************************
- * Called to parse the "hearbeat" data. This consists of the following 
+ * Called to parse the "hearbeat" data. This consists of the following
  * structure:
  *
  * +--------+
@@ -683,7 +685,7 @@ parse_heartbeat(
      */
     for (i=0; i<length; i++)
     switch (state) {
-            
+
     /* this is the 'type' field for the hearbeat. There are only two
      * values, '1' for request and '2' for response. Anything else indicates
      * that either the data was corrupted, or else it is encrypted.
@@ -703,15 +705,15 @@ parse_heartbeat(
     case LENGTH1:
         remaining <<= 8;
         remaining |= px[i];
-        
+
         /* `if heartbeat response ` */
         if (ssl->handshake.type == 2) {
-            
+
             /* if we have a non-trivial amount of data in the response, then
              * it means the "bleed" attempt succeeded. */
             if (remaining >= 16)
                 banout_append(  banout, PROTO_VULN, "SSL[HEARTBLEED] ", 16);
-            
+
             /* if we've been configured to "capture" the heartbleed contents,
              * then initialize the BASE64 encoder */
             if (banner1->is_capture_heartbleed) {
@@ -731,12 +733,12 @@ parse_heartbeat(
                 len = remaining;
 
             /* If this is a RESPONSE, and we've been configured to CAPTURE
-             * hearbleed responses, then we write the bleeding bytes in 
-             * BASE64 into the banner system. The user will be able to 
+             * hearbleed responses, then we write the bleeding bytes in
+             * BASE64 into the banner system. The user will be able to
              * then do research on those bleeding bytes */
             if (ssl->handshake.type == 2 && banner1->is_capture_heartbleed) {
-                banout_append_base64(banout, 
-                                     PROTO_HEARTBLEED, 
+                banout_append_base64(banout,
+                                     PROTO_HEARTBLEED,
                                      px+i, len,
                                      &pstate->base64);
             }
@@ -749,9 +751,9 @@ parse_heartbeat(
         }
 
         break;
-    
+
     /* We reach this state either because the hearbeat data is corrupted or
-     * encrypted, or because we've reached the padding area after the 
+     * encrypted, or because we've reached the padding area after the
      * heartbeat */
     case UNKNOWN:
     default:
@@ -764,7 +766,7 @@ parse_heartbeat(
 }
 
 /*****************************************************************************
- * Called to parse the "hearbeat" data. This consists of the following 
+ * Called to parse the "hearbeat" data. This consists of the following
  * structure:
  *
  * +--------+
@@ -792,10 +794,10 @@ parse_alert(
         DESCRIPTION,
         UNKNOWN,
     };
-    
+
     UNUSEDPARM(more);
     UNUSEDPARM(banner1_private);
-    
+
     /*
      * `for all bytes in the segment`
      *   `do a state transition for that byte `
@@ -805,7 +807,7 @@ parse_alert(
             case START:
                 ssl->x.server_alert.level = px[i];
                 DROPDOWN(i,length,state);
-                
+
             case DESCRIPTION:
                 ssl->x.server_alert.description = px[i];
                 if (banner1->is_poodle_sslv3 && ssl->x.server_alert.level == 2) {
@@ -815,22 +817,22 @@ parse_alert(
                     switch (ssl->x.server_alert.description) {
                         case 86:
                             if (!banout_is_contains(banout, PROTO_SAFE, "TLS_FALLBACK_SCSV"))
-                                banout_append(banout, PROTO_SAFE, 
+                                banout_append(banout, PROTO_SAFE,
                                       "poodle[TLS_FALLBACK_SCSV] ", AUTO_LEN);
                             break;
                         case 40:
                             if (!banout_is_contains(banout, PROTO_SAFE, "TLS_FALLBACK_SCSV"))
-                                banout_append(banout, PROTO_SAFE, 
+                                banout_append(banout, PROTO_SAFE,
                                           "poodle[no-SSLv3] ", AUTO_LEN);
                             break;
                         default:
-                            banout_append(banout, PROTO_SAFE, 
+                            banout_append(banout, PROTO_SAFE,
                                           "poodle[no-SSLv3] ", AUTO_LEN);
                             sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                                       ssl->x.server_alert.level,
                                       ssl->x.server_alert.description
                                       );
-                            
+
                             banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
                             break;
                     }
@@ -840,16 +842,16 @@ parse_alert(
                               ssl->x.server_alert.level,
                               ssl->x.server_alert.description
                               );
-                
+
                     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
                 }
                 DROPDOWN(i,length,state);
-                
+
             case UNKNOWN:
             default:
                 i = (unsigned)length;
         }
-    
+
     /* not the handshake protocol, but we re-use their variables */
     ssl->handshake.state = state;
     ssl->handshake.remaining = remaining;
@@ -906,10 +908,10 @@ ssl_parse_record(
      */
     for (i=0; i<length; i++)
     switch (state) {
-            
-    /* 
+
+    /*
      * The initial state parses the "type" byte. There are only a few types
-     * defined so far, the values 20-25, but more can be defined in the 
+     * defined so far, the values 20-25, but more can be defined in the
      * future. The standard explicity says that they must be lower than 128,
      * so if the high-order bit is set, we know that the byte is invalid,
      * and that something is wrong.
@@ -921,7 +923,7 @@ ssl_parse_record(
         }
         if (ssl->type != px[i]) {
             ssl->type = px[i];
-            
+
             /* this is for some minimal fragmentation/reassembly */
             ssl->handshake.state = 0;
         }
@@ -958,7 +960,7 @@ ssl_parse_record(
         remaining |= px[i];
         DROPDOWN(i,length,state);
         ssl->handshake.state = 0;
-        
+
     /*
      * This state parses the "contents" of a record. What we do here is at
      * this level of the parser is that we calculate a sub-segment size,
@@ -972,8 +974,8 @@ ssl_parse_record(
     case CONTENTS:
         {
             unsigned len;
-            
-            /* Size of this segment is either the bytes remaining in the 
+
+            /* Size of this segment is either the bytes remaining in the
              * current packet, or the bytes remaining in the record */
             len = (unsigned)length - i;
             if (len > remaining)
@@ -1015,21 +1017,21 @@ ssl_parse_record(
                                     more);
                     break;
             }
-            
+
             /* Skip ahead the number bytes in this segment. This makes the
              * parser very fast, because we aren't actually doing a single
              * byte at a time, but skipping forward large number of bytes
              * at a time -- except for the 5 byte headers */
             remaining -= len;
             i += len-1; /* if 'len' is zero, this still works */
-            
+
             /* Once we've exhausted the contents of record, go back to the
              * start parsing the next record */
             if (remaining == 0)
                 state = START;
         }
         break;
-            
+
     /* We reach the state when the protocol has become corrupted, such as in
      * those cases where it's not SSL */
     case UNKNOWN:
@@ -1134,19 +1136,19 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
     size_t len2;
     size_t offset;
     size_t offset2;
-    
+
     /* Increase space by 2 for additional cipherspec */
-    px = REALLOC(templ, ssl_hello_size(templ) + 2);
-    
+    px = (unsigned char *) REALLOC(templ, ssl_hello_size(templ) + 2);
+
     /* parse the lengths */
     len1 = px[3] << 8 | px[4];
     len1b = px[6] << 16 | px[7] << 8 | px[8];
-    
-    
+
+
     /* skip session id field */
     offset = 43;
     offset += px[offset] + 1;
-    
+
     /* do cipherspecs */
     len2 = px[offset] << 8 | px[offset+1];
     offset2 = offset+2;
@@ -1165,7 +1167,7 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
         px[offset2    ] = (unsigned char)(cipher_spec>>8);
         px[offset2 + 1] = (unsigned char)(cipher_spec>>0);
     }
-    
+
     /* fix length fields */
     len2 += 2;
     px[offset    ] = (unsigned char)(len2>>8);
@@ -1177,8 +1179,8 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
     len1 += 2;
     px[3] = (unsigned char)(len1>>8);
     px[4] = (unsigned char)(len1>>0);
-    
-    return (char*)px;    
+
+    return (char*)px;
 }
 
 /*****************************************************************************
@@ -1188,16 +1190,16 @@ ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append)
 {
     const unsigned char *px = (const unsigned char *)templ;
     unsigned version;
-    
+
     /* ignore things that aren't "Hello" messages */
     if (px[0] != 0x16) {
         fprintf(stderr, "internal error\n");
-        return templ;
+        return (char *) templ;
     }
 
     /* figure out the proper version */
     version = px[1] << 8 | px[2];
-    
+
     /* do different parsing depending on version */
     switch (version) {
         case 0x300:
@@ -1205,7 +1207,7 @@ ssl_add_cipherspec(void *templ, unsigned cipher_spec, unsigned is_append)
         default:
             /*TODO:*/
             fprintf(stderr, "internal error\n");
-            return templ;
+            return (char *) templ;
     }
 }
 
@@ -1217,12 +1219,12 @@ ssl_hello_size(const void *templ)
 {
     const unsigned char *px = (const unsigned char *)templ;
     size_t template_size;
-    
+
     template_size = (px[3]<<8 | px[4]) + 5;
-    
+
     return (unsigned)template_size;
 }
-    
+
 /*****************************************************************************
  *****************************************************************************/
 char *
@@ -1231,29 +1233,29 @@ ssl_hello(const void *templ)
     unsigned char *px = (unsigned char *)templ;
     unsigned now = (unsigned)time(0);
     unsigned i;
-    
+
     /* parse existing template to figure out size */
     size_t template_size = (px[3]<<8 | px[4]) + 5;
-    
+
     /* allocate memory for that size and copy */
-    px = MALLOC(template_size);
+    px = (unsigned char *) MALLOC(template_size);
     memcpy(px, templ, template_size);
-    
+
     /* set the new timestamp and randomize buffer */
     px[11] = (unsigned char)(now>>24);
     px[12] = (unsigned char)(now>>16);
     px[13] = (unsigned char)(now>> 8);
     px[14] = (unsigned char)(now>> 0);
-    
+
     /* create a pattern to make this detectable as specfically masscan */
     for (i=4; i<32; i++) {
         static const uint64_t key[2] = {0,0};
         unsigned val = i+now;
         unsigned char c = (unsigned char)siphash24(&val, sizeof(val), key);
-        
+
         px[11+i] = c;
     }
-    
+
     return (char*)px;
 }
 
@@ -1262,10 +1264,6 @@ extern unsigned char ssl_test_case_1[];
 extern size_t ssl_test_case_1_size;
 extern unsigned char ssl_test_case_3[];
 extern size_t ssl_test_case_3_size;
-extern unsigned char google_cert[];
-extern size_t google_cert_size;
-extern unsigned char yahoo_cert[];
-extern size_t yahoo_cert_size;
 
 
 /*****************************************************************************
@@ -1293,7 +1291,7 @@ ssl_selftest(void)
         banner1 = banner1_create();
         banner1->is_capture_cert = 1;
         banout_init(banout1);
-        x509_decode(certstate, 
+        x509_decode(certstate,
                     yahoo_cert,
                     yahoo_cert_size,
                     banout1);
@@ -1303,8 +1301,8 @@ ssl_selftest(void)
             printf("x.509 parser failure: google.com\n");
             return 1;
         }
-        
-        
+
+
         banner1_destroy(banner1);
         banout_release(banout1);
     }
@@ -1322,7 +1320,7 @@ ssl_selftest(void)
         banner1 = banner1_create();
         banner1->is_capture_cert = 1;
         banout_init(banout1);
-        x509_decode(certstate, 
+        x509_decode(certstate,
                     google_cert,
                     google_cert_size,
                     banout1);

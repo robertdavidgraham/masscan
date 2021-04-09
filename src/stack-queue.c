@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 struct PacketBuffer *
-stack_get_packetbuffer(struct stack_t *stack)
+stack_get_packetbuffer(struct our_stack_t *stack)
 {
     int err;
     struct PacketBuffer *response = NULL;
@@ -22,7 +22,7 @@ stack_get_packetbuffer(struct stack_t *stack)
 }
 
 void
-stack_transmit_packetbuffer(struct stack_t *stack, struct PacketBuffer *response)
+our_stack_transmit_packetbuffer(struct our_stack_t *stack, struct PacketBuffer *response)
 {
     int err;
     for (err=1; err; ) {
@@ -45,7 +45,7 @@ stack_transmit_packetbuffer(struct stack_t *stack, struct PacketBuffer *response
  ***************************************************************************/
 void
 stack_flush_packets(
-    struct stack_t *stack,
+    struct our_stack_t *stack,
     struct Adapter *adapter,
     uint64_t *packets_sent,
     uint64_t *batchsize)
@@ -95,13 +95,13 @@ stack_flush_packets(
 
 }
 
-struct stack_t *
+struct our_stack_t *
 stack_create(macaddress_t source_mac, struct stack_src_t *src)
 {
-    struct stack_t *stack;
+    struct our_stack_t *stack;
     size_t i;
 
-    stack = CALLOC(1, sizeof(*stack));
+    stack = (struct our_stack_t *) CALLOC(1, sizeof(*stack));
     stack->source_mac = source_mac;
     stack->src = src;
 
@@ -115,7 +115,7 @@ stack_create(macaddress_t source_mac, struct stack_src_t *src)
         struct PacketBuffer *p;
         int err;
 
-        p = MALLOC(sizeof(*p));
+        p = (struct PacketBuffer *) MALLOC(sizeof(*p));
         err = rte_ring_sp_enqueue(stack->packet_buffers, p);
         if (err) {
             /* I dunno why but I can't queue all 256 packets, just 255 */

@@ -21,14 +21,14 @@ static void
 ndjson_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
-    UNUSEDPARM(fp); 
+    UNUSEDPARM(fp);
 }
 
 //{ ip: "124.53.139.201", ports: [ {port: 443, proto: "tcp", status: "open", reason: "syn-ack", ttl: 48} ] }
 /****************************************************************************
  ****************************************************************************/
 static void
-ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
+ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, enum PortStatus status,
                  ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     char reason_buffer[128];
@@ -56,7 +56,7 @@ ndjson_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
  * Remove bad characters from the banner, especially new lines and HTML
  * control codes.
  *
- * Keeping this here since we may need to change the behavior from what 
+ * Keeping this here since we may need to change the behavior from what
  * is done in the sister `normalize_json_string` function. It's unlikely
  * but it's a small function and will save time later if needed. Could also
  * set it up to base64 encode the banner payload.

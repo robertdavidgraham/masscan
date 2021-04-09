@@ -5,19 +5,19 @@
     This is an asynchronous and "stateless" scanner that spews out probes
     without having holding "state" for the probes. This means that when
     a response comes back, we have no "state" to associate with it.
- 
+
     This means when two responses come back, we still don't have any
     "state" to remember that the first one came back. This will cause
     us to report two results instead of one.
- 
+
     We could create a large table holding a record for EVERY response
     that we've seen. But this would require a lot of memory for large
     scans.
- 
+
     Instead, we remember a small hashtable of recent responses. This
     takes advantage of the fact that multiple responses are likely
     to be recent and eventually age out.
- 
+
     We call this "deduplication" as it's simply removing duplicate
     responses.
 */
@@ -107,7 +107,7 @@ dedup_create(void)
 {
     struct DedupTable *dedup;
 
-    dedup = CALLOC(1, sizeof(*dedup));
+    dedup = (struct DedupTable *) CALLOC(1, sizeof(*dedup));
 
     return dedup;
 }
@@ -337,9 +337,9 @@ dedup_selftest(void)
     size_t i;
     unsigned found_match = 0;
     unsigned line = 0;
-    
+
     dedup = dedup_create();
-    
+
     /* Deterministic test.
      *
      * The first time we check on a socket combo, there should
@@ -351,14 +351,14 @@ dedup_selftest(void)
         ipaddress ip_them;
         unsigned port_me;
         unsigned port_them;
-        
+
         ip_me.version = 4;
         ip_them.version = 4;
         ip_me.ipv4 = 0x12345678;
         ip_them.ipv4 = 0xabcdef0;
         port_me = 0x1234;
         port_them = 0xfedc;
-        
+
         if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
             line = __LINE__;
             goto fail;
@@ -367,7 +367,7 @@ dedup_selftest(void)
             line = __LINE__;
             goto fail;
         }
-        
+
         ip_me.version = 6;
         ip_them.version = 6;
         ip_me.ipv6.hi = 0x12345678;
@@ -382,25 +382,25 @@ dedup_selftest(void)
         if (!dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
             ipaddress_formatted_t fmt1 = ipaddress_fmt(ip_them);
             ipaddress_formatted_t fmt2 = ipaddress_fmt(ip_me);
-            fprintf(stderr, "[-] [%s]:%u -> [%s]:%u\n", 
+            fprintf(stderr, "[-] [%s]:%u -> [%s]:%u\n",
 			    fmt1.string, port_them,
 			    fmt2.string, port_me);
             line = __LINE__;
             goto fail;
         }
-        
+
     }
-    
+
     /* Test IPv4 addresses */
     for (i=0; i<100000; i++) {
         ipaddress ip_me;
         ipaddress ip_them;
         unsigned port_me;
         unsigned port_them;
-        
+
         ip_me.version = 4;
         ip_them.version = 4;
-        
+
         /* Instead of completely random numbers over the entire
          * range, each port/IP is restricted to just 512
          * random combinations. This should statistically
@@ -409,12 +409,12 @@ dedup_selftest(void)
         ip_them.ipv4 = _rand(&seed) & 0x1FF;
         port_me = _rand(&seed) & 0xFF80;
         port_them = _rand(&seed) & 0x1FF;
-        
+
         if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
             found_match++;
         }
     }
-    
+
     /* Approximately 30 matches should be found. If we couldn't
      * find any, or if we've found too many, then the test has
      * failed. */
@@ -422,21 +422,21 @@ dedup_selftest(void)
         line = __LINE__;
         goto fail;
     }
-    
+
     /* Now do IPv6 */
     found_match = 0;
     seed = 0;
-    
+
     /* Test IPv4 addresses */
     for (i=0; i<100000; i++) {
         ipaddress ip_me;
         ipaddress ip_them;
         unsigned port_me;
         unsigned port_them;
-        
+
         ip_me.version = 6;
         ip_them.version = 6;
-        
+
         /* Instead of completely random numbers over the entire
          * range, each port/IP is restricted to just 512
          * random combinations. This should statistically
@@ -445,7 +445,7 @@ dedup_selftest(void)
         ip_them.ipv6.lo = _rand(&seed) & 0x1FF;
         port_me = _rand(&seed) & 0xFF80;
         port_them = _rand(&seed) & 0x1FF;
-        
+
         if (dedup_is_duplicate(dedup, ip_them, port_them, ip_me, port_me)) {
             found_match++;
         }
@@ -456,7 +456,7 @@ dedup_selftest(void)
         line = __LINE__;
         goto fail;
     }
-    
+
     /* All tests have passed */
     return 0; /* success :) */
 

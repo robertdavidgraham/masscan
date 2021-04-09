@@ -43,15 +43,15 @@
  |        |        |        |        |
  +--------+--------+--------+--------+
 
- 
+
  Signature (8 bytes):
     "An 8-byte character array that MUST contain the ASCII string
     ('N', 'T', 'L', 'M', 'S', 'S', 'P', '\0')."
  MessageType (4 bytes):
     "A 32-bit unsigned integer that indicates the message type. This field MUST
     be set to 0x00000002."
- 
- 
+
+
  TargetNameLen (2 bytes):
     "A 16-bit unsigned integer that defines the size, in bytes, of
     TargetName in Payload."
@@ -65,12 +65,12 @@
     bytes, from the beginning of the CHALLENGE_MESSAGE to TargetName in Payload. If
     TargetName is a Unicode string, the values of TargetNameBufferOffset and
     TargetNameLen MUST be multiples of 2."
- 
- 
- 
+
+
+
  VERSION FIELDS:
     These fields are valid only if "NTLMSSP_NEGOTIATE_VERSION" flag is set.
- 
+
   MajorVer [ProductMajorVersion] (1 byte):
     "An 8-bit unsigned integer that SHOULD contain the major
     version number of the operating system in use."
@@ -85,12 +85,12 @@
     "An 8-bit unsigned integer that contains a value indicating the
     current revision of the NTLMSSP in use. This field SHOULD contain the following value:"
         "NTLMSSP_REVISION_W2K3 (0x0F): Version 15 of the NTLMSSP is in use."
- 
- 
+
+
  */
 
 static void
-append_unicode_string(struct BannerOutput *banout, unsigned proto, const char *name, const unsigned char *value, size_t value_length)
+append_unicode_string(struct BannerOutput *banout, enum ApplicationProtocol proto, const char *name, const unsigned char *value, size_t value_length)
 {
     unsigned j;
     banout_append_char(banout, proto, ' ');
@@ -114,14 +114,14 @@ ntlmssp_decode(struct NtlmsspDecode *x,
     unsigned info_length;
     //unsigned flags;
     unsigned i;
-    
+
     if (length > x->length - x->offset)
         length = x->length - x->offset;
-    
+
     /* See if we have a fragment, in which case we need to allocate a buffer
      * to contain it */
     if (x->offset == 0 && x->length > length) {
-        x->buf = MALLOC(x->length);
+        x->buf = (unsigned char *) MALLOC(x->length);
         memcpy(x->buf, px, length);
         x->offset = (unsigned)length;
         return;
@@ -130,27 +130,27 @@ ntlmssp_decode(struct NtlmsspDecode *x,
         x->offset += (unsigned)length;
         if (x->offset < x->length)
             return;
-        
+
         /* now reset the input to point to our buffer instead */
         px = x->buf;
         length = x->length;
     }
-    
+
     if (length < 56)
         goto end;
-    
+
     /* Verify the signature. There are other protocols that we could possibly
      * detect at this point and do something else useful with, but for right now,
      * we are just doing NTLM */
     if (memcmp("NTLMSSP", px, 8) != 0)
         goto end;
-    
+
     /* Verify this is a "challenge" packet, which has all the interesting
      * fields. */
     message_type = px[8] | px[9]<<8 | px[10]<<16 | px[11]<<24;
     if (message_type != 2)
         goto end;
-    
+
     /* Grab the Domain field. This is a pointer in these 8 bytes here
      * that points into the payload section of the chunk */
     name_length = px[12] | px[13]<<8;
@@ -158,10 +158,10 @@ ntlmssp_decode(struct NtlmsspDecode *x,
     if (name_length && name_length + name_offset < length) {
         append_unicode_string(banout, PROTO_SMB, "domain", px+name_offset, name_length);
     }
-    
+
     /* Grab flags */
     //flags = px[20] | px[21]<<8 | px[22]<<16 | px[23]<<24;
-    
+
     /* Info field */
     info_length = px[40] | px[41]<<8;
     info_offset = px[44] | px[45]<<8 | px[46]<<16 | px[47]<<24;
@@ -183,12 +183,12 @@ ntlmssp_decode(struct NtlmsspDecode *x,
         unsigned type = px[i] | px[i+1]<<8;
         size_t len = px[i+2] | px[i+3]<<8;
         i += 4;
-        
+
         if (len > info_offset + info_length - i)
             len = info_offset + info_length - i;
         if (len > length - i)
             len = length - i;
-        
+
         switch (type) {
             case 0x00: /* MsvAvEOL */
                 i = info_offset + info_length;
@@ -225,10 +225,10 @@ ntlmssp_decode(struct NtlmsspDecode *x,
         i += (unsigned)len;
     }
 
-    
-    
+
+
     /* Grab the other fields. This*/
-    
+
 end:
     /*
      * Free the buffer if needed
@@ -237,7 +237,7 @@ end:
         free(x->buf);
         x->buf = 0;
     }
-    
+
 }
 
 void
@@ -253,7 +253,7 @@ void
 ntlmssp_decode_init(struct NtlmsspDecode *x, size_t length)
 {
     memset(x, 0, sizeof(*x));
-    
+
     /* [security] Double-check this input, since it's ultimately driven by user-input.
      * The code that leads to here should already have double-checked this, but I'm
      * doing it again just in case. This is larger than any input that should be
@@ -261,10 +261,10 @@ ntlmssp_decode_init(struct NtlmsspDecode *x, size_t length)
      */
     if (length > 65536)
         length = 65536;
-    
+
     x->length = (unsigned)length;
     x->offset = 0;
     x->buf = NULL;
-    
+
 }
 

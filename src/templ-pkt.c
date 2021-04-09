@@ -357,9 +357,9 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
     for (i=0; i<templset->count; i++) {
         const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->ipv4.packet = MALLOC(p2->ipv4.length);
+        p2->ipv4.packet = (unsigned char *) MALLOC(p2->ipv4.length);
         memcpy(p2->ipv4.packet, p1->ipv4.packet, p2->ipv4.length);
-        p2->ipv6.packet = MALLOC(p2->ipv6.length);
+        p2->ipv6.packet = (unsigned char *) MALLOC(p2->ipv6.length);
         memcpy(p2->ipv6.packet, p1->ipv6.packet, p2->ipv6.length);
     }
 
@@ -1135,7 +1135,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
     offset_tcp = tmpl->ipv4.offset_tcp;
 
     /* Create a copy of the IPv4 packet */
-    buf = MALLOC(tmpl->ipv4.length + 40);
+    buf = (unsigned char *) MALLOC(tmpl->ipv4.length + 40);
     memcpy(buf, tmpl->ipv4.packet, tmpl->ipv4.length);
     tmpl->ipv6.packet = buf;
 
@@ -1236,7 +1236,7 @@ _template_init(
     memset(tmpl, 0, sizeof(*tmpl));
     tmpl->ipv4.length = (unsigned)packet_size;
 
-    tmpl->ipv4.packet = MALLOC(2048 + packet_size);
+    tmpl->ipv4.packet = (unsigned char *) MALLOC(2048 + packet_size);
     memcpy(tmpl->ipv4.packet, packet_bytes, tmpl->ipv4.length);
     px = tmpl->ipv4.packet;
 
@@ -1488,7 +1488,7 @@ template_set_vlan(struct TemplateSet *tmplset, unsigned vlan)
         if (tmpl->ipv4.length < 14)
             continue;
         
-        px = MALLOC(tmpl->ipv4.length + 4);
+        px = (unsigned char *) MALLOC(tmpl->ipv4.length + 4);
         memcpy(px, tmpl->ipv4.packet, 12);
         memcpy(px+16, tmpl->ipv4.packet+12, tmpl->ipv4.length - 12);
         

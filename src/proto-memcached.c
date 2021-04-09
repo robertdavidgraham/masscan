@@ -1,5 +1,5 @@
 /*
-    memcached banner check 
+    memcached banner check
 */
 
 #include "proto-memcached.h"
@@ -104,7 +104,7 @@ static struct Patterns memcached_stats[] = {
 /***************************************************************************
  ***************************************************************************/
 static void
-memcached_tcp_parse(  
+memcached_tcp_parse(
           const struct Banner1 *banner1,
           void *banner1_private,
           struct ProtocolState *pstate,
@@ -165,7 +165,7 @@ memcached_tcp_parse(
                 if (px[i] == '\n')
                     state = 0;
                 break;
-            
+
             /* process stat */
             case 100:
             case 200:
@@ -239,7 +239,7 @@ memcached_init(struct Banner1 *b)
         size_t len;
 
         len = strlen(memcached_responses[i].pattern);
-        tmp = MALLOC(len + 2);
+        tmp = (char *) MALLOC(len + 2);
         memcpy(tmp, memcached_responses[i].pattern, len);
         tmp[len+1] = '\0';
 
@@ -269,7 +269,7 @@ memcached_init(struct Banner1 *b)
         size_t len;
 
         len = strlen(memcached_stats[i].pattern);
-        tmp = MALLOC(len + 2);
+        tmp = (char *) MALLOC(len + 2);
         memcpy(tmp, memcached_stats[i].pattern, len);
         tmp[len+1] = '\0';
 
@@ -366,13 +366,13 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
 
         memcached_tcp_parse(
             0, 0,
-            stuff, px+8, length-8, banout, 
+            stuff, px+8, length-8, banout,
             0);
     }
 
     if ((cookie&0xffff) != request_id)
         banout_append(banout, PROTO_MEMCACHED, " IP-MISMATCH", AUTO_LEN);
-            
+
     /* Print the banner information, or save to a file, depending */
     output_report_banner(
         out, timestamp,
@@ -386,7 +386,7 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
     banout_release(banout);
 
     return 0;
-    
+
 not_memcached:
     return default_udp_parse(out, timestamp, px, length, parsed, entropy);
 }
@@ -432,4 +432,4 @@ const struct ProtocolParserStream banner_memcached = {
     memcached_init,
     memcached_tcp_parse,
 };
-                             
+

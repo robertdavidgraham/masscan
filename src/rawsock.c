@@ -607,7 +607,7 @@ rawsock_init_adapter(const char *adapter_name,
      * warning when unused */
     UNUSEDPARM(bpf_filter);
 
-    adapter = CALLOC(1, sizeof(*adapter));
+    adapter = (struct Adapter *) CALLOC(1, sizeof(*adapter));
     adapter->is_packet_trace = is_packet_trace;
     adapter->pt_start = 1.0 * pixie_gettime() / 1000000.0;
 
@@ -673,7 +673,7 @@ rawsock_init_adapter(const char *adapter_name,
         /*
          * Housekeeping
          */
-        PFRING.set_application_name(adapter->ring, "masscan");
+        PFRING.set_application_name(adapter->ring, (char *) "masscan");
         PFRING.version(adapter->ring, &version);
         LOG(1, "pfring: version %d.%d.%d\n",
                 (version >> 16) & 0xFFFF,
@@ -731,7 +731,7 @@ rawsock_init_adapter(const char *adapter_name,
          * adapter until we call pcap_activate */
         adapter->pcap = PCAP.create(adapter_name, errbuf);
         if (adapter->pcap == NULL) {
-            adapter->pcap = PCAP.open_live(
+            adapter->pcap = (struct pcap *) PCAP.open_live(
                         adapter_name,           /* interface name */
                         65536,                  /* max packet size */
                         8,                      /* promiscuous mode */

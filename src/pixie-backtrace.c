@@ -38,8 +38,8 @@ handle_segfault(int sig)
         char foo[1024];
 		printf("%d: [%s]\n", size, symbol);
         if (strstr(symbol, "[0x")) {
-            char *p = strstr(symbol, "[0x") + 1;
-            char *pp = strchr(p, ']');
+            const char *p = strstr(symbol, "[0x") + 1;
+            const char *pp = strchr(p, ']');
 
             snprintf(foo, sizeof(foo), "addr2line -p -i -f -e %s %.*s",
                 global_self,

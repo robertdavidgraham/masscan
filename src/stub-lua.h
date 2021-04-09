@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "stubtools.h"
 
 /**
  * Called to load the Lua dynamic library, suh as lua53.dll or lua5.3.so.0,

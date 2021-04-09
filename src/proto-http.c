@@ -58,7 +58,7 @@ http_change_field(unsigned char **inout_header, unsigned header_length,
     unsigned is_newline_seen = 0;
     unsigned field_name_len = (unsigned)strlen(field_name);
 
-    hdr2 = MALLOC(header_length + field_value_len + 1 + 2);
+    hdr2 = (unsigned char *) MALLOC(header_length + field_value_len + 1 + 2);
 
     memcpy(hdr2, hdr1, header_length);
 
@@ -238,7 +238,7 @@ http_parse(
         CONTENT,
         CONTENT_TAG,
         CONTENT_FIELD,
-        
+
         DONE_PARSING
     };
 
@@ -446,7 +446,7 @@ http_selftest(void)
     struct ProtocolState pstate[1];
     struct BannerOutput banout[1];
     struct InteractiveData more[1];
-    
+
     memset(pstate, 0, sizeof(pstate[0]));
     memset(banout, 0, sizeof(banout[0]));
     memset(more, 0, sizeof(more[0]));
@@ -463,18 +463,18 @@ http_selftest(void)
      * Run Test
      */
     http_parse(banner1, 0, pstate, (const unsigned  char *)test_response, strlen(test_response), banout, more);
-    
-    
+
+
     /*
      * Verify results
      */
     {
         const unsigned char *string;
         size_t length;
-        
+
         string = banout_string(banout, PROTO_HTTP_SERVER);
         length = banout_string_length(banout, PROTO_HTTP_SERVER);
-        
+
         if (length != 3 || memcmp(string, "gws", 3) != 0) {
             fprintf(stderr, "[-] HTTP parser failed: %s %u\n", __FILE__, __LINE__);
             return 1;
@@ -487,7 +487,7 @@ http_selftest(void)
      */
     banner1_destroy(banner1);
     banout_release(banout);
-    
+
     return 0;
 }
 

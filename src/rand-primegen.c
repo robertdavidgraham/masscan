@@ -4,6 +4,7 @@
     getting rid of warnings.
 */
 #include "rand-primegen.h"
+#include "compiler_abs_layer.h"
 
 /*
 B is 32 times X.
@@ -40,10 +41,10 @@ static const uint32_t two[32] = {
 , 0x10000000 , 0x20000000 , 0x40000000 , 0x80000000
 } ;
 
-static void clear(register uint32_t (*buf)[B32])
+static void clear(REGISTER uint32_t (*buf)[B32])
 {
-  register int i;
-  register int j;
+  REGISTER int i;
+  REGISTER int j;
 
   for (j = 0;j < 16;++j) {
     for (i = 0;i < B32;++i)
@@ -52,14 +53,14 @@ static void clear(register uint32_t (*buf)[B32])
   }
 }
 
-static void doit4(register uint32_t *a,register long x,register long y,int64_t start)
+static void doit4(REGISTER uint32_t *a,REGISTER long x,REGISTER long y,int64_t start)
 {
   long i0;
   long y0;
-  register long i;
-  register uint32_t data;
-  register uint32_t pos;
-  register uint32_t bits;
+  REGISTER long i;
+  REGISTER uint32_t data;
+  REGISTER uint32_t pos;
+  REGISTER uint32_t bits;
 
   x += x; x += 15;
   y += 15;
@@ -91,14 +92,14 @@ static void doit4(register uint32_t *a,register long x,register long y,int64_t s
   }
 }
 
-static void doit6(register uint32_t *a,register long x,register long y,int64_t start)
+static void doit6(REGISTER uint32_t *a,REGISTER long x,REGISTER long y,int64_t start)
 {
   long i0;
   long y0;
-  register long i;
-  register uint32_t data;
-  register uint32_t pos;
-  register uint32_t bits;
+  REGISTER long i;
+  REGISTER uint32_t data;
+  REGISTER uint32_t pos;
+  REGISTER uint32_t bits;
 
   x += 5;
   y += 15;
@@ -129,11 +130,11 @@ static void doit6(register uint32_t *a,register long x,register long y,int64_t s
   }
 }
 
-static void doit12(register uint32_t *a,register long x,register long y,int64_t start)
+static void doit12(REGISTER uint32_t *a,REGISTER long x,REGISTER long y,int64_t start)
 {
-  register long i;
-  register uint32_t data;
-  register uint32_t bits;
+  REGISTER long i;
+  REGISTER uint32_t data;
+  REGISTER uint32_t bits;
 
   x += 5;
 
@@ -157,7 +158,7 @@ static void doit12(register uint32_t *a,register long x,register long y,int64_t 
     i0 = i;
     y0 = y;
     while ((i >= 0) && (y < x)) {
-      register uint32_t pos;
+      REGISTER uint32_t pos;
       pos = (uint32_t)i; data = (uint32_t)i;
       pos >>= 5; data &= 31;
       i -= y;
@@ -207,14 +208,14 @@ static void squarefree1big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64_
   }
 }
 
-static void squarefree1(register uint32_t (*buf)[B32],uint64_t L,uint32_t q)
+static void squarefree1(REGISTER uint32_t (*buf)[B32],uint64_t L,uint32_t q)
 {
   uint32_t qq;
-  register uint32_t qqhigh;
+  REGISTER uint32_t qqhigh;
   uint32_t i;
-  register uint32_t ilow;
-  register uint32_t ihigh;
-  register int n;
+  REGISTER uint32_t ilow;
+  REGISTER uint32_t ihigh;
+  REGISTER int n;
   uint64_t base;
 
   base = 60 * L;
@@ -276,14 +277,14 @@ static void squarefree49big(uint32_t (*buf)[B32],uint64_t base,uint32_t q,uint64
   }
 }
 
-static void squarefree49(register uint32_t (*buf)[B32],uint64_t L,uint32_t q)
+static void squarefree49(REGISTER uint32_t (*buf)[B32],uint64_t L,uint32_t q)
 {
   uint32_t qq;
-  register uint32_t qqhigh;
+  REGISTER uint32_t qqhigh;
   uint32_t i;
-  register uint32_t ilow;
-  register uint32_t ihigh;
-  register int n;
+  REGISTER uint32_t ilow;
+  REGISTER uint32_t ihigh;
+  REGISTER int n;
   uint64_t base = 60 * L;
 
   qq = q * q;
@@ -336,19 +337,19 @@ uint32_t qq60tab[49] = {
  ,31507,32215,35873,6829,7115,38941,43779,9117,9447,51567,9953,56169
 } ;
 
-static void squarefreetiny(register uint32_t *a,uint32_t *Lmodqq,int d)
+static void squarefreetiny(REGISTER uint32_t *a,uint32_t *Lmodqq,int d)
 {
   int j;
 
   for (j = 0;j < 49;++j) {
-    register uint32_t k;
-    register uint32_t qq;
+    REGISTER uint32_t k;
+    REGISTER uint32_t qq;
     qq = qqtab[j];
     k = qq - 1 - ((Lmodqq[j] + qq60tab[j] * d - 1) % qq);
     while (k < B) {
-      register uint32_t pos;
-      register uint32_t data;
-      register uint32_t bits;
+      REGISTER uint32_t pos;
+      REGISTER uint32_t data;
+      REGISTER uint32_t bits;
       pos = k;
       data = k;
       pos >>= 5;
@@ -642,10 +643,10 @@ uint64_t primegen_count(primegen *pg,uint64_t to)
   uint64_t count = 0;
   
   for (;;) {
-    register int pos;
-    register int j;
-    register uint32_t bits;
-    register uint32_t smallcount;
+    REGISTER int pos;
+    REGISTER int j;
+    REGISTER uint32_t bits;
+    REGISTER uint32_t smallcount;
     while (pg->num) {
       if (pg->p[pg->num - 1] >= to) return count;
       ++count;

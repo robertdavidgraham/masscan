@@ -103,6 +103,7 @@
  ****************************************************************************/
 #include "smack.h"
 #include "smackqueue.h"
+#include "compiler_abs_layer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -871,7 +872,7 @@ smack_stage0_compile_prefixes(struct SMACK *smack)
      * Split a pattern into its sub patterns and add each of them
      * to the table.
      */
-    for (a=0; a<(int)smack->m_pattern_count; a++)
+    for (a=0; a<smack->m_pattern_count; a++)
         smack_add_prefixes(smack, smack->m_pattern_list[a]);
 
     /* Set all failed state transitions to return to the 0'th state */
@@ -1000,7 +1001,7 @@ smack_stage4_make_final_table(struct SMACK *smack)
      * Allocate table:
      * rows*columns
      */
-    table = malloc(sizeof(transition_t) * row_count * column_count);
+    table = (transition_t *) malloc(sizeof(transition_t) * row_count * column_count);
     if (table == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
@@ -1125,7 +1126,7 @@ smack_fixup_wildcards(struct SMACK *smack)
             
             row = row & 0xFFFFFF;
             table = smack->table + (row << smack->row_shift);
-            next_pattern = table[smack->char_to_symbol['*']];
+            next_pattern = table[smack->char_to_symbol[(unsigned char) '*']];
             
             for (k=0; k<row_size; k++) {
                 if (table[k] == base_state)
@@ -1162,7 +1163,7 @@ smack_compile(struct SMACK *smack)
      * be overlaps
      */
     smack->m_state_max = 1;
-    for (i=0; i<(int)smack->m_pattern_count; i++) {
+    for (i=0; i<smack->m_pattern_count; i++) {
         struct SmackPattern *pat = smack->m_pattern_list[i];
 
         smack->m_state_max += pat->pattern_length;
@@ -1405,14 +1406,14 @@ smack_search_next(      struct SMACK *  smack,
 {
     const unsigned char *px = (const unsigned char*)v_px;
     unsigned row;
-    register size_t i = *offset;
+    REGISTER size_t i = *offset;
     const unsigned char *char_to_symbol = smack->char_to_symbol;
     const transition_t *table = smack->table;
-    register unsigned row_shift = smack->row_shift;
+    REGISTER unsigned row_shift = smack->row_shift;
     const struct SmackMatches *match = smack->m_match;
     unsigned current_matches = 0;
     size_t id = (size_t)-1;
-    register unsigned match_limit = smack->m_match_limit;
+    REGISTER unsigned match_limit = smack->m_match_limit;
 
     /* Get the row. This is encoded as the lower 24-bits of the state
      * variable */

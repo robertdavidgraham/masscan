@@ -19,7 +19,7 @@ cert_out_open(struct Output *out, FILE *fp)
  ****************************************************************************/
 static void
 cert_out_close(struct Output *out, FILE *fp)
-{    
+{
     UNUSEDPARM(out);
     fprintf(fp, "{finished: 1}\n");
 }
@@ -27,7 +27,7 @@ cert_out_close(struct Output *out, FILE *fp)
 /******************************************************************************
  ******************************************************************************/
 static void
-cert_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
+cert_out_status(struct Output *out, FILE *fp, time_t timestamp, enum PortStatus status,
                 ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     /* certificates only come with banner info, so there is no port info
@@ -49,7 +49,7 @@ cert_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
 static void
 cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                 ipaddress ip, unsigned ip_proto, unsigned port,
-                enum ApplicationProtocol proto, 
+                enum ApplicationProtocol proto,
                 unsigned ttl,
                 const unsigned char *px, unsigned length)
 {
@@ -68,7 +68,7 @@ cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         px += 5;
         length -= 5;
     }
-    
+
     printf("-----BEGIN CERTIFICATE-----\n");
     for (i=0; i<length; i += 72) {
         unsigned len = length - i;

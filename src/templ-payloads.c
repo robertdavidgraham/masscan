@@ -43,7 +43,7 @@ struct PayloadUDP_Default {
     unsigned length;
     unsigned xsum;
     SET_COOKIE set_cookie;
-    char *buf;
+    const char *buf;
 
 };
 
@@ -261,7 +261,7 @@ payloads_udp_trim(struct PayloadsUDP *payloads, const struct MassIP *targets)
     unsigned count2 = 0;
 
     /* Create a new list */
-    list2 = REALLOCARRAY(0, payloads->max, sizeof(list2[0]));
+    list2 = (struct PayloadUDP_Item**) REALLOCARRAY(0, payloads->max, sizeof(list2[0]));
 
     /* Add to the new list any used ports */
     for (i=0; i<payloads->count; i++) {
@@ -290,7 +290,7 @@ payloads_oproto_trim(struct PayloadsUDP *payloads, const struct MassIP *targets)
     unsigned count2 = 0;
     
     /* Create a new list */
-    list2 = REALLOCARRAY(0, payloads->max, sizeof(list2[0]));
+    list2 = (struct PayloadUDP_Item**) REALLOCARRAY(0, payloads->max, sizeof(list2[0]));
     
     /* Add to the new list any used ports */
     for (i=0; i<payloads->count; i++) {
@@ -504,12 +504,12 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
         /* grow the list if we need to */
         if (payloads->count + 1 > payloads->max) {
             size_t new_max = payloads->max*2 + 1;
-            payloads->list = REALLOCARRAY(payloads->list, new_max, sizeof(payloads->list[0]));
+            payloads->list = (struct PayloadUDP_Item**) REALLOCARRAY(payloads->list, new_max, sizeof(payloads->list[0]));
             payloads->max = new_max;
         }
 
         /* allocate space for this record */
-        p = MALLOC(sizeof(p[0]) + length);
+        p = (struct PayloadUDP_Item*) MALLOC(sizeof(p[0]) + length);
         p->port = rangelist_pick(ports, i);
         p->source_port = source_port;
         p->length = (unsigned)length;
@@ -757,7 +757,7 @@ payloads_udp_create(void)
     struct PayloadsUDP *payloads;
     struct PayloadUDP_Default *hard_coded = hard_coded_udp_payloads;
     
-    payloads = CALLOC(1, sizeof(*payloads));
+    payloads = (struct PayloadsUDP*) CALLOC(1, sizeof(*payloads));
     
     /*
      * For popular parts, include some hard-coded default UDP payloads
@@ -802,7 +802,7 @@ payloads_oproto_create(void)
     struct PayloadsUDP *payloads;
     struct PayloadUDP_Default *hard_coded = hard_coded_oproto_payloads;
     
-    payloads = CALLOC(1, sizeof(*payloads));
+    payloads = (struct PayloadsUDP*) CALLOC(1, sizeof(*payloads));
     
     /*
      * Some hard-coded ones, like GRE

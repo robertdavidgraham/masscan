@@ -92,7 +92,7 @@ _read_ipv6(const unsigned char *buf, size_t *offset, size_t max)
  * to which we must respond.
  */
 int
-stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length)
+stack_ndpv6_incoming_request(struct our_stack_t *stack, struct PreprocessedInfo *parsed,  const unsigned char *px, size_t length)
 {
     struct PacketBuffer *response = 0;
     size_t offset;
@@ -177,7 +177,7 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
 
     /* Transmit the packet-buffer */
     response->length = offset;
-    stack_transmit_packetbuffer(stack, response);
+    our_stack_transmit_packetbuffer(stack, response);
     return 0;
 }
 
