@@ -89,6 +89,7 @@ rawsock_get_adapter_ipv6(const char *ifname)
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
 
+
 ipv6address
 rawsock_get_adapter_ipv6(const char *ifname)
 {
@@ -145,7 +146,7 @@ again:
      */
     for (addr = adapter->FirstUnicastAddress; addr; addr = addr->Next) {
         struct sockaddr_in6 *sa = (struct sockaddr_in6 *)addr->Address.lpSockaddr;
-        char  buf[64];
+        //char  buf[64];
         ipv6address ipv6;
 
 
@@ -157,6 +158,12 @@ again:
         if (addr->Flags == IP_ADAPTER_ADDRESS_TRANSIENT)
             continue;
 
+#if 0
+/* My first attempt was to use the underlying approved operating system
+ * APIs to format this, rather than making assumptions about the 
+ * structure of how internals might hold an IPv6 address.
+ * But it turns out, "inet_ntop()" has some portability
+ * issues. Thus, I'm not going to follow this path */
         /* Format as a string */
         inet_ntop(sa->sin6_family, &sa->sin6_addr, buf, sizeof(buf));
         
@@ -166,6 +173,9 @@ again:
             fprintf(stderr, "[-] corrupt IPv6 address: %s\n", buf);
             continue;
         }
+#else
+        ipv6 = ipv6address_from_bytes((const unsigned char *)&sa->sin6_addr);
+#endif
 
         if (addr->PrefixOrigin == IpPrefixOriginWellKnown) {
              /* This value applies to an IPv6 link-local address or an IPv6 loopback address */
