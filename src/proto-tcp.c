@@ -217,6 +217,27 @@ parseInt(const void *vstr, size_t length)
 
 /***************************************************************************
  * Called at startup, when processing command-line options, to set
+ * an HTTP field.
+ ***************************************************************************/
+void
+tcpcon_set_http_header(struct TCP_ConnectionTable *tcpcon,
+                        const char *name,
+                        size_t value_length,
+                        const void *value,
+                        enum http_field_t what)
+{
+    UNUSEDPARM(tcpcon);
+    banner_http.hello_length = http_change_field(
+                            (unsigned char**)&banner_http.hello,
+                            banner_http.hello_length,
+                            name,
+                            (const unsigned char *)value,
+                            value_length,
+                            what);
+}
+
+/***************************************************************************
+ * Called at startup, when processing command-line options, to set
  * parameters specific to TCP processing.
  ***************************************************************************/
 void
@@ -227,6 +248,27 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 {
     struct Banner1 *banner1 = tcpcon->banner1;
 
+    if (name_equals(name, "http-payload")) {
+        char lenstr[64];
+        sprintf_s(lenstr, sizeof(lenstr), "%u", (unsigned)value_length);
+
+        banner_http.hello_length = http_change_requestline(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                (const unsigned char *)value,
+                                value_length,
+                                3); /* payload*/
+
+        banner_http.hello_length = http_change_field(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                "Content-Length:",
+                                (const unsigned char *)lenstr,
+                                strlen(lenstr),
+                                http_field_replace);
+        return;
+    }
+
     /*
      * You can reset your user-agent here. Whenever I do a scan, I always
      * reset my user-agent. That's now you know it's not me scanning
@@ -236,10 +278,52 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
     if (name_equals(name, "http-user-agent")) {
         banner_http.hello_length = http_change_field(
                                 (unsigned char**)&banner_http.hello,
-                                (unsigned)banner_http.hello_length,
+                                banner_http.hello_length,
                                 "User-Agent:",
                                 (const unsigned char *)value,
-                                (unsigned)value_length);
+                                value_length,
+                                http_field_replace);
+        return;
+    }
+    if (name_equals(name, "http-host")) {
+        banner_http.hello_length = http_change_field(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                "Host:",
+                                (const unsigned char *)value,
+                                value_length,
+                                http_field_replace);
+        return;
+    }
+
+    /**
+     * Changes the URL
+     */
+    if (name_equals(name, "http-method")) {
+        banner_http.hello_length = http_change_requestline(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                (const unsigned char *)value,
+                                value_length,
+                                0); /* method*/
+        return;
+    }
+    if (name_equals(name, "http-url")) {
+        banner_http.hello_length = http_change_requestline(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                (const unsigned char *)value,
+                                value_length,
+                                1); /* url */
+        return;
+    }
+    if (name_equals(name, "http-version")) {
+        banner_http.hello_length = http_change_requestline(
+                                (unsigned char**)&banner_http.hello,
+                                banner_http.hello_length,
+                                (const unsigned char *)value,
+                                value_length,
+                                2); /* version */
         return;
     }
 

@@ -13,8 +13,8 @@
 #include "unusedparm.h"
 #include "main-globals.h"
 #include "string_s.h"
+#include "util-bool.h"
 #include <stdio.h>
-
 
 
 /***************************************************************************
@@ -32,7 +32,7 @@ status_print(
     uint64_t total_synacks,
     uint64_t total_syns,
     uint64_t exiting,
-    uint8_t json_status)
+    bool json_status)
 {
     double elapsed_time;
     double rate;

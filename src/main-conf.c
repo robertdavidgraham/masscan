@@ -1114,6 +1114,213 @@ static int SET_hello_timeout(struct Masscan *masscan, const char *name, const ch
     return CONF_OK;
 }
 
+static int SET_http_cookie(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned char *newvalue;
+    size_t value_length;
+
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.cookies_count || masscan->echo_all) {
+            size_t i;
+            for (i=0; i<masscan->http.cookies_count; i++) {
+                fprintf(masscan->echo,
+                        "http-cookie = %.*s\n",
+                        (unsigned)masscan->http.cookies[i].value_length,
+                        masscan->http.cookies[i].value);
+            }
+        }
+        return 0;
+    }
+
+    /* allocate new value */
+    value_length = strlen(value);
+    newvalue = MALLOC(value_length+1);
+    memcpy(newvalue, value, value_length+1);
+    newvalue[value_length] = '\0';
+
+    /* Add to our list of headers */
+    if (masscan->http.cookies_count < sizeof(masscan->http.cookies)/sizeof(masscan->http.cookies[0])) {
+        size_t x = masscan->http.cookies_count;
+        masscan->http.cookies[x].value = newvalue;
+        masscan->http.cookies[x].value_length = value_length;
+        masscan->http.cookies_count++;
+    }
+    return CONF_OK;
+}
+
+static int SET_http_header(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned name_length;
+    char *newname;
+    unsigned char *newvalue;
+    size_t value_length;
+
+    if (masscan->echo) {
+        if (masscan->http.headers_count || masscan->echo_all) {
+            size_t i;
+            for (i=0; i<masscan->http.headers_count; i++) {
+                if (masscan->http.headers[i].name == 0)
+                    continue;
+                fprintf(masscan->echo,
+                        "http-header = %s:%.*s\n",
+                        masscan->http.headers[i].name,
+                        (unsigned)masscan->http.headers[i].value_length,
+                        masscan->http.headers[i].value);
+            }
+        }
+        return 0;
+    }
+
+    /* 
+     * allocate a new name 
+     */
+    name += 11;
+    if (*name == '[') {
+        /* Specified as: "--http-header[name] value" */
+        while (ispunct(*name))
+            name++;
+        name_length = (unsigned)strlen(name);
+        while (name_length && ispunct(name[name_length-1]))
+            name_length--;
+        newname = MALLOC(name_length+1);
+        memcpy(newname, name, name_length+1);
+        newname[name_length] = '\0';
+    } else if (strchr(value, ':')) {
+        /* Specified as: "--http-header Name:value" */
+        name_length = INDEX_OF(value, ':');
+        newname = MALLOC(name_length + 1);
+        memcpy(newname, value, name_length + 1);
+            
+        /* Trim the value */
+        value = value + name_length + 1;
+        while (*value && isspace(*value & 0xFF))
+            value++;
+
+        /* Trim the name */
+        while (name_length && isspace(newname[name_length-1]&0xFF))
+            name_length--;
+        newname[name_length] = '\0';
+    } else {
+        fprintf(stderr, "[-] --http-header needs both a name and value\n");
+        fprintf(stderr, "    hint: \"--http-header Name:value\"\n");
+        exit(1);
+    }
+
+    /* allocate new value */
+    value_length = strlen(value);
+    newvalue = MALLOC(value_length+1);
+    memcpy(newvalue, value, value_length+1);
+    newvalue[value_length] = '\0';
+
+    /* Add to our list of headers */
+    if (masscan->http.headers_count < sizeof(masscan->http.headers)/sizeof(masscan->http.headers[0])) {
+        size_t x = masscan->http.headers_count;
+        masscan->http.headers[x].name = newname;
+        masscan->http.headers[x].value = newvalue;
+        masscan->http.headers[x].value_length = value_length;
+        masscan->http.headers_count++;
+    }
+    return CONF_OK;
+}
+
+static int SET_http_method(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.method || masscan->echo_all)
+            fprintf(masscan->echo, "http-method = %.*s\n", (unsigned)masscan->http.method_length, masscan->http.method);
+        return 0;
+    }
+    if (masscan->http.method)
+        free(masscan->http.method);
+    masscan->http.method_length = strlen(value);
+    masscan->http.method = MALLOC(masscan->http.method_length+1);
+    memcpy(masscan->http.method, value, masscan->http.method_length+1);
+    return CONF_OK;
+}
+static int SET_http_url(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.url || masscan->echo_all)
+            fprintf(masscan->echo, "http-url = %.*s\n", (unsigned)masscan->http.url_length, masscan->http.url);
+        return 0;
+    }
+    if (masscan->http.url)
+        free(masscan->http.url);
+    masscan->http.url_length = strlen(value);
+    masscan->http.url = MALLOC(masscan->http.url_length+1);
+    memcpy(masscan->http.url, value, masscan->http.url_length+1);
+    return CONF_OK;
+}
+static int SET_http_version(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.version || masscan->echo_all)
+            fprintf(masscan->echo, "http-version = %.*s\n", (unsigned)masscan->http.version_length, masscan->http.version);
+        return 0;
+    }
+    if (masscan->http.version)
+        free(masscan->http.version);
+    masscan->http.version_length = strlen(value);
+    masscan->http.version = MALLOC(masscan->http.version_length+1);
+    memcpy(masscan->http.version, value, masscan->http.version_length+1);
+    return CONF_OK;
+}
+static int SET_http_host(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.host || masscan->echo_all)
+            fprintf(masscan->echo, "http-host = %.*s\n", (unsigned)masscan->http.host_length, masscan->http.host);
+        return 0;
+    }
+    if (masscan->http.host)
+        free(masscan->http.host);
+    masscan->http.host_length = strlen(value);
+    masscan->http.host = MALLOC(masscan->http.host_length+1);
+    memcpy(masscan->http.host, value, masscan->http.host_length+1);
+    return CONF_OK;
+}
+
+static int SET_http_user_agent(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.user_agent || masscan->echo_all)
+            fprintf(masscan->echo, "http-user-agent = %.*s\n", (unsigned)masscan->http.user_agent_length, masscan->http.user_agent);
+        return 0;
+    }
+    if (masscan->http.user_agent)
+        free(masscan->http.user_agent);
+    masscan->http.user_agent_length = strlen(value);
+    masscan->http.user_agent = MALLOC(masscan->http.user_agent_length+1);
+    memcpy( masscan->http.user_agent,
+            value,
+            masscan->http.user_agent_length+1
+            );
+    return CONF_OK;
+}
+
+static int SET_http_payload(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->http.payload || masscan->echo_all)
+            fprintf(masscan->echo, "http-payload = %.*s\n", (unsigned)masscan->http.payload_length, masscan->http.payload);
+        return 0;
+    }
+    masscan->http.payload_length = strlen(value);
+    masscan->http.payload = REALLOC(masscan->http.payload, masscan->http.payload_length+1);
+    memcpy( masscan->http.payload,
+            value,
+            masscan->http.payload_length+1
+            );
+    return CONF_OK;
+}
+
 static int SET_status_ndjson(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1128,14 +1335,15 @@ static int SET_status_ndjson(struct Masscan *masscan, const char *name, const ch
 }
 static int SET_status_json(struct Masscan *masscan, const char *name, const char *value)
 {
+    /* NOTE: this is here just to warn people they mistyped it */
     UNUSEDPARM(name);
+    UNUSEDPARM(value);
 
     if (masscan->echo) {
         return 0;
     }
     fprintf(stderr, "[-] FAIL: %s not supported, use --status-ndjson\n", name);
     fprintf(stderr, "    hint: new-line delimited JSON status is what we use\n");
-    exit(1);
     return CONF_ERR;
 }
 
@@ -1215,7 +1423,7 @@ static int SET_offline(struct Masscan *masscan, const char *name, const char *va
 
     if (masscan->echo) {
         if (masscan->is_offline || masscan->echo_all)
-            fprintf(masscan->echo, "noreset = %s\n", masscan->is_noreset?"true":"false");
+            fprintf(masscan->echo, "offline = %s\n", masscan->is_offline?"true":"false");
         return 0;
     }
     masscan->is_offline = parseBoolean(value);
@@ -1725,13 +1933,20 @@ struct ConfigParameter config_parameters[] = {
     {"noreset",         SET_noreset,            F_BOOL, {0}},
     {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
     {"nmap-service-probes",SET_nmap_service_probes, 0,  {"nmap-service-probe",0}},
-    {"offline",         SET_offline,            F_BOOL, {"notransmit", "nosend", 0}},
+    {"offline",         SET_offline,            F_BOOL, {"notransmit", "nosend", "dry-run", 0}},
     {"pcap-filename",   SET_pcap_filename,      0,      {"pcap",0}},
     {"pcap-payloads",   SET_pcap_payloads,      0,      {"pcap-payload",0}},
     {"hello",           SET_hello,              0,      {0}},
     {"hello-file",      SET_hello_file,         0,      {"hello-filename",0}},
     {"hello-string",    SET_hello_string,       0,      {0}},
     {"hello-timeout",   SET_hello_timeout,      0,      {0}},
+    {"http-cookie",     SET_http_cookie,        0,      {0}},
+    {"http-header",     SET_http_header,        0,      {"http-field", 0}},
+    {"http-method",     SET_http_method,       0,      {0}},
+    {"http-version",    SET_http_version,       0,      {0}},
+    {"http-url",        SET_http_url,           0,      {"http-uri",0}},
+    {"http-user-agent", SET_http_user_agent,    0,      {"http-useragent",0}},
+    {"http-payload",    SET_http_payload,       0,      {0}},
     {"ndjson-status",   SET_status_ndjson,      F_BOOL, {"status-ndjson", 0}},
     {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
@@ -2146,48 +2361,6 @@ masscan_set_parameter(struct Masscan *masscan,
     } else if (EQUALS("host-timeout", name)) {
         fprintf(stderr, "nmap(%s): unsupported: this is an asynchronous tool, so no timeouts\n", name);
         exit(1);
-    } else if (EQUALS("http-user-agent", name)) {
-        if (masscan->http_user_agent)
-            free(masscan->http_user_agent);
-        masscan->http_user_agent_length = (unsigned)strlen(value);
-        masscan->http_user_agent = MALLOC(masscan->http_user_agent_length+1);
-        memcpy( masscan->http_user_agent,
-                value,
-                masscan->http_user_agent_length+1
-                );
-    } else if (memcmp("http-header", name, 11) == 0) {
-        unsigned j;
-        unsigned name_length;
-        char *newname;
-        unsigned value_length = (unsigned)strlen(value);
-        unsigned char *newvalue;
-
-        /* allocate new value */
-        newvalue = MALLOC(value_length+1);
-        memcpy(newvalue, value, value_length+1);
-        newvalue[value_length] = '\0';
-
-        /* allocate a new name */
-        name += 11;
-        while (ispunct(*name))
-            name++;
-        name_length = (unsigned)strlen(name);
-        while (name_length && ispunct(name[name_length-1]))
-            name_length--;
-        newname = MALLOC(name_length+1);
-        memcpy(newname, name, name_length+1);
-        newname[name_length] = '\0';
-
-
-        for (j=0; j < sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); j++) {
-            if (masscan->http_headers[j].header_name == 0) {
-                masscan->http_headers[j].header_name = newname;
-                masscan->http_headers[j].header_value = newvalue;
-                masscan->http_headers[j].header_value_length = value_length;
-                return;
-            }
-        }
-
     } else if (EQUALS("iflist", name)) {
         masscan->op = Operation_List_Adapters;
     } else if (EQUALS("includefile", name)) {
@@ -2424,7 +2597,7 @@ is_singleton(const char *name)
         "no-stylesheet", "heartbleed", "ticketbleed",
         "send-eth", "send-ip", "iflist",
         "nmap", "trace-packet", "pfring", "sendq",
-        "offline", "ping", "ping-sweep", "nobacktrace", "backtrace",
+        "ping", "ping-sweep", "nobacktrace", "backtrace",
         "infinite", "nointeractive", "interactive", "status", "nostatus",
         "read-range", "read-ranges", "readrange", "read-ranges",
         0};
@@ -3060,29 +3233,7 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
             }
         }
         fprintf(fp, "\n");
-    }
-    
-    fprintf(fp, "\n");
-    if (masscan->http_user_agent)
-        fprintf(    fp,
-                "http-user-agent = %.*s\n",
-                masscan->http_user_agent_length,
-                masscan->http_user_agent);
-    
-    for (i=0; i<sizeof(masscan->http_headers)/sizeof(masscan->http_headers[0]); i++) {
-        if (masscan->http_headers[i].header_name == 0)
-            continue;
-        fprintf(    fp,
-                "http-header[%s] = %.*s\n",
-                masscan->http_headers[i].header_name,
-                masscan->http_headers[i].header_value_length,
-                masscan->http_headers[i].header_value);
-    }
-    
-    
-    
-    
-    
+    }    
 }
 
 

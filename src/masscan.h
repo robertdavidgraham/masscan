@@ -4,6 +4,7 @@
 #include "string_s.h"
 #include "stack-src.h"
 #include "massip.h"
+#include "util-bool.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -293,7 +294,7 @@ struct Masscan
          * error messages or discovery of individual ports
          *
          */
-        unsigned is_status_ndjson:1;
+        bool is_status_ndjson;
 
         /**
          * --open
@@ -385,8 +386,54 @@ struct Masscan
         struct NmapServiceProbeList *probes;
     } payloads;
     
-    unsigned char *http_user_agent;
-    unsigned http_user_agent_length;
+    /** Reconfigure the HTTP header */
+    struct {
+        /* Method */
+        unsigned char *method;
+        size_t method_length;
+
+        /* URL */
+        unsigned char *url;
+        size_t url_length;
+
+        /* Version */
+        unsigned char *version;
+        size_t version_length;
+
+        /* Host */
+        unsigned char *host;
+        size_t host_length;
+
+        /* User-Agent */
+        unsigned char *user_agent;
+        size_t user_agent_length;
+
+        /* Payload after the header*/
+        unsigned char *payload;
+        size_t payload_length;
+
+        /* Headers */
+        struct {
+            const char *name;
+            unsigned char *value;
+            size_t value_length;
+        } headers[16];
+        size_t headers_count;
+
+        /* Cookies */
+        struct {
+            unsigned char *value;
+            size_t value_length;
+        } cookies[16];
+        size_t cookies_count;
+
+        /* Remove */
+        struct {
+            unsigned char *name;
+        } remove[16];
+        size_t remove_count;
+    } http;
+
     unsigned tcp_connection_timeout;
     
     /** Number of seconds to wait for a 'hello' from the server before
@@ -396,11 +443,6 @@ struct Masscan
      * hellos, such as FTP or VNC */
     unsigned tcp_hello_timeout;
 
-    struct {
-        const char *header_name;
-        unsigned char *header_value;
-        unsigned header_value_length;
-    } http_headers[16];
 
     char *bpf_filter;
 

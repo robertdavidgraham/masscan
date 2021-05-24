@@ -2,6 +2,7 @@
 #define MAIN_STATUS_H
 #include <stdint.h>
 #include <time.h>
+#include "util-bool.h"
 
 struct Status
 {
@@ -24,7 +25,7 @@ struct Status
 };
 
 
-void status_print(struct Status *status, uint64_t count, uint64_t max_count, double x, uint64_t total_tcbs, uint64_t total_synacks, uint64_t total_syns, uint64_t exiting, uint8_t json_status);
+void status_print(struct Status *status, uint64_t count, uint64_t max_count, double x, uint64_t total_tcbs, uint64_t total_synacks, uint64_t total_syns, uint64_t exiting, bool json_status);
 void status_finish(struct Status *status);
 void status_start(struct Status *status);
 

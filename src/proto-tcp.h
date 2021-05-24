@@ -3,6 +3,7 @@
 #include "massip-addr.h"
 #include "stack-queue.h"
 #include "output.h"
+#include "util-bool.h"
 
 struct Adapter;
 struct TCP_Control_Block;
@@ -28,6 +29,21 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const char *name,
                         size_t value_length,
                         const void *value);
+enum http_field_t {
+    http_field_replace,
+    http_field_add,
+    http_field_remove,
+    http_field_method,
+    http_field_url,
+    http_field_version,
+};
+
+void
+tcpcon_set_http_header(struct TCP_ConnectionTable *tcpcon,
+                        const char *name,
+                        size_t value_length,
+                        const void *value,
+                        enum http_field_t what);
 
 void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L);
 
