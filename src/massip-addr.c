@@ -237,11 +237,13 @@ int ipv6address_selftest(void)
 {
     int x = 0;
     ipaddress ip;
+    struct ipaddress_formatted fmt;
 
     ip.version = 4;
     ip.ipv4 = 0x01FF00A3;
 
-    if (strcmp(ipaddress_fmt(ip).string, "1.255.0.163") != 0)
+    fmt = ipaddress_fmt(ip);
+    if (strcmp(fmt.string, "1.255.0.163") != 0)
         x++;
 
     return x;

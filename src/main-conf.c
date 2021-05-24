@@ -1942,10 +1942,11 @@ struct ConfigParameter config_parameters[] = {
     {"hello-timeout",   SET_hello_timeout,      0,      {0}},
     {"http-cookie",     SET_http_cookie,        0,      {0}},
     {"http-header",     SET_http_header,        0,      {"http-field", 0}},
-    {"http-method",     SET_http_method,       0,      {0}},
+    {"http-method",     SET_http_method,        0,      {0}},
     {"http-version",    SET_http_version,       0,      {0}},
     {"http-url",        SET_http_url,           0,      {"http-uri",0}},
     {"http-user-agent", SET_http_user_agent,    0,      {"http-useragent",0}},
+    {"http-host",       SET_http_host,          0,      {0}},
     {"http-payload",    SET_http_payload,       0,      {0}},
     {"ndjson-status",   SET_status_ndjson,      F_BOOL, {"status-ndjson", 0}},
     {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
@@ -3264,9 +3265,11 @@ masscan_read_config_file(struct Masscan *masscan, const char *filename)
     err = fopen_s(&fp, filename, "rt");
     if (err) {
         char dir[512];
+        char *x;
         perror(filename);
-        getcwd(dir, sizeof(dir));
-        fprintf(stderr, "cwd = %s\n", dir);
+        x = getcwd(dir, sizeof(dir));
+        if (x)
+            fprintf(stderr, "[-] cwd = %s\n", dir);
         return;
     }
 

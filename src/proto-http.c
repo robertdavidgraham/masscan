@@ -278,6 +278,8 @@ _has_field_name(const char *name, size_t name_length, const unsigned char *hdr, 
             return false;
         }
     }
+    if (!found_colon)
+        return false;
 
     /* Compare the name (case insentive) */
     return memcasecmp(name, hdr + offset, name_length) == 0;
