@@ -429,8 +429,10 @@ handle_dns(struct Output *out, time_t timestamp,
 
         offset += 11;
 
-        if (txtlen + offset > length)
+        /* Make sure can't exceed bounds of RR */
+        if (txtlen > length - offset)
             txtlen = length - offset;
+        
         if (rrlen == 0 || txtlen > rrlen-1)
             return 0;
         if (type != 0x10 || xclass != 3)
