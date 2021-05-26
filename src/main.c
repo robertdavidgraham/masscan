@@ -273,7 +273,7 @@ infinite:
     end = range;
     if (masscan->resume.count && end > start + masscan->resume.count)
         end = start + masscan->resume.count;
-    end += retries * rate;
+    end += retries * range;
 
 
     /* -----------------

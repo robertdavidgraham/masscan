@@ -129,16 +129,27 @@ one port.
   * `--http-* <field>`: replaces the existing field in the HTTP header
     with a new one. Fields that can be replaced are `--http-method`, `--http-url`,
 	 `--http-version`,`--http-host`, and `--http-user-agent`.
-	 Example: `--http-user-agent iscanu/1.1`. See also `--http-field` and `--http-cookie`.
+	 Example: `--http-user-agent Keurig K575 Coffee Maker`. See also `--http-field` and `--http-cookie`.
 
   * `--http-field <name:value>`: replaces the existing HTTP header field,
     or inserts a new one if the field doesn't exist, given as a `name:value` pair. 
 	Cannot be used to replace the fields in the request-line (method, url, version).
 	Example: `--http-field Accept:image/gif`.
+    
+  * `--http-field-remove <name>`: removes the first field from the header that matches
+       (may be needed multiple times for fields like `Cookie` that can exist multiple times)
 
   * `--http-cookie <value>`: adds a `Cookie:` field to the HTTP header, even
     if other cookie fields exist. The other `--http-*` options replace existing
 	fields in the HTTP header, this one adds more even if some already exist.
+
+  *`--http-payload <str>`: adds a payload string after the header; this will
+    automatically add a `--http-field Content-Length:<len>` field to match the length of the string,
+    but the user will have to add their own `--http-field Content-Type:<type>` field to match
+    the string. Presumably, the user will also change the method to something like
+    `--http-method POST`. Common conntent types would be `application/x-www-form-urlencoded`,
+    `application/json`,  or `text/xml`.
+
 
   * `--show [open,closed]`: tells which port status to display, such
     as 'open' for those ports that respond with a SYN-ACK on TCP, or
