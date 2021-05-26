@@ -20,6 +20,7 @@ get_entropy(void)
 {
     uint64_t entropy[2] = {0,0};
     unsigned i;
+    int err;
 
     /*
      * Gather some random bits
@@ -31,10 +32,13 @@ get_entropy(void)
         entropy[0] ^= __rdtsc();
 #endif
         time(0);
-        fopen_s(&fp, "/", "r");
+        err = fopen_s(&fp, "/", "r");
         entropy[1] <<= 1;
         entropy[1] |= entropy[0]>>63;
         entropy[0] <<= 1;
+        if (err == 0 && fp) {
+            fclose(fp);
+        }
     }
 
     entropy[0] ^= time(0);
@@ -42,7 +46,6 @@ get_entropy(void)
 #if defined(__linux__)
     {
         FILE *fp;
-        int err;
 
         err = fopen_s(&fp, "/dev/urandom", "r");
         if (err == 0 && fp) {
