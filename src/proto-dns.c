@@ -427,12 +427,14 @@ handle_dns(struct Output *out, time_t timestamp,
         unsigned rrlen = px[offset+8]<<8 | px[offset+9];
         unsigned txtlen = px[offset+10];
 
+        offset += 11;
+
+        if (txtlen + offset > length)
+            txtlen = length - offset;
         if (rrlen == 0 || txtlen > rrlen-1)
             return 0;
         if (type != 0x10 || xclass != 3)
             return 0;
-
-        offset += 11;
 
         output_report_banner(
                 out, timestamp,
