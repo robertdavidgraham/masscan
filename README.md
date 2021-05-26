@@ -53,7 +53,7 @@ While Linux is the primary target platform, the code runs well on many other
 systems (Windows, macOS, etc.). Here's some additional build info:
 
   * Windows w/ Visual Studio: use the VS10 project
-  * Windows w/ MingGW: just type `make`
+  * Windows w/ MinGW: just type `make`
   * Windows w/ cygwin: won't work
   * Mac OS X /w XCode: use the XCode4 project
   * Mac OS X /w cmdline: just type `make`
