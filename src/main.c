@@ -1485,9 +1485,8 @@ main_scan(struct Masscan *masscan)
             is_rx_done = 1;
         }
 
-        if (time(0) - now - 5 > masscan->wait)
-        {
-            printf("Passed the wait window but still running, forceful exit.\n");
+        if (time(0) - now - 10 > masscan->wait) {
+            LOG(0, "[-] Passed the wait window but still running, forcing exit...\n");
             exit(0);
         }
 
