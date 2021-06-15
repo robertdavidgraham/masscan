@@ -691,7 +691,7 @@ receive_thread(void *v)
         }
         if (masscan->tcp_hello_timeout) {
             char foo[64];
-            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
+            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_hello_timeout);
             tcpcon_set_parameter(   tcpcon,
                                  "hello-timeout",
                                  strlen(foo),
