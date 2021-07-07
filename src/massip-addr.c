@@ -45,14 +45,16 @@ _append_ipv6(stream_t *out, const unsigned char *ipv6)
          * of 0 can be removed completely, replaced by an extra colon */
         if (n == 0 && !is_ellision) {
             is_ellision = 1;
-            while (i < 16 && ipv6[i + 2] == 0 && ipv6[i + 3] == 0)
+            while (i < 13 && ipv6[i + 2] == 0 && ipv6[i + 3] == 0)
                 i += 2;
             _append_char(out, ':');
 
             /* test for all-zero address, in which case the output
              * will be "::". */
-            if (i == 14)
+            while (i == 14 && ipv6[i] == 0 && ipv6[i + 1] == 0){
+                i=16;
                 _append_char(out, ':');
+            }
             continue;
         }
 
