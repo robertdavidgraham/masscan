@@ -1211,7 +1211,8 @@ main_scan(struct Masscan *masscan)
         LOG(0, " [hint] try something like \"--ports 0-65535\"\n");
         return 1;
     }
-    range = count_ips * count_ports + (uint64_t)(masscan->retries * masscan->max_rate);
+    range = count_ips * count_ports;
+    range += (uint64_t)(masscan->retries * range);
 
     /*
      * If doing an ARP scan, then don't allow port scanning
