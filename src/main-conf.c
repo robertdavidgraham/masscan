@@ -2631,6 +2631,7 @@ static void
 masscan_help()
 {
     printf(
+"usage: masscan [options] [<IP|RANGE>... -pPORT[,PORT...]]\n"
 "MASSCAN is a fast port scanner. The primary input parameters are the\n"
 "IP addresses/ranges you want to scan, and the port numbers. An example\n"
 "is the following, which scans the 10.x.x.x network for web servers:\n"
