@@ -27,5 +27,5 @@ rates rather than overloading network equipment.
 
 # Issues
 
-- (#546 fast scan get result)[https://github.com/robertdavidgraham/masscan/issues/546]
+- [#546 fast scan get result](https://github.com/robertdavidgraham/masscan/issues/546)
 
