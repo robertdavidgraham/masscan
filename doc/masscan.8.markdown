@@ -143,7 +143,7 @@ one port.
     if other cookie fields exist. The other `--http-*` options replace existing
 	fields in the HTTP header, this one adds more even if some already exist.
 
-  *`--http-payload <str>`: adds a payload string after the header; this will
+  * `--http-payload <str>`: adds a payload string after the header; this will
     automatically add a `--http-field Content-Length:<len>` field to match the length of the string,
     but the user will have to add their own `--http-field Content-Type:<type>` field to match
     the string. Presumably, the user will also change the method to something like
