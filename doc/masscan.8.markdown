@@ -3,7 +3,7 @@ masscan(8) -- Fast scan of the Internet
 
 ## SYNOPSIS
 
-masscan <ip addresses/ranges> -p <ports> <options>
+masscan \[options\] \[<IP|ranges>... -p PORT\[,PORT...\]\]
 
 ## DESCRIPTION
 
