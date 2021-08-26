@@ -102,7 +102,7 @@ one port.
     target format described above for IP addresses and ranges. This file can contain
 	millions of addresses and ranges.
 
-  * `--append-output`: causes output to append to file, rather than
+  * `--append-output`: causes output to append to the file, rather than
     overwriting the file. Useful for when resumeing scans (see `--resume`).
 
   * `--iflist`: list the available network interfaces, and then exits. The
