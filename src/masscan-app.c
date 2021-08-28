@@ -65,7 +65,6 @@ masscan_string_to_app(const char *str)
         {"ftp",     PROTO_FTP},
         {"dns-ver", PROTO_DNS_VERSIONBIND},
         {"snmp",    PROTO_SNMP},
-        {"ssh2",    PROTO_SSH2},
         {"nbtstat", PROTO_NBTSTAT},
         {"ssl",     PROTO_SSL3},
         {"smtp",    PROTO_SMTP},
