@@ -88,7 +88,7 @@ _read_ipv6(const unsigned char *buf, size_t *offset, size_t max)
  * Handle the IPv6 Neighbor Solicitation request.
  * This happens after we've transmitted a packet, a response is on
  * it's way back, and the router needs to give us the response
- * packet. The router sends us a soliticiation, like an ARP request, 
+ * packet. The router sends us a solicitation, like an ARP request, 
  * to which we must respond.
  */
 int
@@ -145,7 +145,7 @@ stack_ndpv6_incoming_request(struct stack_t *stack, struct PreprocessedInfo *par
     memcpy(response->px, px, length);
     buf2 = response->px;
     
-    /* Set the destination MAC address and destination IPv6 adress*/
+    /* Set the destination MAC address and destination IPv6 address*/
     memcpy(buf2 + 0, px + 6, 6);
     memcpy(buf2 + offset_ip_dst, px + offset_ip_src, 16);
 
@@ -205,7 +205,7 @@ _extract_router_advertisement(
         return 1;
     offset = parsed->transport_offset;
     
-    /* type = Router Advertisment */
+    /* type = Router Advertisement */
     if (_read_byte(buf, &offset, length) != 134)
         return 1;
 
@@ -290,7 +290,7 @@ _extract_router_advertisement(
     if (!is_mac_explicit) {
         /* The router advertisement didn't include an explicit
          * source address. Therefore, pull the response from
-         * the Etherent header of the packet instead */
+         * the Ethernet header of the packet instead */
         memcpy(router_mac->addr, parsed->mac_src, 6);
     }
     
@@ -479,7 +479,7 @@ stack_ndpv6_resolve(struct Adapter *adapter,
         if (err)
             continue;
         
-        /* The previus call found 'router_mac", so now return */
+        /* The previous call found 'router_mac", so now return */
         return 0;
     }
 

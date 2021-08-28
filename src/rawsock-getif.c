@@ -207,7 +207,7 @@ static int read_netlink(int fd, char *bufPtr, size_t sizeof_buffer, int seqNum, 
     int readLen = 0, msgLen = 0;
 
  do {
-        /* Recieve response from the kernel */
+        /* Receive response from the kernel */
         if ((readLen = recv(fd, bufPtr, sizeof_buffer - msgLen, 0)) < 0) {
             perror("SOCK READ: ");
             return -1;

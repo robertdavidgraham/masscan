@@ -49,7 +49,7 @@ uint64_t
 blackrock2_shuffle(const struct BlackRock *br, uint64_t index);
 
 /**
- * The reverse of the shuffle function above: given the shuffled/ecnrypted
+ * The reverse of the shuffle function above: given the shuffled/encrypted
  * integer, return the original index value before the shuffling/encryption.
  */
 uint64_t

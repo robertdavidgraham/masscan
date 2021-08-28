@@ -29,7 +29,7 @@
 #include "syn-cookie.h"
 
 /**
- * This is the number of entries in our table. More enttries does a better job at the
+ * This is the number of entries in our table. More entries does a better job at the
  * cost of using more memory.
  */
 #define DEDUP_ENTRIES 65536
@@ -51,7 +51,7 @@ struct DedupEntry_IPv6
 };
 
 /**
- * This is simply the arrrasy of entries. We have two arrays, one for IPv4
+ * This is simply the array of entries. We have two arrays, one for IPv4
  * and another for IPv6.
  */
 struct DedupTable
@@ -61,7 +61,7 @@ struct DedupTable
 };
 
 /**
- * We use the FNv1a hash algorith, which starts with this seed value.
+ * We use the FNv1a hash algorithm, which starts with this seed value.
  */
 const unsigned fnv1a_seed  = 0x811C9DC5; /* 2166136261 */
 
@@ -100,7 +100,7 @@ static inline unsigned fnv1a_longlong(unsigned long long data, unsigned hash)
 
 /**
  * Create a new table, which means simply allocating the object
- * and seting it to zero.
+ * and setting it to zero.
  */
 struct DedupTable *
 dedup_create(void)
@@ -149,7 +149,7 @@ is_equal6(ipv6address lhs, ipv6address rhs)
 }
 
 /**
- * Swap two addresses in the table. Thsi uses the classic XOR trick
+ * Swap two addresses in the table. This uses the classic XOR trick
  * rather than using a swap variable.
  */
 static inline void
@@ -317,16 +317,16 @@ _rand(unsigned *seed)
  * Provide a simple unit test for this module.
  *
  * This is a pretty lame test. I'm going to generate
- * a set of random addresses, tweeked so that they aren't
+ * a set of random addresses, tweaked so that they aren't
  * too random, so that I get around 30 to 50 expected
- * duplciates. If I get zero duplicates, or if I get too
+ * duplicates. If I get zero duplicates, or if I get too
  * many duplicates in the test, then I know it's failed.
  *
  * This is in no way a reliable test that deterministically
- * tests the functionality. It'a crappy non-deterministric
+ * tests the functionality. It's a crappy non-deterministic
  * test.
  *
- * We also do a simple deterministic test, but thhis still
+ * We also do a simple deterministic test, but this still
  * is insufficient testing how duplicates age out and such.
  */
 int

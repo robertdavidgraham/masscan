@@ -19,8 +19,8 @@
  * will take up to 64 bytes of a response and display it. Other UDP
  * protocol parsers may also default to this function when they detect
  * a response is not the protocol they expect. For example, if a response
- * to port 161 obbvioiusly isn't ASN.1 formatted, the SNMP parser will
- * call this function instead. In such cases, the protcool identifier will
+ * to port 161 obviously isn't ASN.1 formatted, the SNMP parser will
+ * call this function instead. In such cases, the protocool identifier will
  * be [unknown] rather than [snmp].
  ****************************************************************************/
 unsigned

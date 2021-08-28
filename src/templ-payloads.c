@@ -73,7 +73,7 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
     
     {53, 65536, 0x1f, 0, dns_set_cookie,
         /* 00 */"\x50\xb6"  /* transaction id */
-        /* 02 */"\x01\x20"  /* quer y*/
+        /* 02 */"\x01\x20"  /* query */
         /* 04 */"\x00\x01"  /* query = 1 */
         /* 06 */"\x00\x00\x00\x00\x00\x00"
         /* 0c */"\x07" "version"  "\x04" "bind" "\x00"

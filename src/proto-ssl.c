@@ -26,7 +26,7 @@
 
     For "heartbeat", we grab the so-called "heartbleed" exploit info.
     For "server hello", we grab which cipher is used
-    For "certificate", we grab the szubjectName of the server
+    For "certificate", we grab the subjectName of the server
  
  
     !!!!!!!!!!!!  BIZARRE CODE ALERT !!!!!!!!!!!!!!!
@@ -340,7 +340,7 @@ parse_server_hello(
 
 
 /*****************************************************************************
- * This parses the certificates from the server. Thise contains an outer
+ * This parses the certificates from the server. This contains an outer
  * length field for all certificates, and then uses a length field for
  * each certificate. The length fields are 3 bytes long.
  *
@@ -684,7 +684,7 @@ parse_heartbeat(
     for (i=0; i<length; i++)
     switch (state) {
             
-    /* this is the 'type' field for the hearbeat. There are only two
+    /* this is the 'type' field for the heartbeat. There are only two
      * values, '1' for request and '2' for response. Anything else indicates
      * that either the data was corrupted, or else it is encrypted.
      */
@@ -750,7 +750,7 @@ parse_heartbeat(
 
         break;
     
-    /* We reach this state either because the hearbeat data is corrupted or
+    /* We reach this state either because the heartbeat data is corrupted or
      * encrypted, or because we've reached the padding area after the 
      * heartbeat */
     case UNKNOWN:
@@ -874,7 +874,7 @@ parse_alert(
  * +--------+--------+
  *
  * This allows simple state-machine parsing. We need only 6 states, one for
- * each byte, and then a "content" state tracking the contents of the recod
+ * each byte, and then a "content" state tracking the contents of the record
  * until we've parsed "length" bytes, then back to the initial state.
  *
  *****************************************************************************/
@@ -910,7 +910,7 @@ ssl_parse_record(
     /* 
      * The initial state parses the "type" byte. There are only a few types
      * defined so far, the values 20-25, but more can be defined in the 
-     * future. The standard explicity says that they must be lower than 128,
+     * future. The standard explicitly says that they must be lower than 128,
      * so if the high-order bit is set, we know that the byte is invalid,
      * and that something is wrong.
      */
@@ -965,9 +965,9 @@ ssl_parse_record(
      * which is bounded by either the number of bytes in this records (when
      * there are multiple records per packet), or the packet size (when the
      * record exceeds the size of the packet).
-     * We then pass this sug-segment to the inner content parser. However, the
-     * inner parser has no effect on what happens in this parser. It's wholy
-     * indpedent, doing it's own thing.
+     * We then pass this sub-segment to the inner content parser. However, the
+     * inner parser has no effect on what happens in this parser. It's wholly
+     * independent, doing it's own thing.
      */
     case CONTENTS:
         {
@@ -1006,7 +1006,7 @@ ssl_parse_record(
                     /* encrypted, always*/
                     break;
                 case 24: /* heartbeat */
-                    /* enrypted, in theory, but not practice */
+                    /* encrypted, in theory, but not practice */
                     parse_heartbeat(banner1,
                                     banner1_private,
                                     pstate,
@@ -1158,7 +1158,7 @@ ssl_add_cipherspec_sslv3(void *templ, unsigned cipher_spec, unsigned is_append)
         px[offset2 + len2    ] = (unsigned char)(cipher_spec>>8);
         px[offset2 + len2 + 1] = (unsigned char)(cipher_spec>>0);
     } else {
-        /* prepend to start of list, making this the prefered cipherspec*/
+        /* prepend to start of list, making this the preferred cipherspec*/
         memmove(px + offset2 + 2,
                 px + offset2,
                 len0 - offset2);
@@ -1245,7 +1245,7 @@ ssl_hello(const void *templ)
     px[13] = (unsigned char)(now>> 8);
     px[14] = (unsigned char)(now>> 0);
     
-    /* create a pattern to make this detectable as specfically masscan */
+    /* create a pattern to make this detectable as specifically masscan */
     for (i=4; i<32; i++) {
         static const uint64_t key[2] = {0,0};
         unsigned val = i+now;

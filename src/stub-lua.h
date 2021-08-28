@@ -1,5 +1,5 @@
 /*
-    Stub declarations, for loading Lua dynamicaly at runtime using
+    Stub declarations, for loading Lua dynamically at runtime using
     openlib() or LoadLibrary().
  */
 

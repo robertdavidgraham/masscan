@@ -562,7 +562,7 @@ _binaryfile_parse(struct Output *out, const char *filename,
         }
 
 
-        /* get the remainder fo the record */
+        /* get the remainder of the record */
         bytes_read = fread(buf, 1, length, fp);
         if (bytes_read < length)
             break; /* eof */

@@ -57,7 +57,7 @@ enqueue(struct Queue *queue, unsigned data)
          * first data */
         queue->m_head = element;
     } else {
-        /* Else, add the data to the the tail of the queue */
+        /* Else, add the data to the tail of the queue */
         queue->m_tail->m_next = element;
     }
 

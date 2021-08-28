@@ -74,7 +74,7 @@ static const struct Val2String request_codes[] = {
 
 struct Val2String error_codes[] = {
     {0, "No Error"},
-    {1, "Incompatable Implementation Number"},
+    {1, "Incompatible Implementation Number"},
     {2, "Unimplemented Request Code"},
     {3, "Format Error"},
     {4, "No Data Available"},

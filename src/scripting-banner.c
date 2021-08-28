@@ -15,7 +15,7 @@
 #include "proto-udp.h"
 #include "syn-cookie.h"
 #include "unusedparm.h"
-#include "massip-rangesv4.h" /* kludge: todo: fixme: change this */
+#include "massip-rangesv4.h" /* kludge: TODO: FIXME: change this */
 #include "massip-port.h"
 #include <ctype.h>
 #include <string.h>

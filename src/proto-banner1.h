@@ -304,13 +304,13 @@ struct Patterns {
     unsigned id;
     
     /**
-     * Whether this string matches only at the begining ('anchored')
+     * Whether this string matches only at the beginning ('anchored')
      * or anywhere in the input. Virtually all the patterns are anchored.
      */
     unsigned is_anchored;
     
     /**
-     * Some extra flags for the pattern matcher for a few os the patterns.
+     * Some extra flags for the pattern matcher for a few of the patterns.
      */
     unsigned extra;
 };

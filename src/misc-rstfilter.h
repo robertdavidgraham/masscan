@@ -5,9 +5,9 @@
  TCP packet. In practice, this can lead to endless transmits when the other
  size continues to transmit bad packets. This may happen accidentally, or this
  may happen on purpose from the other side trying to attack the scanner
- intentionally. In May 2019 I see this from soembody who I suspect is trying
+ intentionally. In May 2019 I see this from somebody who I suspect is trying
  to do that, replying back as fast as the scanner transmits (when running
- at 10,000 packets-persecond). This halts the scan, as it's throttle limit
+ at 10,000 packets per-second). This halts the scan, as it's throttle limit
  is filled sending RSTs and not doing something useful.
  
  The design is a simple non-deterministic algorithm. It hashes the

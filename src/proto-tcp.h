@@ -20,7 +20,7 @@ struct lua_State;
 #define TCP_IS_FIN(px,i) ((TCP_FLAGS(px,i) & 0x1) == 0x1)
 
 /**
- * [KLUDGE] The 'tcpcon' module doens't have access to the main configuration,
+ * [KLUDGE] The 'tcpcon' module doesn't have access to the main configuration,
  * so specific configuration options have to be sent to it using this
  * function.
  */
@@ -53,11 +53,11 @@ void scripting_init_tcp(struct TCP_ConnectionTable *tcpcon, struct lua_State *L)
  *
  * @param entry_count
  *      A hint about the desired initial size. This should be about twice
- *      the number of oustanding connections, so you should base this number
+ *      the number of outstanding connections, so you should base this number
  *      on your transmit rate (the faster the transmit rate, the more
  *      outstanding connections you'll have). This function will automatically
  *      round this number up to the nearest power of 2, or round it down
- *      if it causes malloc() to not be able to allocate enoug memory.
+ *      if it causes malloc() to not be able to allocate enough memory.
  * @param entropy
  *      Seed for syn-cookie randomization
  */

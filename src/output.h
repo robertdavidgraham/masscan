@@ -57,7 +57,7 @@ struct Output
     time_t when_scan_started;
 
     /**
-     * Whether we've started writing to a file yet. We are lazy writing the
+     * Whether we've started writing to a file yet. We are lazy writing
      * the file header until we've actually go something to write
      */
     unsigned is_virgin_file:1;

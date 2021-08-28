@@ -96,7 +96,7 @@ struct TcpCfgPayloads
 struct Masscan
 {
     /**
-     * What this progrma is doing, which is normally "Operation_Scan", but
+     * What this program is doing, which is normally "Operation_Scan", but
      * which can be other things, like "Operation_SelfTest"
      */
     enum Operation op;
@@ -151,7 +151,7 @@ struct Masscan
     struct MassIP targets;
     
     /**
-     * IPv4 addresses/ranges that are to be exluded from the scan. This takes
+     * IPv4 addresses/ranges that are to be excluded from the scan. This takes
      * precedence over any 'include' statement. What happens is this: after
      * all the configuration has been read, we then apply the exclude/blacklist
      * on top of the target/whitelist, leaving only a target/whitelist left.
@@ -228,7 +228,7 @@ struct Masscan
 
     /**
      * --shard n/m
-     * This is used for distributin a scan acros multiple "shards". Every
+     * This is used for distributing a scan across multiple "shards". Every
      * shard in the scan must know the total number of shards, and must also
      * know which of those shards is it's identity. Thus, shard 1/5 scans
      * a different range than 2/5. These numbers start at 1, so it's
@@ -343,7 +343,7 @@ struct Masscan
             
             /**
              * When doing "--rotate daily", the rotation is done at GMT. In 
-             * orderto fix this, add an offset.
+             * order to fix this, add an offset.
              */
             unsigned offset;
             
@@ -516,7 +516,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
 
 /**
- * Discover the local network adapter parameters, such as whcih
+ * Discover the local network adapter parameters, such as which
  * MAC address we are using and the MAC addresses of the
  * local routers.
  */

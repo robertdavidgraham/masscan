@@ -29,7 +29,7 @@ typedef uint64_t PRIMEFACTORS[20];
 
 /****************************************************************************
  * Break down the number into prime factors using DJB's sieve code, which
- * is about 5 to 10 times faster than the Seive of Eratosthenes.
+ * is about 5 to 10 times faster than the Sieve of Eratosthenes.
  *
  * @param number
  *      The integer that we are factoring. It can be any value up to 64 bits
@@ -54,7 +54,7 @@ sieve_prime_factors(uint64_t number, PRIMEFACTORS factors,
     unsigned non_factor_count = 0;
 
     /*
-     * We only need to seive up to the square-root of the target number. Only
+     * We only need to sieve up to the square-root of the target number. Only
      * one prime factor can be bigger than the square root, so once we find
      * all the other primes, the square root is the only one left.
      * Note: you have to link to the 'm' math library for some gcc platforms.
@@ -72,7 +72,7 @@ sieve_prime_factors(uint64_t number, PRIMEFACTORS factors,
     start = clock();
     for (;;) {
 
-        /* Seive the next prime */
+        /* Sieve the next prime */
         prime = primegen_next(&pg);
 
         /* If we've reached the square root, then that's as far as we need

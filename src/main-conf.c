@@ -183,7 +183,7 @@ print_nmap_help(void)
 "  -sS: TCP SYN (always on, default)\n"
 "SERVICE/VERSION DETECTION:\n"
 "  --banners: get the banners of the listening service if available. The\n"
-"    default timeout for waiting to recieve data is 30 seconds.\n"
+"    default timeout for waiting to receive data is 30 seconds.\n"
 "PORT SPECIFICATION AND SCAN ORDER:\n"
 "  -p <port ranges>: Only scan specified ports\n"
 "    Ex: -p22; -p1-65535; -p 111,137,80,139,8080\n"
@@ -268,7 +268,7 @@ count_cidr6_bits(struct Range6 range)
 
 
 /***************************************************************************
- * Echoes the configuration for one nic
+ * Echoes the configuration for one NIC
  ***************************************************************************/
 static void
 masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
@@ -1971,7 +1971,7 @@ struct ConfigParameter config_parameters[] = {
 };
 
 /***************************************************************************
- * Called either from the "command-line" parser when it sees a --parm,
+ * Called either from the "command-line" parser when it sees a --param,
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
 void
@@ -2111,8 +2111,8 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Check for duplicates */
         if (macaddress_is_equal(masscan->nic[index].source_mac, source_mac)) {
-            /* supresses warning message about duplicate MAC addresses if
-             * they are in fact the saem */
+            /* suppresses warning message about duplicate MAC addresses if
+             * they are in fact the same */
             return;
         }
 
@@ -2398,7 +2398,7 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): unsupported: we all the parallel!\n", name);
         exit(1);
     } else if (EQUALS("min-rtt-timeout", name) || EQUALS("max-rtt-timeout", name) || EQUALS("initial-rtt-timeout", name)) {
-        fprintf(stderr, "nmap(%s): unsupported: we are asychronous, so no timeouts, no RTT tracking!\n", name);
+        fprintf(stderr, "nmap(%s): unsupported: we are asynchronous, so no timeouts, no RTT tracking!\n", name);
         exit(1);
     } else if (EQUALS("min-rate", name)) {
         fprintf(stderr, "nmap(%s): unsupported, we go as fast as --max-rate allows\n", name);
@@ -3113,7 +3113,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 
 /***************************************************************************
  * Prints the current configuration to the command-line then exits.
- * Use#1: create a template file of all setable parameters.
+ * Use#1: create a template file of all settable parameters.
  * Use#2: make sure your configuration was interpreted correctly.
  ***************************************************************************/
 void

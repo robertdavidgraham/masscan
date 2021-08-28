@@ -222,7 +222,7 @@ masscan_initialize_adapter(
                             ifname);
             fprintf(stderr, "    [hint] did you spell the name correctly?\n");
             fprintf(stderr, "    [hint] if it has no IP address, manually set with something like "
-                            "\"--souce-ip 2001:3b8::1234\"\n");
+                            "\"--source-ip 2001:3b8::1234\"\n");
             return -1;
         }
         fmt = ipv6address_fmt(adapter_ipv6);
