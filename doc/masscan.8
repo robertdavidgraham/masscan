@@ -69,13 +69,13 @@ masscan [\fIoptions\fR] [<IP|RANGE>...  \-p \fIPORT\fR[,\fIPORT\fR...]]
 \fB\-\-iflist\fR: list the available network interfaces, and then exits\.
 .
 .IP "\(bu" 4
-\fB\-\-retries\fR: the number of retries to send, at 1 second intervals\. Note that since this scanner is stateless, retries are sent regardless if replies have already been received\.
+\fB\-\-retries NUM\fR: the number of retries to send, at 1 second intervals\. Note that since this scanner is stateless, retries are sent regardless if replies have already been received\.
 .
 .IP "\(bu" 4
 \fB\-\-nmap\fR: print help about nmap\-compatibility alternatives for these options\.
 .
 .IP "\(bu" 4
-\fB\-\-pcap\-payloads\fR: read packets from a libpcap file containing packets and extract the UDP payloads, and associate those payloads with the destination port\. These payloads will then be used when sending UDP packets with the matching destination port\. Only one payload will be remembered per port\. Similar to \fB\-\-nmap\-payloads\fR\.
+\fB\-\-pcap\-payloads FILE\fR: read packets from a libpcap file containing packets and extract the UDP payloads, and associate those payloads with the destination port\. These payloads will then be used when sending UDP packets with the matching destination port\. Only one payload will be remembered per port\. Similar to \fB\-\-nmap\-payloads\fR\.
 .
 .IP "\(bu" 4
 \fB\-\-nmap\-payloads FILE\fR: read in a file in the same format as the nmap file \fBnmap\-payloads\fR\. This contains UDP payload, so that we can send useful UDP packets instead of empty ones\. Similar to \fB\-\-pcap\-payloads\fR\.
@@ -96,10 +96,10 @@ masscan [\fIoptions\fR] [<IP|RANGE>...  \-p \fIPORT\fR[,\fIPORT\fR...]]
 \fB\-\-pfring\fR: force the use of the PF_RING driver\. The program will exit if PF_RING DNA drvers are not available\.
 .
 .IP "\(bu" 4
-\fB\-\-resume\-index\fR: the point in the scan at when it was paused\.
+\fB\-\-resume\-index INDEX\fR: the point in the scan at when it was paused\.
 .
 .IP "\(bu" 4
-\fB\-\-resume\-count\fR: the maximum number of probes to send before exiting\. This is useful with the \fB\-\-resume\-index\fR to chop up a scan and split it among multiple instances, though the \fB\-\-shards\fR option might be better\.
+\fB\-\-resume\-count NUM\fR: the maximum number of probes to send before exiting\. This is useful with the \fB\-\-resume\-index\fR to chop up a scan and split it among multiple instances, though the \fB\-\-shards\fR option might be better\.
 .
 .IP "\(bu" 4
 \fB\-\-shards X/Y\fR: splits the scan among instances\. \fBx\fR is the id for this scan, while \fBy\fR is the total number of instances\. For example, \fB\-\-shards 1/2\fR tells an instance to send every other packet, starting with index 0\. Likewise, \fB\-\-shards 2/2\fR sends every other packet, but starting with index 1, so that it doesn\'t overlap with the first example\.

@@ -108,14 +108,14 @@ one port.
   * `--iflist`: list the available network interfaces, and then exits. The
     `-e IFNAME` can then be used with one of the listed adapters.
 
-  * `--retries`: the number of retries to send, at 1 second intervals. Note
+  * `--retries NUM`: the number of retries to send, at 1 second intervals. Note
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
   * `--nmap`: print help about nmap-compatibility alternatives for these
     options.
 
-  * `--pcap-payloads`: read packets from a libpcap file containing packets
+  * `--pcap-payloads FILE`: read packets from a libpcap file containing packets
     and extract the UDP payloads, and associate those payloads with the
 	destination port. These payloads will then be used when sending UDP
 	packets with the matching destination port. Only one payload will
@@ -169,9 +169,9 @@ one port.
   * `--pfring`: force the use of the PF_RING driver. The program will exit
     if PF_RING DNA drvers are not available.
 
-  * `--resume-index`: the point in the scan at when it was paused.
+  * `--resume-index INDEX`: the point in the scan at when it was paused.
 
-  * `--resume-count`: the maximum number of probes to send before exiting.
+  * `--resume-count NUM`: the maximum number of probes to send before exiting.
     This is useful with the `--resume-index` to chop up a scan and split
 	it among multiple instances, though the `--shards` option might be 
 	better.
