@@ -40,7 +40,7 @@ scripting_init(struct Masscan *masscan)
     masscan->scripting.L = L;
     
     /*
-     * TODO: Sanbox stuff
+     * TODO: Sandbox stuff
      */
     /* We need to do a bunch of sandboxing here to prevent hostile or badly
      * written scripts from disrupting the system */

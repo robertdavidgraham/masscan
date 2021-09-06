@@ -130,7 +130,7 @@ status_print(
      * PF_RING doesn't timestamp packets well, so we can't base time from
      * incoming packets. Checking the time ourself is too ugly on per-packet
      * basis. Therefore, we are going to create a global variable that keeps
-     * the time, and update that variable whenever it's convienient. This
+     * the time, and update that variable whenever it's convenient. This
      * is one of those convenient places.
      */
     global_now = time(0);
@@ -179,7 +179,7 @@ status_print(
 
 
     /*
-     * Calulate the time remaining in the scan
+     * Calculate the time remaining in the scan
      */
     time_remaining  = (1.0 - percent_done/100.0) * (max_count / rate);
 

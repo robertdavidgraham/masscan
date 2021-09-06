@@ -1,6 +1,6 @@
 /*
 
-    Rate-limit/throttler: stops us from transmiting too fast.
+    Rate-limit/throttler: stops us from transmitting too fast.
 
     We can send packets at millions of packets/second. This will
     melt most networks. Therefore, we need to throttle or rate-limit
@@ -13,7 +13,7 @@
     NOTE: one complication to watch for is the difference between clock
     time and elapsed time, and that they change. We have to avoid a problem
     where somebody suspends the computer for a few days, then wake it up,
-    at which point the system tries sending a million packets/secon instead
+    at which point the system tries sending a million packets/second instead
     of the desired thousand packets/second.
 */
 #include "main-throttle.h"
@@ -85,7 +85,7 @@ again:
 
     /*
      * If the delay is more than 1-second, then we should reset the system
-     * in order to avoid transmittting too fast.
+     * in order to avoid transmitting too fast.
      */
     if (timestamp - old_timestamp > 1000000) {
         //throttler_start(throttler, throttler->max_rate);
@@ -120,14 +120,14 @@ again:
         /* This is in case of gross failure of the system. This should never
          * actually happen, unless there is a bug. Really, I ought to make
          * this an 'assert()' instead to fail and fix the bug rather than
-         * silently continueing, but I'm too lazy */
+         * silently continuing, but I'm too lazy */
         if (waittime > 0.1)
             waittime = 0.1;
 
         /* Since we've exceeded the speed limit, we should reduce the
          * batch size slightly. We don't do it only by a little bit to
          * avoid over-correcting. We want to converge on the correct
-         * speed gradually. Note that since this happens hundres or
+         * speed gradually. Note that since this happens hundreds or
          * thousands of times a second, the convergence is very fast
          * even with 0.1% adjustment */
         throttler->batch_size *= 0.999;

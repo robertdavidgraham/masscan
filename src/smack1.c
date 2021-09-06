@@ -639,7 +639,7 @@ smack_add_symbols(struct SMACK *smack, const unsigned char *pattern, unsigned pa
 
 /****************************************************************************
  * Make a copy of the pattern. We need to do this for two reasons. The first
- * is that the caller may immediately release th memory in the pattern
+ * is that the caller may immediately release the memory in the pattern
  * he gave us. Therefore, we have to allocate our own memory to hold it.
  * The second is if it's a case-insensitive pattern. In that case, we are
  * going to normalize it to all lower case.
@@ -1045,7 +1045,7 @@ swap_rows(struct SMACK *smack, unsigned row0, unsigned row1)
     memcpy(&smack->m_match[row1],       &swapm,                        sizeof(swapm));
 
 
-    /* Now reset any pointers to the swapped states in exisitng states */
+    /* Now reset any pointers to the swapped states in existing states */
     for (s=0; s<smack->m_state_count; s++) {
         unsigned a;
         for (a=0; a<ALPHABET_SIZE; a++) {
@@ -1087,8 +1087,8 @@ smack_stage3_sort(struct SMACK *smack)
  * KLUDGE KLUDGE KLUDGE KLUDGE KLUDGE
  *
  * This function currently only works in a very narrow case, for the SMB
- * parser, where all the patterns are "anchored" and none overlap with the
- * the SMB patterns. This allows us to modify existing states with the
+ * parser, where all the patterns are "anchored" and none overlap with
+ * the SMB patterns. This allows us to modify existing states with
  * the wildcards, without adding new states. Do do this right we need
  * to duplicate states in order to track wildcards
  ****************************************************************************/

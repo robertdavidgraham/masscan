@@ -129,7 +129,7 @@ int rawsock_send_packet(
  *      returns part of the timestamp, the number of microseconds since the
  *      start of the current second
  * @param packet
- *      returns a pointer to the packet that was read from the netwrok.
+ *      returns a pointer to the packet that was read from the network.
  *      The contents of this pointer are good until the next call to this
  *      function.
  * @return

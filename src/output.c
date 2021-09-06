@@ -180,7 +180,7 @@ open_rotate(struct Output *out, const char *filename)
                 LOG(0, "redis: socket() failed to create socket\n");
                 exit(1);
             }
-            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: ipv6 */
+            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: IPv6 */
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
             x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
@@ -542,7 +542,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen("1308201101-")
                             + strlen(filename)
                             + 1  /* - */
-                            + 1; /* nul */
+                            + 1; /* null */
     new_filename = MALLOC(new_filename_size);
 
     /* Get the proper timestamp for the file */
@@ -660,7 +660,7 @@ is_rotate_time(const struct Output *out, time_t now, FILE *fp)
 }
 
 /***************************************************************************
- * Return the vendor/OUI string matchng the first three bytes of a
+ * Return the vendor/OUI string matching the first three bytes of a
  * MAC address.
  * TODO: this should be read in from a file
  ***************************************************************************/
@@ -885,7 +885,7 @@ output_report_banner(struct Output *out, time_t now,
         fprintf(stdout, "\n");
     }
 
-    /* If not outputing to a file, then don't do anything */
+    /* If not outputting to a file, then don't do anything */
     if (fp == NULL)
         return;
 

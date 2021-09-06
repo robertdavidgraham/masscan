@@ -21,7 +21,7 @@
 #include "rand-blackrock.h"     /* the BlackRock shuffling func */
 #include "rand-lcg.h"           /* the LCG randomization func */
 #include "templ-pkt.h"          /* packet template, that we use to send */
-#include "rawsock.h"            /* api on top of Linux, Windows, Mac OS X*/
+#include "rawsock.h"            /* API on top of Linux, Windows, Mac OS X*/
 #include "logger.h"             /* adjust with -v command-line opt */
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
@@ -37,7 +37,7 @@
 #include "proto-icmp.h"         /* handle ICMP responses */
 #include "proto-udp.h"          /* handle UDP responses */
 #include "syn-cookie.h"         /* for SYN-cookies on send */
-#include "output.h"             /* for outputing results */
+#include "output.h"             /* for outputting results */
 #include "rte-ring.h"           /* producer/consumer ring buffer */
 #include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
 #include "stub-pcap.h"          /* dynamically load libpcap library */
@@ -433,7 +433,7 @@ infinite:
          * <ctrl-c> to exit early */
         parms->my_index = i;
 
-        /* If the user pressed <ctrl-c>, then we need to exit. but, in case
+        /* If the user pressed <ctrl-c>, then we need to exit. In case
          * the user wants to --resume the scan later, we save the current
          * state in a file */
         if (is_tx_done) {
@@ -454,7 +454,7 @@ infinite:
     /*
      * Flush any untransmitted packets. High-speed mechanisms like Windows
      * "sendq" and Linux's "PF_RING" queue packets and transmit many together,
-     * so there may be some packets that we've queueud but not yet transmitted.
+     * so there may be some packets that we've queued but not yet transmitted.
      * This call makes sure they are transmitted.
      */
     rawsock_flush(adapter);
@@ -517,7 +517,7 @@ is_nic_port(const struct Masscan *masscan, unsigned ip)
 static unsigned
 is_ipv6_multicast(ipaddress ip_me)
 {
-    /* If this is an IPv6 multicast packe, one sent to the IPv6
+    /* If this is an IPv6 multicast packet, one sent to the IPv6
      * address with a prefix of FF02::/16 */
     return ip_me.version == 6 && (ip_me.ipv6.hi>>48ULL) == 0xFF02;
 }
@@ -854,7 +854,7 @@ receive_thread(void *v)
                      * get no responses. */
                     stack_ndpv6_incoming_request(stack, &parsed, px, length);
                     continue;
-                case 136: /* Neighbor Advertisment */
+                case 136: /* Neighbor Advertisement */
                     /* TODO: If doing an --ndpscan, the scanner subsystem needs to deal
                      * with these */
                     continue;
@@ -1230,7 +1230,7 @@ main_scan(struct Masscan *masscan)
      */
     if (count_ips > 1000000000ULL && rangelist_count(&masscan->exclude.ipv4) == 0) {
         LOG(0, "FAIL: range too big, need confirmation\n");
-        LOG(0, " [hint] to prevent acccidents, at least one --exclude must be specified\n");
+        LOG(0, " [hint] to prevent accidents, at least one --exclude must be specified\n");
         LOG(0, " [hint] use \"--exclude 255.255.255.255\" as a simple confirmation\n");
         exit(1);
     }
@@ -1517,7 +1517,7 @@ main_scan(struct Masscan *masscan)
         } else {
             /* [AFL-fuzz]
              * Join the threads, which doesn't allow us to print out 
-             * status messages, but allows us to exit cleaningly without
+             * status messages, but allows us to exit cleanly without
              * any waiting */
             for (i=0; i<masscan->nic_count; i++) {
                 struct ThreadPair *parms = &parms_array[i];
@@ -1543,7 +1543,7 @@ main_scan(struct Masscan *masscan)
     if (!masscan->output.is_status_updates) {
         uint64_t usec_now = pixie_gettime();
 
-        printf("%u milliseconds ellapsed\n", (unsigned)((usec_now - usec_start)/1000));
+        printf("%u milliseconds elapsed\n", (unsigned)((usec_now - usec_start)/1000));
     }
     
     LOG(1, "[+] all threads have exited                    \n");

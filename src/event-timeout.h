@@ -17,7 +17,7 @@ struct Timeouts;
 struct TimeoutEntry {
     /**
      * In units of 1/16384 of a second. We use power-of-two units here
-     * to make the "modulus" operatation a simple binary "and".
+     * to make the "modulus" operation a simple binary "and".
      * See the TICKS_FROM_TV() macro for getting the timestamp from
      * the current time.
      */
@@ -79,7 +79,7 @@ timeouts_create(uint64_t timestamp_now);
  *      first before inserting into the new location.
  * @param offset
  *      The 'entry' field above is part of an existing structure. This
- *      tells the offset_of() from the begining of that structure. 
+ *      tells the offset_of() from the beginning of that structure. 
  *      In other words, this tells us the pointer to the object that
  *      that is the subject of the timeout.
  * @param timestamp_expires

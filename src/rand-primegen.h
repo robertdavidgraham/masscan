@@ -18,7 +18,7 @@
  * all these processors. In any case, modern CPUs will automatically
  * prefetch the buffers anyway, significantly lessoning the impact of
  * having a poor number defined here. I tried 16016, but it crashed, and
- * I don't know why, but I don't care because I'm not oing to use such a
+ * I don't know why, but I don't care because I'm not going to use such a
  * large size.
  */
 #define PRIMEGEN_WORDS 4004

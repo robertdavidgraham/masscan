@@ -6,7 +6,7 @@
  that have a minimal amount of resources, such as less than a
  megabyte of RAM.
  
- From a scanner point of view, we want to execute the equivelent
+ From a scanner point of view, we want to execute the equivalent
  of:
     GET /.well-known/core
  This will return the list of additional items that we can access

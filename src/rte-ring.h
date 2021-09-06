@@ -373,7 +373,7 @@ __rte_ring_mp_do_enqueue(struct rte_ring *r, void * const *obj_table,
     }
 
     /*
-     * If there are other enqueues in progress that preceeded us,
+     * If there are other enqueues in progress that preceded us,
      * we need to wait for them to complete
      */
     while (unlikely(r->prod.tail != prod_head))

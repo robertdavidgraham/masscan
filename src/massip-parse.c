@@ -200,7 +200,7 @@ enum {
 
 
 /**
- * Applies a CIDR mask to an IPv4 address to creat a begin/end address.
+ * Applies a CIDR mask to an IPv4 address to create a begin/end address.
  */
 static void
 _ipv4_apply_cidr(unsigned *begin, unsigned *end, unsigned bitcount)
@@ -221,13 +221,13 @@ _ipv4_apply_cidr(unsigned *begin, unsigned *end, unsigned bitcount)
  *      An in/out parameter. This may have some extra bits somewhere in the range.
  *      These will be masked off and set to zero when the function returns.
  * @param end
- *      An out prameter. This will be set to the last address of the range, meaning
+ *      An out parameter. This will be set to the last address of the range, meaning
  *      that all the trailing bits will be set to '1'.
  * @parame prefix
  *      The number of bits of the prefix, from [0..128]. If the value is 0,
  *      then the 'begin' address will be set to all zeroes and the 'end'
  *      address will be set to all ones. If the value is 128,
- *      the 'begin' address is unchanged and hte 'end' address
+ *      the 'begin' address is unchanged and the 'end' address
  *      is set to the same as 'begin'.
  */
 static void
@@ -447,8 +447,8 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                 /* Finish off the trailing number */
                 p->ipv6.tmp[p->ipv6.index++] = (unsigned short)p->tmp;
 
-                /* Do the final processing of this IPv6 address and 
-                 * and prepair for the next one */
+                /* Do the final processing of this IPv6 address and
+                 * prepare for the next one */
                 if (_parser_finish_ipv6(p) != 0) {
                     state = ERROR;
                     length = i;
@@ -476,7 +476,7 @@ _parser_next(struct massip_parser *p, const char *buf, size_t *r_offset, size_t 
                     case ',':
                         result = Found_IPv6;
                         state = 0;
-                        length = i; /* shortend the end to break out of loop */
+                        length = i; /* shorten the end to break out of loop */
                         break;
                     default:
                         state = ERROR;
@@ -1057,7 +1057,7 @@ massip_parse_range(const char *line, size_t *offset, size_t count, struct Range 
     if (offset == NULL)
         offset = &tmp_offset;
     
-    /* Creat e parser object */
+    /* Create e parser object */
     _parser_init(p);
 
     /* Parse the next range from the input */

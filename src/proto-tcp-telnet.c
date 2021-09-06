@@ -21,7 +21,7 @@ struct TelnetOptions options[] = {
     { 0, "binary"},       /* 0x00     Binary */
     { 1, "echo"},             /* 0x01     Echo */
     //{ 2, "recon"},      /* 0x02     Reconnection  */
-    { 3, "sga"},             /* 0x03     Supress go ahead */
+    { 3, "sga"},             /* 0x03     Suppress go ahead */
     //{ 4, "msgsz"},      /* 0x04     Approx Message Size Negotiation */
     { 5, "status"},       /* 0x05     Status  */
     { 6, "timing-mark"},  /* 0x06     Timing Mark */

@@ -2,7 +2,7 @@
 #include "string_s.h"
 
 /******************************************************************************
- * When outputing results, we call this function to print out the type of 
+ * When outputting results, we call this function to print out the type of 
  * banner that we've collected
  ******************************************************************************/
 const char *

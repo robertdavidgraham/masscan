@@ -104,7 +104,7 @@ typedef struct _SYMBOL_INFO {
     ULONG64     Reserved[2];
     ULONG       Index;
     ULONG       Size;
-    ULONG64     ModBase;          // Base Address of module comtaining this symbol
+    ULONG64     ModBase;          // Base Address of module containing this symbol
     ULONG       Flags;
     ULONG64     Value;            // Value of symbol, ValuePresent should be 1
     ULONG64     Address;          // Address of symbol including base address of module

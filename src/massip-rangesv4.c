@@ -8,7 +8,7 @@
  in order to produce random output, but internally, everything is sorted.
  
  Sorting the list allows us to remove duplicates. It also allows us to
- apply the 'exludes' directly to the input list. In other words, other
+ apply the 'excludes' directly to the input list. In other words, other
  scanners typically work by selecting an IP address at random, then checking
  to see if it's been excluded, then skipping it. In this scanner, however,
  we remove all the excluded address from the targets list before we start
@@ -22,7 +22,7 @@
       algorithm, where 'n' is the number of targets, and 'm' is the
       number of excluded ranges.
  Large lists can still take a bit to process. On a fast server with
- 7-million input ranges/addresse and 5000 exclude ranges/addresses,
+ 7-million input ranges/addresses and 5000 exclude ranges/addresses,
  it takes almost 3 seconds to process everything before starting.
  
 */
@@ -255,8 +255,8 @@ rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
 }
 
 /***************************************************************************
- * This searchs a range list and removes that range of IP addresses, if
- * they exist. Sicne the input range can overlap multiple entries, then
+ * This searches a range list and removes that range of IP addresses, if
+ * they exist. Since the input range can overlap multiple entries, then
  * more than one entry can be removed, or truncated. Since the range
  * can be in the middle of an entry in the list, it can actually increase
  * the list size by one, as that entry is split into two entries.
@@ -374,7 +374,7 @@ parse_ipv4(const char *line, unsigned *inout_offset, unsigned max, unsigned *ipv
     *inout_offset = offset;
     *ipv4 = result;
 
-    return 0; /* parse ok */
+    return 0; /* parse OK */
 }
 
 
@@ -430,7 +430,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
     while (offset < max && isspace(line[offset]&0xFF))
         offset++;
 
-    /* If onely one IP address, return that */
+    /* If only one IP address, return that */
     if (offset >= max)
         goto end;
 
@@ -606,7 +606,7 @@ rangelist_exclude(  struct RangeList *targets,
     rangelist_sort(excludes);
     
     /* Go through all target ranges, apply excludes to them
-     * (which may split into two ranges), and add them to the
+     * (which may split into two ranges), and add them to
      * the new target list */
     x = 0;
     for (i=0; i<targets->count; i++) {
@@ -624,7 +624,7 @@ rangelist_exclude(  struct RangeList *targets,
             range_apply_exclude(excludes->list[x], &range, &split);
             
             /* If there is a split, then add the original range to our list
-             * and then set that range to the splitted portion */
+             * and then set that range to the split-ed portion */
             if (range_is_valid(split)) {
                 rangelist_add_range(&newlist, range.begin, range.end);
                 memcpy(&range, &split, sizeof(range));
@@ -840,7 +840,7 @@ regress_pick2()
         }
         rangelist_sort(duplicate);
 
-        /* at this point, the two range lists shouild be identical */
+        /* at this point, the two range lists should be identical */
         REGRESS(targets->count == duplicate->count);
         REGRESS(memcmp(targets->list, duplicate->list, targets->count*sizeof(targets->list[0])) == 0);
 
@@ -898,7 +898,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
                     proto_offset = Templ_ICMP_echo;
                     break;
                 default:
-                    LOG(0, "bad port charactern = %c\n", p[0]);
+                    LOG(0, "bad port character = %c\n", p[0]);
                     *is_error = 1;
                     return p;
             }
@@ -1008,7 +1008,7 @@ rangelist_is_equal(const struct RangeList *lhs, const struct RangeList *rhs)
 }
 
 /***************************************************************************
- * The old way of excuding addresses assume unsorted lists, so had to
+ * The old way of excluding addresses assume unsorted lists, so had to
  * search the entire exclude list for each included address, which is
  * O(n * m), and fails when we have millions of excludes and includes,
  * because it takes forever to apply.
@@ -1056,7 +1056,7 @@ exclude_selftest(void)
     }
     rangelist_sort(&includes1);
     
-    /* Fill the exlcude list, using the same algorithm as above for
+    /* Fill the exclude list, using the same algorithm as above for
      * includes, but now with a different seed. This creates lots of
      * conflicts. */
     seed = 1;
@@ -1082,7 +1082,7 @@ exclude_selftest(void)
         return 1;
 
     
-    /* Now apply the exclude alogirthms, both new and old, to the
+    /* Now apply the exclude algorithms, both new and old, to
      * the include lists. */
     rangelist_exclude(&includes1, &excludes);
     rangelist_exclude2(&includes2, &excludes);
@@ -1105,7 +1105,7 @@ ranges_selftest(void)
 
     REGRESS(regress_pick2() == 0);
 
-    /* Do a spearate test of the 'exclude' feature */
+    /* Do a separate test of the 'exclude' feature */
     if (exclude_selftest())
         return 1;
     

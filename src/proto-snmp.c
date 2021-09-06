@@ -99,7 +99,7 @@ static struct SnmpOid {
  *  - if the high-order bit of the length byte is clear, then it
  *    encodes a length between 0 and 127.
  *  - if the high-order bit is set, then the length byte is a
- *    length-of-length, where the low order bits dicate the number of
+ *    length-of-length, where the low order bits dictate the number of
  *    remaining bytes to be used in the length.
  ****************************************************************************/
 static uint64_t

@@ -42,7 +42,7 @@ static unsigned char default_tcp_template[] =
     "\0\0"          /* source port */
     "\0\0"          /* destination port */
     "\0\0\0\0"      /* sequence number */
-    "\0\0\0\0"      /* ack number */
+    "\0\0\0\0"      /* ACK number */
     "\x50"          /* header length */
     "\x02"          /* SYN */
     "\x04\x0"        /* window fixed to 1024 */
@@ -220,7 +220,7 @@ tcp_checksum2(const unsigned char *px, unsigned offset_ip,
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
 
-    /* tcp checksum */
+    /* TCP checksum */
     for (i=0; i<tcp_length; i += 2) {
         xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
     }
@@ -257,7 +257,7 @@ tcp_ipv4_checksum(struct TemplatePacket *tmpl)
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
 
-    /* tcp checksum */
+    /* TCP checksum */
     for (i=offset_tcp; i<offset_app; i += 2) {
         xsum += px[i]<<8 | px[i+1];
     }
@@ -287,7 +287,7 @@ udp_checksum2(const unsigned char *px, unsigned offset_ip,
     xsum += px[offset_ip + 16] << 8 | px[offset_ip + 17];
     xsum += px[offset_ip + 18] << 8 | px[offset_ip + 19];
 
-    /* tcp checksum */
+    /* TCP checksum */
     for (i=0; i<tcp_length; i += 2) {
         xsum += px[offset_tcp + i]<<8 | px[offset_tcp + i + 1];
     }
@@ -376,7 +376,7 @@ tcp_set_window(unsigned char *px, size_t px_length, unsigned window)
     size_t offset;
     unsigned xsum;
 
-    /* Parse the frame looking for hte TCP header */
+    /* Parse the frame looking for the TCP header */
     x = preprocess_frame(px, (unsigned)px_length, 1 /*enet*/, &parsed);
     if (!x || parsed.found == FOUND_NOTHING)
         return;
@@ -1160,7 +1160,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
             break;
 	case PCAP_DLT_RAW: /* Raw (nothing before IP header) */
 	    break;
-        case PCAP_DLT_ETHERNET: /* Etherent */
+        case PCAP_DLT_ETHERNET: /* Ethernet */
             /* Reset the destination MAC address to be the IPv6 router
              * instead of the IPv4 router, which sometimes are different */
             memcpy(buf + 0, router_mac_ipv6.addr, 6);
