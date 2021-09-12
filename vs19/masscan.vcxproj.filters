@@ -1,0 +1,672 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\proto">
+      <UniqueIdentifier>{fc470d2b-e741-496b-be6e-abf15f4e3573}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\output">
+      <UniqueIdentifier>{3fbe0a31-7af3-4f28-a707-85577ab7be71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rawsock">
+      <UniqueIdentifier>{8ca96e86-20f2-45b3-b1c4-ee9d90f5c6d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\misc">
+      <UniqueIdentifier>{d429351b-2aea-4e6c-a887-c7fb9d6c38b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\pixie">
+      <UniqueIdentifier>{cbd42363-ae71-4e2d-9633-0cb518d5e447}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crypto">
+      <UniqueIdentifier>{59f7bc00-cf14-4114-8801-1c5e72255c29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stubs">
+      <UniqueIdentifier>{a481491e-ed05-4aeb-a49a-d8f071dc1409}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\scripting">
+      <UniqueIdentifier>{ba03c2ec-de65-4581-bef1-8e24f95a8580}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\versioning">
+      <UniqueIdentifier>{09e28aca-e0bd-47a9-b983-5c9f38392d20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\vulncheck">
+      <UniqueIdentifier>{8ad0f675-466a-4fb9-bac6-6fa0c868aefb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\massip">
+      <UniqueIdentifier>{1621e340-1943-47fa-b12e-336a46d19b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{1d9cb2b4-1715-44d0-98e9-745f236c7872}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stack">
+      <UniqueIdentifier>{26588af1-2234-4000-96fc-72f774f584f8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\proto-banner1.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-dns.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-http.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-icmp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-preprocess.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-snmp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ssh.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-udp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-netbios.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-payloads.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-pkt.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-binary.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-null.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-text.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-xml.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-arp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getif.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getip.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getmac.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getroute.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-pcapfile.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\event-timeout.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\logger.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-dedup.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-initadapter.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-listscan.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-ptrace.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-throttle.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rte-ring.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\string_s.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\xring.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ssl.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-blackrock.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-lcg.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rand-primegen.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\smack1.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\smackqueue.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\syn-cookie.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\siphash24.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-binary.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-redis.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\masscan-app.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-conf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-zeroaccess.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ssl-test.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-banout.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-x509.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto-base64.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-backtrace.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-file.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-threads.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pixie-timer.c">
+      <Filter>Source Files\pixie</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp-telnet.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-sctp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-grepable.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ntp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-status.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main-readrange.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto-blackrock2.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-json.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-certs.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-unicornscan.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ftp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-imap4.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-pop3.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-smtp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-vnc.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-interactive.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-filter.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\in-report.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-ndjson.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-memcached.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-smb.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-ntlmssp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-tcp-services.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting-banner.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scripting-masscan.c">
+      <Filter>Source Files\scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-lua.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-pcap.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stub-pfring.c">
+      <Filter>Source Files\stubs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\versioning.c">
+      <Filter>Source Files\versioning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-heartbleed.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-ntp-monlist.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vulncheck-sslv3.c">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\read-service-probes.c">
+      <Filter>Source Files\versioning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-coap.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-tcp-rdp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-oproto.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\misc-rstfilter.c">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\rawsock-getip6.c">
+      <Filter>Source Files\rawsock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-checksum.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-malloc.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-src.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-ndpv6.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-queue.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-parse.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-rangesv4.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-rangesv6.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\massip-addr.c">
+      <Filter>Source Files\massip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\out-hostonly.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-arpv4.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-if.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\proto-arp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-udp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-banner1.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-dns.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-http.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-icmp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-preprocess.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-snmp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ssh.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-netbios.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-dns-parse.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-pkt.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-payloads.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\out-record.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock.h">
+      <Filter>Source Files\rawsock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-pcapfile.h">
+      <Filter>Source Files\rawsock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\xring.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\event-timeout.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\logger.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-dedup.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-ptrace.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-throttle.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\packet-queue.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rte-ring.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\string_s.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ssl.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-primegen.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-blackrock.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rand-lcg.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\smack.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\smackqueue.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\syn-cookie.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\siphash24.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-binary.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-globals.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan-app.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-zeroaccess.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-banout.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-x509.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-base64.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-timer.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-backtrace.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-file.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-sockets.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pixie-threads.h">
+      <Filter>Source Files\pixie</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp-telnet.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-sctp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\masscan-version.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ntp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-status.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\main-readrange.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-interactive.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ftp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-imap4.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-pop3.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-smtp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-vnc.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-filter.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\in-report.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-memcached.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-smb.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-ntlmssp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\out-tcp-services.h">
+      <Filter>Source Files\output</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scripting.h">
+      <Filter>Source Files\scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-lua.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-pcap.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stub-pfring.h">
+      <Filter>Source Files\stubs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\versioning.h">
+      <Filter>Source Files\versioning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vulncheck.h">
+      <Filter>Source Files\vulncheck</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\read-service-probes.h">
+      <Filter>Source Files\versioning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-coap.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-bool.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-tcp-rdp.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-oproto.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\misc-rstfilter.h">
+      <Filter>Source Files\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-checksum.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-malloc.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-src.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-ndpv6.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-queue.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-parse.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-rangesv4.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-rangesv6.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\massip-addr.h">
+      <Filter>Source Files\massip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-arpv4.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\rawsock-adapter.h">
+      <Filter>Source Files\rawsock</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" />
+    <None Include="..\LICENSE">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Makefile">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\doc\masscan.8.markdown">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\VULNINFO.md">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>
