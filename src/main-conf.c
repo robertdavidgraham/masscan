@@ -1370,6 +1370,13 @@ static int SET_nobanners(struct Masscan *masscan, const char *name, const char *
     return CONF_OK;
 }
 
+static int SET_tcpmss(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    masscan->is_tcpmss = parseBoolean(value);
+    return CONF_OK;
+}
+
 static int SET_noreset(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1929,6 +1936,7 @@ struct ConfigParameter config_parameters[] = {
     {"shard",           SET_shard,              0,      {"shards",0}},
     {"banners",         SET_banners,            F_BOOL, {"banner",0}},
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
+    {"tcpmss",          SET_tcpmss,             F_BOOL, {"tcpmss",0}},
     {"retries",         SET_retries,            0,      {"retry", "max-retries", "max-retry", 0}},
     {"noreset",         SET_noreset,            F_BOOL, {0}},
     {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
