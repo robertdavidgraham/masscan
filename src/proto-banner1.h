@@ -140,6 +140,11 @@ struct MEMCACHEDSTUFF {
     unsigned match;
 };
 
+struct MINECRAFTSTUFF {
+    unsigned varint_accum;
+    unsigned bytes_read;
+};
+
 struct Smb72_Negotiate {
     uint16_t DialectIndex;
     uint16_t SecurityMode;
@@ -246,6 +251,7 @@ struct ProtocolState {
         struct MEMCACHEDSTUFF memcached;
         struct SMBSTUFF smb;
         struct RDPSTUFF rdp;
+        struct MINECRAFTSTUFF minecraft;
     } sub;
 };
 

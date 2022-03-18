@@ -42,6 +42,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_TELNET:         return "telnet";
     case PROTO_RDP:            return "rdp";
     case PROTO_HTTP_SERVER:     return "http.server";
+    case PROTO_MINECRAFT: return "minecraft";
             
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
@@ -89,6 +90,7 @@ masscan_string_to_app(const char *str)
         {"telnet",      PROTO_TELNET},
         {"rdp",         PROTO_RDP},
         {"http.server", PROTO_HTTP_SERVER},
+        {"minecraft", PROTO_MINECRAFT},
         {0,0}
     };
     size_t i;
