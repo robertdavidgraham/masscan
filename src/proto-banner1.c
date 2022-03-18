@@ -28,8 +28,6 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "logger.h"
-
 struct Patterns patterns[] = {
     {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
     {"\x00\x00" "**" "\xfe" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
@@ -120,8 +118,6 @@ banner1_parse(
     unsigned offset = 0;
     unsigned proto;
 
-    LOG(0, "Banner parser invoked, tcb_state->app_proto=%d (%s)\n", tcb_state->app_proto, masscan_app_to_string(tcb_state->app_proto));
-
     switch (tcb_state->app_proto) {
     case PROTO_NONE:
     case PROTO_HEUR:
@@ -183,7 +179,6 @@ banner1_parse(
                             banout,
                             more);
         } else {
-            LOG(0, "Default action: blindly appending the banner\n");
             banout_append(banout, PROTO_HEUR, px, length);
         }
         break;
