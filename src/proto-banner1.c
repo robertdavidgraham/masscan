@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stddef.h>
 
-
+#include "logger.h"
 
 struct Patterns patterns[] = {
     {"\x00\x00" "**" "\xff" "SMB", 8, PROTO_SMB, SMACK_ANCHOR_BEGIN | SMACK_WILDCARDS, 0},
@@ -120,6 +120,8 @@ banner1_parse(
     unsigned offset = 0;
     unsigned proto;
 
+    LOG(0, "Banner parser invoked, tcb_state->app_proto=%d (%s)\n", tcb_state->app_proto, masscan_app_to_string(tcb_state->app_proto));
+
     switch (tcb_state->app_proto) {
     case PROTO_NONE:
     case PROTO_HEUR:
@@ -129,8 +131,11 @@ banner1_parse(
                         px, &offset, (unsigned)length);
         if (x != SMACK_NOT_FOUND)
             proto = patterns[x].id;
+        else if(tcb_state->port == 25565)
+            proto = PROTO_MINECRAFT; /* KLUDGE: I don't know how else to recognize Minecraft packets */
         else
             proto = 0xFFFFFFFF;
+
         if (proto != 0xFFFFFFFF
             && !(proto == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
             unsigned i;
@@ -178,6 +183,7 @@ banner1_parse(
                             banout,
                             more);
         } else {
+            LOG(0, "Default action: blindly appending the banner\n");
             banout_append(banout, PROTO_HEUR, px, length);
         }
         break;

@@ -1295,6 +1295,7 @@ application(struct TCP_ConnectionTable *tcpcon,
                     LOGip(4, tcb->ip_them, tcb->port_them, "sending payload %u bytes\n", more.m_length);
                     LOGSEND(tcb, "peer(payload)");
                     tcpcon_send_packet(tcpcon, tcb, 0x18, more.m_payload, more.m_length, ctrl);
+                    LOG(0, "Sending hello length=%d\n", more.m_length);
                     tcb->seqno_me += (uint32_t)more.m_length;
                     tcb->is_payload_dynamic = more.is_payload_dynamic;
                     tcb->tcpstate = STATE_ESTABLISHED_SEND;
@@ -1327,7 +1328,7 @@ application(struct TCP_ConnectionTable *tcpcon,
                  * layer protocol parsers. This is where, in Sockets API, you
                  * might call the 'recv()' function.
                  */
-                fprintf(stderr, "owo what's this? incoming packet\n");
+                LOG(0, "Packet was received\n");
                 parse_banner(
                                    tcpcon,
                                    tcb,

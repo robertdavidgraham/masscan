@@ -1,5 +1,6 @@
 #include "proto-minecraft.h"
 #include "unusedparm.h"
+#include "logger.h"
 
 #define STATE_READ_PACKET_LENGTH 1
 #define STATE_READ_PACKET_ID     2
@@ -25,6 +26,8 @@ static void minecraft_parse(const struct Banner1 *banner1,
                             struct BannerOutput *banout,
                             struct InteractiveData *more) {
     
+    LOG(0, "SUCCESS, minecraft_parse called!\n");
+
     unsigned state = stream_state->state; // assuming this starts out at zero
     struct MINECRAFTSTUFF *mc = &stream_state->sub.minecraft;
     
