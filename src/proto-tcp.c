@@ -1262,7 +1262,7 @@ application(struct TCP_ConnectionTable *tcpcon,
         case App_ReceiveHello:
             if (action == APP_RECV_TIMEOUT) {
                 struct ProtocolParserStream *stream = banner1->payloads.tcp[tcb->port_them];
-                
+
                 if (stream) {
                     struct InteractiveData more = {0};
                     unsigned ctrl = 0;
@@ -1327,6 +1327,7 @@ application(struct TCP_ConnectionTable *tcpcon,
                  * layer protocol parsers. This is where, in Sockets API, you
                  * might call the 'recv()' function.
                  */
+                fprintf(stderr, "owo what's this? incoming packet\n");
                 parse_banner(
                                    tcpcon,
                                    tcb,

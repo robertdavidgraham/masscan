@@ -120,7 +120,6 @@ banner1_parse(
     unsigned offset = 0;
     unsigned proto;
 
-
     switch (tcb_state->app_proto) {
     case PROTO_NONE:
     case PROTO_HEUR:
@@ -245,7 +244,7 @@ banner1_parse(
                             more);
         break;
     case PROTO_MINECRAFT: 
-        banner_http.parse(
+        banner_minecraft.parse(
                         banner1,
                         banner1->http_fields,
                         tcb_state,

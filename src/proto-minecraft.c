@@ -28,6 +28,9 @@ static void minecraft_parse(const struct Banner1 *banner1,
     unsigned state = stream_state->state; // assuming this starts out at zero
     struct MINECRAFTSTUFF *mc = &stream_state->sub.minecraft;
     
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(banner1);
+
     // beware: the `bytes_read` field is reused
     for(size_t i = 0; i < length; i++) {
         switch(state) {
