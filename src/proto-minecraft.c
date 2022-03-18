@@ -31,6 +31,9 @@ static void minecraft_parse(const struct Banner1 *banner1,
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
 
+    // TODO: figure out why the banner gets cut off occasionally
+    // LOG(0, "minecraft_parse: %c%c%c%c\n",px[0],px[1],px[2],px[3]);
+
     // beware: the `bytes_read` field is reused
     for(size_t i = 0; i < length; i++) {
         switch(state) {
