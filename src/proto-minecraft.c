@@ -1,11 +1,10 @@
 #include "proto-minecraft.h"
 #include "unusedparm.h"
 
-#define STATE_READ_PACKET_LENGTH 1
-#define STATE_READ_PACKET_ID     2
-#define STATE_READ_DATA_LENGTH   3
-#define STATE_READ_DATA         4
-#define STATE_MALFORMED          5
+#define STATE_READ_PACKETLEN  1
+#define STATE_READ_PACKET_ID  2
+#define STATE_READ_DATALEN    3
+#define STATE_READ_DATA       4
 
 static const char minecraft_hello[] = {
     0x15, // length
@@ -26,13 +25,9 @@ static void minecraft_parse(const struct Banner1 *banner1,
                             struct InteractiveData *more) {
 
     unsigned state = stream_state->state; // assuming this starts out at zero
-    struct MINECRAFTSTUFF *mc = &stream_state->sub.minecraft;
-    
+
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-
-    // TODO: figure out why the banner gets cut off occasionally
-    // LOG(0, "minecraft_parse: %c%c%c%c\n",px[0],px[1],px[2],px[3]);
 
     // beware: the `bytes_read` field is reused
     for(size_t i = 0; i < length; i++) {
@@ -40,48 +35,33 @@ static void minecraft_parse(const struct Banner1 *banner1,
             
             // initial: set up some stuff
             case 0:
-                mc->varint_accum = 0;
-                mc->bytes_read = 0;
-                state = STATE_READ_PACKET_LENGTH;
+                state = STATE_READ_PACKETLEN;
                 // !!! fall through !!!
 
             // read varint
             // reuse same code for both varints
-            case STATE_READ_PACKET_LENGTH:
-            case STATE_READ_DATA_LENGTH:
-                if(mc->bytes_read > 5) { // varint too long
-                    state = STATE_MALFORMED;
-                    break;
-                }
-                mc->varint_accum |= (unsigned)(px[i] & 0x7f) << (mc->bytes_read * 7);
-                if(!(px[i] & 0x80)) { // msb indicates whether there are more bytes in the varint
-                    if(state == STATE_READ_PACKET_LENGTH) {
+            case STATE_READ_PACKETLEN:
+            case STATE_READ_DATALEN:
+                // MSB indicates whether there are more bytes in the varint
+                // varints shouldn't be longer than 5 bytes, but we don't enforce this restriction
+                if(!(px[i] & 0x80)) {
+                    if(state == STATE_READ_PACKETLEN)
                         state = STATE_READ_PACKET_ID;
-                    } else {
-                        mc->bytes_read = 0;
+                    else
                         state = STATE_READ_DATA;
-                    }
                 }
-                mc->bytes_read++;
                 break;
 
             case STATE_READ_PACKET_ID:
                 if(px[i] == 0x00) {
-                    mc->varint_accum = 0;
-                    mc->bytes_read = 0;
-                    state = STATE_READ_DATA_LENGTH;
+                    state = STATE_READ_DATALEN;
                 } else {
-                    state = STATE_MALFORMED;
+                    state = 0xffffffff;
                 }
                 break;
 
             case STATE_READ_DATA:
-                if(mc->bytes_read == mc->varint_accum) {
-                    state = STATE_MALFORMED;
-                    break;
-                } 
                 banout_append_char(banout, PROTO_MINECRAFT, px[i]);
-                mc->bytes_read++;
                 break;
                 
             // skip to the end if something went wrong
