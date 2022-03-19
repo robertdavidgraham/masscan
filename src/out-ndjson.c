@@ -72,7 +72,12 @@ normalize_ndjson_string(const unsigned char *px, size_t length,
     for (i=0; i<length; i++) {
         unsigned char c = px[i];
 
-        if (isprint(c) && c != '<' && c != '>' && c != '&' && c != '\\' && c != '\"' && c != '\'') {
+        if(c == '\\' || c == '"') {
+            if(offset + 3 < buf_len) {
+                buf[offset++] = '\\';
+                buf[offset++] = px[i];
+            }
+        } else if (isprint(c)) {
             if (offset + 2 < buf_len)
                 buf[offset++] = px[i];
         } else {
@@ -85,6 +90,7 @@ normalize_ndjson_string(const unsigned char *px, size_t length,
                 buf[offset++] = "0123456789abcdef"[px[i]&0xF];
             }
         }
+        
     }
 
     buf[offset] = '\0';
