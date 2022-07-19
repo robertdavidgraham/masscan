@@ -125,6 +125,13 @@ struct FTPSTUFF {
     unsigned is_last:1;
 };
 
+struct MCSTUFF {
+    char * banmem;
+    size_t totalLen;
+    size_t imgstart;
+    size_t imgend;
+    int brackcount;
+};
 
 struct SMTPSTUFF {
     unsigned code;
@@ -246,6 +253,7 @@ struct ProtocolState {
         struct MEMCACHEDSTUFF memcached;
         struct SMBSTUFF smb;
         struct RDPSTUFF rdp;
+        struct MCSTUFF mc;
     } sub;
 };
 
