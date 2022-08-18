@@ -795,7 +795,7 @@ tcpcon_create_tcb(
     ipaddress ip_me, ipaddress ip_them,
     unsigned port_me, unsigned port_them,
     unsigned seqno_me, unsigned seqno_them,
-    unsigned ttl)
+    unsigned ttl, unsigned char iter)
 {
     unsigned index;
     struct TCP_Control_Block tmp;

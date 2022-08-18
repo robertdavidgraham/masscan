@@ -230,6 +230,8 @@ struct RDPSTUFF {
 };
 
 struct ProtocolState {
+    unsigned char iter;
+    unsigned try_next;
     unsigned state;
     unsigned remaining;
     unsigned short port;
