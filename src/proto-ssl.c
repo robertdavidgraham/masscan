@@ -842,6 +842,7 @@ parse_alert(
                               );
                 
                     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
+                    pstate->try_next = 1;
                 }
                 DROPDOWN(i,length,state);
                 
