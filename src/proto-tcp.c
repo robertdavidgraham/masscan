@@ -838,6 +838,7 @@ tcpcon_create_tcb(
         tcb->ackno_them = seqno_me;
         tcb->when_created = global_now;
         tcb->banner1_state.port = tmp.port_them;
+        tcb->banner1_state.iter = iter;
         tcb->ttl = (unsigned char)ttl;
 
         timeout_init(tcb->timeout);
@@ -1262,7 +1263,13 @@ application(struct TCP_ConnectionTable *tcpcon,
         case App_ReceiveHello:
             if (action == APP_RECV_TIMEOUT) {
                 struct ProtocolParserStream *stream = banner1->payloads.tcp[tcb->port_them];
-                
+                for (unsigned i = 0; i < tcb->banner1_state.iter; i++) {
+                    if (stream->next) {
+                        stream = stream->next;
+                    } else {
+                        break;
+                    }
+                }
                 if (stream) {
                     struct InteractiveData more = {0};
                     unsigned ctrl = 0;
@@ -1270,15 +1277,24 @@ application(struct TCP_ConnectionTable *tcpcon,
                     if (stream->transmit_hello)
                         stream->transmit_hello(banner1, &more);
                     else {
-                        more.m_length = (unsigned)banner1->payloads.tcp[tcb->port_them]->hello_length;
-                        more.m_payload = banner1->payloads.tcp[tcb->port_them]->hello;
+                        struct ProtocolParserStream *b = banner1->payloads.tcp[tcb->port_them];
+                        for (unsigned i = 0; i < tcb->banner1_state.iter; i++) {
+                            if (b->next) {
+                                b = b->next;
+                            } else {
+                                break;
+                            }
+                        }
+                        more.m_length = b->hello_length;
+                        more.m_payload = b->hello;
                         more.is_payload_dynamic = 0;
                     }
                     
                     /*
                      * Kludge
                      */
-                    if (banner1->payloads.tcp[tcb->port_them] == &banner_ssl) {
+                    if (banner1->payloads.tcp[tcb->port_them] == &banner_ssl ||
+                            banner1->payloads.tcp[tcb->port_them] == &banner_ssl_12) {
                         tcb->banner1_state.is_sent_sslhello = 1;
                     }
                     
@@ -1333,7 +1349,7 @@ application(struct TCP_ConnectionTable *tcpcon,
                                    payload,
                                    payload_length,
                                    &more);
-                
+
                 /* move their sequence number forward */
                 tcb->seqno_them += (unsigned)payload_length;
                 
@@ -1372,6 +1388,69 @@ application(struct TCP_ConnectionTable *tcpcon,
                                  TICKS_FROM_TV(secs+1,usecs)
                                  );
                     //tcpcon_destroy_tcb(tcpcon, tcb, Reason_StateDone);
+                }
+
+                if (tcb->banner1_state.try_next) {
+                    /* create a new TCP SYN packet in the sending queue */
+                    struct PacketBuffer *new_pkt = 0;
+                    assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
+
+
+                    /* Get a buffer for sending the new packet. This thread doesn't
+                    * send the packet itself. Instead, it formats a packet, then hands
+                    * that packet off to a transmit thread for later transmission. */
+                    new_pkt = stack_get_packetbuffer(tcpcon->stack);
+                    if (new_pkt == NULL) {
+                        static int is_warning_printed = 0;
+                        if (!is_warning_printed) {
+                            LOG(0, "packet buffers empty (should be impossible)\n");
+                            is_warning_printed = 1;
+                        }
+                        fflush(stdout);
+
+                        /* FIXME: I'm no sure the best way to handle this.
+                        * This would result from a bug in the code,
+                        * but I'm not sure what should be done in response */
+                        pixie_usleep(100); /* no packet available */
+                    }
+                    if (new_pkt == NULL)
+                        return;
+
+                    /* Format the packet as requested. Note that there are really only
+                    * four types of packets:
+                    * 1. a SYN-ACK packet with no payload
+                    * 2. an ACK packet with no payload
+                    * 3. a RST packet with no payload
+                    * 4. a PSH-ACK packet WITH PAYLOAD
+                    */
+                    new_pkt->length = tcp_create_packet(
+                        tcpcon->pkt_template,
+                        tcb->ip_them, tcb->port_them,
+                        tcb->ip_me, tcb->port_me + 1,
+                        /* XXX: the trick here is to use a different key for the syn-cookie
+                         * in order to differentiate in the receiving thread the different
+                         * protocol attempts we are doing on the same ip:port
+                         */
+                        syn_cookie_ipv4(
+                                tcb->ip_them.ipv4, tcb->port_them,
+                                tcb->ip_me.ipv4, tcb->port_me,
+                                tcpcon->entropy + tcb->banner1_state.iter + 1
+                        ),
+                        0,
+                        /* SYN */
+                        0x002,
+                        0, 0,
+                        new_pkt->px, sizeof(new_pkt->px)
+                    );
+
+                    if (tcpcon->stack->src->port.last < tcb->port_me + 1) {
+                        tcpcon->stack->src->port.last = tcb->port_me + 1;
+                    }
+                    /* Put this buffer on the transmit queue. Remember: transmits happen
+                    * from a transmit-thread only, and this function is being called
+                    * from a receive-thread. Therefore, instead of transmiting ourselves,
+                    * we hae to queue it up for later transmission. */
+                    stack_transmit_packetbuffer(tcpcon->stack, new_pkt);
                 }
             }
             break;
