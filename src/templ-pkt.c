@@ -425,6 +425,7 @@ tcp_create_packet(
         unsigned char *px, size_t px_length)
 {
     uint64_t xsum;
+
     if (ip_them.version == 4) {
         unsigned ip_id = ip_them.ipv4 ^ port_them ^ seqno;
         unsigned offset_ip = tmpl->ipv4.offset_ip;
@@ -439,8 +440,8 @@ tcp_create_packet(
             return 0;
         }
 
-        memcpy(px + 0,              tmpl->ipv4.packet,  tmpl->ipv4.length);
-        memcpy(px + offset_payload, payload,            payload_length);
+        memcpy(px + 0, tmpl->ipv4.packet, tmpl->ipv4.length);
+        memcpy(px + offset_payload, payload, payload_length);
         old_len = px[offset_ip+2]<<8 | px[offset_ip+3];
 
         /*
@@ -1144,7 +1145,7 @@ _template_init_ipv6(struct TemplatePacket *tmpl, macaddress_t router_mac_ipv6, u
      * contents = everything after IPv4/IPv6 header */
     offset_tcp6 = offset_ip + 40;
     memmove(buf + offset_tcp6,
-            buf + offset_tcp,       
+            buf + offset_tcp,
             payload_length
             );
 
