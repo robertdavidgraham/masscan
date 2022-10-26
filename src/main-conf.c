@@ -249,16 +249,26 @@ count_cidr6_bits(struct Range6 range)
 {
     uint64_t i;
 
-    /* Kludge: can't handle more than 64-bits of CIDR ranges */
-    if (range.begin.hi != range.end.hi)
-        return 0;
+    /* the easy case: hi part of addresses are the same */
+    if (range.begin.hi == range.end.hi) {
+        for (i=0; i<64; i++) {
+            uint64_t mask = 0xFFFFFFFFffffffffull >> i;
 
+            if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
+                if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
+                    return (unsigned)64 + i;
+            }
+        }
+        return 0;
+    }
+    /* the tricky case: hi parts differ */
     for (i=0; i<64; i++) {
         uint64_t mask = 0xFFFFFFFFffffffffull >> i;
 
-        if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
-            if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
-                return (unsigned)64 + i;
+        if ((range.begin.hi & ~mask) == (range.end.hi & ~mask)) {
+            if ((range.begin.hi & mask) == 0 && range.begin.lo == 0 && 
+                    (range.end.hi & mask) == mask && range.end.lo == 0xFFFFFFFFffffffffull)
+                return (unsigned)i;
         }
     }
 
