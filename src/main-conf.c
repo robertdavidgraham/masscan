@@ -250,7 +250,7 @@ count_cidr6_bits(struct Range6 range)
     uint64_t i;
 
     /* Kludge: can't handle more than 64-bits of CIDR ranges */
-    if (range.begin.hi != range.begin.lo)
+    if (range.begin.hi != range.end.hi)
         return 0;
 
     for (i=0; i<64; i++) {
@@ -258,7 +258,7 @@ count_cidr6_bits(struct Range6 range)
 
         if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
             if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
-                return (unsigned)i;
+                return (unsigned)64 + i;
         }
     }
 
