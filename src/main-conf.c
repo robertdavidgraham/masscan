@@ -2461,6 +2461,8 @@ masscan_set_parameter(struct Masscan *masscan,
         strcpy_s(masscan->output.filename, 
                  sizeof(masscan->output.filename), 
                  "<redis>");
+    } else if(EQUALS("redis-pwd", name)) {
+        masscan->redis.password = strdup(value);
     } else if (EQUALS("release-memory", name)) {
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
