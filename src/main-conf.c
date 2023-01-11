@@ -3242,7 +3242,10 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
             }
         }
         fprintf(fp, "\n");
-    }    
+    }
+    if (masscan->is_tcpmss) {
+      fprintf(fp, "tcpmss = true\n");
+    }
 }
 
 
