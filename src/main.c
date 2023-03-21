@@ -217,7 +217,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     struct TemplateSet pkt_template = templ_copy(parms->tmplset);
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
-    unsigned increment = (masscan->shard.of-1) + masscan->nic_count;
+    unsigned increment = masscan->shard.of * masscan->nic_count;
     unsigned src_ipv4;
     unsigned src_ipv4_mask;
     unsigned src_port;
@@ -269,7 +269,7 @@ infinite:
      * a little bit past the end when we have --retries. Yet another
      * thing to do here is deal with multiple network adapters, which
      * is essentially the same logic as shards. */
-    start = masscan->resume.index + (masscan->shard.one-1) + parms->nic_index;
+    start = masscan->resume.index + (masscan->shard.one-1) * masscan->nic_count + parms->nic_index;
     end = range;
     if (masscan->resume.count && end > start + masscan->resume.count)
         end = start + masscan->resume.count;
