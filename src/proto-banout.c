@@ -359,6 +359,69 @@ banout_append(struct BannerOutput *banout, unsigned proto,
 
 }
 
+/***************************************************************************
+ ***************************************************************************/
+unsigned
+banout_replacefirst(struct BannerOutput *banout, unsigned proto,
+                    const char *string, const char *replace)
+{
+    struct BannerOutput *p;
+
+    char* first_instance;
+    size_t string_length;
+    size_t replace_length;
+
+    if (string == NULL)
+        return 0;
+
+    string_length = strlen(string);
+
+    if (replace == NULL)
+        return 0;
+
+    replace_length = strlen(replace);
+
+    /*
+     * Get the matching record for the protocol (e.g. HTML, SSL, etc.).
+     */
+    p = banout_find_proto(banout, proto);
+    if (p == NULL) {
+        return 0;
+    }
+
+    /*
+     * Find the string in the banout.
+     */
+    first_instance = strstr((char*) p->banner, string);
+    size_t offset = ((unsigned) (first_instance - (char*) p->banner));
+    if (first_instance == NULL) {
+        return 0;
+    }
+
+    /*
+     * If the current object isn't big enough, expand it
+     */
+    while (p->length + replace_length - string_length >= p->max_length) {
+        p = banout_expand(banout, p);
+    }
+
+    /*
+     * Now that we are assured there is enough space, do the replacement
+     */
+    p->length = (unsigned)(p->length + replace_length - string_length);  // can't be <0 because strstr != NULL
+    memcpy(
+        first_instance + replace_length,
+        first_instance + string_length,
+        p->length - offset - string_length
+    );
+    memcpy(
+        first_instance,
+        replace,
+        replace_length
+    );
+    return 1;
+}
+
 /*****************************************************************************
  *****************************************************************************/
 static const char *b64 =

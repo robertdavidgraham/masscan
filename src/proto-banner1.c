@@ -619,7 +619,7 @@ banner1_create(void)
     banner_smtp.init(b);
     banner_ssh.init(b);
     banner_ssl.init(b);
-    banner_ssl_12.init(b);
+    banner_tls_13.init(b);
     banner_smb0.init(b);
     banner_smb1.init(b);
     banner_telnet.init(b);
@@ -797,12 +797,6 @@ banner1_selftest()
             return 1;
         }
 
-        x = banner_ssl_12.selftest();
-        if (x) {
-            fprintf(stderr, "SSL banner: selftest failed\n");
-            return 1;
-        }
-        
         x = banner_smb1.selftest();
         if (x) {
             fprintf(stderr, "SMB banner: selftest failed\n");

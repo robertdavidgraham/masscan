@@ -149,6 +149,7 @@ parse_server_hello(
         EXT_LEN0, EXT_LEN1,
         EXT_DATA,
         EXT_DATA_HEARTBEAT,
+        EXT_DATA_SUPPORTED_VERSIONS,
         UNKNOWN,
     };
 
@@ -268,6 +269,8 @@ parse_server_hello(
         remaining |= px[i];
         DROPDOWN(i,length,state);
   
+    /* Handling of the various TLS extensions */
+
     case EXT_TAG0:
     ext_tag:
         if (remaining < 4) {
@@ -290,27 +293,20 @@ parse_server_hello(
     case EXT_LEN1:
         hello->ext_remaining |= px[i];
         remaining--;
+        // Next step depends on the tag
         switch (hello->ext_tag) {
             case 0x000f: /* heartbeat */
                 state = EXT_DATA_HEARTBEAT;
                 continue;
+            case 0x002b: /* supported_versions */
+                state = EXT_DATA_SUPPORTED_VERSIONS;
+                continue;
         }
         DROPDOWN(i,length,state);
-        
-    case EXT_DATA:
-        if (hello->ext_remaining == 0) {
-            state = EXT_TAG0;
-            goto ext_tag;
-        }
-        if (remaining == 0) {
-            state = UNKNOWN;
-            continue;
-        }
-        remaining--;
-        hello->ext_remaining--;
-        continue;
 
+    case EXT_DATA:
     case EXT_DATA_HEARTBEAT:
+    case EXT_DATA_SUPPORTED_VERSIONS:
         if (hello->ext_remaining == 0) {
             state = EXT_TAG0;
             goto ext_tag;
@@ -321,10 +317,24 @@ parse_server_hello(
         }
         remaining--;
         hello->ext_remaining--;
-        if (px[i]) {
-            banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
+
+        switch (state) {
+            case EXT_DATA_HEARTBEAT:
+                if (px[i]) {
+                    banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
+                }
+                state = EXT_DATA;
+            case EXT_DATA_SUPPORTED_VERSIONS:
+                if (hello->ext_remaining) {
+                    hello->version_major = px[i];
+                } else {
+                    hello->version_minor = px[i];
+                    if ((hello->version_major<<8 | hello->version_minor) == 0x0304) { // TLS 1.3
+                        banout_replacefirst(banout, PROTO_SSL3, "TLS/1.2", "TLS/1.3");
+                    }
+                }
+            default:
         }
-        state = EXT_DATA;
         continue;
 
     
@@ -1073,7 +1083,13 @@ ssl_init(struct Banner1 *banner1)
  * TODO: we need to make this dynamically generated, so that users can
  * select various options.
  *****************************************************************************/
-static const char
+
+/*
+ * By setting the TLS record version to 1.0, and the ClientHello version to 1.2,
+ * this packet support for TLS 1.0, 1.1 and 1.2.
+ */
+
+static const unsigned char
 ssl_hello_template[] =
 "\x16\x03\x01\x00\xc1"          /* TLSv1.0 record layer */
 "\x01" /* type = client-hello */
@@ -1104,15 +1120,11 @@ ssl_hello_template[] =
 "\x02\x02\x04\x02\x05\x02\x06\x02"
 ;
 
-/*****************************************************************************
- * This is the template "Client Hello" packet that is sent to the server
- * to initiate the SSL connection. Right now, it's statically just transmitted
- * on to the wire.
- * TODO: we need to make this dynamically generated, so that users can
- * select various options.
- *****************************************************************************/
-static const char
-ssl_12_hello_template[] =
+/*
+ * If the previous packet didn't work, the server is most likely TLS 1.3 only.
+ */
+static const unsigned char
+tls_13_hello_template[] =
 "\x16\x03\x01\x01\x1a"
 "\x01"
 "\x00\x01\x16"
@@ -1432,13 +1444,16 @@ ssl_selftest(void)
  * This is the 'plugin' structure that registers callbacks for this parser in
  * the main system.
  *****************************************************************************/
-struct ProtocolParserStream banner_ssl_12 = {
-    "ssl", 443, ssl_12_hello_template, sizeof(ssl_12_hello_template)-1, 0,
+
+// if TLS 1.0-1.2 didn't work, try TLS 1.3
+struct ProtocolParserStream banner_tls_13 = {
+    "ssl", 443, tls_13_hello_template, sizeof(tls_13_hello_template)-1, 0,
     ssl_selftest,
     ssl_init,
     ssl_parse_record,
 };
 
+// this will be tried first: try TLS 1.0-TLS 1.2
 struct ProtocolParserStream banner_ssl = {
     "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1,
     SF__close, /* send FIN after the hello */
@@ -1447,5 +1462,5 @@ struct ProtocolParserStream banner_ssl = {
     ssl_parse_record,
     0,
     0,
-    &banner_ssl_12,
+    &banner_tls_13,
 };
