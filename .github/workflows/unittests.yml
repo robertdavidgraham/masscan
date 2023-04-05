@@ -1,0 +1,27 @@
+name: masscan unit tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  regress:
+    name: Run regression tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout masscan
+        uses: actions/checkout@v3
+      - name: Install libpcap-dev
+        if: ${{ vars.RUNNER_OS == 'Linux' }}
+        run: sudo apt-get install -y libpcap-dev
+      - name: Run regression tests
+        run: make test
