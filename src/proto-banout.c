@@ -135,7 +135,7 @@ banout_is_contains(const struct BannerOutput *banout, unsigned proto,
 unsigned
 banout_string_length(const struct BannerOutput *banout, unsigned proto)
 {
-    while (banout && banout->protocol != proto)
+    while (banout && (banout->protocol&0xFFFF) != proto)
         banout = banout->next;
 
     if (banout)

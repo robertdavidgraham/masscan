@@ -8,6 +8,9 @@
 #include "proto-x509.h"
 #include "proto-spnego.h"
 
+#include "crypto-aes256.h"
+#include "crypto-rfc6234.h"
+
 struct stack_handle_t;
 struct Banner1;
 struct StreamState;
@@ -50,16 +53,27 @@ struct BannerBase64
     unsigned temp:24;
 };
 
+struct AES_CTR_STATE {
+    unsigned char counter[16]; // 128 bits
+    struct aes256_context_t key;
+    unsigned char buf[16];
+    unsigned char offset; // how much the buf is filled
+};
+
 struct SSL_SERVER_HELLO {
     unsigned state;
     unsigned remaining;
     unsigned timestamp;
     unsigned short cipher_suite;
-    unsigned short ext_tag;
-    unsigned short ext_remaining;
+    struct {
+        unsigned short tag;
+        unsigned short len;
+        unsigned short i;
+    } ext;
     unsigned char compression_method;
     unsigned char version_major;
     unsigned char version_minor;
+    unsigned char kx_data[32]; // x25519 server pubkey
 };
 struct SSL_SERVER_CERT {
     unsigned state;
@@ -73,17 +87,33 @@ struct SSL_SERVER_ALERT {
     unsigned char level;
     unsigned char description;
 };
+struct SSL_APPLICATION_DATA {
+    unsigned state;
+    struct AES_CTR_STATE aes;
+};
 
 struct SSLRECORD {
     unsigned char type;
     unsigned char version_major;
     unsigned char version_minor;
+    /* "sequence number is set to zero at the beginning of a
+     * connection and whenever the key is changed" */
+    unsigned long seqnum;
 
     struct {
         unsigned state;
         unsigned char type;
         unsigned remaining;
+        unsigned negotiation_state;
+        // For TLS 1.3, one must do the SHA384 of clienthello + serverhello
+        SHA384Context sha384ctx;
+        aes256_key_t client_handshake_key;
+        aes256_key_t server_handshake_key;
+        unsigned char client_handshake_iv[12];
+        unsigned char server_handshake_iv[12];
     } handshake;
+
+    struct SSL_APPLICATION_DATA application_data;
 
     union {
         struct {

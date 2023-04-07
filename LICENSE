@@ -659,3 +659,14 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
+
+REDISTRIBUTION NOTE:
+
+A few files listed below are released under different licenses (that are
+compatible with AGPL3), as specified in the files themselves, and are
+redistributed alongside this software:
+
+- crypto-curve25519.c/h: public domain
+- siphash24.c/h: public domain
+- crypto-rfc6234.c/h: simplified BSD license
+- crypto-aes256.c/h: MIT license
