@@ -1426,15 +1426,15 @@ application(struct TCP_ConnectionTable *tcpcon,
                     new_pkt->length = tcp_create_packet(
                         tcpcon->pkt_template,
                         tcb->ip_them, tcb->port_them,
-                        tcb->ip_me, tcb->port_me + 1,
+                        tcb->ip_me, tcb->port_me + tcb->banner1_state.iter,
                         /* XXX: the trick here is to use a different key for the syn-cookie
                          * in order to differentiate in the receiving thread the different
                          * protocol attempts we are doing on the same ip:port
                          */
                         syn_cookie_ipv4(
                                 tcb->ip_them.ipv4, tcb->port_them,
-                                tcb->ip_me.ipv4, tcb->port_me,
-                                tcpcon->entropy + tcb->banner1_state.iter + 1
+                                tcb->ip_me.ipv4, tcb->port_me + tcb->banner1_state.iter,
+                                tcpcon->entropy + tcb->banner1_state.iter
                         ),
                         0,
                         /* SYN */
@@ -1443,8 +1443,8 @@ application(struct TCP_ConnectionTable *tcpcon,
                         new_pkt->px, sizeof(new_pkt->px)
                     );
 
-                    if (tcpcon->stack->src->port.last < tcb->port_me + 1) {
-                        tcpcon->stack->src->port.last = tcb->port_me + 1;
+                    if (tcpcon->stack->src->port.last < tcb->port_me + tcb->banner1_state.iter) {
+                        tcpcon->stack->src->port.last = tcb->port_me + tcb->banner1_state.iter;
                     }
                     /* Put this buffer on the transmit queue. Remember: transmits happen
                     * from a transmit-thread only, and this function is being called
