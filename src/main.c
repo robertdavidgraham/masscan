@@ -1799,6 +1799,11 @@ int main(int argc, char *argv[])
         exit(0);
         break;
 
+    case Operation_EchoCidr:
+        masscan_echo_cidr(masscan, stdout, 0);
+        exit(0);
+        break;
+
     case Operation_Selftest:
         /*
          * Do a regression test of all the significant units

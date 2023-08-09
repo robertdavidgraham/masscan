@@ -36,6 +36,7 @@ enum Operation {
     Operation_Benchmark = 8,        /* --benchmark */
     Operation_Echo = 9,             /* --echo */
     Operation_EchoAll = 10,         /* --echo-all */
+    Operation_EchoCidr = 11,        /* --echo-cidr */
 };
 
 /**
@@ -534,5 +535,11 @@ masscan_initialize_adapter(
  */
 void
 masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
+
+/**
+ * Echoes the list of CIDR ranges to scan.
+ */
+void
+masscan_echo_cidr(struct Masscan *masscan, FILE *fp, unsigned is_echo_all);
 
 #endif
