@@ -291,34 +291,46 @@ count_cidr_bits(struct Range *range, bool *exact)
 /***************************************************************************
  ***************************************************************************/
 static unsigned
-count_cidr6_bits(struct Range6 range)
+count_cidr6_bits(struct Range6 *range, bool *exact)
 {
+    /* for the comments of this function, see  count_cidr_bits */
+    *exact = false;
     uint64_t i;
 
-    /* the easy case: hi part of addresses are the same */
-    if (range.begin.hi == range.end.hi) {
-        for (i=0; i<64; i++) {
-            uint64_t mask = 0xFFFFFFFFffffffffull >> i;
-
-            if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
-                if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
-                    return (unsigned)64 + i;
+    for (i=0; i<128; i++) {
+        uint64_t mask_hi;
+        uint64_t mask_lo;
+        if (i < 64) {
+            mask_hi = 0xFFFFFFFFffffffffull >> i;
+            mask_lo = 0xFFFFFFFFffffffffull;
+        } else {
+            mask_hi = 0;
+            mask_lo = 0xFFFFFFFFffffffffull >> (i - 64);
+        }
+        if ((range->begin.hi & mask_hi) != 0 || (range->begin.lo & mask_lo) != 0) {
+            continue;
+        }
+        if ((range->begin.hi & ~mask_hi) == (range->end.hi & ~mask_hi) &&
+                (range->begin.lo & ~mask_lo) == (range->end.lo & ~mask_lo)) {
+            if (((range->end.hi & mask_hi) == mask_hi) && ((range->end.lo & mask_lo) == mask_lo)) {
+                *exact = true;
+                return (unsigned) i;
             }
-        }
-        return 0;
-    }
-    /* the tricky case: hi parts differ */
-    for (i=0; i<64; i++) {
-        uint64_t mask = 0xFFFFFFFFffffffffull >> i;
-
-        if ((range.begin.hi & ~mask) == (range.end.hi & ~mask)) {
-            if ((range.begin.hi & mask) == 0 && range.begin.lo == 0 && 
-                    (range.end.hi & mask) == mask && range.end.lo == 0xFFFFFFFFffffffffull)
-                return (unsigned)i;
+        } else {
+            *exact = false;
+            range->begin.hi = range->begin.hi + mask_hi;
+            if (range->begin.lo >= 0xffffffffffffffff - 1 - mask_lo) {
+                range->begin.hi += 1;
+            }
+            range->begin.lo = range->begin.lo + mask_lo + 1;
+            return (unsigned) i;
         }
     }
-
-    return 0;
+    range->begin.lo = range->begin.lo + 1;
+    if (range->begin.lo == 0) {
+        range->begin.hi = range->begin.hi + 1;
+    }
+    return 128;
 }
 
 
@@ -3278,14 +3290,15 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         fprintf(fp, "\n");
     }
     for (i=0; i<masscan->targets.ipv6.count; i++) {
+        bool exact = false;
         struct Range6 range = masscan->targets.ipv6.list[i];
         ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
         
         fprintf(fp, "range = %s", fmt.string);
         if (!ipv6address_is_equal(range.begin, range.end)) {
-            unsigned cidr_bits = count_cidr6_bits(range);
+            unsigned cidr_bits = count_cidr6_bits(&range, &exact);
             
-            if (cidr_bits) {
+            if (exact && cidr_bits) {
                 fprintf(fp, "/%u", cidr_bits);
             } else {
                 fmt = ipv6address_fmt(range.end);
@@ -3328,10 +3341,19 @@ masscan_echo_cidr(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
     }
     for (i=0; i<masscan->targets.ipv6.count; i++) {
         struct Range6 range = masscan->targets.ipv6.list[i];
-        ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
-        unsigned cidr_bits = count_cidr6_bits(range);
-        fprintf(fp, "%s/%u", fmt.string, cidr_bits);
-        fprintf(fp, "\n");
+        bool exact = false;
+        while (!exact) {
+            ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
+            fprintf(fp, "%s", fmt.string);
+            if (range.begin.hi == range.end.hi && range.begin.lo == range.end.lo) {
+                fprintf(fp, "/128");
+                exact = true;
+            } else {
+                unsigned cidr_bits = count_cidr6_bits(&range, &exact);
+                fprintf(fp, "/%u", cidr_bits);
+            }
+            fprintf(fp, "\n");
+        }
     }
 }
 
