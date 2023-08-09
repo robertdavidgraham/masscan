@@ -239,25 +239,27 @@ count_cidr_bits(struct Range *range, bool *exact)
 
     for (i=0; i<32; i++) {
         unsigned mask = 0xFFFFFFFF >> i;
-
+        if ((range->begin & mask) != 0) {
+            continue;
+        }
         /* if subnets are equal */
         if ((range->begin & ~mask) == (range->end & ~mask)) {
-            if ((range->begin & mask) == 0 && (range->end & mask) == mask) {
+            if ((range->end & mask) == mask) {
                 /* mask is exact, we englobe the whole range */
                 *exact = true;
                 return i;
             }
-        } else if ((range->begin & ~mask) != (range->end & ~mask)) {
+        } else {
             /* if subnets are different, we have been too far one bit */
             *exact = false;
             /* set the new range begining (that is not included
-             * in the mask we return */
+             * in the mask we return) */
             range->begin = range->begin + mask + 1;
             return i;
         }
     }
-
-    return 0;
+    range->begin += 1;
+    return 32;
 }
 
 /***************************************************************************
