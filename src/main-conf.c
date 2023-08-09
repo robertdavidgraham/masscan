@@ -239,18 +239,44 @@ count_cidr_bits(struct Range *range, bool *exact)
 
     for (i=0; i<32; i++) {
         unsigned mask = 0xFFFFFFFF >> i;
+        /* example:
+         * - beg = 1.1.0.0
+         *  - mask of 1 bit:  beg & mask == 1.1.0.0 & 0.1.1.1 = 0.1.0.0 => != 0
+         *  - mask of 2 bits: beg & mask == 1.1.0.0 & 0.0.1.1 = 0.0.0.0
+         */
         if ((range->begin & mask) != 0) {
             continue;
         }
-        /* if subnets are equal */
+        /* if subnets are equal
+         * example:
+         * - beg = 1.1.0.0
+         * - end = 1.1.1.0
+         * - mask of 2 bits: beg & ~mask == end & ~mask
+         */
         if ((range->begin & ~mask) == (range->end & ~mask)) {
+            /* example:
+             * - beg = 1.1.0.0
+             * - end = 1.1.1.0
+             * - mask of 2 bits: beg & ~mask == end & ~mask
+             *   BUT end & mask = 0.0.1.0 != mask
+             * => we include to many IPs => must reduce the mask
+             * => therefore, one more loop iteration (at least)
+             */
             if ((range->end & mask) == mask) {
                 /* mask is exact, we englobe the whole range */
                 *exact = true;
                 return i;
             }
         } else {
-            /* if subnets are different, we have been too far one bit */
+            /* if subnets are different, we are not exact
+             * example:
+             * - beg = 0.1.0.0
+             * - end = 1.1.1.0
+             * - mask of 2 bits: beg & ~mask = 0.1.0.0
+             *                   end & ~mask = 1.1.0.0
+             *  => mask of 2 bits does not cover the whole range
+             *  must start again from 1.0.0.0 (first IP not covered)
+             */
             *exact = false;
             /* set the new range begining (that is not included
              * in the mask we return) */
