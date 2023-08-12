@@ -1,4 +1,9 @@
-# IVRE's fork
+[![Join the chat at Gitter](https://badges.gitter.im/ivre/ivre.svg)](https://gitter.im/ivre/ivre)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/IvreRocks.svg?logo=twitter)](https://twitter.com/IvreRocks)
+[![Follow on Mastodon](https://img.shields.io/mastodon/follow/109349639355238149?domain=https%3A%2F%2Finfosec.exchange&style=social)](https://infosec.exchange/@ivre)
+[![Masscan unittests](https://github.com/ivre/masscan/actions/workflows/unittests.yml/badge.svg?branch=master)](https://github.com/ivre/masscan/actions/workflows/unittests.yml/?branch=master)
+
+# MASSCAN: IVRE's fork
 
 This fork is maintained by the IVRE project. **If you are looking for
 the original Masscan, see the
