@@ -3467,7 +3467,7 @@ mainconf_selftest()
         exact = true;
         range.begin = 1;
         range.end = 13;
-        if (count_cidr_bits(&range, &exact) != 0 || !exact)
+        if (count_cidr_bits(&range, &exact) != 32 || exact)
             return 1;
 
 

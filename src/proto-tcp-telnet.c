@@ -311,7 +311,7 @@ telnet_selftest(void)
         const char *input;
         const char *output;
     } tests[] = {
-        {"\xff\xfd\x1flogin:", "login"},
+        {"\xff\xfd\x1flogin:", "login:"},
         {"\xff\xfd\x27\xff\xfd\x18 ", " "},
         {
             "\xff\xfb\x25\xff\xfd\x03\xff\xfb\x18\xff\xfb\x1f\xff\xfb\x20\xff" \
@@ -326,7 +326,7 @@ telnet_selftest(void)
         },
         {   "\xff\xfd\x01\xff\xfd\x1f\xff\xfd\x21\xff\xfb\x01\xff\xfb\x03\x46"
             "\x36\x37\x30\x0d\x0a\x0d\x4c\x6f\x67\x69\x6e\x3a\x20",
-            "F670\\n Login:"
+            "F670\r\n\rLogin:"
         },
         {0,0}
     };
