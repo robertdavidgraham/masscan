@@ -2028,7 +2028,7 @@ struct ConfigParameter config_parameters[] = {
     {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
     {"capture",         SET_capture,            0,      {0}},
-    {"nocapture",       SET_capture,            0,      {0}},
+    {"nocapture",       SET_capture,            0,      {"no-capture", 0}},
     {"SPACE",           SET_space,              0,      {0}},
     {"output-filename", SET_output_filename,    0,      {"output-file",0}},
     {"output-format",   SET_output_format,      0,      {0}},
