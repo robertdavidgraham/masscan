@@ -371,6 +371,7 @@ if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
             "libpcap.so",
             "libpcap.A.dylib",
             "libpcap.dylib",
+            "libpcap.so.1",
             "libpcap.so.0.9.5",
             "libpcap.so.0.9.4",
             "libpcap.so.0.8",
