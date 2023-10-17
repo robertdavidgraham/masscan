@@ -31,7 +31,7 @@ static unsigned char default_tcp_template[] =
     "\x08\x00"      /* Ethernet type: IPv4 */
     "\x45"          /* IP type */
     "\x00"
-    "\x00\x28"      /* total length = 40 bytes */
+    "\x00\x2c"      /* total length = 44 bytes  -- needs to be changed if options are added! */
     "\x00\x00"      /* identification */
     "\x00\x00"      /* fragmentation flags */
     "\xFF\x06"      /* TTL=255, proto=TCP */
@@ -43,7 +43,7 @@ static unsigned char default_tcp_template[] =
     "\0\0"          /* destination port */
     "\0\0\0\0"      /* sequence number */
     "\0\0\0\0"      /* ACK number */
-    "\x50"          /* header length */
+    "\x60"          /* header length -- needs to be changed if options are added! */
     "\x02"          /* SYN */
     "\x04\x0"        /* window fixed to 1024 */
     "\xFF\xFF"      /* checksum */
