@@ -357,9 +357,9 @@ struct TemplateSet templ_copy(const struct TemplateSet *templset)
     for (i=0; i<templset->count; i++) {
         const struct TemplatePacket *p1 = &templset->pkts[i];
         struct TemplatePacket *p2 = &result.pkts[i];
-        p2->ipv4.packet = MALLOC(p2->ipv4.length);
+        p2->ipv4.packet = MALLOC(2048+p2->ipv4.length);
         memcpy(p2->ipv4.packet, p1->ipv4.packet, p2->ipv4.length);
-        p2->ipv6.packet = MALLOC(p2->ipv6.length);
+        p2->ipv6.packet = MALLOC(2048+p2->ipv6.length);
         memcpy(p2->ipv6.packet, p1->ipv6.packet, p2->ipv6.length);
     }
 
