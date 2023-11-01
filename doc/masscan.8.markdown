@@ -27,7 +27,7 @@ one port.
   * `--range <ip/range>`: the same as target range spec described above,
     except as a named parameter instead of an unnamed one.
 
-  * `-p <ports`, `--ports <ports>`: specifies the port(s) to be scanned. A 
+  * `-p <ports>`, `--ports <ports>`: specifies the port(s) to be scanned. A 
     single port can be specified, like `-p80`. A range of ports can be 
     specified, like `-p 20-25`. A list of ports/ranges can be specified, like
 	`-p80,20-25`. UDP ports can also be specified, like
@@ -108,7 +108,7 @@ one port.
   * `--iflist`: list the available network interfaces, and then exits. The
     `-e <ifname>` can then be used with one of the listed adapters.
 
-  * `--retries`: the number of retries to send, at 1 second intervals. Note
+  * `--retries <num>`: the number of retries to send, at 1 second intervals. Note
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
