@@ -3145,8 +3145,19 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         for (i=0; i<masscan->nic_count; i++)
             masscan_echo_nic(masscan, fp, i);
     }
-    
-    
+
+    /**
+     * Fix for #737, save adapter-port/source-port value or range
+     */
+    if (masscan->nic[0].src.port.first != 0) {
+        fprintf(fp, "adapter-port = %d", masscan->nic[0].src.port.first);
+        if (masscan->nic[0].src.port.first != masscan->nic[0].src.port.last) {
+            /* --adapter-port <first>-<last> */
+            fprintf(fp, "-%d", masscan->nic[0].src.port.last);
+        }
+        fprintf(fp, "\n");
+    }
+
     /*
      * Targets
      */
