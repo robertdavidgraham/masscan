@@ -21,9 +21,9 @@ The speed is determined by the operating system. The amount of CPU used by `mass
 itself is insignificant.
 
 My theory is various configuration options within the operating system that can make
-packet tranmission very slow. Simple features that would not otherwise impact network
+packet transmission very slow. Simple features that would not otherwise impact network
 stacks that run at lower rates become really important at high rates.
 
-One way around this is to install `PF_RING` and decidate a network adapter to packet
+One way around this is to install `PF_RING` and dedicate a network adapter to packet
 transmission completely bypassing the operating system. In that case, packet transmission
 rates can reach 15 million packets-per-second.
