@@ -390,6 +390,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     out->rotate.filesize = masscan->output.rotate.filesize;
     out->redis.port = masscan->redis.port;
     out->redis.ip = masscan->redis.ip;
+    out->redis.password = masscan ->redis.password;
     out->is_banner = masscan->is_banners;
     out->is_gmt = masscan->is_gmt;
     out->is_interactive = masscan->output.is_interactive;

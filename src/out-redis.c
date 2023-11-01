@@ -154,6 +154,28 @@ redis_out_open(struct Output *out, FILE *fp)
     unsigned char line[1024];
 
     UNUSEDPARM(out);
+    if (out->redis.password != NULL)
+    {
+        sprintf_s(line, sizeof(line),
+                  "*2\r\n"
+                  "$4\r\nAUTH\r\n"
+                  "$%u\r\n%s\r\n",
+                  (unsigned)strlen(out->redis.password), out->redis.password);
+
+        count = send(fd, line, (int)strlen(line), 0);
+        if (count != strlen(line))
+        {
+            LOG(0, "redis: error auth\n");
+            exit(1);
+        }
+
+        count = recv_line(fd, line, sizeof(line));
+        if (count != 5 && memcmp(line, "+OK\r\n", 5) != 0)
+        {
+            LOG(0, "redis: unexpected response from redis server: %s\n", line);
+            exit(1);
+        }
+    }
 
     count = send((SOCKET)fd, "PING\r\n", 6, 0);
     if (count != 6) {

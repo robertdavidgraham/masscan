@@ -1596,6 +1596,7 @@ int main(int argc, char *argv[])
     masscan->shard.one = 1;
     masscan->shard.of = 1;
     masscan->min_packet_size = 60;
+    masscan->redis.password = NULL;
     masscan->payloads.udp = payloads_udp_create();
     masscan->payloads.oproto = payloads_oproto_create();
     strcpy_s(   masscan->output.rotate.directory,
