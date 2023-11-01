@@ -826,7 +826,6 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     struct massip_parser p[1];
     char buf[65536];
     FILE *fp = NULL;
-    int err;
     bool is_error = false;
     unsigned addr_count = 0;
     unsigned long long line_number, char_number;
@@ -837,8 +836,8 @@ massip_parse_file(struct MassIP *massip, const char *filename)
      */
     if (strcmp(filename, "-") == 0) {
         fp = stdin;
-        err = 0;
     } else {
+        int err;
         err = fopen_s(&fp, filename, "rb");
         if (err || fp == NULL) {
             perror(filename);
@@ -867,6 +866,7 @@ massip_parse_file(struct MassIP *massip, const char *filename)
         offset = 0;
         while (offset < count) {
             unsigned begin, end;
+            int err;
 
             err = _parser_next(p, buf, &offset, count, &begin, &end);
             switch (err) {
@@ -909,6 +909,7 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     if (!is_error) {
         size_t offset = 0;
         unsigned begin, end;
+        int err;
         err = _parser_next(p, "\n", &offset, 1, &begin, &end);
         switch (err) {
         case Still_Working:

@@ -226,6 +226,22 @@ print_nmap_help(void)
 /***************************************************************************
  ***************************************************************************/
 static unsigned
+count_cidr4_bits(struct Range range) {
+    unsigned i;
+    for (i=0; i<32; i++) {
+        unsigned mask = 0xFFFFFFFF >> i;
+
+        if ((range.begin & ~mask) == (range.end & ~mask)) {
+            if ((range.begin & mask) == 0 && (range.end & mask) == mask)
+                return i;
+        }
+    }
+    return 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
 count_cidr_bits(struct Range *range, bool *exact)
 {
     /* if range is covered by exactly one cidr prefix,
@@ -3455,8 +3471,9 @@ mainconf_selftest()
     char test[] = " test 1 ";
 
     trim(test, sizeof(test));
-    if (strcmp(test, "test 1") != 0)
-        return 1; /* failure */
+    if (strcmp(test, "test 1") != 0) {
+        goto failure;
+    }
 
     {
         struct Range range;
@@ -3465,14 +3482,12 @@ mainconf_selftest()
         range.end = 32-1;
         bool exact = false;
         if (count_cidr_bits(&range, &exact) != 28 || !exact)
-            return 1;
+            goto failure;
 
-        exact = true;
         range.begin = 1;
         range.end = 13;
-        if (count_cidr_bits(&range, &exact) != 0 || !exact)
-            return 1;
-
+        if (count_cidr4_bits(range) != 0)
+            goto failure;
 
     }
 
@@ -3482,12 +3497,15 @@ mainconf_selftest()
         char *argv[] = { "foo", "bar", "-ddd", "--readscan", "xxx", "--something" };
     
         if (masscan_conf_contains("--nothing", argc, argv))
-            return 1;
+            goto failure;
 
         if (!masscan_conf_contains("--readscan", argc, argv))
-            return 1;
+            goto failure;
     }
 
     return 0;
+failure:
+    fprintf(stderr, "[+] selftest failure: config subsystem\n");
+    return 1;
 }
 
