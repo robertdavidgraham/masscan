@@ -99,7 +99,7 @@ static struct SnmpOid {
  *  - if the high-order bit of the length byte is clear, then it
  *    encodes a length between 0 and 127.
  *  - if the high-order bit is set, then the length byte is a
- *    length-of-length, where the low order bits dicate the number of
+ *    length-of-length, where the low order bits dictate the number of
  *    remaining bytes to be used in the length.
  ****************************************************************************/
 static uint64_t
@@ -275,7 +275,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t result = 0;
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
-            sprintf_s(foo, sizeof(foo), "%" PRIu64 "", (uint64_t)(size_t)foo);
+            sprintf_s(foo, sizeof(foo), "%" PRIu64 "", result);
             banout_append(banout, PROTO_SNMP, foo, strlen(foo));
         }
         break;

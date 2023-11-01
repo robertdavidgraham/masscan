@@ -56,11 +56,11 @@ void massip_optimize(struct MassIP *targets);
  * This selects an IP+port combination given an index whose value
  * is [0..range], where 'range' is the value returned by the function
  * `massip_range()`. Since the optimization step (`massip_optimized()`)
- * sorted all addresses/ports, a monotonically increeasing index will
+ * sorted all addresses/ports, a monotonically increasing index will
  * list everything in sorted order. The intent, however, is to use the
  * "blackrock" algorithm to randomize the index before calling this function.
  *
- * It is this function, plus the 'blackrock' randomization algorith, that
+ * It is this function, plus the 'blackrock' randomization algorithm, that
  * is at the heart of Masscan. 
  */
 int massip_pick(const struct MassIP *massip, uint64_t index, ipaddress *addr, unsigned *port);

@@ -194,7 +194,7 @@ rawsock_init(void)
 
 /***************************************************************************
   * This function prints to the command line a list of all the network
-  * intefaces/devices.
+  * interfaces/devices.
  ***************************************************************************/
 void
 rawsock_list_adapters(void)
@@ -460,7 +460,7 @@ is_numeric_index(const char *ifname)
     int result = 1;
     int i;
 
-    /* emptry strings aren't numbers */
+    /* empty strings aren't numbers */
     if (ifname[0] == '\0')
         return 0;
 
@@ -477,7 +477,7 @@ is_numeric_index(const char *ifname)
 
 
 /***************************************************************************
- * Used on Windows: if the adpter name is a numeric index, convert it to
+ * Used on Windows: if the adapter name is a numeric index, convert it to
  * the full name.
  ***************************************************************************/
 const char *
@@ -636,7 +636,7 @@ rawsock_init_adapter(const char *adapter_name,
     /*----------------------------------------------------------------
      * PORTABILITY: PF_RING
      *  If we've been told to use --pfring, then attempt to open the
-     *  network adapter usign the PF_RING API rather than libpcap.
+     *  network adapter using the PF_RING API rather than libpcap.
      *  Since a lot of things can go wrong, we do a lot of extra
      *  logging here.
      *----------------------------------------------------------------*/

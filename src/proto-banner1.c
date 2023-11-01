@@ -18,6 +18,7 @@
 #include "proto-pop3.h"
 #include "proto-vnc.h"
 #include "proto-memcached.h"
+#include "proto-mc.h"
 #include "masscan-app.h"
 #include "scripting.h"
 #include "versioning.h"
@@ -42,6 +43,7 @@ struct Patterns patterns[] = {
     {"\x83\x00\x00\x01\x8f", 5, PROTO_SMB, SMACK_ANCHOR_BEGIN, 0}, /* Unspecified error */
 
     /* ...the remainder can be in any order */
+    {"{\x22", 2, PROTO_MC, 0, 0},
     {"SSH-1.",      6, PROTO_SSH1, SMACK_ANCHOR_BEGIN, 0},
     {"SSH-2.",      6, PROTO_SSH2, SMACK_ANCHOR_BEGIN, 0},
     {"HTTP/1.",     7, PROTO_HTTP, SMACK_ANCHOR_BEGIN, 0},
@@ -127,10 +129,10 @@ banner1_parse(
                         banner1->smack,
                         &tcb_state->state,
                         px, &offset, (unsigned)length);
-        if (x != SMACK_NOT_FOUND)
-            proto = patterns[x].id;
-        else
+        if (x == SMACK_NOT_FOUND)
             proto = 0xFFFFFFFF;
+        else
+            proto = patterns[x].id;
         if (proto != 0xFFFFFFFF
             && !(proto == PROTO_SSL3 && !tcb_state->is_sent_sslhello)) {
             unsigned i;
@@ -302,6 +304,15 @@ banner1_parse(
                                    banout,
                                    more);
         break;
+    case PROTO_MC:
+        banner_mc.parse(
+                        banner1,
+                        banner1->http_fields,
+                        tcb_state,
+                        px, length,
+                        banout,
+                        more);
+        break;
 
     default:
         fprintf(stderr, "banner1: internal error\n");
@@ -382,7 +393,8 @@ banner1_create(void)
     banner_telnet.init(b);
     banner_rdp.init(b);
     banner_vnc.init(b);
-    
+    banner_mc.init(b);
+
     /* scripting/versioning come after the rest */
     banner_scripting.init(b);
     banner_versioning.init(b);

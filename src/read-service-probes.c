@@ -211,7 +211,7 @@ parse_fallback(struct NmapServiceProbeList *list, const char *line, size_t offse
             break;
         }
         
-        /* Alocate a record */
+        /* Allocate a record */
         fallback = CALLOC(1, sizeof(*fallback));
         
         fallback->name = MALLOC(name_length+1);
@@ -449,7 +449,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
     /*
      * <pattern>
      *  - must start with a 'm' character
-     *  - a delimiter character starts/stop the string, tpyically '/' or '|'
+     *  - a delimiter character starts/stop the string, typically '/' or '|'
      *  - contents are PCRE regex
      */
     {
@@ -477,7 +477,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             offset++;
         regex_length = offset - regex_offset;
         if (offset >= line_length || line[offset] != delimiter) {
-            fprintf(stderr, "%s:%u:%u: missinged ending delimiter '%c'\n", filename, line_number, (unsigned)offset, isprint(delimiter)?delimiter:'.');
+            fprintf(stderr, "%s:%u:%u: missing ending delimiter '%c'\n", filename, line_number, (unsigned)offset, isprint(delimiter)?delimiter:'.');
             goto parse_error;
         } else
             offset++;
@@ -512,7 +512,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
      * <versioninfo>
      *  - several optional fields
      *  - each file starts with identifier (p v i h o d cpe:)
-     *  - next comes the delimiter character (preferrably '/' slash)
+     *  - next comes the delimiter character (preferably '/' slash)
      *  - next comes data
      *  - ends with delimiter
      */
@@ -585,7 +585,7 @@ parse_match(struct NmapServiceProbeList *list, const char *line, size_t offset, 
             offset++;
         value_length = offset - value_offset;
         if (offset >= line_length || line[offset] != delimiter) {
-            fprintf(stderr, "%s:%u:%u: missinged ending delimiter '%c'\n", filename, line_number, (unsigned)offset, isprint(delimiter)?delimiter:'.');
+            fprintf(stderr, "%s:%u:%u: missing ending delimiter '%c'\n", filename, line_number, (unsigned)offset, isprint(delimiter)?delimiter:'.');
             goto parse_error;
         } else
             offset++;
@@ -694,7 +694,7 @@ parse_line(struct NmapServiceProbeList *list, const char *line)
             return;
         case SvcP_Probe:
             /* Creates a new probe record, all the other types (except 'Exclude') operate
-             * on the current probe reocrd */
+             * on the current probe record */
             parse_probe(list, line, offset, line_length);
             return;
     }
@@ -1054,7 +1054,7 @@ nmapserviceprobes_print(const struct NmapServiceProbeList *list, FILE *fp)
                 (probe->protocol==6)?"TCP":"UDP",
                 probe->name);
         
-        /* preting the query/hello string */
+        /* print the query/hello string */
         nmapserviceprobes_print_hello(fp, probe->hellostring, probe->hellolength, '|');
         
         fprintf(fp, "\n");

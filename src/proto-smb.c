@@ -847,7 +847,7 @@ smb1_parse_negotiate2(struct SMBSTUFF *smb, const unsigned char *px, size_t offs
 
 /*****************************************************************************
  * A default parser for SMBv2 structs. The simplest implementation would be
- * to sipmly skip the "struct_length" bytes. However, we have all this
+ * to simply skip the "struct_length" bytes. However, we have all this
  * extra code to serve as a template for creating additional functions.
  *****************************************************************************/
 static size_t
@@ -1414,7 +1414,7 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
              * zero when we get to this state, so therefore the logic needs
              * to be written to handle this. That means when we loop around
              * again, we need to counter-act the fact that we will automatically
-             * increment the index, so we substract one from it here. */
+             * increment the index, so we subtract one from it here. */
             i--;
             
             /* Process the parameter/word-count field according to what it
@@ -1580,7 +1580,7 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
              */
             if (smb->hdr.smb2.offset >= smb->hdr.smb2.struct_length) {
                 switch (smb->hdr.smb2.opcode) {
-                    case 0x00: /* negoiate response */
+                    case 0x00: /* negotiate response */
                         if (smb->hdr.smb2.seqno == 0) {
                             tcp_transmit(more, smb2_negotiate_request, sizeof(smb2_negotiate_request), 0);
                         } else if (smb->hdr.smb2.seqno == 1) {

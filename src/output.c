@@ -180,7 +180,7 @@ open_rotate(struct Output *out, const char *filename)
                 LOG(0, "redis: socket() failed to create socket\n");
                 exit(1);
             }
-            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: ipv6 */
+            sin.sin_addr.s_addr = htonl(out->redis.ip.ipv4); /* TODO: IPv6 */
             sin.sin_port = htons((unsigned short)out->redis.port);
             sin.sin_family = AF_INET;
             x = connect((SOCKET)fd, (struct sockaddr*)&sin, sizeof(sin));
@@ -390,6 +390,7 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     out->rotate.filesize = masscan->output.rotate.filesize;
     out->redis.port = masscan->redis.port;
     out->redis.ip = masscan->redis.ip;
+    out->redis.password = masscan ->redis.password;
     out->is_banner = masscan->is_banners;
     out->is_gmt = masscan->is_gmt;
     out->is_interactive = masscan->output.is_interactive;
@@ -542,7 +543,7 @@ output_do_rotate(struct Output *out, int is_closing)
                             + strlen("1308201101-")
                             + strlen(filename)
                             + 1  /* - */
-                            + 1; /* nul */
+                            + 1; /* null */
     new_filename = MALLOC(new_filename_size);
 
     /* Get the proper timestamp for the file */
@@ -660,7 +661,7 @@ is_rotate_time(const struct Output *out, time_t now, FILE *fp)
 }
 
 /***************************************************************************
- * Return the vendor/OUI string matchng the first three bytes of a
+ * Return the vendor/OUI string matching the first three bytes of a
  * MAC address.
  * TODO: this should be read in from a file
  ***************************************************************************/
@@ -671,6 +672,7 @@ oui_from_mac(const unsigned char mac[6])
     switch (oui) {
     case 0x0001c0: return "Compulab";
     case 0x000732: return "Aaeon";
+    case 0x00089B: return "ICPelec";
     case 0x000c29: return "VMware";
     case 0x001075: return "Seagate";
     case 0x001132: return "Synology";
@@ -681,25 +683,39 @@ oui_from_mac(const unsigned char mac[6])
     case 0x001e06: return "Odroid";
     case 0x001ff3: return "Apple";
     case 0x002590: return "Supermicro";
+    case 0x04421A: return "Asus";
     case 0x08cc68: return "Cisco";
     case 0x0C9D92: return "Asus";
+    case 0x244BFE: return "Asus";
     case 0x244CE3: return "Amazon";
+    case 0x28CDC1: return "RPi 22-02";
     case 0x2c27d7: return "HP";
     case 0x3497f6: return "Asus";
     case 0x38f73d: return "Amazon";
+    case 0x3A3541: return "RPi 19-12";
+    case 0x3C22FB: return "Apple";
     case 0x404a03: return "Zyxel";
     case 0x4C9EFF: return "Zyxel";
     case 0x5855CA: return "Apple";
     case 0x60a44c: return "Asus";
+    case 0x640BD7: return "Apple";
     case 0x6c72e7: return "Apple";
+    case 0x8C3BAD: return "Netgear";
     case 0x9003b7: return "Parrot";
+    case 0x9009d0: return "Synology";
+    case 0x94A408: return "Trolink";
     case 0x94dbc9: return "Azurewave";
+    case 0xA0CEC8: return "CeLink";
     case 0xacbc32: return "Apple";
-    case 0xb827eb: return "Raspberry Pi";
+    case 0xb827eb: return "RPi 12-03";
     case 0xc05627: return "Belkin";
     case 0xc0c1c0: return "Cisco-Linksys";
+    case 0xD83ADD: return "RPi 22-11";
     case 0xDCA4CA: return "Apple";
+    case 0xdca632: return "RPi 19-03";
+    case 0xE45F01: return "RPi 20-07";
     case 0xe4956e: return "[random]";
+    case 0xFCECDA: return "Ubiquiti";
     default: return "";
     }
 }
@@ -885,7 +901,7 @@ output_report_banner(struct Output *out, time_t now,
         fprintf(stdout, "\n");
     }
 
-    /* If not outputing to a file, then don't do anything */
+    /* If not outputting to a file, then don't do anything */
     if (fp == NULL)
         return;
 

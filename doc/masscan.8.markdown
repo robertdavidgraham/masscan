@@ -108,7 +108,7 @@ one port.
   * `--iflist`: list the available network interfaces, and then exits. The
     `-e IFNAME` can then be used with one of the listed adapters.
 
-  * `--retries NUM`: the number of retries to send, at 1 second intervals. Note
+  * `--retries <num>`: the number of retries to send, at 1 second intervals. Note
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 

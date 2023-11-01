@@ -16,7 +16,7 @@ null_out_open(struct Output *out, FILE *fp)
 /****************************************************************************
  * This function doesn't really "close" the file. Instead, it's purpose
  * is to print trailing information to the file. This is pretty much only
- * a concern for XML files that need stuff appeneded to the end.
+ * a concern for XML files that need stuff appended to the end.
  ****************************************************************************/
 static void
 null_out_close(struct Output *out, FILE *fp)
