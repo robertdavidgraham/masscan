@@ -66,7 +66,7 @@ static struct Range top_ports_sctp[] = {
 void
 masscan_usage(void)
 {
-    printf("usage:\n");
+    printf("usage: masscan [options] [<IP|RANGE>... -pPORT[,PORT...]]\n");
     printf("\n");
     printf("examples:\n");
     printf("    masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
