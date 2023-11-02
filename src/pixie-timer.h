@@ -24,7 +24,7 @@ void pixie_mssleep(unsigned milliseconds);
 
 /**
  * Do a self-test. Note that in some cases, this may
- * actaully fail when there is no problem. So far it hasn't, but I should
+ * actually fail when there is no problem. So far it hasn't, but I should
  * probably add some code to fix this.
  */
 int pixie_time_selftest(void);

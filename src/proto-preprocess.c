@@ -143,7 +143,7 @@ parse_ipv4:
         case 132: goto parse_sctp;
         default:
                 VERIFY_REMAINING(0, FOUND_OPROTO);
-                return 0; /* todo: should add more protocols, like ICMP */
+                return 0; /* TODO: should add more protocols, like ICMP */
         }
     }
 
@@ -289,11 +289,11 @@ parse_ipv6_next:
         case 17: goto parse_udp;
         case 58: goto parse_icmpv6;
         case 132: goto parse_sctp;
-        case 0x2c: /* IPv6 fragmetn */
+        case 0x2c: /* IPv6 fragment */
             return 0;
         default:
             //printf("***** test me ******\n");
-            return 0; /* todo: should add more protocols, like ICMP */
+            return 0; /* TODO: should add more protocols, like ICMP */
         }
     }
 

@@ -356,7 +356,7 @@ ASN1_push(struct CertDecode *x, unsigned next_state, uint64_t remaining)
     /* Since 'remainings[0]' always represents the top of the stack, we
      * move all the bytes down one during the push operation. I suppose this
      * is more expensive than doing it the other way, where something
-     * like "raminings[stack.depth]" reprents the top of the stack,
+     * like "raminings[stack.depth]" represents the top of the stack,
      * meaning no moves are necessary, but I prefer the cleanliness of the
      * code using [0] index instead */
     memmove(    &x->stack.remainings[1], 
@@ -433,7 +433,7 @@ ASN1_skip(struct CertDecode *x, unsigned *i, size_t length)
  * is for all those states.
  * DANGER NOTE NOTE NOTE NOTE DANGER NOTE DANGER NOTE
  *  These states are in a specific order. We'll just do 'state++' sometimes
- *  to go the next state. Therefore, you can't chane the order wihtout
+ *  to go the next state. Therefore, you can't change the order without
  *  changing the code.
  ****************************************************************************/
 enum X509state {
@@ -860,7 +860,7 @@ x509_decode(struct CertDecode *x,
              * 0x81 XX - for lengths 127 to 255
              * 0x82 XX XX - for length 256 to 65535
              * This state processes the first byte, and if it's an extended
-             * field, switches to the correspondign xxx_LENLEN state
+             * field, switches to the corresponding xxx_LENLEN state
              */
             if (px[i] & 0x80) {
                 x->u.tag.length_of_length = px[i]&0x7F;
@@ -934,7 +934,7 @@ x509_decode(struct CertDecode *x,
             /*
              * We have finished parsing the tag-length fields, and are now
              * ready to parse the 'value'. Push the current state on the 
-             * stack, then decend into the child field.
+             * stack, then descend into the child field.
              */
             ASN1_push(x, kludge_next(state-1), x->u.tag.remaining);
             state++;
@@ -1312,7 +1312,7 @@ spnego_decode(struct SpnegoDecode *spnego,
                  * 0x81 XX - for lengths 127 to 255
                  * 0x82 XX XX - for length 256 to 65535
                  * This state processes the first byte, and if it's an extended
-                 * field, switches to the correspondign xxx_LENLEN state
+                 * field, switches to the corresponding xxx_LENLEN state
                  */
                 if (px[i] & 0x80) {
                     x->u.tag.length_of_length = px[i]&0x7F;
@@ -1355,7 +1355,7 @@ spnego_decode(struct SpnegoDecode *spnego,
                 /*
                  * We have finished parsing the tag-length fields, and are now
                  * ready to parse the 'value'. Push the current state on the
-                 * stack, then decend into the child field.
+                 * stack, then descend into the child field.
                  */
                 ASN1_push(x, x->brother_state, x->u.tag.remaining);
                 state = x->child_state;
@@ -1373,7 +1373,7 @@ spnego_decode(struct SpnegoDecode *spnego,
  * @param length
  *      The size of the certificate. This is parsed from the SSL/TLS field.
  *      We know that if we exceed this number of bytes, then an overflow has
- *      occured.
+ *      occurred.
  ****************************************************************************/
 void
 x509_decode_init(struct CertDecode *x, size_t length)

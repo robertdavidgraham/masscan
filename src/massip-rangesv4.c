@@ -8,7 +8,7 @@
  in order to produce random output, but internally, everything is sorted.
  
  Sorting the list allows us to remove duplicates. It also allows us to
- apply the 'exludes' directly to the input list. In other words, other
+ apply the 'excludes' directly to the input list. In other words, other
  scanners typically work by selecting an IP address at random, then checking
  to see if it's been excluded, then skipping it. In this scanner, however,
  we remove all the excluded address from the targets list before we start
@@ -22,7 +22,7 @@
       algorithm, where 'n' is the number of targets, and 'm' is the
       number of excluded ranges.
  Large lists can still take a bit to process. On a fast server with
- 7-million input ranges/addresse and 5000 exclude ranges/addresses,
+ 7-million input ranges/addresses and 5000 exclude ranges/addresses,
  it takes almost 3 seconds to process everything before starting.
  
 */
@@ -65,6 +65,116 @@ rangelist_is_contains(const struct RangeList *targets, unsigned addr)
     return 0;
 }
 
+/***************************************************************************
+ * Returns the first CIDR range (which can be specified with prefix bits)
+ * that fits within the input range. For example, consider the range
+ * [10.0.0.4->10.0.0.255]. This does't match the bigger CIDR range.
+ * The first range that would fit would be [10.0.0.04/30], or
+ * [10.0.0.4->10.0.0.7].
+ *
+ * Using this function allows us to decompose
+ ***************************************************************************/
+struct Range
+range_first_cidr(const struct Range range, unsigned *prefix_bits) {
+    struct Range result = (struct Range){range.begin, range.end};
+    unsigned zbits = 0;
+
+    /* Kludge: Special Case:
+     * All inputs work but the boundary case of [0.0.0.0/0] or
+     * [0.0.0.0-255.255.255.255]. I can't be bothered to figure out
+     * why the algorithm doesn't work with this range, so I'm just
+     * going to special case it here*/
+    if (range.begin == 0 && range.end == 0xFFFFffff) {
+        if (prefix_bits != NULL)
+            *prefix_bits = 0;
+        return range;
+    }
+
+    /* Count the number of trailing/suffix zeros, which may be range
+     * from none (0) to 32 (all bits are 0) */
+    for (zbits = 0; zbits <= 32; zbits++) {
+        if ((range.begin & (1<<zbits)) != 0)
+            break;
+    }
+
+    /* Now search for the largest CIDR range that starts with this
+     * begining address that fits within the ending address*/
+    while (zbits > 0) {
+        unsigned mask = ~(0xFFFFFFFF << zbits);
+
+        if (range.begin + mask > range.end)
+            zbits--;
+        else
+            break;
+    }
+
+    result.begin = range.begin;
+    result.end = range.begin + ~(0xFFFFffff << zbits);
+    if (prefix_bits != NULL)
+        *prefix_bits = 32-zbits;
+
+    return result;
+}
+
+bool
+range_is_cidr(const struct Range range, unsigned *prefix_bits) {
+    struct Range out = range_first_cidr(range, prefix_bits);
+    if (out.begin == range.begin && out.end == range.end)
+        return true;
+    else {
+        if (prefix_bits != NULL)
+            *prefix_bits = 0xFFFFFFFF;
+        return false;
+    }
+}
+
+/***************************************************************************
+ * Selftest for the above function.
+ ***************************************************************************/
+static int
+selftest_range_first_cidr(void) {
+    static struct {
+        struct Range in;
+        struct Range out;
+        unsigned prefix_bits;
+    } tests[] = {
+        {{0x00000000, 0xffffffff}, {0x00000000, 0xffffffff}, 0},
+        {{0x00000001, 0xffffffff}, {0x00000001, 0x00000001}, 32},
+        {{0xffffffff, 0xffffffff}, {0xffffffff, 0xffffffff}, 32},
+        {{0xfffffffe, 0xfffffffe}, {0xfffffffe, 0xfffffffe}, 32},
+        {{0x0A000000, 0x0A0000Ff}, {0x0A000000, 0x0A0000ff}, 24},
+        {{0x0A0000ff, 0x0A0000Ff}, {0x0A0000ff, 0x0A0000ff}, 32},
+        {{0x0A000000, 0x0A0000Ff}, {0x0A000000, 0x0A0000Ff}, 24},
+        {{0x0A000001, 0x0A0000Fe}, {0x0A000001, 0x0A000001}, 32},
+        {{0x0A000008, 0x0A0000Fe}, {0x0A000008, 0x0A00000f}, 29},
+        {{0x0A000080, 0x0A0000Fe}, {0x0A000080, 0x0A0000bf}, 26},
+        {{0x0A0000c0, 0x0A0000Fe}, {0x0A0000c0, 0x0A0000df}, 27},
+        {{0x0A0000c1, 0x0A0000Fe}, {0x0A0000c1, 0x0A0000c1}, 32},
+        {{0x0A0000fe, 0x0A0000Fe}, {0x0A0000fe, 0x0A0000fe}, 32},
+        {{0,0}, {0,0}}
+    };
+    size_t i;
+
+    for (i=0; tests[i].in.end != 0; i++) {
+        unsigned prefix_bits = 0xFFFFFFFF;
+        struct Range out = range_first_cidr(tests[i].in, &prefix_bits);
+        if (out.begin != tests[i].out.begin
+            || out.end != tests[i].out.end
+            || prefix_bits != tests[i].prefix_bits) {
+            fprintf(stderr, "[%u] 0x%08x->0x%08x  /%u   0x%08x->0x%08x /%u\n",
+                    (unsigned)i,
+                    out.begin,
+                    out.end,
+                    prefix_bits,
+                    tests[i].out.begin,
+                    tests[i].out.end,
+                    tests[i].prefix_bits);
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 /***************************************************************************
  * Test if two ranges overlap.
@@ -255,8 +365,8 @@ rangelist_merge(struct RangeList *list1, const struct RangeList *list2)
 }
 
 /***************************************************************************
- * This searchs a range list and removes that range of IP addresses, if
- * they exist. Sicne the input range can overlap multiple entries, then
+ * This searches a range list and removes that range of IP addresses, if
+ * they exist. Since the input range can overlap multiple entries, then
  * more than one entry can be removed, or truncated. Since the range
  * can be in the middle of an entry in the list, it can actually increase
  * the list size by one, as that entry is split into two entries.
@@ -374,7 +484,7 @@ parse_ipv4(const char *line, unsigned *inout_offset, unsigned max, unsigned *ipv
     *inout_offset = offset;
     *ipv4 = result;
 
-    return 0; /* parse ok */
+    return 0; /* parse OK */
 }
 
 
@@ -430,7 +540,7 @@ range_parse_ipv4(const char *line, unsigned *inout_offset, unsigned max)
     while (offset < max && isspace(line[offset]&0xFF))
         offset++;
 
-    /* If onely one IP address, return that */
+    /* If only one IP address, return that */
     if (offset >= max)
         goto end;
 
@@ -606,7 +716,7 @@ rangelist_exclude(  struct RangeList *targets,
     rangelist_sort(excludes);
     
     /* Go through all target ranges, apply excludes to them
-     * (which may split into two ranges), and add them to the
+     * (which may split into two ranges), and add them to
      * the new target list */
     x = 0;
     for (i=0; i<targets->count; i++) {
@@ -624,7 +734,7 @@ rangelist_exclude(  struct RangeList *targets,
             range_apply_exclude(excludes->list[x], &range, &split);
             
             /* If there is a split, then add the original range to our list
-             * and then set that range to the splitted portion */
+             * and then set that range to the split-ed portion */
             if (range_is_valid(split)) {
                 rangelist_add_range(&newlist, range.begin, range.end);
                 memcpy(&range, &split, sizeof(range));
@@ -840,7 +950,7 @@ regress_pick2()
         }
         rangelist_sort(duplicate);
 
-        /* at this point, the two range lists shouild be identical */
+        /* at this point, the two range lists should be identical */
         REGRESS(targets->count == duplicate->count);
         REGRESS(memcmp(targets->list, duplicate->list, targets->count*sizeof(targets->list[0])) == 0);
 
@@ -898,7 +1008,7 @@ rangelist_parse_ports(struct RangeList *ports, const char *string, unsigned *is_
                     proto_offset = Templ_ICMP_echo;
                     break;
                 default:
-                    LOG(0, "bad port charactern = %c\n", p[0]);
+                    LOG(0, "bad port character = %c\n", p[0]);
                     *is_error = 1;
                     return p;
             }
@@ -1008,7 +1118,7 @@ rangelist_is_equal(const struct RangeList *lhs, const struct RangeList *rhs)
 }
 
 /***************************************************************************
- * The old way of excuding addresses assume unsorted lists, so had to
+ * The old way of excluding addresses assume unsorted lists, so had to
  * search the entire exclude list for each included address, which is
  * O(n * m), and fails when we have millions of excludes and includes,
  * because it takes forever to apply.
@@ -1056,7 +1166,7 @@ exclude_selftest(void)
     }
     rangelist_sort(&includes1);
     
-    /* Fill the exlcude list, using the same algorithm as above for
+    /* Fill the exclude list, using the same algorithm as above for
      * includes, but now with a different seed. This creates lots of
      * conflicts. */
     seed = 1;
@@ -1082,7 +1192,7 @@ exclude_selftest(void)
         return 1;
 
     
-    /* Now apply the exclude alogirthms, both new and old, to the
+    /* Now apply the exclude algorithms, both new and old, to
      * the include lists. */
     rangelist_exclude(&includes1, &excludes);
     rangelist_exclude2(&includes2, &excludes);
@@ -1105,7 +1215,7 @@ ranges_selftest(void)
 
     REGRESS(regress_pick2() == 0);
 
-    /* Do a spearate test of the 'exclude' feature */
+    /* Do a separate test of the 'exclude' feature */
     if (exclude_selftest())
         return 1;
     
@@ -1245,6 +1355,11 @@ ranges_selftest(void)
             ERROR();
             return 1;
         }
+    }
+
+    if (selftest_range_first_cidr() != 0) {
+        ERROR();
+        return 1;
     }
 
     return 0;

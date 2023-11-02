@@ -2,6 +2,7 @@
 #define RANGES_H
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 /**
  * A range of either IP addresses or ports
@@ -11,6 +12,48 @@ struct Range
     unsigned begin;
     unsigned end; /* inclusive, so [n..m] includes both 'n' and 'm' */
 };
+
+
+/**
+ * Find the first CIDR range (one that can be specified with a /prefix)
+ * inside the current range. If the current range can already be
+ * specified with a CIDR /prefix, then the entire range is returned.
+ * Examples:
+ *  [10.0.0.0->10.0.0.255] returns [10.0.0.0->10.0.0.255] (no change)
+ *  [10.0.0.1->10.0.0.255] returns [10.0.0.1->10.0.0.1]
+ *  [10.0.0.2->10.0.0.255] returns [10.0.0.2->10.0.0.3]
+ *  [10.0.0.4->10.0.0.255] returns [10.0.0.4->10.0.0.7]
+ *  [10.0.0.248->10.0.0.254] returns [10.0.0.248->10.0.0.251]
+ *  [10.0.0.252->10.0.0.254] returns [10.0.0.252->10.0.0.253]
+ *  [10.0.0.254->10.0.0.254] returns [10.0.0.254->10.0.0.254]
+ *  @param range
+ *      A range specified by a starting IPv4 address and an ending
+ *      IPv4 address, like [10.0.0.4->10.0.0.255].
+ *  @param prefix_length
+ *      An out-only parameter that receives the CIDR prefix length
+ *      (number of bits) of the resulting range. This parameter is
+ *      optional (may be NULL).
+ *  @return the smaller range, and the number of prefix bits in the range.
+ */
+struct Range
+range_first_cidr(const struct Range range, unsigned *prefix_length /*out*/);
+
+/**
+ * Test if the range can instead be expressed using a CIDR /prefix.
+ * In other words, [10.0.0.0-10.0.0.255] can be expressed as [10.0.0.0/24].
+ * @param range to be tested
+ * @param prefix_length receivesoutput of the number of prefix bits if
+ *  successful, otherwise set to 0xFFFFFFFF. This is optional, may
+ *  be NULL and receive no output.
+ * @return True if the range can be expressed in CIDR notation, in
+ *  which case `prefix_length` is set to the number of bits in the prefix
+ *  for printing in that notation. False otherwise, in which case
+ *  `prefix_length` is set to 0xFFFFFFFF (an invalid value).
+ */
+bool range_is_cidr(const struct Range range, unsigned *prefix_length /*out*/);
+
+
+
 
 /**
  * An array of ranges in sorted order
@@ -108,7 +151,7 @@ uint64_t
 rangelist_count(const struct RangeList *targets);
 
 /**
- * Given an index in a continous range of [0...count], pick a corresponding
+ * Given an index in a continuous range of [0...count], pick a corresponding
  * number (IP address or port) from a list of non-continuous ranges (not
  * necessarily starting from 0). In other words, given the two ranges
  *    10-19 50-69
@@ -119,7 +162,7 @@ rangelist_count(const struct RangeList *targets);
  *
  * NOTE: This is a fundamental part of this program's design, that the user
  * can specify non-contiguous IP and port ranges, but yet we iterate over
- * them using a monotonicly increasing index variable.
+ * them using a monotonically increasing index variable.
  *
  * @param targets
  *      A list of IP address ranges, or a list of port ranges (one or the

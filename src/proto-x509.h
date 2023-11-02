@@ -15,7 +15,7 @@ struct CertDecode {
      * the structure, we push the parent length/state info on the stack,
      * and then when we exit a field, we pop it back off the stack.
      * NOTE: since space is at a premium, we have separate arrays
-     * for the length/state, instead of a an array of objects containing
+     * for the length/state, instead of an array of objects containing
      * both. */
     struct {
         unsigned short remainings[9];
@@ -40,7 +40,7 @@ struct CertDecode {
     /** This parser was originally written just to grab the "subect name"
      * of a certificate, i.e. "*.google.com" for Google's certificates.
      * However, there are many different types of subject names. Each
-     * subnect name comes in two parts, the first part being an OID
+     * subject name comes in two parts, the first part being an OID
      * saying the type of subject, then the subject itself. We need to stash
      * the result of parsing the OID somewhere before parsing the subject
      */

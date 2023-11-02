@@ -4,7 +4,7 @@
 /**
  * Call this function at program startup in order to insert a signal handler
  * that will be caught when the program crashes. This signal handler will
- * print debug infromation to the console, such as the line numbers where
+ * print debug information to the console, such as the line numbers where
  * the program crashes.
  */
 void

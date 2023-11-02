@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 /**
- * Calculate a chekcsum for IPv4 packets.
+ * Calculate a checksum for IPv4 packets.
  * @param ip_src
  *      The source IPv4 address, represented a standard way,
  *      as a 32-bit integer in host byte order.
@@ -24,10 +24,10 @@
  *      In other words, it's the "total length" field of the IP packet minus the
  *      length of the IP header.
  * @param payload
- *      A pointer to the aforementioend payload (a pointer to the first byte past the
+ *      A pointer to the aforementioned payload (a pointer to the first byte past the
  *      IP header). Note that the calculation skips the checksum field, so the payload
  *      we use is everything but the 2 bytes in the checksum field. Thus, due to the 
- *      quirkyness of Internet protocols, the result of this calculation should end
+ *      quirkiness of Internet protocols, the result of this calculation should end
  *      up equally the value of the checksum field.
  * @return
  *      the calculated checksum, which should equal the checksum found in the payload

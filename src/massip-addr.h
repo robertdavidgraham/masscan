@@ -20,8 +20,8 @@
 #endif
 
 /**
- * An IPv6 address is represented as two 64-bit integers intead of a single
- * 128-bit integer. This is because curently (year 2020) most compilers
+ * An IPv6 address is represented as two 64-bit integers instead of a single
+ * 128-bit integer. This is because currently (year 2020) most compilers
  * do not support the `uint128_t` type, but all relevant ones do support
  * the `uint64_t` type.
  */
@@ -54,7 +54,7 @@ typedef ipv6address massint128_t;
 
 /**
  * Most of the code in this project is agnostic to the version of IP
- * addresses (IPv4 or IPv6). Therefore, we represnet them as a union
+ * addresses (IPv4 or IPv6). Therefore, we represent them as a union
  * distinguished by a version number. The `version` is an integer
  * with a value of either 4 or 6.
  */

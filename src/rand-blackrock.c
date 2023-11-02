@@ -4,7 +4,7 @@
     (h/t Marsh Ray @marshray for this idea)
 
     This is a randomization/reshuffling function based on a crypto
-    "Feistel network" as describ ed in the paper:
+    "Feistel network" as described in the paper:
 
     'Ciphers with Arbitrary Finite Domains'
         by John Black and Phillip Rogaway
@@ -29,7 +29,7 @@
      9 ->      7
 
     As you can see on the right hand side, the numbers are in random
-    order, and they don't repeaet.
+    order, and they don't repeat.
 
     This is create for port scanning. We can take an index variable
     and increment it during a scan, then use this function to
@@ -305,7 +305,7 @@ blackrock_verify(struct BlackRock *br, uint64_t max)
     /* Allocate a list of 1-byte counters */
     list = CALLOC(1, (size_t)((range<max)?range:max));
     
-    /* For all numbers in the range, verify increment the counter for the
+    /* For all numbers in the range, verify increment the counter for
      * the output. */
     for (i=0; i<range; i++) {
         uint64_t x = blackrock_shuffle(br, i);
@@ -342,7 +342,7 @@ blackrock_benchmark(unsigned rounds)
     blackrock_init(&br, range, 1, rounds);
 
     /*
-     * Time the the algorithm
+     * Time the algorithm
      */
     start = pixie_nanotime();
     for (i=0; i<ITERATIONS; i++) {

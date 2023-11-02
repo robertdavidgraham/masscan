@@ -675,7 +675,7 @@ regress_pick2()
             range6list_add_range(duplicate, addr, addr);
         }
 
-        /* at this point, the two range lists shouild be identical */
+        /* at this point, the two range lists should be identical */
         REGRESS(i, targets->count == duplicate->count);
         REGRESS(i, memcmp(targets->list, duplicate->list, targets->count*sizeof(targets->list[0])) == 0);
 

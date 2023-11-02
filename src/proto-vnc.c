@@ -203,7 +203,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 pstate->sub.vnc.sectype <<= 8;
                 pstate->sub.vnc.sectype |= px[i];
                 if (pstate->sub.vnc.sectype == 0) {
-                    /* security ok, move to client init */
+                    /* security OK, move to client init */
                     tcp_transmit(more, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
                 } else {

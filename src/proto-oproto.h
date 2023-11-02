@@ -1,6 +1,6 @@
 /*
  Other IP protocol (not TCP, UDP, TCP, ICMP
- Specificaly for scanning things like GRE.
+ Specifically for scanning things like GRE.
  */
 #ifndef PROTO_OPROTO_H
 #define PROTO_OPROTO_H

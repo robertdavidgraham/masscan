@@ -1,5 +1,5 @@
 /* Copyright (c) 2007 by Errata Security, All Rights Reserved
- * Programer(s): Robert David Graham [rdg]
+ * Programmer(s): Robert David Graham [rdg]
  */
 /*
 
@@ -317,7 +317,7 @@ int pcapfile_readframe(
             *r_time_usecs += 1000000;
             *r_time_usecs &= 0xFFFFFFFF; /* mask off in case of 64-bit ints */
         } else
-            is_corrupt = 1; /* shouldn't be more than 1-second, but some capture porgrams erroneously do that */
+            is_corrupt = 1; /* shouldn't be more than 1-second, but some capture programs erroneously do that */
     }
     if (*r_time_usecs == 0
         && *r_time_secs == 0
@@ -394,14 +394,14 @@ int pcapfile_readframe(
             if (!smells_like_valid_packet(tmp+i, (unsigned)(bytes_read-i), byte_order, capfile->linktype))
                 continue;
 
-            /* Woot! We have a non-corrupt packet. Let's now change the
+            /* Woot! We have a non-corrupt packet. Let's now change
              * the current file-pointer to point to that location.
              * Notice that we have to be careful when working with
              * large (>4gig) files on 32-bit systems. The 'fpos_t' is
              * usually a 64-bit value and can be used to set a position,
              * but we cannot manipulate it directory (it's an opaque
-             * structure, not an integer), so we have seek back to the
-             * saved value, fthen seek relatively forward to the
+             * structure, not an integer), so we have to seek back to the
+             * saved value, then seek relatively forward to the
              * known-good spot */
             position = position + i;
             if (fseek_x(capfile->fp, position, SEEK_SET) != 0) {
@@ -413,8 +413,8 @@ int pcapfile_readframe(
 
 #if 0
             /* We could stop here, but we are going to try one more thing.
-             * Most cases of corruption will be because the PREVOUS packet
-             * was truncated, not becausae the CURRENT packet was bad.
+             * Most cases of corruption will be because the PREVIOUS packet
+             * was truncated, not because the CURRENT packet was bad.
              * Since we have seeked forward to find the NEXT packet, we
              * want to now seek backwards and see if there is actually
              * a good CURRENT packet. */

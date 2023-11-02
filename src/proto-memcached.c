@@ -376,7 +376,7 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
     /* Print the banner information, or save to a file, depending */
     output_report_banner(
         out, timestamp,
-        ip_them, 17 /*udp*/, parsed->port_src,
+        ip_them, 17 /*UDP*/, parsed->port_src,
         PROTO_MEMCACHED,
         parsed->ip_ttl,
         banout_string(banout, PROTO_MEMCACHED),

@@ -2,7 +2,7 @@
     PF_RING compatibility layer
 
     In order to avoid special build hassle, this code links to PF_RING at
-    runtime instead compiletime. That means you can compile this code
+    runtime instead compile-time. That means you can compile this code
     BEFORE installing and building PF_RING.
 
 */

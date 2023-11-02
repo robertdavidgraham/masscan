@@ -44,7 +44,7 @@
 struct Timeouts {
     /**
      * This index is a monotonically increasing number, modulus the mask.
-     * Every time we check timeouts, we simply move it foreward in time.
+     * Every time we check timeouts, we simply move it forward in time.
      */
     uint64_t current_index;
 

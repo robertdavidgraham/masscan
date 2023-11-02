@@ -1,6 +1,6 @@
 /* Copyright (c) 2007 by Errata Security, All Rights Reserved
  * Copyright (c) 2017 by Robert David Graham
- * Programer(s): Robert David Graham [rdg]
+ * Programmer(s): Robert David Graham [rdg]
  */
 /*
 	LIBPCAP INTERFACE
@@ -371,6 +371,7 @@ if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
             "libpcap.so",
             "libpcap.A.dylib",
             "libpcap.dylib",
+            "libpcap.so.1",
             "libpcap.so.0.9.5",
             "libpcap.so.0.9.4",
             "libpcap.so.0.8",

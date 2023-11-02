@@ -26,7 +26,7 @@
 
 /****************************************************************************
  * This skips over a name field while parsing the packet. If the name
- * is just a two-byte compression field likce 0xc0 0x1a, then it'll skip
+ * is just a two-byte compression field like 0xc0 0x1a, then it'll skip
  * those two bytes. However, when it does the skip, it does validate
  * the name. Thus, if it's a compressed name, it'll follow the compression
  * links to validate things like long names and infinite recursion.
@@ -75,7 +75,7 @@ dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length
             /* we have a normal label */
             recursion = 0;
 
-            /* If the label-length is zero, then that meaans we've reached
+            /* If the label-length is zero, then that means we've reached
              * the end of the name */
             if (len == 0) {
                 return result; /* end of domain name */
@@ -92,7 +92,7 @@ dns_name_skip_validate(const unsigned char *px, unsigned offset, unsigned length
 /****************************************************************************
  * Just skip the name, without validating whether it's valid or not. This
  * is for re-parsing the packet usually, after we've validated that all
- * the names are ok.
+ * the names are OK.
  ****************************************************************************/
 unsigned
 dns_name_skip(const unsigned char px[], unsigned offset, unsigned max)
@@ -182,7 +182,7 @@ proto_dns_parse(struct DNS_Incoming *dns, const unsigned char px[], unsigned off
 
     dns->req = px;
     dns->req_length = max-offset;
-    dns->edns0.payload_size = 512; /* rfc 1035 4.2.1 */
+    dns->edns0.payload_size = 512; /* RFC 1035 4.2.1 */
 
 
     /*

@@ -67,14 +67,19 @@ void
 masscan_usage(void)
 {
     printf("usage: masscan [options] [<IP|RANGE>... -pPORT[,PORT...]]\n");
-    printf("masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
-    printf(" scan some web ports on 10.x.x.x at 10kpps\n");
-    printf("masscan --nmap\n");
-    printf(" list those options that are compatible with nmap\n");
-    printf("masscan -p80 10.0.0.0/8 --banners -oB <filename>\n");
-    printf(" save results of scan in binary format to <filename>\n");
-    printf("masscan --open --banners --readscan <filename> -oX <savefile>\n");
-    printf(" read binary scan results in <filename> and save them as xml in <savefile>\n");
+    printf("\n");
+    printf("examples:\n");
+    printf("    masscan -p80,8000-8100 10.0.0.0/8 --rate=10000\n");
+    printf("        scan some web ports on 10.x.x.x at 10kpps\n");
+    printf("\n");
+    printf("    masscan --nmap\n");
+    printf("        list those options that are compatible with nmap\n");
+    printf("\n");
+    printf("    masscan -p80 10.0.0.0/8 --banners -oB <filename>\n");
+    printf("        save results of scan in binary format to <filename>\n");
+    printf("\n");
+    printf("    masscan --open --banners --readscan <filename> -oX <savefile>\n");
+    printf("        read binary scan results in <filename> and save them as xml in <savefile>\n");
     exit(1);
 }
 
@@ -183,7 +188,7 @@ print_nmap_help(void)
 "  -sS: TCP SYN (always on, default)\n"
 "SERVICE/VERSION DETECTION:\n"
 "  --banners: get the banners of the listening service if available. The\n"
-"    default timeout for waiting to recieve data is 30 seconds.\n"
+"    default timeout for waiting to receive data is 30 seconds.\n"
 "PORT SPECIFICATION AND SCAN ORDER:\n"
 "  -p <port ranges>: Only scan specified ports\n"
 "    Ex: -p22; -p1-65535; -p 111,137,80,139,8080\n"
@@ -223,52 +228,56 @@ print_nmap_help(void)
 "\n");
 }
 
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-count_cidr_bits(struct Range range)
-{
-    unsigned i;
-
-    for (i=0; i<32; i++) {
-        unsigned mask = 0xFFFFFFFF >> i;
-
-        if ((range.begin & ~mask) == (range.end & ~mask)) {
-            if ((range.begin & mask) == 0 && (range.end & mask) == mask)
-                return i;
-        }
-    }
-
-    return 0;
-}
 
 /***************************************************************************
  ***************************************************************************/
 static unsigned
-count_cidr6_bits(struct Range6 range)
+count_cidr6_bits(struct Range6 *range, bool *exact)
 {
+    /* for the comments of this function, see  count_cidr_bits */
+    *exact = false;
     uint64_t i;
 
-    /* Kludge: can't handle more than 64-bits of CIDR ranges */
-    if (range.begin.hi != range.begin.lo)
-        return 0;
-
-    for (i=0; i<64; i++) {
-        uint64_t mask = 0xFFFFFFFFffffffffull >> i;
-
-        if ((range.begin.lo & ~mask) == (range.end.lo & ~mask)) {
-            if ((range.begin.lo & mask) == 0 && (range.end.lo & mask) == mask)
-                return (unsigned)i;
+    for (i=0; i<128; i++) {
+        uint64_t mask_hi;
+        uint64_t mask_lo;
+        if (i < 64) {
+            mask_hi = 0xFFFFFFFFffffffffull >> i;
+            mask_lo = 0xFFFFFFFFffffffffull;
+        } else {
+            mask_hi = 0;
+            mask_lo = 0xFFFFFFFFffffffffull >> (i - 64);
+        }
+        if ((range->begin.hi & mask_hi) != 0 || (range->begin.lo & mask_lo) != 0) {
+            continue;
+        }
+        if ((range->begin.hi & ~mask_hi) == (range->end.hi & ~mask_hi) &&
+                (range->begin.lo & ~mask_lo) == (range->end.lo & ~mask_lo)) {
+            if (((range->end.hi & mask_hi) == mask_hi) && ((range->end.lo & mask_lo) == mask_lo)) {
+                *exact = true;
+                return (unsigned) i;
+            }
+        } else {
+            *exact = false;
+            range->begin.hi = range->begin.hi + mask_hi;
+            if (range->begin.lo >= 0xffffffffffffffff - 1 - mask_lo) {
+                range->begin.hi += 1;
+            }
+            range->begin.lo = range->begin.lo + mask_lo + 1;
+            return (unsigned) i;
         }
     }
-
-    return 0;
+    range->begin.lo = range->begin.lo + 1;
+    if (range->begin.lo == 0) {
+        range->begin.hi = range->begin.hi + 1;
+    }
+    return 128;
 }
 
 
 
 /***************************************************************************
- * Echoes the configuration for one nic
+ * Echoes the configuration for one NIC
  ***************************************************************************/
 static void
 masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
@@ -1952,7 +1961,7 @@ struct ConfigParameter config_parameters[] = {
     {"json-status",     SET_status_json,        F_BOOL, {"status-json", 0}},
     {"min-packet",      SET_min_packet,         0,      {"min-pkt",0}},
     {"capture",         SET_capture,            0,      {0}},
-    {"nocapture",       SET_capture,            0,      {0}},
+    {"nocapture",       SET_capture,            0,      {"no-capture", 0}},
     {"SPACE",           SET_space,              0,      {0}},
     {"output-filename", SET_output_filename,    0,      {"output-file",0}},
     {"output-format",   SET_output_format,      0,      {0}},
@@ -1971,7 +1980,7 @@ struct ConfigParameter config_parameters[] = {
 };
 
 /***************************************************************************
- * Called either from the "command-line" parser when it sees a --parm,
+ * Called either from the "command-line" parser when it sees a --param,
  * or from the "config-file" parser for normal options.
  ***************************************************************************/
 void
@@ -2111,8 +2120,8 @@ masscan_set_parameter(struct Masscan *masscan,
 
         /* Check for duplicates */
         if (macaddress_is_equal(masscan->nic[index].source_mac, source_mac)) {
-            /* supresses warning message about duplicate MAC addresses if
-             * they are in fact the saem */
+            /* suppresses warning message about duplicate MAC addresses if
+             * they are in fact the same */
             return;
         }
 
@@ -2330,6 +2339,8 @@ masscan_set_parameter(struct Masscan *masscan,
         masscan->op = Operation_Echo;
     } else if (EQUALS("echo-all", name)) {
         masscan->op = Operation_EchoAll;
+    } else if (EQUALS("echo-cidr", name)) {
+        masscan->op = Operation_EchoCidr;
     } else if (EQUALS("excludefile", name)) {
         unsigned count1 = masscan->exclude.ipv4.count;
         unsigned count2;
@@ -2398,7 +2409,7 @@ masscan_set_parameter(struct Masscan *masscan,
         fprintf(stderr, "nmap(%s): unsupported: we all the parallel!\n", name);
         exit(1);
     } else if (EQUALS("min-rtt-timeout", name) || EQUALS("max-rtt-timeout", name) || EQUALS("initial-rtt-timeout", name)) {
-        fprintf(stderr, "nmap(%s): unsupported: we are asychronous, so no timeouts, no RTT tracking!\n", name);
+        fprintf(stderr, "nmap(%s): unsupported: we are asynchronous, so no timeouts, no RTT tracking!\n", name);
         exit(1);
     } else if (EQUALS("min-rate", name)) {
         fprintf(stderr, "nmap(%s): unsupported, we go as fast as --max-rate allows\n", name);
@@ -2461,6 +2472,8 @@ masscan_set_parameter(struct Masscan *masscan,
         strcpy_s(masscan->output.filename, 
                  sizeof(masscan->output.filename), 
                  "<redis>");
+    } else if(EQUALS("redis-pwd", name)) {
+        masscan->redis.password = strdup(value);
     } else if (EQUALS("release-memory", name)) {
         fprintf(stderr, "nmap(%s): this is our default option\n", name);
     } else if (EQUALS("resume", name)) {
@@ -2586,7 +2599,7 @@ static int
 is_singleton(const char *name)
 {
     static const char *singletons[] = {
-        "echo", "echo-all", "selftest", "self-test", "regress",
+        "echo", "echo-all", "echo-cidr", "selftest", "self-test", "regress",
         "benchmark",
         "system-dns", "traceroute", "version",
         "version-light",
@@ -2631,32 +2644,43 @@ static void
 masscan_help()
 {
     printf(
+"usage: masscan [options] [<IP|RANGE>... -pPORT[,PORT...]]\n"
 "MASSCAN is a fast port scanner. The primary input parameters are the\n"
 "IP addresses/ranges you want to scan, and the port numbers. An example\n"
 "is the following, which scans the 10.x.x.x network for web servers:\n"
-" masscan 10.0.0.0/8 -p80\n"
+"\n"
+"    masscan 10.0.0.0/8 -p80\n"
+"\n"
 "The program auto-detects network interface/adapter settings. If this\n"
 "fails, you'll have to set these manually. The following is an\n"
 "example of all the parameters that are needed:\n"
-" --adapter-ip 192.168.10.123\n"
-" --adapter-mac 00-11-22-33-44-55\n"
-" --router-mac 66-55-44-33-22-11\n"
+"\n"
+"    --adapter-ip 192.168.10.123\n"
+"    --adapter-mac 00-11-22-33-44-55\n"
+"    --router-mac 66-55-44-33-22-11\n"
+"\n"
 "Parameters can be set either via the command-line or config-file. The\n"
 "names are the same for both. Thus, the above adapter settings would\n"
 "appear as follows in a configuration file:\n"
-" adapter-ip = 192.168.10.123\n"
-" adapter-mac = 00-11-22-33-44-55\n"
-" router-mac = 66-55-44-33-22-11\n"
+"\n"
+"    adapter-ip = 192.168.10.123\n"
+"    adapter-mac = 00-11-22-33-44-55\n"
+"    router-mac = 66-55-44-33-22-11\n"
+"\n"
 "All single-dash parameters have a spelled out double-dash equivalent,\n"
 "so '-p80' is the same as '--ports 80' (or 'ports = 80' in config file).\n"
 "To use the config file, type:\n"
-" masscan -c <filename>\n"
+"\n"
+"    masscan -c <filename>\n"
+"\n"
 "To generate a config-file from the current settings, use the --echo\n"
 "option. This stops the program from actually running, and just echoes\n"
 "the current configuration instead. This is a useful way to generate\n"
 "your first config file, or see a list of parameters you didn't know\n"
 "about. I suggest you try it now:\n"
-" masscan -p1234 --echo\n");
+"\n"
+"    masscan -p1234 --echo\n"
+"\n");
     exit(1);
 }
 
@@ -3113,7 +3137,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
 
 /***************************************************************************
  * Prints the current configuration to the command-line then exits.
- * Use#1: create a template file of all setable parameters.
+ * Use#1: create a template file of all settable parameters.
  * Use#2: make sure your configuration was interpreted correctly.
  ***************************************************************************/
 void
@@ -3145,8 +3169,19 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         for (i=0; i<masscan->nic_count; i++)
             masscan_echo_nic(masscan, fp, i);
     }
-    
-    
+
+    /**
+     * Fix for #737, save adapter-port/source-port value or range
+     */
+    if (masscan->nic[0].src.port.first != 0) {
+        fprintf(fp, "adapter-port = %d", masscan->nic[0].src.port.first);
+        if (masscan->nic[0].src.port.first != masscan->nic[0].src.port.last) {
+            /* --adapter-port <first>-<last> */
+            fprintf(fp, "-%d", masscan->nic[0].src.port.last);
+        }
+        fprintf(fp, "\n");
+    }
+
     /*
      * Targets
      */
@@ -3194,39 +3229,54 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         } while (range.begin <= range.end);
     }
     fprintf(fp, "\n");
+
+    /*
+     * IPv4 address targets
+     */
     for (i=0; i<masscan->targets.ipv4.count; i++) {
+        unsigned prefix_bits;
         struct Range range = masscan->targets.ipv4.list[i];
-        fprintf(fp, "range = ");
-        fprintf(fp, "%u.%u.%u.%u",
-                (range.begin>>24)&0xFF,
-                (range.begin>>16)&0xFF,
-                (range.begin>> 8)&0xFF,
-                (range.begin>> 0)&0xFF
-                );
-        if (range.begin != range.end) {
-            unsigned cidr_bits = count_cidr_bits(range);
-            
-            if (cidr_bits) {
-                fprintf(fp, "/%u", cidr_bits);
-            } else
-                fprintf(fp, "-%u.%u.%u.%u",
-                        (range.end>>24)&0xFF,
-                        (range.end>>16)&0xFF,
-                        (range.end>> 8)&0xFF,
-                        (range.end>> 0)&0xFF
-                        );
+
+        if (range.begin == range.end) {
+            fprintf(fp, "range = %u.%u.%u.%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF
+                    );
+        } else if (range_is_cidr(range, &prefix_bits)) {
+            fprintf(fp, "range = %u.%u.%u.%u/%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
+                    prefix_bits
+                    );
+
+        } else {
+            fprintf(fp, "range = %u.%u.%u.%u-%u.%u.%u.%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
+                    (range.end>>24)&0xFF,
+                    (range.end>>16)&0xFF,
+                    (range.end>> 8)&0xFF,
+                    (range.end>> 0)&0xFF
+                    );
         }
         fprintf(fp, "\n");
     }
     for (i=0; i<masscan->targets.ipv6.count; i++) {
+        bool exact = false;
         struct Range6 range = masscan->targets.ipv6.list[i];
         ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
         
         fprintf(fp, "range = %s", fmt.string);
         if (!ipv6address_is_equal(range.begin, range.end)) {
-            unsigned cidr_bits = count_cidr6_bits(range);
+            unsigned cidr_bits = count_cidr6_bits(&range, &exact);
             
-            if (cidr_bits) {
+            if (exact && cidr_bits) {
                 fprintf(fp, "/%u", cidr_bits);
             } else {
                 fmt = ipv6address_fmt(range.end);
@@ -3237,6 +3287,86 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
     }    
 }
 
+
+/***************************************************************************
+ * Prints the list of CIDR to scan to the command-line then exits.
+ * Use: provide this list to other tools. Unlike masscan -sL, it keeps
+ * the CIDR aggretated format, and does not randomize the order of output.
+ * For example, given the starting range of [10.0.0.1-10.0.0.255], this will
+ * print all the CIDR ranges that make this up:
+ *  10.0.0.1/32
+ *  10.0.0.2/31
+ *  10.0.0.4/30
+ *  10.0.0.8/29
+ *  10.0.0.16/28
+ *  10.0.0.32/27
+ *  10.0.0.64/26
+ *  10.0.0.128/25
+ ***************************************************************************/
+void
+masscan_echo_cidr(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
+{
+    unsigned i;
+    masscan->echo = fp;
+
+    /*
+     * For all IPv4 ranges ...
+     */
+    for (i=0; i<masscan->targets.ipv4.count; i++) {
+
+        /* Get the next range in the list */
+        struct Range range = masscan->targets.ipv4.list[i];
+
+        /* If not a single CIDR range, print all the CIDR ranges
+         * needed to completely represent this addres */
+        for (;;) {
+            unsigned prefix_length;
+            struct Range cidr;
+
+            /* Find the largest CIDR range (one that can be specified
+             * with a /prefix) at the start of this range. */
+            cidr = range_first_cidr(range, &prefix_length);
+            fprintf(fp, "%u.%u.%u.%u/%u\n",
+                    (cidr.begin>>24)&0xFF,
+                    (cidr.begin>>16)&0xFF,
+                    (cidr.begin>> 8)&0xFF,
+                    (cidr.begin>> 0)&0xFF,
+                    prefix_length
+                    );
+
+            /* If this is the last range, then stop. There are multiple
+             * ways to gets to see if we get to the end, but I think
+             * this is the best. */
+            if (cidr.end >= range.end)
+                break;
+
+            /* If the CIDR range didn't cover the entire range,
+             * then remove it from the beginning of the range
+             * and process the remainder */
+            range.begin = cidr.end+1;
+        }
+    }
+
+    /*
+     * For all IPv6 ranges...
+     */
+    for (i=0; i<masscan->targets.ipv6.count; i++) {
+        struct Range6 range = masscan->targets.ipv6.list[i];
+        bool exact = false;
+        while (!exact) {
+            ipaddress_formatted_t fmt = ipv6address_fmt(range.begin);
+            fprintf(fp, "%s", fmt.string);
+            if (range.begin.hi == range.end.hi && range.begin.lo == range.end.lo) {
+                fprintf(fp, "/128");
+                exact = true;
+            } else {
+                unsigned cidr_bits = count_cidr6_bits(&range, &exact);
+                fprintf(fp, "/%u", cidr_bits);
+            }
+            fprintf(fp, "\n");
+        }
+    }
+}
 
 /***************************************************************************
  * remove leading/trailing whitespace
@@ -3322,24 +3452,10 @@ mainconf_selftest()
     char test[] = " test 1 ";
 
     trim(test, sizeof(test));
-    if (strcmp(test, "test 1") != 0)
-        return 1; /* failure */
-
-    {
-        struct Range range;
-
-        range.begin = 16;
-        range.end = 32-1;
-        if (count_cidr_bits(range) != 28)
-            return 1;
-
-        range.begin = 1;
-        range.end = 13;
-        if (count_cidr_bits(range) != 0)
-            return 1;
-
-
+    if (strcmp(test, "test 1") != 0) {
+        goto failure;
     }
+
 
     /* */
     {
@@ -3347,12 +3463,15 @@ mainconf_selftest()
         char *argv[] = { "foo", "bar", "-ddd", "--readscan", "xxx", "--something" };
     
         if (masscan_conf_contains("--nothing", argc, argv))
-            return 1;
+            goto failure;
 
         if (!masscan_conf_contains("--readscan", argc, argv))
-            return 1;
+            goto failure;
     }
 
     return 0;
+failure:
+    fprintf(stderr, "[+] selftest failure: config subsystem\n");
+    return 1;
 }
 

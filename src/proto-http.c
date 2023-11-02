@@ -168,7 +168,7 @@ http_change_requestline(unsigned char **hdr, size_t header_length,
         return _http_insert(hdr, start, offset, header_length, field_length, field);
     }
 
-    /* #4 Space after url */
+    /* #4 Space after URL */
     if (offset == header_length)
         header_length += _http_append(hdr, header_length, field_length, " ");
     offset = _skip(spaces, *hdr, offset, header_length);
@@ -281,7 +281,7 @@ _has_field_name(const char *name, size_t name_length, const unsigned char *hdr, 
     if (!found_colon)
         return false;
 
-    /* Compare the name (case insentive) */
+    /* Compare the name (case insensitive) */
     return memcasecmp(name, hdr + offset, name_length) == 0;
 }
 
@@ -614,7 +614,7 @@ http_parse(
             break;
         case HTTPFIELD_CONTENT_LENGTH:
                 if (isdigit(px[i]&0xFF)) {
-                    ; /*todo: add content length parsing */
+                    ; /* TODO: add content length parsing */
                 } else {
                     id = 0;
                 }

@@ -62,7 +62,7 @@ infinite:
                 printf("%s:%u\n", fmt.string, port);
         }
 
-        i += increment; /* <------ increment by 1 normally, more with shards/nics */
+        i += increment; /* <------ increment by 1 normally, more with shards/NICs */
     }
 
     if (masscan->is_infinite) {
