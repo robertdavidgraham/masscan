@@ -137,6 +137,13 @@ unsigned long long __rdtsc(void)
   }
   return 0;
 }
+#elif defined(__powerpc64__)
+unsigned long long __rdtsc(void)
+{
+  unsigned long long rval;
+  __asm__ __volatile__("mfspr %%r3, 268": "=r" (rval));
+  return rval;
+}
 #elif defined(__aarch64__)
 #define __rdtsc() 0
 #else
