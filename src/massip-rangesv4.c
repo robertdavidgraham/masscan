@@ -65,6 +65,116 @@ rangelist_is_contains(const struct RangeList *targets, unsigned addr)
     return 0;
 }
 
+/***************************************************************************
+ * Returns the first CIDR range (which can be specified with prefix bits)
+ * that fits within the input range. For example, consider the range
+ * [10.0.0.4->10.0.0.255]. This does't match the bigger CIDR range.
+ * The first range that would fit would be [10.0.0.04/30], or
+ * [10.0.0.4->10.0.0.7].
+ *
+ * Using this function allows us to decompose
+ ***************************************************************************/
+struct Range
+range_first_cidr(const struct Range range, unsigned *prefix_bits) {
+    struct Range result = (struct Range){range.begin, range.end};
+    unsigned zbits = 0;
+
+    /* Kludge: Special Case:
+     * All inputs work but the boundary case of [0.0.0.0/0] or
+     * [0.0.0.0-255.255.255.255]. I can't be bothered to figure out
+     * why the algorithm doesn't work with this range, so I'm just
+     * going to special case it here*/
+    if (range.begin == 0 && range.end == 0xFFFFffff) {
+        if (prefix_bits != NULL)
+            *prefix_bits = 0;
+        return range;
+    }
+
+    /* Count the number of trailing/suffix zeros, which may be range
+     * from none (0) to 32 (all bits are 0) */
+    for (zbits = 0; zbits <= 32; zbits++) {
+        if ((range.begin & (1<<zbits)) != 0)
+            break;
+    }
+
+    /* Now search for the largest CIDR range that starts with this
+     * begining address that fits within the ending address*/
+    while (zbits > 0) {
+        unsigned mask = ~(0xFFFFFFFF << zbits);
+
+        if (range.begin + mask > range.end)
+            zbits--;
+        else
+            break;
+    }
+
+    result.begin = range.begin;
+    result.end = range.begin + ~(0xFFFFffff << zbits);
+    if (prefix_bits != NULL)
+        *prefix_bits = 32-zbits;
+
+    return result;
+}
+
+bool
+range_is_cidr(const struct Range range, unsigned *prefix_bits) {
+    struct Range out = range_first_cidr(range, prefix_bits);
+    if (out.begin == range.begin && out.end == range.end)
+        return true;
+    else {
+        if (prefix_bits != NULL)
+            *prefix_bits = 0xFFFFFFFF;
+        return false;
+    }
+}
+
+/***************************************************************************
+ * Selftest for the above function.
+ ***************************************************************************/
+static int
+selftest_range_first_cidr(void) {
+    static struct {
+        struct Range in;
+        struct Range out;
+        unsigned prefix_bits;
+    } tests[] = {
+        {{0x00000000, 0xffffffff}, {0x00000000, 0xffffffff}, 0},
+        {{0x00000001, 0xffffffff}, {0x00000001, 0x00000001}, 32},
+        {{0xffffffff, 0xffffffff}, {0xffffffff, 0xffffffff}, 32},
+        {{0xfffffffe, 0xfffffffe}, {0xfffffffe, 0xfffffffe}, 32},
+        {{0x0A000000, 0x0A0000Ff}, {0x0A000000, 0x0A0000ff}, 24},
+        {{0x0A0000ff, 0x0A0000Ff}, {0x0A0000ff, 0x0A0000ff}, 32},
+        {{0x0A000000, 0x0A0000Ff}, {0x0A000000, 0x0A0000Ff}, 24},
+        {{0x0A000001, 0x0A0000Fe}, {0x0A000001, 0x0A000001}, 32},
+        {{0x0A000008, 0x0A0000Fe}, {0x0A000008, 0x0A00000f}, 29},
+        {{0x0A000080, 0x0A0000Fe}, {0x0A000080, 0x0A0000bf}, 26},
+        {{0x0A0000c0, 0x0A0000Fe}, {0x0A0000c0, 0x0A0000df}, 27},
+        {{0x0A0000c1, 0x0A0000Fe}, {0x0A0000c1, 0x0A0000c1}, 32},
+        {{0x0A0000fe, 0x0A0000Fe}, {0x0A0000fe, 0x0A0000fe}, 32},
+        {{0,0}, {0,0}}
+    };
+    size_t i;
+
+    for (i=0; tests[i].in.end != 0; i++) {
+        unsigned prefix_bits = 0xFFFFFFFF;
+        struct Range out = range_first_cidr(tests[i].in, &prefix_bits);
+        if (out.begin != tests[i].out.begin
+            || out.end != tests[i].out.end
+            || prefix_bits != tests[i].prefix_bits) {
+            fprintf(stderr, "[%u] 0x%08x->0x%08x  /%u   0x%08x->0x%08x /%u\n",
+                    (unsigned)i,
+                    out.begin,
+                    out.end,
+                    prefix_bits,
+                    tests[i].out.begin,
+                    tests[i].out.end,
+                    tests[i].prefix_bits);
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 /***************************************************************************
  * Test if two ranges overlap.
@@ -1245,6 +1355,11 @@ ranges_selftest(void)
             ERROR();
             return 1;
         }
+    }
+
+    if (selftest_range_first_cidr() != 0) {
+        ERROR();
+        return 1;
     }
 
     return 0;

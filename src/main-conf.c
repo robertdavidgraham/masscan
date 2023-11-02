@@ -223,86 +223,6 @@ print_nmap_help(void)
 "\n");
 }
 
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-count_cidr4_bits(struct Range range) {
-    unsigned i;
-    for (i=0; i<32; i++) {
-        unsigned mask = 0xFFFFFFFF >> i;
-
-        if ((range.begin & ~mask) == (range.end & ~mask)) {
-            if ((range.begin & mask) == 0 && (range.end & mask) == mask)
-                return i;
-        }
-    }
-    return 0;
-}
-
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-count_cidr_bits(struct Range *range, bool *exact)
-{
-    /* if range is covered by exactly one cidr prefix,
-     * exact is set to true and the prefix is outputted.
-     * If not, exact is set to false and the output
-     * cidr is the biggest one that starts at
-     * range.begin and that is included in range
-     */
-    *exact = false;
-    unsigned i;
-
-    for (i=0; i<32; i++) {
-        unsigned mask = 0xFFFFFFFF >> i;
-        /* example:
-         * - beg = 1.1.0.0
-         *  - mask of 1 bit:  beg & mask == 1.1.0.0 & 0.1.1.1 = 0.1.0.0 => != 0
-         *  - mask of 2 bits: beg & mask == 1.1.0.0 & 0.0.1.1 = 0.0.0.0
-         */
-        if ((range->begin & mask) != 0) {
-            continue;
-        }
-        /* if subnets are equal
-         * example:
-         * - beg = 1.1.0.0
-         * - end = 1.1.1.0
-         * - mask of 2 bits: beg & ~mask == end & ~mask
-         */
-        if ((range->begin & ~mask) == (range->end & ~mask)) {
-            /* example:
-             * - beg = 1.1.0.0
-             * - end = 1.1.1.0
-             * - mask of 2 bits: beg & ~mask == end & ~mask
-             *   BUT end & mask = 0.0.1.0 != mask
-             * => we include to many IPs => must reduce the mask
-             * => therefore, one more loop iteration (at least)
-             */
-            if ((range->end & mask) == mask) {
-                /* mask is exact, we englobe the whole range */
-                *exact = true;
-                return i;
-            }
-        } else {
-            /* if subnets are different, we are not exact
-             * example:
-             * - beg = 0.1.0.0
-             * - end = 1.1.1.0
-             * - mask of 2 bits: beg & ~mask = 0.1.0.0
-             *                   end & ~mask = 1.1.0.0
-             *  => mask of 2 bits does not cover the whole range
-             *  must start again from 1.0.0.0 (first IP not covered)
-             */
-            *exact = false;
-            /* set the new range begining (that is not included
-             * in the mask we return) */
-            range->begin = range->begin + mask + 1;
-            return i;
-        }
-    }
-    range->begin += 1;
-    return 32;
-}
 
 /***************************************************************************
  ***************************************************************************/
@@ -3294,28 +3214,41 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
         } while (range.begin <= range.end);
     }
     fprintf(fp, "\n");
-    for (i=0; i<masscan->targets.ipv4.count; i++) {
-        bool exact = false;
-        struct Range range = masscan->targets.ipv4.list[i];
-        fprintf(fp, "range = ");
-        fprintf(fp, "%u.%u.%u.%u",
-                (range.begin>>24)&0xFF,
-                (range.begin>>16)&0xFF,
-                (range.begin>> 8)&0xFF,
-                (range.begin>> 0)&0xFF
-                );
-        if (range.begin != range.end) {
-            unsigned cidr_bits = count_cidr_bits(&range, &exact);
 
-            if (exact && cidr_bits) {
-                fprintf(fp, "/%u", cidr_bits);
-            } else
-                fprintf(fp, "-%u.%u.%u.%u",
-                        (range.end>>24)&0xFF,
-                        (range.end>>16)&0xFF,
-                        (range.end>> 8)&0xFF,
-                        (range.end>> 0)&0xFF
-                        );
+    /*
+     * IPv4 address targets
+     */
+    for (i=0; i<masscan->targets.ipv4.count; i++) {
+        unsigned prefix_bits;
+        struct Range range = masscan->targets.ipv4.list[i];
+
+        if (range.begin == range.end) {
+            fprintf(fp, "range = %u.%u.%u.%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF
+                    );
+        } else if (range_is_cidr(range, &prefix_bits)) {
+            fprintf(fp, "range = %u.%u.%u.%u/%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
+                    prefix_bits
+                    );
+
+        } else {
+            fprintf(fp, "range = %u.%u.%u.%u-%u.%u.%u.%u",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
+                    (range.end>>24)&0xFF,
+                    (range.end>>16)&0xFF,
+                    (range.end>> 8)&0xFF,
+                    (range.end>> 0)&0xFF
+                    );
         }
         fprintf(fp, "\n");
     }
@@ -3339,36 +3272,69 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
     }    
 }
 
+
 /***************************************************************************
  * Prints the list of CIDR to scan to the command-line then exits.
  * Use: provide this list to other tools. Unlike masscan -sL, it keeps
  * the CIDR aggretated format, and does not randomize the order of output.
+ * For example, given the starting range of [10.0.0.1-10.0.0.255], this will
+ * print all the CIDR ranges that make this up:
+ *  10.0.0.1/32
+ *  10.0.0.2/31
+ *  10.0.0.4/30
+ *  10.0.0.8/29
+ *  10.0.0.16/28
+ *  10.0.0.32/27
+ *  10.0.0.64/26
+ *  10.0.0.128/25
  ***************************************************************************/
 void
 masscan_echo_cidr(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
 {
     unsigned i;
     masscan->echo = fp;
+
+    /*
+     * For all IPv4 ranges ...
+     */
     for (i=0; i<masscan->targets.ipv4.count; i++) {
+
+        /* Get the next range in the list */
         struct Range range = masscan->targets.ipv4.list[i];
-        bool exact = false;
-        while (!exact) {
-            fprintf(fp, "%u.%u.%u.%u",
-                    (range.begin>>24)&0xFF,
-                    (range.begin>>16)&0xFF,
-                    (range.begin>> 8)&0xFF,
-                    (range.begin>> 0)&0xFF
+
+        /* If not a single CIDR range, print all the CIDR ranges
+         * needed to completely represent this addres */
+        for (;;) {
+            unsigned prefix_length;
+            struct Range cidr;
+
+            /* Find the largest CIDR range (one that can be specified
+             * with a /prefix) at the start of this range. */
+            cidr = range_first_cidr(range, &prefix_length);
+            fprintf(fp, "%u.%u.%u.%u/%u\n",
+                    (cidr.begin>>24)&0xFF,
+                    (cidr.begin>>16)&0xFF,
+                    (cidr.begin>> 8)&0xFF,
+                    (cidr.begin>> 0)&0xFF,
+                    prefix_length
                     );
-            if (range.begin == range.end) {
-                fprintf(fp, "/32");
-                exact = true;
-            } else {
-                unsigned cidr_bits = count_cidr_bits(&range, &exact);
-                fprintf(fp, "/%u", cidr_bits);
-            }
-            fprintf(fp, "\n");
+
+            /* If this is the last range, then stop. There are multiple
+             * ways to gets to see if we get to the end, but I think
+             * this is the best. */
+            if (cidr.end >= range.end)
+                break;
+
+            /* If the CIDR range didn't cover the entire range,
+             * then remove it from the beginning of the range
+             * and process the remainder */
+            range.begin = cidr.end+1;
         }
     }
+
+    /*
+     * For all IPv6 ranges...
+     */
     for (i=0; i<masscan->targets.ipv6.count; i++) {
         struct Range6 range = masscan->targets.ipv6.list[i];
         bool exact = false;
@@ -3475,21 +3441,6 @@ mainconf_selftest()
         goto failure;
     }
 
-    {
-        struct Range range;
-
-        range.begin = 16;
-        range.end = 32-1;
-        bool exact = false;
-        if (count_cidr_bits(&range, &exact) != 28 || !exact)
-            goto failure;
-
-        range.begin = 1;
-        range.end = 13;
-        if (count_cidr4_bits(range) != 0)
-            goto failure;
-
-    }
 
     /* */
     {

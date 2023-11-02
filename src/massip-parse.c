@@ -830,6 +830,13 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     unsigned addr_count = 0;
     unsigned long long line_number, char_number;
 
+    /* Kludge: should never happen, should fix this when reading in
+     * config, not this deep in the code. */
+    if (filename == 0 || filename[0] == '\0') {
+        fprintf(stderr, "[-] missing filename for ranges\n");
+        exit(1);
+    }
+
     /*
      * Open the file containing IP addresses, which can potentially be
      * many megabytes in size
