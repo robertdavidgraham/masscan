@@ -695,6 +695,7 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
             payloads->list[j] = p;
 
             payloads->count += count;
+            count = 1;
         }
     }
     return count; /* zero or one */

@@ -450,6 +450,7 @@ struct Masscan
 
     struct {
         ipaddress ip;
+        char    *password;
         unsigned port;
     } redis;
 

@@ -118,6 +118,7 @@ struct Output
     struct {
         ipaddress ip;
         unsigned port;
+        char *password;
         ptrdiff_t fd;
         uint64_t outstanding;
         unsigned state;

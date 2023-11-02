@@ -3,7 +3,7 @@ masscan(8) -- Fast scan of the Internet
 
 ## SYNOPSIS
 
-masscan <ip addresses/ranges> -p <ports> <options>
+masscan \[options\] \[<IP|ranges>... -p PORT\[,PORT...\]\]
 
 ## DESCRIPTION
 
@@ -15,7 +15,7 @@ one port.
 
 ## OPTIONS
 
-  * `<ip/range>`: anything on the command-line not prefixed with a '-' is
+  * `<IP|RANGE>`: anything on the command-line not prefixed with a '-' is
     assumed to be an IP address or range. There are three valid formats.
 	The first is a single IP address like `192.168.0.1` or `2001:db8::1`. The second
 	is a range like `10.0.0.1-10.0.0.100`. The third is a CIDR address,
@@ -24,10 +24,10 @@ one port.
 	separated by space, or can be separated by a comma as a single option,
 	such as `10.0.0.0/8,192.168.0.1,2001:db8::1`.
 
-  * `--range <ip/range>`: the same as target range spec described above,
+  * `--range <IP|RANGE>`: the same as target range spec described above,
     except as a named parameter instead of an unnamed one.
 
-  * `-p <ports`, `--ports <ports>`: specifies the port(s) to be scanned. A 
+  * `-p PORT[,PORT..]`, `--ports PORT[,PORT...]`: specifies the port(s) to be scanned. A 
     single port can be specified, like `-p80`. A range of ports can be 
     specified, like `-p 20-25`. A list of ports/ranges can be specified, like
 	`-p80,20-25`. UDP ports can also be specified, like
@@ -37,7 +37,7 @@ one port.
 	a TCP connection. Protocols supported include HTTP, FTP, IMAP4, memcached,
 	POP3, SMTP, SSH, SSL, SMB, Telnet, RDP, and VNC.
 
-  * `--rate <packets-per-second>`: specifies the desired rate for transmitting
+  * `--rate RATE`: specifies the desired rate for transmitting
     packets. This can be very small numbers, like `0.1` for transmitting 
     packets at rates of one every 10 seconds, for very large numbers like 
     10000000, which attempts to transmit at 10 million packets/second. In my
@@ -45,11 +45,11 @@ one port.
     versions of Linux can do 2.5 million packets per second. The PF_RING driver
     is needed to get to 25 million packets/second.
 
-  * `-c <filename>`, `--conf <filename>`: reads in a configuration file. 
+  * `-c FILE`, `--conf FILE`: reads in a configuration file. 
     If not specified, then will read from `/etc/masscan/masscan.conf` by default.
 	The format is described below under 'CONFIGURATION FILE'.
 
-  * `--resume <filename>`: the same as `--conf`, except that a few options
+  * `--resume FILE`: the same as `--conf`, except that a few options
     are automatically set, such as `--append-output`. The format of the 
 	configuration file is described below. The purpose is to resume a scan
 	saved in `paused.conf` that was interupted with [ctrl-c].
@@ -58,17 +58,17 @@ one port.
     This file can then be used with the `-c` option. The format of this
 	output is described below under 'CONFIGURATION FILE'.
 
-  * `-e <ifname>`, `--adapter <ifname>`: use the named raw network interface,
+  * `-e IFNAME`, `--adapter IFNAME`: use the named raw network interface,
 	such as "eth0" or "dna1". If not specified, the first network interface
 	found with a default gateway will be used.
 
-  * `--adapter-ip <ip-address>`, `--source-ip`: send packets using this IP address. If not
+  * `--adapter-ip IP`, `--source-ip IP`: send packets using this IP address. If not
     specified, then the first IP address bound to the network interface
 	will be used. Instead of a single IP address, a range may be specified.
 	NOTE: The size of the range must be an even power of 2, such as 1, 2, 4,
 	8, 16, 1024 etc. addresses.
 
-  * `--adapter-port <port>`: send packets using this port number as the
+  * `--adapter-port PORT`: send packets using this port number as the
     source. If not specified, a random port will be chosen in the range 40000
 	through 60000. This port should be filtered by the host firewall (like
 	iptables) to prevent the host network stack from interfering with arriving
@@ -76,90 +76,90 @@ one port.
 	`40000-40003`. NOTE: The size of the range must be an even power of 2,
 	such as the example above that has a total of 4 addresses.
 
-  * `--adapter-mac <mac-address>`: send packets using this as the source MAC
+  * `--adapter-mac MAC`: send packets using this as the source MAC
     address. If not specified, then the first MAC address bound to the network
 	interface will be used.
     
-  * `--adapter-vlan <vlanid>`: send packets using this 802.1q VLAN ID
+  * `--adapter-vlan VLANID`: send packets using this 802.1q VLAN ID
 
-  * `--router-mac <mac address>`: send packets to this MAC address as the
+  * `--router-mac MAC`: send packets to this MAC address as the
     destination. If not specified, then the gateway address of the network
 	interface will be ARPed.
 
   * `--ping`: indicates that the scan should include an ICMP echo request.
     This may be included with TCP and UDP scanning.
 
-  * `--exclude <ip/range>`: blacklist an IP address or range, preventing it
+  * `--exclude <IP|RANGE>`: blacklist an IP address or range, preventing it
     from being scanned. This overrides any target specification, guaranteeing
 	that this address/range won't be scanned. This has the same format
 	as the normal target specification.
 
-  * `--excludefile <filename>`: reads in a list of exclude ranges, in the same
+  * `--excludefile FILE`: reads in a list of exclude ranges, in the same
     target format described above. These ranges override any targets,
 	preventing them from being scanned.
 
-  * `-iL <filename>`, `--includefile <filename>`: reads in a list of ranges to scan, in the same
+  * `-iL FILE`, `--includefile FILE`: reads in a list of ranges to scan, in the same
     target format described above for IP addresses and ranges. This file can contain
 	millions of addresses and ranges.
 
-  * `--append-output`: causes output to append to file, rather than
+  * `--append-output`: causes output to append to the file, rather than
     overwriting the file. Useful for when resumeing scans (see `--resume`).
 
   * `--iflist`: list the available network interfaces, and then exits. The
-    `-e <ifname>` can then be used with one of the listed adapters.
+    `-e IFNAME` can then be used with one of the listed adapters.
 
-  * `--retries`: the number of retries to send, at 1 second intervals. Note
+  * `--retries <num>`: the number of retries to send, at 1 second intervals. Note
     that since this scanner is stateless, retries are sent regardless if
 	replies have already been received.
 
   * `--nmap`: print help about nmap-compatibility alternatives for these
     options.
 
-  * `--pcap-payloads`: read packets from a libpcap file containing packets
+  * `--pcap-payloads FILE`: read packets from a libpcap file containing packets
     and extract the UDP payloads, and associate those payloads with the
 	destination port. These payloads will then be used when sending UDP
 	packets with the matching destination port. Only one payload will
 	be remembered per port. Similar to `--nmap-payloads`.
 
-  * `--nmap-payloads <filename>`: read in a file in the same format as 
+  * `--nmap-payloads FILE`: read in a file in the same format as 
     the nmap file `nmap-payloads`. This contains UDP payload, so that we
 	can send useful UDP packets instead of empty ones. Similar to
 	`--pcap-payloads`.
 
-  * `--http-* <field>`: replaces the existing field in the HTTP header
+  * `--http-* HEADER`: replaces the existing field in the HTTP header
     with a new one. Fields that can be replaced are `--http-method`, `--http-url`,
 	 `--http-version`,`--http-host`, and `--http-user-agent`.
 	 Example: `--http-user-agent Keurig K575 Coffee Maker`. See also `--http-field` and `--http-cookie`.
 
-  * `--http-field <name:value>`: replaces the existing HTTP header field,
+  * `--http-field NAME:VALUE`: replaces the existing HTTP header field,
     or inserts a new one if the field doesn't exist, given as a `name:value` pair. 
 	Cannot be used to replace the fields in the request-line (method, url, version).
 	Example: `--http-field Accept:image/gif`.
     
-  * `--http-field-remove <name>`: removes the first field from the header that matches
+  * `--http-field-remove NAME`: removes the first field from the header that matches
        (may be needed multiple times for fields like `Cookie` that can exist multiple times)
 
-  * `--http-cookie <value>`: adds a `Cookie:` field to the HTTP header, even
+  * `--http-cookie VALUE`: adds a `Cookie:` field to the HTTP header, even
     if other cookie fields exist. The other `--http-*` options replace existing
 	fields in the HTTP header, this one adds more even if some already exist.
 
-  *`--http-payload <str>`: adds a payload string after the header; this will
-    automatically add a `--http-field Content-Length:<len>` field to match the length of the string,
-    but the user will have to add their own `--http-field Content-Type:<type>` field to match
+  * `--http-payload STR`: adds a payload string after the header; this will
+    automatically add a `--http-field Content-Length:LEN` field to match the length of the string,
+    but the user will have to add their own `--http-field Content-Type:TYPE` field to match
     the string. Presumably, the user will also change the method to something like
     `--http-method POST`. Common conntent types would be `application/x-www-form-urlencoded`,
     `application/json`,  or `text/xml`.
 
 
-  * `--show [open,closed]`: tells which port status to display, such
+  * `--show [open|closed]`: tells which port status to display, such
     as 'open' for those ports that respond with a SYN-ACK on TCP, or
 	'closed' for those ports that repsond with RST. The default is
 	only to display 'open' ports.
 
-  * `--noshow [open,closed]`: disables a port status to display, such
+  * `--noshow [open|closed]`: disables a port status to display, such
     as to no longer display 'open' ports.
 
-  * `--pcap <filename>`: saves received packets (but not transmitted
+  * `--pcap FILE`: saves received packets (but not transmitted
     packets) to the libpcap-format file.
 
   * `--packet-trace`: prints a summary of those packets sent and received.
@@ -169,37 +169,37 @@ one port.
   * `--pfring`: force the use of the PF_RING driver. The program will exit
     if PF_RING DNA drvers are not available.
 
-  * `--resume-index`: the point in the scan at when it was paused.
+  * `--resume-index INDEX`: the point in the scan at when it was paused.
 
-  * `--resume-count`: the maximum number of probes to send before exiting.
+  * `--resume-count NUM`: the maximum number of probes to send before exiting.
     This is useful with the `--resume-index` to chop up a scan and split
 	it among multiple instances, though the `--shards` option might be 
 	better.
 
-  * `--shards <x>/<y>`: splits the scan among instances. `x` is the id 
+  * `--shards X/Y`: splits the scan among instances. `x` is the id 
 	  for this scan, while `y` is the total number of instances. For example,
 	  `--shards 1/2` tells an instance to send every other packet, starting
 	  with index 0. Likewise, `--shards 2/2` sends every other packet, but
 	  starting with index 1, so that it doesn't overlap with the first example.
 
-  * `--rotate <time>`: rotates the output file, renaming it with the 
+  * `--rotate TIME`: rotates the output file, renaming it with the 
     current timestamp, moving it to a separate directory. The time is
 	specified in number of seconds, like "3600" for an hour. Or, units
 	of time can be specified, such as "hourly", or "6hours", or "10min".
 	Times are aligned on an even boundary, so if "daily" is specified,
 	then the file will be rotated every day at midnight.
 
-  * `--rotate-offset <time>`: an offset in the time. This is to accomodate
+  * `--rotate-offset TIME`: an offset in the time. This is to accomodate
     timezones.
 
-  * `--rotate-size <size>`: rotates the output file when it exceeds the
+  * `--rotate-size SIZE`: rotates the output file when it exceeds the
     given size. Typical suffixes can be applied (k,m,g,t) for kilo, mega,
 	giga, tera.
 
-  * `--rotate-dir <directory>`: when rotating the file, this specifies which
+  * `--rotate-dir DIR`: when rotating the file, this specifies which
     directory to move the file to. A useful directory is `/var/log/masscan`.
 
-  * `--seed <integer>`: an integer that seeds the random number generator.
+  * `--seed INT`: an integer that seeds the random number generator.
     Using a different seed will cause packets to be sent in a different
 	random order. Instead of an integer, the string `time` can be specified,
 	which seeds using the local timestamp, automatically generating a 
@@ -209,9 +209,9 @@ one port.
   * `--regress`: run a regression test, returns '0' on success and '1' on
     failure.
 	
-  * `--ttl <num>`: specifies the TTL of outgoing packets, defaults to 255.
+  * `--ttl NUM`: specifies the TTL of outgoing packets, defaults to 255.
   
-  * `--wait <seconds>`: specifies the number of seconds after transmit is
+  * `--wait SECONDS`: specifies the number of seconds after transmit is
     done to wait for receiving packets before exiting the program. The default
 	is 10 seconds. The string `forever` can be specified to never terminate.
 	
@@ -230,44 +230,44 @@ one port.
   * `--interactive`: show the results in realtime on the console. It has 
     no effect if used with --output-format or --output-filename.		
   
-  * `--output-format <fmt>`: indicates the format of the output file, which
+  * `--output-format FMT`: indicates the format of the output file, which
     can be `xml`, `binary`, `grepable`, `list`, or `JSON`. The 
 	option `--output-filename` must be specified.
 
-  * `--output-filename <filename>`: the file which to save results to. If
+  * `--output-filename FILE`: the file which to save results to. If
     the parameter `--output-format` is not specified, then the default of 
 	`xml` will be used.
 		   
-  * `-oB <filename>`: sets the output format to binary and saves the output in
+  * `-oB FILE`: sets the output format to binary and saves the output in
     the given filename. This is equivalent to using the `--output-format` and
     `--output-filename` parameters. The option `--readscan` can then be used to
     read the binary file. Binary files are mush smaller than their XML
     equivalents, but require a separate step to convert back into XML or
     another readable format.
 	
-  * `-oX <filename>`: sets the output format to XML and saves the output in the
+  * `-oX FILE`: sets the output format to XML and saves the output in the
     given filename. This is equivalent to using the `--output-format xml` and
     `--output-filename` parameters.
 	
-  * `-oG <filename>`: sets the output format to grepable and saves the output 
+  * `-oG FILE`: sets the output format to grepable and saves the output 
 	  in the given filename. This is equivalent to using the --output-format grepable 
 	  and --output-filename parameters.
   
-  * `-oJ <filename>`: sets the output format to JSON and saves the output in 
+  * `-oJ FILE`: sets the output format to JSON and saves the output in 
 	  the given filename. This is equivalent to using the --output-format json 
 	  and --output-filename parameters.
   
-  * `-oL <filename>`: sets the output format to a simple list format and saves 
+  * `-oL FILE`: sets the output format to a simple list format and saves 
 	  the output in the given filename. This is equivalent to using 
 	  the --output-format list and --output-filename parameters.
 
-  *  `--readscan <binary-files>`: reads the files created by the `-oB` option
+  *  `--readscan FILE`: reads the files created by the `-oB` option
     from a scan, then outputs them in one of the other formats, depending
     on command-line parameters. In other words, it can take the binary
     version of the output and convert it to an XML or JSON format. When this option
     is given, defaults from `/etc/masscan/masscan.conf` will not be read.
 
-  * `--connection-timeout <secs>`: when doing banner checks, this specifies the
+  * `--connection-timeout SECS`: when doing banner checks, this specifies the
     maximum number of seconds that a TCP connection can be held open. The default
     is 30 seconds. Increase this time if banners are incomplete. For example,
     we have to increase the timeout when downloading all the SSL certs from
@@ -276,17 +276,17 @@ one port.
     consume a lot of memory on fast scans. While the code may handle millions of 
     open TCP connections, you may not have enough memory for that.
 
-  * `--hello-file[<port>] <filename>`: send the contents of the file once the 
+  * `--hello-file[PORT] FILE`: send the contents of the file once the 
     TCP connection has been established with the given port. Requires that
     `--banners` also be set. Heuristics will be performed on the reponse in
     an attempt to discover what protocol, so HTTP responses will be parsed
     differently than other protocols.
 
-  * `--hello-string[<port>] <base64>`: same as `--hello-file` except that the
+  * `--hello-string[PORT] BASE64`: same as `--hello-file` except that the
     contents of the BASE64 encoded string are decoded, then used as the hello
     string that greets the server.
 
-  * `--capture <type>` or `--nocapture <type>`: when doing banners (`--banner`), this
+  * `--capture TYPE` or `--nocapture TYPE`: when doing banners (`--banner`), this
     determines what to capture from the banners. By default, only the TITLE field from
 	HTML documents is captured, to get the entire document, use `--capture html`.
 	By default, the entire certificate from SSL is captured, to disable this, use
@@ -342,11 +342,11 @@ stack. Normally, this works fine but sometimes can cause problems, especially
 with the `--banners` option that establishes a TCP/IP connection. In some
 cases, all the stack's parameters will have to be specified separately:
 
-    --adapter-port <port>
-    --adapter-ip <ip>
-    --adapter-mac <mac>
-    --adapter-vlan <vlanid>
-    --router-mac <mac>
+    --adapter-port PORT
+    --adapter-ip IP
+    --adapter-mac MAC
+    --adapter-vlan VLANID
+    --router-mac MAC
 
 If the user-mode stack shares the same IP address as the operating-system,
 then the kernel will send RST packets during a scan. This can cause

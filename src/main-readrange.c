@@ -4,7 +4,7 @@
 
 /***************************************************************************
  ***************************************************************************/
-static unsigned
+/*static unsigned
 count_cidr_bits(struct Range range)
 {
     unsigned i;
@@ -19,7 +19,7 @@ count_cidr_bits(struct Range range)
     }
 
     return 0;
-}
+}*/
 
 /***************************************************************************
  ***************************************************************************/
@@ -55,28 +55,36 @@ main_readrange(struct Masscan *masscan)
     FILE *fp = stdout;
 
     for (i=0; i<list4->count; i++) {
+        unsigned prefix_length;
         struct Range range = list4->list[i];
-        fprintf(fp, "%u.%u.%u.%u",
-            (range.begin>>24)&0xFF,
-            (range.begin>>16)&0xFF,
-            (range.begin>> 8)&0xFF,
-            (range.begin>> 0)&0xFF
-            );
-        if (range.begin != range.end) {
-            unsigned cidr_bits = count_cidr_bits(range);
 
-            if (cidr_bits) {
-                fprintf(fp, "/%u", cidr_bits);
-            } else {
-                fprintf(fp, "-%u.%u.%u.%u",
+        if (range.begin == range.end) {
+            fprintf(fp, "%u.%u.%u.%u\n",
+                (range.begin>>24)&0xFF,
+                (range.begin>>16)&0xFF,
+                (range.begin>> 8)&0xFF,
+                (range.begin>> 0)&0xFF
+                );
+        } else if (range_is_cidr(range, &prefix_length)) {
+            fprintf(fp, "%u.%u.%u.%u/%u\n",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
+                    prefix_length
+                    );
+        } else {
+            fprintf(fp, "%u.%u.%u.%u-%u.%u.%u.%u\n",
+                    (range.begin>>24)&0xFF,
+                    (range.begin>>16)&0xFF,
+                    (range.begin>> 8)&0xFF,
+                    (range.begin>> 0)&0xFF,
                     (range.end>>24)&0xFF,
                     (range.end>>16)&0xFF,
                     (range.end>> 8)&0xFF,
                     (range.end>> 0)&0xFF
                     );
-            }
         }
-        fprintf(fp, "\n");
     }
 
     for (i=0; i<list6->count; i++) {

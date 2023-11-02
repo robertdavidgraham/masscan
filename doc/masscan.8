@@ -7,7 +7,7 @@
 \fBmasscan\fR \- Fast scan of the Internet
 .
 .SH "SYNOPSIS"
-masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
+masscan [\fIoptions\fR] [<IP|RANGE>...  \-p \fIPORT\fR[,\fIPORT\fR...]]
 .
 .SH "DESCRIPTION"
 \fBmasscan\fR is an Internet\-scale port scanner, useful for large scale surveys of the Internet, or of internal networks\. While the default transmit rate is only 100 packets/second, it can optional go as fast as 25 million packets/second, a rate sufficient to scan the Internet in 3 minutes for one port\.
@@ -15,79 +15,79 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 .SH "OPTIONS"
 .
 .IP "\(bu" 4
-\fB<ip/range>\fR: anything on the command\-line not prefixed with a \'\-\' is assumed to be an IP address or range\. There are three valid formats\. The first is a single IPv4 address like "192\.168\.0\.1"\. The second is a range like "10\.0\.0\.1\-10\.0\.0\.100"\. The third is a CIDR address, like "0\.0\.0\.0/0"\. At least one target must be specified\. Multiple targets can be specified\. This can be specified as multiple options separated by space, or can be separated by a comma as a single option, such as \fB10\.0\.0\.0/8,192\.168\.0\.1\fR\.
+\fB<IP|RANGE>\fR: anything on the command\-line not prefixed with a \'\-\' is assumed to be an IP address or range\. There are three valid formats\. The first is a single IPv4 address like "192\.168\.0\.1"\. The second is a range like "10\.0\.0\.1\-10\.0\.0\.100"\. The third is a CIDR address, like "0\.0\.0\.0/0"\. At least one target must be specified\. Multiple targets can be specified\. This can be specified as multiple options separated by space, or can be separated by a comma as a single option, such as \fB10\.0\.0\.0/8,192\.168\.0\.1\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-range <ip/range>\fR: the same as target range spec described above, except as a named parameter instead of an unnamed one\.
+\fB\-\-range <IP|RANGE>\fR: the same as target range spec described above, except as a named parameter instead of an unnamed one\.
 .
 .IP "\(bu" 4
-\fB\-p <ports\fR, \fB\-\-ports <ports>\fR: specifies the port(s) to be scanned\. A single port can be specified, like \fB\-p80\fR\. A range of ports can be specified, like \fB\-p 20\-25\fR\. A list of ports/ranges can be specified, like \fB\-p80,20\-25\fR\. UDP ports can also be specified, like \fB\-\-ports U:161,U:1024\-1100\fR\.
+\fB\-p PORT[,PORT...]\fR, \fB\-\-ports PORT[,PORT...]\fR: specifies the port(s) to be scanned\. A single port can be specified, like \fB\-p80\fR\. A range of ports can be specified, like \fB\-p 20\-25\fR\. A list of ports/ranges can be specified, like \fB\-p80,20\-25\fR\. UDP ports can also be specified, like \fB\-\-ports U:161,U:1024\-1100\fR\.
 .
 .IP "\(bu" 4
 \fB\-\-banners\fR: specifies that banners should be grabbed, like HTTP server versions, HTML title fields, and so forth\. Only a few protocols are supported\.
 .
 .IP "\(bu" 4
-\fB\-\-rate <packets\-per\-second>\fR: specifies the desired rate for transmitting packets\. This can be very small numbers, like \fB0\.1\fR for transmitting packets at rates of one every 10 seconds, for very large numbers like 10000000, which attempts to transmit at 10 million packets/second\. In my experience, Windows and can do 250 thousand packets per second, and latest versions of Linux can do 2\.5 million packets per second\. The PF_RING driver is needed to get to 25 million packets/second\.
+\fB\-\-rate RATE\fR: specifies the desired rate for transmitting packets\. This can be very small numbers, like \fB0\.1\fR for transmitting packets at rates of one every 10 seconds, for very large numbers like 10000000, which attempts to transmit at 10 million packets/second\. In my experience, Windows and can do 250 thousand packets per second, and latest versions of Linux can do 2\.5 million packets per second\. The PF_RING driver is needed to get to 25 million packets/second\.
 .
 .IP "\(bu" 4
-\fB\-c <filename>\fR, \fB\-\-conf <filename>\fR: reads in a configuration file\. The format of the configuration file is described below\.
+\fB\-c FILE\fR, \fB\-\-conf FILE\fR: reads in a configuration file\. The format of the configuration file is described below\.
 .
 .IP "\(bu" 4
-\fB\-\-resume <filename>\fR: the same as \fB\-\-conf\fR, except that a few options are automatically set, such as \fB\-\-append\-output\fR\. The format of the configuration file is described below\.
+\fB\-\-resume FILE\fR: the same as \fB\-\-conf\fR, except that a few options are automatically set, such as \fB\-\-append\-output\fR\. The format of the configuration file is described below\.
 .
 .IP "\(bu" 4
 \fB\-\-echo\fR: don\'t run, but instead dump the current configuration to a file\. This file can then be used with the \fB\-c\fR option\. The format of this output is described below under \'CONFIGURATION FILE\'\.
 .
 .IP "\(bu" 4
-\fB\-e <ifname>\fR, \fB\-\-adapter <ifname>\fR: use the named raw network interface, such as "eth0" or "dna1"\. If not specified, the first network interface found with a default gateway will be used\.
+\fB\-e IFNAME\fR, \fB\-\-adapter IFNAME\fR: use the named raw network interface, such as "eth0" or "dna1"\. If not specified, the first network interface found with a default gateway will be used\.
 .
 .IP "\(bu" 4
-\fB\-\-adapter\-ip <ip\-address>\fR: send packets using this IP address\. If not specified, then the first IP address bound to the network interface will be used\. Instead of a single IP address, a range may be specified\. NOTE: The size of the range must be an even power of 2, such as 1, 2, 4, 8, 16, 1024 etc\. addresses\.
+\fB\-\-adapter\-ip IP\fR: send packets using this IP address\. If not specified, then the first IP address bound to the network interface will be used\. Instead of a single IP address, a range may be specified\. NOTE: The size of the range must be an even power of 2, such as 1, 2, 4, 8, 16, 1024 etc\. addresses\.
 .
 .IP "\(bu" 4
-\fB\-\-adapter\-port <port>\fR: send packets using this port number as the source\. If not specified, a random port will be chosen in the range 40000 through 60000\. This port should be filtered by the host firewall (like iptables) to prevent the host network stack from interfering with arriving packets\. Instead of a single port, a range can be specified, like \fB40000\-40003\fR\. NOTE: The size of the range must be an even power of 2, such as the example above that has a total of 4 addresses\.
+\fB\-\-adapter\-port PORT\fR: send packets using this port number as the source\. If not specified, a random port will be chosen in the range 40000 through 60000\. This port should be filtered by the host firewall (like iptables) to prevent the host network stack from interfering with arriving packets\. Instead of a single port, a range can be specified, like \fB40000\-40003\fR\. NOTE: The size of the range must be an even power of 2, such as the example above that has a total of 4 addresses\.
 .
 .IP "\(bu" 4
-\fB\-\-adapter\-mac <mac\-address>\fR: send packets using this as the source MAC address\. If not specified, then the first MAC address bound to the network interface will be used\.
+\fB\-\-adapter\-mac MAC\fR: send packets using this as the source MAC address\. If not specified, then the first MAC address bound to the network interface will be used\.
 .
 .IP "\(bu" 4
-\fB\-\-router\-mac <mac address>\fR: send packets to this MAC address as the destination\. If not specified, then the gateway address of the network interface will be ARPed\.
+\fB\-\-router\-mac MAC\fR: send packets to this MAC address as the destination\. If not specified, then the gateway address of the network interface will be ARPed\.
 .
 .IP "\(bu" 4
 \fB\-\-ping\fR: indicates that the scan should include an ICMP echo request\. This may be included with TCP and UDP scanning\.
 .
 .IP "\(bu" 4
-\fB\-\-exclude <ip/range>\fR: blacklist an IP address or range, preventing it from being scanned\. This overrides any target specification, guaranteeing that this address/range won\'t be scanned\. This has the same format as the normal target specification\.
+\fB\-\-exclude <IP|RANGE>\fR: blacklist an IP address or range, preventing it from being scanned\. This overrides any target specification, guaranteeing that this address/range won\'t be scanned\. This has the same format as the normal target specification\.
 .
 .IP "\(bu" 4
-\fB\-\-excludefile <filename>\fR: reads in a list of exclude ranges, in the same target format described above\. These ranges override any targets, preventing them from being scanned\.
+\fB\-\-excludefile FILE\fR: reads in a list of exclude ranges, in the same target format described above\. These ranges override any targets, preventing them from being scanned\.
 .
 .IP "\(bu" 4
-\fB\-\-append\-output\fR: causes output to append to file, rather than overwriting the file\.
+\fB\-\-append\-output\fR: causes output to append to the file, rather than overwriting the file\.
 .
 .IP "\(bu" 4
 \fB\-\-iflist\fR: list the available network interfaces, and then exits\.
 .
 .IP "\(bu" 4
-\fB\-\-retries\fR: the number of retries to send, at 1 second intervals\. Note that since this scanner is stateless, retries are sent regardless if replies have already been received\.
+\fB\-\-retries NUM\fR: the number of retries to send, at 1 second intervals\. Note that since this scanner is stateless, retries are sent regardless if replies have already been received\.
 .
 .IP "\(bu" 4
 \fB\-\-nmap\fR: print help about nmap\-compatibility alternatives for these options\.
 .
 .IP "\(bu" 4
-\fB\-\-pcap\-payloads\fR: read packets from a libpcap file containing packets and extract the UDP payloads, and associate those payloads with the destination port\. These payloads will then be used when sending UDP packets with the matching destination port\. Only one payload will be remembered per port\. Similar to \fB\-\-nmap\-payloads\fR\.
+\fB\-\-pcap\-payloads FILE\fR: read packets from a libpcap file containing packets and extract the UDP payloads, and associate those payloads with the destination port\. These payloads will then be used when sending UDP packets with the matching destination port\. Only one payload will be remembered per port\. Similar to \fB\-\-nmap\-payloads\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-nmap\-payloads <filename>\fR: read in a file in the same format as the nmap file \fBnmap\-payloads\fR\. This contains UDP payload, so that we can send useful UDP packets instead of empty ones\. Similar to \fB\-\-pcap\-payloads\fR\.
+\fB\-\-nmap\-payloads FILE\fR: read in a file in the same format as the nmap file \fBnmap\-payloads\fR\. This contains UDP payload, so that we can send useful UDP packets instead of empty ones\. Similar to \fB\-\-pcap\-payloads\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-http\-user\-agent <user\-agent>\fR: replaces the existing user\-agent field with the indicated value when doing HTTP requests\.
+\fB\-\-http\-user\-agent USER_AGENT\fR: replaces the existing user\-agent field with the indicated value when doing HTTP requests\.
 .
 .IP "\(bu" 4
 \fB\-\-open\-only\fR: report only open ports, not closed ports\.
 .
 .IP "\(bu" 4
-\fB\-\-pcap <filename>\fR: saves received packets (but not transmitted packets) to the libpcap\-format file\.
+\fB\-\-pcap FILE\fR: saves received packets (but not transmitted packets) to the libpcap\-format file\.
 .
 .IP "\(bu" 4
 \fB\-\-packet\-trace\fR: prints a summary of those packets sent and received\. This is useful at low rates, like a few packets per second, but will overwhelm the terminal at high rates\.
@@ -96,34 +96,34 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-\-pfring\fR: force the use of the PF_RING driver\. The program will exit if PF_RING DNA drvers are not available\.
 .
 .IP "\(bu" 4
-\fB\-\-resume\-index\fR: the point in the scan at when it was paused\.
+\fB\-\-resume\-index INDEX\fR: the point in the scan at when it was paused\.
 .
 .IP "\(bu" 4
-\fB\-\-resume\-count\fR: the maximum number of probes to send before exiting\. This is useful with the \fB\-\-resume\-index\fR to chop up a scan and split it among multiple instances, though the \fB\-\-shards\fR option might be better\.
+\fB\-\-resume\-count NUM\fR: the maximum number of probes to send before exiting\. This is useful with the \fB\-\-resume\-index\fR to chop up a scan and split it among multiple instances, though the \fB\-\-shards\fR option might be better\.
 .
 .IP "\(bu" 4
-\fB\-\-shards <x>/<y>\fR: splits the scan among instances\. \fBx\fR is the id for this scan, while \fBy\fR is the total number of instances\. For example, \fB\-\-shards 1/2\fR tells an instance to send every other packet, starting with index 0\. Likewise, \fB\-\-shards 2/2\fR sends every other packet, but starting with index 1, so that it doesn\'t overlap with the first example\.
+\fB\-\-shards X/Y\fR: splits the scan among instances\. \fBx\fR is the id for this scan, while \fBy\fR is the total number of instances\. For example, \fB\-\-shards 1/2\fR tells an instance to send every other packet, starting with index 0\. Likewise, \fB\-\-shards 2/2\fR sends every other packet, but starting with index 1, so that it doesn\'t overlap with the first example\.
 .
 .IP "\(bu" 4
-\fB\-\-rotate <time>\fR: rotates the output file, renaming it with the current timestamp, moving it to a separate directory\. The time is specified in number of seconds, like "3600" for an hour\. Or, units of time can be specified, such as "hourly", or "6hours", or "10min"\. Times are aligned on an even boundary, so if "daily" is specified, then the file will be rotated every day at midnight\.
+\fB\-\-rotate TIME\fR: rotates the output file, renaming it with the current timestamp, moving it to a separate directory\. The time is specified in number of seconds, like "3600" for an hour\. Or, units of time can be specified, such as "hourly", or "6hours", or "10min"\. Times are aligned on an even boundary, so if "daily" is specified, then the file will be rotated every day at midnight\.
 .
 .IP "\(bu" 4
-\fB\-\-rotate\-offset <time>\fR: an offset in the time\. This is to accommodate timezones\.
+\fB\-\-rotate\-offset TIME\fR: an offset in the time\. This is to accommodate timezones\.
 .
 .IP "\(bu" 4
-\fB\-\-rotate\-dir <directory>\fR: when rotating the file, this specifies which directory to move the file to\. A useful directory is \fB/var/log/masscan\fR\.
+\fB\-\-rotate\-dir DIR\fR: when rotating the file, this specifies which directory to move the file to\. A useful directory is \fB/var/log/masscan\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-seed <integer>\fR: an integer that seeds the random number generator\. Using a different seed will cause packets to be sent in a different random order\. Instead of an integer, the string \fBtime\fR can be specified, which seeds using the local timestamp, automatically generating a differnet random order of scans\. If no seed specified, \fBtime\fR is the default\.
+\fB\-\-seed INT\fR: an integer that seeds the random number generator\. Using a different seed will cause packets to be sent in a different random order\. Instead of an integer, the string \fBtime\fR can be specified, which seeds using the local timestamp, automatically generating a differnet random order of scans\. If no seed specified, \fBtime\fR is the default\.
 .
 .IP "\(bu" 4
 \fB\-\-regress\fR: run a regression test, returns \'0\' on success and \'1\' on failure\.
 .
 .IP "\(bu" 4
-\fB\-\-ttl <num>\fR: specifies the TTL of outgoing packets, defaults to 255\.
+\fB\-\-ttl NUM\fR: specifies the TTL of outgoing packets, defaults to 255\.
 .
 .IP "\(bu" 4
-\fB\-\-wait <seconds>\fR: specifies the number of seconds after transmit is done to wait for receiving packets before exiting the program\. The default is 10 seconds\. The string \fBforever\fR can be specified to never terminate\.
+\fB\-\-wait SECONDS\fR: specifies the number of seconds after transmit is done to wait for receiving packets before exiting the program\. The default is 10 seconds\. The string \fBforever\fR can be specified to never terminate\.
 .
 .IP "\(bu" 4
 \fB\-\-offline\fR: don\'t actually transmit packets\. This is useful with a low rate and \fB\-\-packet\-trace\fR to look at what packets might\'ve been transmitted\. Or, it\'s useful with \fB\-\-rate 100000000\fR in order to benchmark how fast transmit would work (assuming a zero\-overhead driver)\. PF_RING is about 20% slower than the benchmark result from offline mode\.
@@ -135,28 +135,28 @@ masscan <ip addresses/ranges> \-p \fIports\fR \fIoptions\fR
 \fB\-\-interactive\fR: show the results in realtime on the console\. It has no effect if used with \-\-output\-format or \-\-output\-filename\.
 .
 .IP "\(bu" 4
-\fB\-\-output\-format <fmt>\fR: indicates the format of the output file, which can be \fBxml\fR, \fBbinary\fR, \fBgrepable\fR, \fBlist\fR, or \fBJSON\fR\. The option \fB\-\-output\-filename\fR must be specified\.
+\fB\-\-output\-format FMT\fR: indicates the format of the output file, which can be \fBxml\fR, \fBbinary\fR, \fBgrepable\fR, \fBlist\fR, or \fBJSON\fR\. The option \fB\-\-output\-filename\fR must be specified\.
 .
 .IP "\(bu" 4
-\fB\-\-output\-filename <filename>\fR: the file which to save results to\. If the parameter \fB\-\-output\-format\fR is not specified, then the default of \fBxml\fR will be used\.
+\fB\-\-output\-filename FILE\fR: the file which to save results to\. If the parameter \fB\-\-output\-format\fR is not specified, then the default of \fBxml\fR will be used\.
 .
 .IP "\(bu" 4
-\fB\-oB <filename>\fR: sets the output format to binary and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\. The option \fB\-\-readscan\fR can then be used to read the binary file\. Binary files are much smaller than their XML equivelents, but require a separate step to convert back into XML or another readable format\.
+\fB\-oB FILE\fR: sets the output format to binary and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format\fR and \fB\-\-output\-filename\fR parameters\. The option \fB\-\-readscan\fR can then be used to read the binary file\. Binary files are much smaller than their XML equivelents, but require a separate step to convert back into XML or another readable format\.
 .
 .IP "\(bu" 4
-\fB\-oX <filename>\fR: sets the output format to XML and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format xml\fR and \fB\-\-output\-filename\fR parameters\.
+\fB\-oX FILE\fR: sets the output format to XML and saves the output in the given filename\. This is equivelent to using the \fB\-\-output\-format xml\fR and \fB\-\-output\-filename\fR parameters\.
 .
 .IP "\(bu" 4
-\fB\-oG <filename>\fR: sets the output format to grepable and saves the output in the given filename\. This is equivelent to using the \-\-output\-format grepable and \-\-output\-filename parameters\.
+\fB\-oG FILE\fR: sets the output format to grepable and saves the output in the given filename\. This is equivelent to using the \-\-output\-format grepable and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
-\fB\-oJ <filename>\fR: sets the output format to JSON and saves the output in the given filename\. This is equivelent to using the \-\-output\-format json and \-\-output\-filename parameters\.
+\fB\-oJ FILE\fR: sets the output format to JSON and saves the output in the given filename\. This is equivelent to using the \-\-output\-format json and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
-\fB\-oL <filename>\fR: sets the output format to a simple list format and saves the output in the given filename\. This is equivelent to using the \-\-output\-format list and \-\-output\-filename parameters\.
+\fB\-oL FILE\fR: sets the output format to a simple list format and saves the output in the given filename\. This is equivelent to using the \-\-output\-format list and \-\-output\-filename parameters\.
 .
 .IP "\(bu" 4
-\fB\-\-readscan <binary\-files>\fR: reads the files created by the \fB\-oB\fR option from a scan, then outputs them in one of the other formats, depending on command\-line parameters\. In other words, it can take the binary version of the output and convert it to an XML or JSON format\.
+\fB\-\-readscan FILE\fR: reads the files created by the \fB\-oB\fR option from a scan, then outputs them in one of the other formats, depending on command\-line parameters\. In other words, it can take the binary version of the output and convert it to an XML or JSON format\.
 .
 .IP "" 0
 .

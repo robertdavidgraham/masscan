@@ -44,6 +44,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_TELNET:         return "telnet";
     case PROTO_RDP:            return "rdp";
     case PROTO_HTTP_SERVER:     return "http.server";
+    case PROTO_MC:     return "minecraft";
 
     case PROTO_ERROR: return "error";
             
@@ -69,7 +70,6 @@ masscan_string_to_app(const char *str)
         {"ftp",     PROTO_FTP},
         {"dns-ver", PROTO_DNS_VERSIONBIND},
         {"snmp",    PROTO_SNMP},
-        {"ssh2",    PROTO_SSH2},
         {"nbtstat", PROTO_NBTSTAT},
         {"ssl",     PROTO_SSL3},
         {"smtp",    PROTO_SMTP},
@@ -95,10 +95,11 @@ masscan_string_to_app(const char *str)
         {"telnet",      PROTO_TELNET},
         {"rdp",         PROTO_RDP},
         {"http.server", PROTO_HTTP_SERVER},
+        {"minecraft",   PROTO_MC},
         {0,0}
     };
     size_t i;
-    
+
     for (i=0; list[i].name; i++) {
         if (strcmp(str, list[i].name) == 0)
             return list[i].value;

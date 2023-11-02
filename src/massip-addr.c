@@ -227,6 +227,13 @@ static unsigned _count_long(uint64_t number)
     return count;
 }
 
+/**
+ * Find the number of bits needed to hold the integer. In other words,
+ * the number 0x64 would need 7 bits to store it.
+ *
+ * We use this to count the size of scans. We currently only support
+ * scan sizes up to 63 bits.
+ */
 unsigned massint128_bitcount(massint128_t number)
 {
     if (number.hi)
@@ -234,6 +241,7 @@ unsigned massint128_bitcount(massint128_t number)
     else
         return _count_long(number.lo);
 }
+
 
 int ipv6address_selftest(void)
 {
