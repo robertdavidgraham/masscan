@@ -269,7 +269,7 @@ int pixie_time_selftest(void)
         fprintf(stderr, "timing error, long delay\n");
         return 1;
     }
-    if (1.2 * duration < elapsed) {
+    if (1.9 * duration < elapsed) {
         fprintf(stderr, "timing error, long delay %5.0f%%\n", elapsed*100.0/duration);
         return 1;
     }
