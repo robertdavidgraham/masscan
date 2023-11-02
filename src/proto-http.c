@@ -61,7 +61,8 @@ _http_append(unsigned char **inout_header, size_t length1, size_t length2, const
 }
 
 enum What {spaces, notspaces, end_of_line, end_of_field};
-size_t _skip(enum What what, const unsigned char *hdr, size_t offset, size_t header_length)
+static size_t
+_skip(enum What what, const unsigned char *hdr, size_t offset, size_t header_length)
 {
     switch (what) {
     case notspaces:
@@ -221,7 +222,8 @@ http_change_requestline(unsigned char **hdr, size_t header_length,
     return header_length;
 }
 
-size_t _field_length(const unsigned char *hdr, size_t offset, size_t hdr_length)
+static size_t
+_field_length(const unsigned char *hdr, size_t offset, size_t hdr_length)
 {
     size_t original_offset = offset;
 

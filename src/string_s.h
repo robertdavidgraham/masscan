@@ -94,7 +94,7 @@ errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
 /* GCC 4 */
 # define sprintf_s      snprintf
 # define vsprintf_s     vsnprintf
- int memcasecmp(const void *lhs, const void *rhs, int length);
+ int memcasecmp(const void *lhs, const void *rhs, size_t length);
  typedef int errno_t;
 #if !defined(WIN32) /* mingw */
 errno_t fopen_s(FILE **fp, const char *filename, const char *mode);

@@ -254,6 +254,19 @@ pixie_nanotime(void)
 }
 #endif
 
+/*
+ * Timing is incredibly importatn to masscan because we need to throttle
+ * how fast we spew packets. Every platofrm has slightly different timing
+ * even given standard APIs. We need to make sure we have an accurate
+ * timing function.
+ *
+ * This function tests betwe [0.9, 1.9] the expected results. I want something
+ * tight, like [0.99,1.01] (plus/minus 1%), but unfortunately automated
+ * testing platforms, like GitHub Actions, are overloaded, so when I wait
+ * for half a second, they might actually wait for 0.7 seconds, causing
+ * this test to fail. Thus, I have to greatly expand the range that passes
+ * this test.
+ */
 int pixie_time_selftest(void)
 {
     static const uint64_t duration = 456789;

@@ -10,7 +10,8 @@
 
 static unsigned char hand_shake_ptr[128];
 
-unsigned char* hand_shake(uint16_t port, const char* ip,size_t ip_len)
+static unsigned char *
+hand_shake(uint16_t port, const char* ip, size_t ip_len)
 {
     size_t tlen = 10+ip_len;
     unsigned char * ret = (unsigned char *)calloc(1,tlen);
@@ -27,7 +28,8 @@ unsigned char* hand_shake(uint16_t port, const char* ip,size_t ip_len)
     return ret;
 }
 
-void* memstr(void * mem, size_t len, char * str)
+static void *
+memstr(void * mem, size_t len, char * str)
 {
     size_t stlen = strlen(str);
     if(len < stlen)

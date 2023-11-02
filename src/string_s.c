@@ -33,7 +33,7 @@ errno_t fopen_s(FILE **pFile, const char *filename, const char *mode)
  */
 #ifdef __GNUC__
 int
-memcasecmp(const void *lhs, const void *rhs, int length)
+memcasecmp(const void *lhs, const void *rhs, size_t length)
 {
     int i;
     for (i=0; i<length; i++) {

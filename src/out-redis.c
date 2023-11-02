@@ -149,9 +149,10 @@ clean_response_queue(struct Output *out, SOCKET fd)
 static void
 redis_out_open(struct Output *out, FILE *fp)
 {
+    /*FIXME: why did I write this code using ptrdiff_t? */
     ptrdiff_t fd = (ptrdiff_t)fp;
     size_t count;
-    unsigned char line[1024];
+    char line[1024];
 
     UNUSEDPARM(out);
     if (out->redis.password != NULL)
