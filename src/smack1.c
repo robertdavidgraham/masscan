@@ -1679,6 +1679,7 @@ smack_benchmark(void)
         
     }
 
+    free(buf);
     return 0;
 }
 
