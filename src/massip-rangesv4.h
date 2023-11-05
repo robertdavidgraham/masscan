@@ -81,6 +81,11 @@ struct RangeList
 void
 rangelist_add_range(struct RangeList *task, unsigned begin, unsigned end);
 
+void
+rangelist_add_range_tcp(struct RangeList *targets, unsigned begin, unsigned end);
+void
+rangelist_add_range_udp(struct RangeList *targets, unsigned begin, unsigned end);
+
 
 /**
  * Returns 'true' is the indicated port or IP address is in one of the task

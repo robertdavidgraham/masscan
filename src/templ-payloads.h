@@ -10,7 +10,7 @@ struct MassIP;
  *      0 on success, or positive integer on failure.
  */
 int
-payloads_udp_selftest(void);
+templ_payloads_selftest(void);
 
 /**
  * Create this module. Must be matched with the 'destroy()' function on exit

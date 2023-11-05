@@ -1825,7 +1825,7 @@ int main(int argc, char *argv[])
             x += siphash24_selftest();
             x += ntp_selftest();
             x += snmp_selftest();
-            x += payloads_udp_selftest();
+            x += templ_payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
             x += lcg_selftest();

@@ -802,10 +802,45 @@ ARRAY(const char *rhs)
     return (unsigned)parseInt(p);
 }
 
+/**
+ * Called if user specified `--top-ports` on the command-line.
+ */
 static void
-config_top_ports(struct Masscan *masscan, unsigned n)
+config_top_ports(struct Masscan *masscan, unsigned maxports)
 {
     unsigned i;
+    static const unsigned short top_udp_ports[] = {
+        161, /* SNMP - should be found on all network equipment */
+        135, /* MS-RPC - should be found on all modern Windows */
+        500, /* ISAKMP - for establishing IPsec tunnels */
+        137, /* NetBIOS-NameService - should be found on old Windows */
+        138, /* NetBIOS-Datagram - should be found on old Windows */
+        445, /* SMB datagram service */
+        67, /* DHCP */
+        53, /* DNS */
+        1900, /* UPnP - Microsoft-focused local discovery */
+        5353, /* mDNS - Apple-focused local discovery */
+        4500, /* nat-t-ike - IPsec NAT traversal */
+        514, /* syslog - all Unix machiens */
+        69, /* TFTP */
+        49152, /* first of modern ephemeral ports */
+        631, /* IPP - printing protocol for Linux */
+        123, /* NTP network time protocol */
+        1434, /* MS-SQL server*/
+        520, /* RIP - routers use this protocol sometimes */
+        7, /* Echo */
+        111, /* SunRPC portmapper */
+        2049, /* SunRPC NFS */
+        5683, /* COAP */
+        11211, /* memcached */
+        1701, /* L2TP */
+        27960, /* quaked amplifier */
+        1645, /* RADIUS */
+        1812, /* RADIUS */
+        1646, /* RADIUS */
+        1813, /* RADIUS */
+    };
+
     static const unsigned short top_tcp_ports[] = {
         1,3,4,6,7,9,13,17,19,20,21,22,23,24,25,26,30,32,33,37,42,43,49,53,70,
         79,80,81,82,83,84,85,88,89,90,99,100,106,109,110,111,113,119,125,135,
@@ -885,14 +920,24 @@ config_top_ports(struct Masscan *masscan, unsigned n)
         57797,58080,60020,60443,61532,61900,62078,63331,64623,64680,65000,
         65129,65389};
     struct RangeList *ports = &masscan->targets.ports;
+    static const unsigned max_tcp_ports = sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]);
+    static const unsigned max_udp_ports = sizeof(top_udp_ports)/sizeof(top_udp_ports[0]);
+
 
     if (masscan->scan_type.tcp) {
-        for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
-            rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+        LOG(2, "[+] adding TCP top-ports = %u\n", maxports);
+        for (i=0; i<maxports && i<max_tcp_ports; i++)
+            rangelist_add_range_tcp(ports,
+                                top_tcp_ports[i],
+                                top_tcp_ports[i]);
     }
+
     if (masscan->scan_type.udp) {
-        for (i=0; i<n && i<sizeof(top_tcp_ports)/sizeof(top_tcp_ports[0]); i++)
-            rangelist_add_range(ports, top_tcp_ports[i], top_tcp_ports[i]);
+        LOG(2, "[+] adding UDP top-ports = %u\n", maxports);
+        for (i=0; i<maxports && i<max_udp_ports; i++)
+            rangelist_add_range_udp(ports,
+                                top_udp_ports[i],
+                                top_udp_ports[i]);
     }
 
     /* Targets must be sorted after every change, before being used */
@@ -2760,7 +2805,7 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
             } else if (EQUALS("top-ports", argv[i]+2)) {
                 /* special handling here since the following parameter
                  * is optional */
-                const char *value = "1000";
+                const char *value = "20";
                 unsigned n;
                 
                 /* Only consume the next parameter if it's a number,

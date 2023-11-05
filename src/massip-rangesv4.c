@@ -339,6 +339,25 @@ rangelist_add_range(struct RangeList *targets, unsigned begin, unsigned end)
     targets->is_sorted = 0;
 }
 
+/** Use this when adding TCP ports, to avoid the comoplication of how
+ * ports are stored */
+void
+rangelist_add_range_tcp(struct RangeList *targets, unsigned begin, unsigned end) {
+    rangelist_add_range(targets,
+                            Templ_TCP + begin,
+                            Templ_TCP + end);
+}
+
+/** Use this when adding UDP ports, to avoid the comoplication of how
+ * ports are stored */
+void
+rangelist_add_range_udp(struct RangeList *targets, unsigned begin, unsigned end) {
+    rangelist_add_range(targets,
+                            Templ_UDP + begin,
+                            Templ_UDP + end);
+}
+
+
 /***************************************************************************
  * This is the "free" function for the list, freeing up any memory we've
  * allocated.

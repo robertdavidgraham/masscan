@@ -112,7 +112,9 @@ struct Masscan
     } scan_type;
     
     /**
-     * After scan type has been configured, add these ports
+     * After scan type has been configured, add these ports. In other words,
+     * the user may specify `-sU` or `-sT` after the `--top-ports` parameter,
+     * so we have to wait until after parsing arguments to fill in the ports.
      */
     unsigned top_ports;
     

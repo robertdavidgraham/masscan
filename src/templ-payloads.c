@@ -1,12 +1,12 @@
 /*
-    Reads in UDP payload templates.
+ Reads in UDP payload templates.
 
-    This supports two formats. The first format is the "nmap-payloads" file
-    included with the nmap port scanner.
+ This supports two formats. The first format is the "nmap-payloads" file
+ included with the nmap port scanner.
 
-    The second is the "libpcap" format that reads in real packets,
-    extracting just the payloads, associated them with the destination
-    UDP port.
+ The second is the "libpcap" format that reads in real packets,
+ extracting just the payloads, associated them with the destination
+ UDP port.
 
  */
 #include "templ-payloads.h"
@@ -22,6 +22,7 @@
 #include "proto-dns.h"
 #include "util-malloc.h"
 #include "massip.h"
+#include "templ-nmap-payloads.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -77,10 +78,28 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
         /* 04 */"\x00\x01"  /* query = 1 */
         /* 06 */"\x00\x00\x00\x00\x00\x00"
         /* 0c */"\x07" "version"  "\x04" "bind" "\x00"
-        /* 1b */"\x00\x10" /* TXT */           
+        /* 1b */"\x00\x10" /* TXT */
         /* 1d */"\x00\x03" /* CHAOS */
         /* 1f */
     },
+
+    {69, 65536, 24, 0, 0,
+        "\x00\x01"          /* opcode = read */
+        "masscan-test" "\0" /* filename = "masscan-test" */
+        "netascii" "\0"     /* type = "netascii" */
+    },
+    /* portmapper */
+    {111, 65536, 40, 0, dns_set_cookie,
+        "\x00\x00\x00\x00" /* xid - first two bytes set by dns_set_cookie() */
+        "\x00\x00\x00\x00" /* RPC opcode = CALL*/
+        "\x00\x00\x00\x02" /* RPC version = 2 */
+        "\x00\x01\x86\xa0" /* RPC program = NFS */
+        "\x00\x00\x00\x02" /* portmapper version = 2 */
+        "\x00\x00\x00\x00" /* portmapper procedure = 0 (NULL, ping) */
+        "\x00\x00\x00\x00\x00\x00\x00\x00" /* credentials = none*/
+        "\x00\x00\x00\x00\x00\x00\x00\x00" /* verifier = none   */
+    },
+
     {123, 65536, 48, 0, ntp_set_cookie,
         "\x17\x00\x03\x2a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
         "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -96,31 +115,154 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
         "\x00\x21" /* type = nbt */
         "\x00\x01" /* class = iternet*/
     },
+
+    /* NetBIOS-SMB BROWSER protocol */
+    {138, 65536, 174, 0, 0,
+        "\x11" /* broadcast datagram */
+        "\x0a" /* flags */
+        "\xc1\x00" /* datagram id */
+        "\x0a\x01\x01\xd5" /* source IP */
+        "\x00\x8a" /* source port */
+        "\x00\xa0" /* length */
+        "\x00\x00" /* packet offset */
+        "\x20" /* namelength = 32 bytes*/
+        "ENEBFDFDEDEBEOCNFEEFFDFECACACAAA" /* "MASSCAN-TEST<00>" */
+        "\x00"
+        "\x20"
+        "FHEPFCELEHFCEPFFFACACACACACACABN" /* "WORKGROUP<1D>*/
+        "\x00"
+        "\xff\x53\x4d\x42\x25\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+
+        "\x11\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe8\x03\x00"
+        "\x00\x00\x00\x00\x00\x00\x00\x06\x00\x56\x00\x03\x00\x01\x00\x01"
+        "\x00\x02\x00\x17\x00\x5c\x4d\x41\x49\x4c\x53\x4c\x4f\x54\x5c\x42"
+        "\x52\x4f\x57\x53\x45\x00"
+
+        "\x09\x04\x01\x00\x00\x00"
+    },
+
     {161, 65536, 59, 0, snmp_set_cookie,
-     "\x30" "\x39"
-       "\x02\x01\x00"                    /* version */
-       "\x04\x06" "public"               /* community = public */
-       "\xa0" "\x2c"                     /* type = GET */
+        "\x30" "\x39"
+        "\x02\x01\x00"                    /* version */
+        "\x04\x06" "public"               /* community = public */
+        "\xa0" "\x2c"                     /* type = GET */
         "\x02\x04\x00\x00\x00\x00"      /* transaction id = ???? */
         "\x02\x01\x00"                  /* error = 0 */
         "\x02\x01\x00"                  /* error index = 0 */
-         "\x30\x1e"
-          "\x30\x0d"
-           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x01\x00" /*sysName*/
-           "\x05\x00"          /*^^^^_____IDS LULZ HAH HA HAH*/
-         "\x30\x0d"
-           "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
-           "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
+        "\x30\x1e"
+        "\x30\x0d"
+        "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x01\x00" /*sysName*/
+        "\x05\x00"          /*^^^^_____IDS LULZ HAH HA HAH*/
+        "\x30\x0d"
+        "\x06\x09\x2b\x06\x01\x80\x02\x01\x01\x05\x00" /*sysDesc*/
+        "\x05\x00"},        /*^^^^_____IDS LULZ HAH HA HAH*/
+
+    {443, 65536, 115, 0, 0,
+        "\x16" /* opcode = handshake */
+        "\xfe\xff" /* version = dTLS v1.0 */
+        "\x00\x00" /* epoch = 0 */
+        "\x00\x00\x00\x00\x00\x07" /* sequence number = 7 */
+        "\x00\x66" /* length 104 */
+
+        "\x01" /* opcode = client hello */
+        "\x00\x00\x5a" /* length 90 */
+        "\x00\x00" /* sequence number = 0 */
+        "\x00\x00\x00" /* fragment offset = 0 */
+        "\x00\x00\x5a" /* framgent length = 90 */
+        "\xfe\xfd" /* version = dTLS v1.2 */
+        "\x1d\xb1\xe3\x52\x2e\x89\x94\xb7\x15\x33\x2f\x30\xff\xff\xcf\x76"
+        "\x27\x77\xab\x04\xe4\x86\x6f\x21\x18\x0e\xf8\xdd\x70\xcc\xab\x9e"
+        "\x00" /* session id length = 0 */
+        "\x00" /* cookie length = 0 */
+        "\x00\x04" /* cipher suites length = 4 */
+        "\xc0\x30" /* TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 */
+        "\x00\xff"
+        "\x01" /* compression methods length = 1*/
+        "\x00" /* NULL compression */
+        "\x00\x2c" /* extensions length = 44 */
+        "\x00\x0b\x00\x04\x03\x00\x01\x02"
+        "\x00\x0a\x00\x0c\x00\x0a\x00\x1d\x00\x17\x00\x1e\x00\x19\x00\x18"
+        "\x00\x23\x00\x00"
+        "\x00\x16\x00\x00"
+        "\x00\x17\x00\x00"
+        "\x00\x0d\x00\x04\x00\x02\x05\x01"
+    },
+
+    {520, 65536, 24, 0, 0,
+        "\x01"  /* opcode = request */
+        "\x01"  /* version = 1 */
+        "\x00\x00" /* padding */
+        "\x00\x02" /* address familly = IPv4 */
+        "\x00\x00"
+        "\x00\x00\x00\x00"
+        "\x00\x00\x00\x00"
+        "\x00\x00\x00\x00"
+        "\x00\x00\x00\x10" /* metric = 16 */
+
+    },
+
+    /* RADIUS  */
+    {1645, 65536, 20, 0, 0,
+        "\x01" /* opcode = access request */
+        "\x00" /* packet id = 0 */
+        "\x00\x14" /* length = 20 */
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    },
+    {1812, 65536, 20, 0, 0,
+        "\x01" /* opcode = access request */
+        "\x00" /* packet id = 0 */
+        "\x00\x14" /* length = 20 */
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    },
+    {1646, 65536, 20, 0, 0,
+        "\x04" /* opcode = access request */
+        "\x00" /* packet id = 0 */
+        "\x00\x14" /* length = 20 */
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    },
+    {1813, 65536, 20, 0, 0,
+        "\x04" /* opcode = access request */
+        "\x00" /* packet id = 0 */
+        "\x00\x14" /* length = 20 */
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    },
+
+    /* L2TP */
+    {1701, 65536, 60, 0, 0,
+        "\xc8\x02" /* flags */
+        "\x00\x3c" /* length = 60 */
+        "\x00\x00" /* tunnel id = 0 */
+        "\x00\x00" /* session id = 0 */
+        "\x00\x00" /* Nsent = 0 */
+        "\x00\x00" /* Nrecvd = 0 */
+        "\x80\x08\x00\x00\x00\x00\x00\x01" /* control message */
+        "\x80\x08\x00\x00\x00\x02\x01\x00" /* protocol version */
+        "\x80\x0e\x00\x00\x00\x07" "masscan1" /* hostname */
+        "\x80\x0a\x00\x00\x00\x03\x00\x00\x00\x03" /* framing capabilities */
+        "\x80\x08\x00\x00\x00\x09\x00\x00" /* assigned tunnel */
+    },
 
     /* UPnP SSDP - Univeral Plug-n-Play Simple Service Discovery Protocol */
     {1900, 65536, 0xFFFFFFFF, 0, 0,
-            "M-SEARCH * HTTP/1.1\r\n"
-            "HOST: 239.255.255.250:1900\r\n"
-            "MAN: \"ssdp:discover\"\r\n"
-            "MX: 1\r\n"
-            "ST: ssdp:all\r\n"
-            "USER-AGENT: unix/1.0 UPnP/1.1 masscan/1.x\r\n"},
+        "M-SEARCH * HTTP/1.1\r\n"
+        "HOST: 239.255.255.250:1900\r\n"
+        "MAN: \"ssdp:discover\"\r\n"
+        "MX: 1\r\n"
+        "ST: ssdp:all\r\n"
+        "USER-AGENT: unix/1.0 UPnP/1.1 masscan/1.x\r\n"},
 
+    /* NFS - kludge: use the DNS cookie, setting first 2 bytes instead of 4 */
+    {2049, 65536, 40, 0, dns_set_cookie,
+        "\x00\x00\x00\x00" /* xid - first two bytes set by dns_set_cookie() */
+        "\x00\x00\x00\x00" /* RPC opcode = CALL*/
+        "\x00\x00\x00\x02" /* RPC version = 2 */
+        "\x00\x01\x86\xa3" /* RPC program = NFS */
+        "\x00\x00\x00\x02" /* NFS version = 2 */
+        "\x00\x00\x00\x00" /* NFS procedure = 0 (NULL, ping) */
+        "\x00\x00\x00\x00\x00\x00\x00\x00" /* credentials = none*/
+        "\x00\x00\x00\x00\x00\x00\x00\x00" /* verifier = none   */
+    },
     {5060, 65536, 0xFFFFFFFF, 0, 0,
         "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
         "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
@@ -140,9 +282,9 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
         "\x01"      /* code=GET */
         "\x01\xce"  /* message id (changed by set-cookie) */
         "\xbb" /* ".well-known */
-            "\x2e\x77\x65\x6c\x6c\x2d\x6b\x6e\x6f\x77\x6e"
+        "\x2e\x77\x65\x6c\x6c\x2d\x6b\x6e\x6f\x77\x6e"
         "\x04" /* "core" */
-            "\x63\x6f\x72\x65"
+        "\x63\x6f\x72\x65"
 
     },
 
@@ -197,17 +339,17 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
 }
 
 /***************************************************************************
- * If we have the port, return the payload
+ * If we have the port, return the best payload for that port.
  ***************************************************************************/
 int
 payloads_udp_lookup(
-        const struct PayloadsUDP *payloads,
-        unsigned port,
-        const unsigned char **px,
-        unsigned *length,
-        unsigned *source_port,
-        uint64_t *xsum,
-        SET_COOKIE *set_cookie)
+                    const struct PayloadsUDP *payloads,
+                    unsigned port,
+                    const unsigned char **px,
+                    unsigned *length,
+                    unsigned *source_port,
+                    uint64_t *xsum,
+                    SET_COOKIE *set_cookie)
 {
     unsigned i;
     if (payloads == 0)
@@ -215,6 +357,8 @@ payloads_udp_lookup(
 
     port &= 0xFFFF;
 
+    /* This is just a linear search, done once at startup, to search
+     * through all the payloads for the best match. */
     for (i=0; i<payloads->count; i++) {
         if (payloads->list[i]->port == port) {
             *px = payloads->list[i]->buf;
@@ -230,6 +374,7 @@ payloads_udp_lookup(
 
 
 /***************************************************************************
+ * cleanup on program shutdown
  ***************************************************************************/
 void
 payloads_udp_destroy(struct PayloadsUDP *payloads)
@@ -310,180 +455,6 @@ payloads_oproto_trim(struct PayloadsUDP *payloads, const struct MassIP *targets)
     payloads->count = count2;
 }
 
-/***************************************************************************
- * remove leading/trailing whitespace
- ***************************************************************************/
-static void
-trim(char *line, size_t sizeof_line)
-{
-    if (sizeof_line > strlen(line))
-        sizeof_line = strlen(line);
-
-    while (isspace(*line & 0xFF))
-        memmove(line, line+1, sizeof_line--);
-    while (isspace(line[sizeof_line-1] & 0xFF))
-        line[--sizeof_line] = '\0';
-}
-
-/***************************************************************************
- ***************************************************************************/
-static int
-is_comment(const char *line)
-{
-    if (line[0] == '#' || line[0] == '/' || line[0] == ';')
-        return 1;
-    else
-        return 0;
-}
-
-/***************************************************************************
- ***************************************************************************/
-static void
-append_byte(unsigned char *buf, size_t *buf_length, size_t buf_max, unsigned c)
-{
-    if (*buf_length < buf_max)
-        buf[(*buf_length)++] = (unsigned char)c;
-
-}
-
-/***************************************************************************
- ***************************************************************************/
-static int
-isodigit(int c)
-{
-    if ('0' <= c && c <= '7')
-        return 1;
-    else
-        return 0;
-}
-
-/***************************************************************************
- ***************************************************************************/
-static unsigned
-hexval(unsigned c)
-{
-    if ('0' <= c && c <= '9')
-        return c - '0';
-    if ('a' <= c && c <= 'f')
-        return c - 'a' + 10;
-    if ('A' <= c && c <= 'F')
-        return c - 'A' + 10;
-    return 0;
-}
-
-/***************************************************************************
- ***************************************************************************/
-static const char *
-parse_c_string(unsigned char *buf, size_t *buf_length,
-               size_t buf_max, const char *line)
-{
-    size_t offset;
-
-    if (*line != '\"')
-        return line;
-    else
-        offset = 1;
-
-    while (line[offset] && line[offset] != '\"') {
-        if (line[offset] == '\\') {
-            offset++;
-            switch (line[offset]) {
-            case '0': case '1': case '2': case '3': case '4':
-            case '5': case '6': case '7': case '8': case '9':
-                {
-                    unsigned val = 0;
-
-                    if (isodigit(line[offset]))
-                        val = val * 8 + hexval(line[offset++]);
-                    if (isodigit(line[offset]))
-                        val = val * 8 + hexval(line[offset++]);
-                    if (isodigit(line[offset]))
-                        val = val * 8 + hexval(line[offset++]);
-                    append_byte(buf, buf_length, buf_max, val);
-                    continue;
-                }
-                break;
-            case 'x':
-                offset++;
-                {
-                    unsigned val = 0;
-
-                    if (isxdigit(line[offset]))
-                        val = val * 16 + hexval(line[offset++]);
-                    if (isxdigit(line[offset]))
-                        val = val * 16 + hexval(line[offset++]);
-                    append_byte(buf, buf_length, buf_max, val);
-                    continue;
-                }
-                break;
-
-            case 'a':
-                append_byte(buf, buf_length, buf_max, '\a');
-                break;
-            case 'b':
-                append_byte(buf, buf_length, buf_max, '\b');
-                break;
-            case 'f':
-                append_byte(buf, buf_length, buf_max, '\f');
-                break;
-            case 'n':
-                append_byte(buf, buf_length, buf_max, '\n');
-                break;
-            case 'r':
-                append_byte(buf, buf_length, buf_max, '\r');
-                break;
-            case 't':
-                append_byte(buf, buf_length, buf_max, '\t');
-                break;
-            case 'v':
-                append_byte(buf, buf_length, buf_max, '\v');
-                break;
-            default:
-            case '\\':
-                append_byte(buf, buf_length, buf_max, line[offset]);
-                break;
-            }
-        } else
-            append_byte(buf, buf_length, buf_max, line[offset]);
-
-        offset++;
-    }
-
-    if (line[offset] == '\"')
-        offset++;
-
-    return line + offset;
-
-}
-
-/***************************************************************************
- ***************************************************************************/
-static char *
-get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
-{
-    if (line[0] != '\0')
-        return line;
-
-    for (;;) {
-        char *p;
-
-        p = fgets(line, (unsigned)sizeof_line, fp);
-        if (p == NULL) {
-            line[0] = '\0';
-            return NULL;
-        }
-        (*line_number)++;
-
-        trim(line, sizeof_line);
-        if (is_comment(line))
-            continue;
-        if (line[0] == '\0')
-            continue;
-
-        return line;
-    }
-}
-
 
 /***************************************************************************
  * Adds a payloads template for the indicated datagram protocol, which
@@ -491,9 +462,9 @@ get_next_line(FILE *fp, unsigned *line_number, char *line, size_t sizeof_line)
  ***************************************************************************/
 static unsigned
 payloads_datagram_add(struct PayloadsUDP *payloads,
-            const unsigned char *buf, size_t length,
-            struct RangeList *ports, unsigned source_port,
-            SET_COOKIE set_cookie)
+                      const unsigned char *buf, size_t length,
+                      struct RangeList *ports, unsigned source_port,
+                      SET_COOKIE set_cookie)
 {
     unsigned count = 1;
     struct PayloadUDP_Item *p;
@@ -544,6 +515,19 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
     return count; /* zero or one */
 }
 
+static unsigned
+payloads_datagram_add_nocookie(struct PayloadsUDP *payloads,
+                               const unsigned char *buf, size_t length,
+                               struct RangeList *ports, unsigned source_port
+                               ) {
+    return payloads_datagram_add(payloads,
+                                 buf, length,
+                                 ports, source_port,
+                                 0);
+
+}
+
+
 /***************************************************************************
  * Called during processing of the "--pcap-payloads <filename>" directive.
  * This is the well-known 'pcap' file format. This code strips off the
@@ -589,9 +573,9 @@ payloads_read_pcap(const char *filename,
             unsigned original_length;
 
             x = pcapfile_readframe(pcap,
-                    &time_secs, &time_usecs,
-                    &original_length, &captured_length,
-                    buf, (unsigned)sizeof(buf));
+                                   &time_secs, &time_usecs,
+                                   &original_length, &captured_length,
+                                   buf, (unsigned)sizeof(buf));
         }
         if (!x)
             break;
@@ -607,8 +591,8 @@ payloads_read_pcap(const char *filename,
          * Make sure it has UDP
          */
         switch (parsed.found) {
-        case FOUND_DNS:
-        case FOUND_UDP:
+            case FOUND_DNS:
+            case FOUND_UDP:
                 /*
                  * Kludge: mark the port in the format the API wants
                  */
@@ -623,13 +607,13 @@ payloads_read_pcap(const char *filename,
                  * list of payloads
                  */
                 count += payloads_datagram_add(   payloads,
-                                          buf + parsed.app_offset,
-                                          parsed.app_length,
-                                          ports,
-                                          0x10000,
-                                          0);
-            break;
-        case FOUND_OPROTO:
+                                               buf + parsed.app_offset,
+                                               parsed.app_length,
+                                               ports,
+                                               0x10000,
+                                               0);
+                break;
+            case FOUND_OPROTO:
                 /*
                  * Kludge: mark the port in the format the API wants
                  */
@@ -644,14 +628,14 @@ payloads_read_pcap(const char *filename,
                  * list of payloads
                  */
                 count += payloads_datagram_add(oproto_payloads,
-                                          buf + parsed.transport_offset,
-                                          parsed.transport_length,
-                                          ports,
-                                          0x10000,
-                                          0);
-            break;
-        default:
-            continue;
+                                               buf + parsed.transport_offset,
+                                               parsed.transport_length,
+                                               ports,
+                                               0x10000,
+                                               0);
+                break;
+            default:
+                continue;
         }
 
     }
@@ -662,91 +646,14 @@ payloads_read_pcap(const char *filename,
 }
 
 /***************************************************************************
- * Called during processing of the "--nmap-payloads <filename>" directive.
+ * Called from the "conf" subsystem in order read in the file
+ * "nmap-payloads". We call the function 'read_nmap_payloads()" defined
+ * in a different file that focuses on parsing that file format.
  ***************************************************************************/
 void
 payloads_udp_readfile(FILE *fp, const char *filename,
-                   struct PayloadsUDP *payloads)
-{
-    char line[16384];
-    unsigned line_number = 0;
-
-
-    line[0] = '\0';
-
-    for (;;) {
-        unsigned is_error = 0;
-        const char *p;
-        struct RangeList ports[1] = {{0}};
-        unsigned source_port = 0x10000;
-        unsigned char buf[1500] = {0};
-        size_t buf_length = 0;
-
-        memset(ports, 0, sizeof(ports[0]));
-
-        /* [UDP] */
-        if (!get_next_line(fp, &line_number, line, sizeof(line)))
-            break;
-
-        if (memcmp(line, "udp", 3) != 0) {
-            fprintf(stderr, "%s:%u: syntax error, expected \"udp\".\n",
-                filename, line_number);
-            goto end;
-        } else
-            memmove(line, line+3, strlen(line));
-        trim(line, sizeof(line));
-
-
-        /* [ports] */
-        if (!get_next_line(fp, &line_number, line, sizeof(line)))
-            break;
-        p = rangelist_parse_ports(ports, line, &is_error, 0);
-        if (is_error) {
-            fprintf(stderr, "%s:%u: syntax error, expected ports\n",
-                filename, line_number);
-            goto end;
-        }
-        memmove(line, p, strlen(p)+1);
-        trim(line, sizeof(line));
-
-        /* [C string] */
-        for (;;) {
-            trim(line, sizeof(line));
-            if (!get_next_line(fp, &line_number, line, sizeof(line)))
-                break;
-            if (line[0] != '\"')
-                break;
-
-            p = parse_c_string(buf, &buf_length, sizeof(buf), line);
-            memmove(line, p, strlen(p)+1);
-            trim(line, sizeof(line));
-        }
-
-        /* [source] */
-        if (memcmp(line, "source", 6) == 0) {
-            memmove(line, line+6, strlen(line+5));
-            trim(line, sizeof(line));
-            if (!isdigit(line[0])) {
-                fprintf(stderr, "%s:%u: expected source port\n",
-                        filename, line_number);
-                goto end;
-            }
-            source_port = (unsigned)strtoul(line, 0, 0);
-            line[0] = '\0';
-        }
-
-        /*
-         * Now we've completely parsed the record, so add it to our
-         * list of payloads
-         */
-		if (buf_length)
-			payloads_datagram_add(payloads, buf, buf_length, ports, source_port, 0);
-
-        rangelist_remove_all(ports);
-    }
-
-end:
-    ;//fclose(fp);
+                      struct PayloadsUDP *payloads) {
+    read_nmap_payloads(fp, filename, payloads, payloads_datagram_add_nocookie);
 }
 
 /***************************************************************************
@@ -770,9 +677,9 @@ payloads_udp_create(void)
 
         /* Kludge: create a pseudo-rangelist to hold the one port */
         /*list.list = &range;
-        list.count = 1;
-        range.begin = hard_coded[i].port;
-        range.end = range.begin;*/
+         list.count = 1;
+         range.begin = hard_coded[i].port;
+         range.end = range.begin;*/
         rangelist_add_range(&list, hard_coded[i].port, hard_coded[i].port);
 
         length = hard_coded[i].length;
@@ -782,11 +689,11 @@ payloads_udp_create(void)
         /* Add this to our real payloads. This will get overwritten
          * if the user adds their own with the same port */
         payloads_datagram_add(payloads,
-                    (const unsigned char*)hard_coded[i].buf,
-                    length,
-                    &list,
-                    hard_coded[i].source_port,
-                    hard_coded[i].set_cookie);
+                              (const unsigned char*)hard_coded[i].buf,
+                              length,
+                              &list,
+                              hard_coded[i].source_port,
+                              hard_coded[i].set_cookie);
 
         rangelist_remove_all(&list);
     }
@@ -823,11 +730,11 @@ payloads_oproto_create(void)
         /* Add this to our real payloads. This will get overwritten
          * if the user adds their own with the same port */
         payloads_datagram_add(payloads,
-                         (const unsigned char*)hard_coded[i].buf,
-                         length,
-                         &list,
-                         hard_coded[i].source_port,
-                         hard_coded[i].set_cookie);
+                              (const unsigned char*)hard_coded[i].buf,
+                              length,
+                              &list,
+                              hard_coded[i].source_port,
+                              hard_coded[i].set_cookie);
         
         rangelist_remove_all(&list);
     }
@@ -835,31 +742,7 @@ payloads_oproto_create(void)
 }
 
 
-/****************************************************************************
- ****************************************************************************/
 int
-payloads_udp_selftest(void)
-{
-    unsigned char buf[1024];
-    size_t buf_length;
-
-    buf_length = 0;
-    parse_c_string(buf, &buf_length, sizeof(buf), "\"\\t\\n\\r\\x1f\\123\"");
-    if (memcmp(buf, "\t\n\r\x1f\123", 5) != 0)
-        return 1;
-    return 0;
-
-        /*
-        "OPTIONS sip:carol@chicago.com SIP/2.0\r\n"
-        "Via: SIP/2.0/UDP pc33.atlanta.com;branch=z9hG4bKhjhs8ass877\r\n"
-        "Max-Forwards: 70\r\n"
-        "To: <sip:carol@chicago.com>\r\n"
-        "From: Alice <sip:alice@atlanta.com>;tag=1928301774\r\n"
-        "Call-ID: a84b4c76e66710\r\n"
-        "CSeq: 63104 OPTIONS\r\n"
-        "Contact: <sip:alice@pc33.atlanta.com>\r\n"
-        "Accept: application/sdp\r\n"
-        "Content-Length: 0\r\n"
-        */
-
+templ_payloads_selftest(void) {
+    return templ_nmap_selftest();
 }
