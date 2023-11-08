@@ -73,6 +73,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <malloc.h> /*fixme: remove this*/
 
 struct tcp_opt_t {
     const unsigned char *buf;
@@ -126,7 +127,7 @@ _HEXDUMP(const void *v, struct tcp_hdr_t hdr, size_t offset, const char *name)
             if (j == offset)
                 c = '#';
 
-            if (isprint(c) && !isspace(c))
+            if (isprint(c&0xff) && !isspace(c&0xff))
                 printf("%c", c);
             else
                 printf(".");
@@ -269,7 +270,7 @@ _find_tcp_header(const unsigned char *buf, size_t length) {
     hdr.begin = parsed.transport_offset;
     hdr.max = hdr.begin + _tcp_header_length(buf, hdr.begin);
     hdr.ip_offset = parsed.ip_offset;
-    hdr.ip_version = parsed.ip_version;
+    hdr.ip_version = (unsigned char)parsed.ip_version;
     hdr.is_found = true;
     return hdr;
 
@@ -455,7 +456,7 @@ _adjust_length(unsigned char *buf, size_t length, int adjustment, struct tcp_hdr
             fprintf(stderr, "[-] templ.tcp corruptoin\n");
         }
 
-        buf[offset] = (buf[offset] & 0x0F) | ((hdr_length/4) << 4);
+        buf[offset] = (unsigned char)((buf[offset] & 0x0F) | ((hdr_length/4) << 4));
 
         hdr_length = (buf[offset] >> 4) * 4;
         if (hdr.begin + hdr_length > length) {
@@ -474,13 +475,13 @@ _add_padding(unsigned char **inout_buf, size_t *inout_length, size_t offset, uns
     unsigned char *buf = *inout_buf;
     size_t length = *inout_length;
 
-    buf = realloc(buf, length + pad_count);
     length += pad_count;
+    buf = realloc(buf, length);
 
     /* open space between headers and payload */
     memmove(buf + offset + pad_count,
             buf + offset,
-            length - offset);
+            (length - pad_count) - offset);
 
     /* set padding to zero */
     memset(buf + offset, 0, pad_count);
@@ -659,21 +660,17 @@ _insert_field(unsigned char **inout_buf,
 
     /* can theoreitcally be negative, but that's ok */
     adjust = (int)new_length - ((int)offset_end - (int)offset_begin);
-
     if (adjust > 0) {
-        /* lengthen buffer before */
         length += adjust;
         buf = realloc(buf, length);
+        memmove(buf + offset_begin + new_length,
+                buf + offset_end,
+                (length - adjust) - offset_end);
     }
-
-    /* move data second */
-    memmove(buf + offset_begin + new_length,
-            buf + offset_end,
-            length - offset_end);
-
-
     if (adjust < 0) {
-        /* shorten buffer after */
+        memmove(buf + offset_begin + new_length,
+                buf + offset_end,
+                length - offset_end);
         length += adjust;
         buf = realloc(buf, length);
     }
@@ -850,8 +847,8 @@ tcp_add_opt(unsigned char **inout_buf,
 
         /* Create a well-formatted field that will be inserted */
         new_length = 1 + 1 + opt_length;
-        new_field[0] = opt_kind;
-        new_field[1] = new_length;
+        new_field[0] = (unsigned char)opt_kind;
+        new_field[1] = (unsigned char)new_length;
         memcpy(new_field + 2, opt_data, opt_length);
 
         /* Calculate the begin/end of the existing field in the packet */
@@ -1124,22 +1121,27 @@ _replace_options(unsigned char **inout_buf, size_t *inout_length,
     old_length = hdr.max - offset;
 
     /* Either increase or decrease the old length appropriately */
-    //_HEXDUMPopt(buf, length, "resize before");
+    _HEXDUMPopt(buf, length, "resize before");
     adjust = (int)(new_length - old_length);
-    if (old_length < new_length) {
-        buf = realloc(buf, length + adjust);
+    if (adjust > 0) {
         length += adjust;
+        buf = realloc(buf, length);
         memmove(buf + hdr.max + adjust,
                 buf + hdr.max,
-                length - hdr.max);
-    } else {
-        memmove(buf + hdr.max + adjust,
-                buf + hdr.max,
-                length - hdr.max);
-        buf = realloc(buf, length + adjust);
-        length += adjust;
+                (length - adjust) - hdr.max);
     }
+    if (adjust < 0) {
+        memmove(buf + hdr.max + adjust,
+                buf + hdr.max,
+                length - hdr.max);
+        length += adjust;
+        buf = realloc(buf, length);
+    }
+    _adjust_length(buf, length, adjust, hdr);
+    _normalize_padding(&buf, &length);
 
+    _HEXDUMPopt(buf, length, "resize after");
+    
     /* Now that we've resized the options field, overright
      * it with then new field */
     memcpy(buf + offset, newnew_options, new_length);
@@ -1205,10 +1207,12 @@ tests[] = {
 
     /* Attempt removal of an option that doesn't exist. This is not
      * a failure, but a success, though nothing is changed*/
+
     {   {"\3\3\3\0", 4},
         {TST_REMOVE, "\x08", 1},
         {"\3\3\3\0", 4}
     },
+
 
     /* Test removal of an option. This will also involve removing
      the now unnecessary padding */
@@ -1216,7 +1220,7 @@ tests[] = {
         {TST_REMOVE, "\x08", 1},
         {"\3\3\3\0", 4}
     },
-#if 0
+
     /* Test when trying to add a big option that won't fit unless we get
      * rid of all the padding */
     {   {   "\x02\x04\x05\xb4"
@@ -1259,7 +1263,6 @@ tests[] = {
             40
         }
     },
-#endif
     
     /* Add a new value to full packet  */
     {{"\3\3\3", 3}, {TST_ADD, "\4\2", 2}, {"\3\3\3\4\2\0\0\0", 8}},
@@ -1361,6 +1364,8 @@ _selftests_run(void) {
         const unsigned char *field;
         size_t field_length;
 
+
+        LOG(1, "[+] templ-tcp-hdr: run #%u\n", (unsigned)i);
 
         /* Each tests creates its own copy of the test packet, which it
          * will then alter according to the pre-conditions. */

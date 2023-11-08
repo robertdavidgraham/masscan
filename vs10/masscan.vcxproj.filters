@@ -162,15 +162,6 @@
     <ClCompile Include="..\src\proto-ssl.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\rand-blackrock.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rand-lcg.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\rand-primegen.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\smack1.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
@@ -178,9 +169,6 @@
       <Filter>Source Files\proto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\syn-cookie.c">
-      <Filter>Source Files\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\siphash24.c">
       <Filter>Source Files\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\src\in-binary.c">
@@ -381,6 +369,27 @@
     <ClCompile Include="..\src\stack-if.c">
       <Filter>Source Files\stack</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\crypto-blackrock.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto-lcg.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto-primegen.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypto-siphash24.c">
+      <Filter>Source Files\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-mc.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-nmap-payloads.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\templ-tcp-hdr.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -470,15 +479,6 @@
     <ClInclude Include="..\src\masscan.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\rand-primegen.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\rand-blackrock.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\rand-lcg.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\smack.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
@@ -486,9 +486,6 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\syn-cookie.h">
-      <Filter>Source Files\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\siphash24.h">
       <Filter>Source Files\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\in-binary.h">
@@ -652,6 +649,30 @@
     </ClInclude>
     <ClInclude Include="..\src\rawsock-adapter.h">
       <Filter>Source Files\rawsock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-blackrock.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-lcg.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-primegen.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\crypto-siphash24.h">
+      <Filter>Source Files\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-mc.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-nmap-payloads.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-opts.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\templ-tcp-hdr.h">
+      <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

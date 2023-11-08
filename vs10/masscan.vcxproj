@@ -20,7 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\crypto-base64.c" />
+    <ClCompile Include="..\src\crypto-blackrock.c" />
     <ClCompile Include="..\src\crypto-blackrock2.c" />
+    <ClCompile Include="..\src\crypto-lcg.c" />
+    <ClCompile Include="..\src\crypto-primegen.c" />
+    <ClCompile Include="..\src\crypto-siphash24.c" />
     <ClCompile Include="..\src\event-timeout.c" />
     <ClCompile Include="..\src\in-filter.c" />
     <ClCompile Include="..\src\in-report.c" />
@@ -59,6 +63,7 @@
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-imap4.c" />
     <ClCompile Include="..\src\proto-interactive.c" />
+    <ClCompile Include="..\src\proto-mc.c" />
     <ClCompile Include="..\src\proto-memcached.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
     <ClCompile Include="..\src\proto-ntlmssp.c" />
@@ -90,9 +95,6 @@
     <ClCompile Include="..\src\proto-vnc.c" />
     <ClCompile Include="..\src\proto-x509.c" />
     <ClCompile Include="..\src\proto-zeroaccess.c" />
-    <ClCompile Include="..\src\rand-blackrock.c" />
-    <ClCompile Include="..\src\rand-lcg.c" />
-    <ClCompile Include="..\src\rand-primegen.c" />
     <ClCompile Include="..\src\rawsock-getif.c" />
     <ClCompile Include="..\src\rawsock-getip.c" />
     <ClCompile Include="..\src\rawsock-getip6.c" />
@@ -105,7 +107,6 @@
     <ClCompile Include="..\src\scripting-banner.c" />
     <ClCompile Include="..\src\scripting-masscan.c" />
     <ClCompile Include="..\src\scripting.c" />
-    <ClCompile Include="..\src\siphash24.c" />
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\stack-arpv4.c" />
@@ -118,8 +119,10 @@
     <ClCompile Include="..\src\stub-pcap.c" />
     <ClCompile Include="..\src\stub-pfring.c" />
     <ClCompile Include="..\src\syn-cookie.c" />
+    <ClCompile Include="..\src\templ-nmap-payloads.c" />
     <ClCompile Include="..\src\templ-payloads.c" />
     <ClCompile Include="..\src\templ-pkt.c" />
+    <ClCompile Include="..\src\templ-tcp-hdr.c" />
     <ClCompile Include="..\src\util-checksum.c" />
     <ClCompile Include="..\src\util-malloc.c" />
     <ClCompile Include="..\src\versioning.c" />
@@ -131,6 +134,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\crypto-base64.h" />
+    <ClInclude Include="..\src\crypto-blackrock.h" />
+    <ClInclude Include="..\src\crypto-lcg.h" />
+    <ClInclude Include="..\src\crypto-primegen.h" />
+    <ClInclude Include="..\src\crypto-siphash24.h" />
     <ClInclude Include="..\src\in-filter.h" />
     <ClInclude Include="..\src\in-report.h" />
     <ClInclude Include="..\src\main-globals.h" />
@@ -171,6 +178,7 @@
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-imap4.h" />
     <ClInclude Include="..\src\proto-interactive.h" />
+    <ClInclude Include="..\src\proto-mc.h" />
     <ClInclude Include="..\src\proto-memcached.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
     <ClInclude Include="..\src\proto-ntlmssp.h" />
@@ -191,16 +199,12 @@
     <ClInclude Include="..\src\proto-vnc.h" />
     <ClInclude Include="..\src\proto-x509.h" />
     <ClInclude Include="..\src\proto-zeroaccess.h" />
-    <ClInclude Include="..\src\rand-blackrock.h" />
-    <ClInclude Include="..\src\rand-lcg.h" />
-    <ClInclude Include="..\src\rand-primegen.h" />
     <ClInclude Include="..\src\rawsock-adapter.h" />
     <ClInclude Include="..\src\rawsock-pcapfile.h" />
     <ClInclude Include="..\src\rawsock.h" />
     <ClInclude Include="..\src\read-service-probes.h" />
     <ClInclude Include="..\src\rte-ring.h" />
     <ClInclude Include="..\src\scripting.h" />
-    <ClInclude Include="..\src\siphash24.h" />
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\stack-arpv4.h" />
@@ -212,8 +216,11 @@
     <ClInclude Include="..\src\stub-pcap.h" />
     <ClInclude Include="..\src\stub-pfring.h" />
     <ClInclude Include="..\src\syn-cookie.h" />
+    <ClInclude Include="..\src\templ-nmap-payloads.h" />
+    <ClInclude Include="..\src\templ-opts.h" />
     <ClInclude Include="..\src\templ-payloads.h" />
     <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\templ-tcp-hdr.h" />
     <ClInclude Include="..\src\util-bool.h" />
     <ClInclude Include="..\src\util-checksum.h" />
     <ClInclude Include="..\src\util-malloc.h" />

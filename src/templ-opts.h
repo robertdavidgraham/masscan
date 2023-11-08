@@ -2,6 +2,10 @@
 #define TEMPL_OPTS_H
 #include "massip-addr.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable:4214)
+#endif
+
 /**
  * This tells us whether we should add, remove, or leave default
  * a field in the packet headers.

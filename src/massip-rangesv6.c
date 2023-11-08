@@ -572,7 +572,7 @@ range6list_optimize(struct Range6List *targets)
 
     for (i=0; i<targets->count; i++) {
         ipv6address x;
-        picker[i] = total.lo;
+        picker[i] = (size_t)total.lo;
         x = _int128_subtract(targets->list[i].end, targets->list[i].begin);
         x = _int128_add64(x, 1);
         total = _int128_add(total, x);

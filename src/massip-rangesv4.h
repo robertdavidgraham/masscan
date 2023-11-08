@@ -2,7 +2,7 @@
 #define RANGES_H
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include "util-bool.h" /*<stdbool.h>*/
 
 /**
  * A range of either IP addresses or ports

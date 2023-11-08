@@ -235,10 +235,11 @@ print_nmap_help(void)
 static unsigned
 count_cidr6_bits(struct Range6 *range, bool *exact)
 {
-    /* for the comments of this function, see  count_cidr_bits */
-    *exact = false;
     uint64_t i;
 
+    /* for the comments of this function, see  count_cidr_bits */
+    *exact = false;
+    
     for (i=0; i<128; i++) {
         uint64_t mask_hi;
         uint64_t mask_lo;
@@ -3721,6 +3722,8 @@ void
 masscan_echo_cidr(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
 {
     unsigned i;
+    UNUSEDPARM(is_echo_all);
+
     masscan->echo = fp;
 
     /*

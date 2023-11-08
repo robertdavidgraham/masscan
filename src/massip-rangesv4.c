@@ -76,7 +76,7 @@ rangelist_is_contains(const struct RangeList *targets, unsigned addr)
  ***************************************************************************/
 struct Range
 range_first_cidr(const struct Range range, unsigned *prefix_bits) {
-    struct Range result = (struct Range){range.begin, range.end};
+    struct Range result = {range.begin, range.end};
     unsigned zbits = 0;
 
     /* Kludge: Special Case:

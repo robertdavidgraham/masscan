@@ -18,7 +18,7 @@
  */
 static unsigned short my_htons(unsigned port)
 {
-    static const char test[2] = "\x11\x22";
+    static const char test[3] = "\x11\x22";
     if (*(unsigned short*)test == 0x1122)
         return (unsigned short)(0xFFFF & port);
     else

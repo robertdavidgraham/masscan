@@ -15,10 +15,10 @@ hand_shake(uint16_t port, const char* ip, size_t ip_len)
 {
     size_t tlen = 10+ip_len;
     unsigned char * ret = (unsigned char *)calloc(1,tlen);
-    ret[0] = 7+ip_len;
+    ret[0] = (unsigned char)(7+ip_len);
     ret[2] = 0xf7;
     ret[3] = 5;
-    ret[4] = ip_len;
+    ret[4] = (unsigned char)ip_len;
     memcpy(ret+5,ip,ip_len);
     ret[tlen-5] = (unsigned char)(port>>8);
     ret[tlen-4] = (unsigned char)(port&0xff);
@@ -31,12 +31,13 @@ hand_shake(uint16_t port, const char* ip, size_t ip_len)
 static void *
 memstr(void * mem, size_t len, char * str)
 {
+    size_t i;
     size_t stlen = strlen(str);
     if(len < stlen)
         return 0;
-    for(size_t i = 0; i < len-stlen; i++) {
-        if(!memcmp(mem+i,str,stlen))
-            return mem+i;
+    for(i = 0; i < len-stlen; i++) {
+        if(!memcmp((char*)mem+i,str,stlen))
+            return (char*)mem+i;
     }
     return 0;
 }
@@ -51,9 +52,10 @@ mc_parse(  const struct Banner1 *banner1,
           struct BannerOutput *banout,
           struct InteractiveData *more)
 {
+    size_t i;
     struct MCSTUFF *mc = &pstate->sub.mc;
 
-    for(size_t i = 0; i < length; i++) {
+    for(i = 0; i < length; i++) {
         if(px[i] == '{')
             mc->brackcount++;
         if(px[i] == '}')
