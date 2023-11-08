@@ -90,6 +90,34 @@ struct tcp_hdr_t {
     bool is_found;
 };
 
+/**
+ * Do a memmove() of a chunk of memory within a buffer with bounds checking.
+ */
+static void
+safe_memmove(unsigned char *buf, size_t length, size_t to, size_t from, size_t chunklength) {
+    if (chunklength + to > length) {
+        fprintf(stderr, "+"); fflush(stderr);
+        chunklength = length - to;
+    }
+    if (chunklength + from > length) {
+        fprintf(stderr, "-"); fflush(stderr);
+        chunklength = length - from;
+    }
+    memmove(buf + to, buf + from, chunklength);
+}
+
+/**
+ * Do a memset() of a chunk of memory within a buffer with bounds checking
+ */
+static void
+safe_memset(unsigned char *buf, size_t length, size_t offset, int c, size_t chunklength) {
+    if (chunklength + offset > length) {
+        chunklength = length - offset;
+        fprintf(stderr, "*"); fflush(stderr);
+    }
+    memset(buf + offset, c, chunklength);
+}
+
 /***************************************************************************
  * A typical hexdump function, but dumps specifically the <options-list>
  * section of a TCP header. An added feature is that it marks the byte
@@ -479,12 +507,14 @@ _add_padding(unsigned char **inout_buf, size_t *inout_length, size_t offset, uns
     buf = realloc(buf, length);
 
     /* open space between headers and payload */
-    memmove(buf + offset + pad_count,
-            buf + offset,
-            (length - pad_count) - offset);
+    safe_memmove(buf, length,
+                offset + pad_count,
+                offset,
+                (length - pad_count) - offset);
 
     /* set padding to zero */
-    memset(buf + offset, 0, pad_count);
+    safe_memset(buf, length,
+                offset, 0, pad_count);
 
     /* Set the out parameters */
     *inout_buf = buf;
@@ -533,14 +563,15 @@ _normalize_padding(unsigned char **inout_buf, size_t *inout_length) {
 
         //_HEXDUMP(buf, hdr, offset, "before padding removal");
 
-        memmove(buf + offset,
-                buf + offset + remove_count,
-                length - (offset + remove_count));
+        safe_memmove(buf, length,
+                        offset,
+                        offset + remove_count,
+                        length - (offset + remove_count));
         hdr.max -= remove_count;
         length -= remove_count;
 
         /* normalize all the bytes to zero, in case they aren't already */
-        memset(buf + offset, 0, hdr.max - offset);
+        safe_memset(buf, length, offset, 0, hdr.max - offset);
 
         //_HEXDUMP(buf, hdr, offset, "after padding removal");
 
@@ -606,9 +637,10 @@ tcp_remove_opt(
 
         //_HEXDUMP(buf, hdr, offset, "before removal");
 
-        memmove(buf + offset,
-                buf + offset + remove_length,
-                length - (offset + remove_length));
+        safe_memmove(buf, length,
+                        offset,
+                        offset + remove_length,
+                        length - (offset + remove_length));
         hdr.max -= remove_length;
         length -= remove_length;
 
@@ -663,14 +695,16 @@ _insert_field(unsigned char **inout_buf,
     if (adjust > 0) {
         length += adjust;
         buf = realloc(buf, length);
-        memmove(buf + offset_begin + new_length,
-                buf + offset_end,
-                (length - adjust) - offset_end);
+        safe_memmove(buf, length,
+                        offset_begin + new_length,
+                        offset_end,
+                        (length - adjust) - offset_end);
     }
     if (adjust < 0) {
-        memmove(buf + offset_begin + new_length,
-                buf + offset_end,
-                length - offset_end);
+        safe_memmove(buf, length,
+                        offset_begin + new_length,
+                        offset_end,
+                        length - offset_end);
         length += adjust;
         buf = realloc(buf, length);
     }
@@ -725,7 +759,7 @@ _calc_padding(const unsigned char *buf, struct tcp_hdr_t hdr) {
  * of the rest of the option field.
  ***************************************************************************/
 static size_t
-_squeeze_padding(unsigned char *buf, struct tcp_hdr_t hdr, unsigned in_kind) {
+_squeeze_padding(unsigned char *buf, size_t length, struct tcp_hdr_t hdr, unsigned in_kind) {
     size_t offset;
     unsigned nop_count = 0;
 
@@ -751,7 +785,7 @@ _squeeze_padding(unsigned char *buf, struct tcp_hdr_t hdr, unsigned in_kind) {
         if (kind == 0x00) {
             /* normalize the padding at the end */
             offset -= nop_count;
-            memset(buf+offset, 0, hdr.max - offset);
+            safe_memset(buf, length, offset, 0, hdr.max - offset);
 
             //_HEXDUMP(buf, hdr, offset, "null");
 
@@ -761,7 +795,7 @@ _squeeze_padding(unsigned char *buf, struct tcp_hdr_t hdr, unsigned in_kind) {
         /* If we match an existing field, all those bytes become padding */
         if (kind == in_kind) {
             len = buf[offset+1];
-            memset(buf+offset, 0x01, len);
+            safe_memset(buf, length, offset, 0x01, len);
             nop_count++;
 
             //_HEXDUMP(buf, hdr, offset, "VVVVV");
@@ -774,16 +808,16 @@ _squeeze_padding(unsigned char *buf, struct tcp_hdr_t hdr, unsigned in_kind) {
 
         /* move this field backward overwriting NOPs */
         len = buf[offset+1];
-        memmove(buf + offset - nop_count,
-                buf + offset,
-                len);
+        safe_memmove(buf, length,
+                        offset - nop_count,
+                        offset,
+                        len);
 
         //_HEXDUMP(buf, hdr, offset - nop_count, "<<<<");
 
         /* now write NOPs where this field used to be */
-        memset(buf + offset + len - nop_count,
-               0x01,
-               nop_count);
+        safe_memset(buf, length, 
+                    offset + len - nop_count, 0x01, nop_count);
 
         //_HEXDUMP(buf, hdr, offset + len - nop_count, "!!!!!");
 
@@ -794,9 +828,8 @@ _squeeze_padding(unsigned char *buf, struct tcp_hdr_t hdr, unsigned in_kind) {
 
     /* if we reach the end, then there were only NOPs at the end and no
      * EOL byte, so simply zero them out */
-    memset(buf + offset - nop_count,
-           0x00,
-           nop_count);
+    safe_memset(buf, length, 
+                offset - nop_count, 0x00, nop_count);
     offset -= nop_count;
 
     //_HEXDUMP(buf, hdr, offset, "");
@@ -883,7 +916,7 @@ tcp_add_opt(unsigned char **inout_buf,
             if (old_end < hdr.max) {
                 if (buf[old_end] == 0x00) {
                     /* normalize padding to all zeroes */
-                    memset(buf + old_end, 0, hdr.max - old_end);
+                    safe_memset(buf, length, old_end, 0, hdr.max - old_end);
 
                     while ((old_end-old_begin) < new_length) {
                         if (old_end >= hdr.max)
@@ -900,7 +933,7 @@ tcp_add_opt(unsigned char **inout_buf,
             size_t added = new_length - (old_end - old_begin);
             if (hdr.max + added > hdr.begin + max_tcp_hdr) {
                 //unsigned total_padding = _calc_padding(buf, hdr);
-                old_begin = _squeeze_padding(buf, hdr, opt_kind);
+                old_begin = _squeeze_padding(buf, length, hdr, opt_kind);
                 old_end = hdr.max;
             }
         }
@@ -1126,14 +1159,16 @@ _replace_options(unsigned char **inout_buf, size_t *inout_length,
     if (adjust > 0) {
         length += adjust;
         buf = realloc(buf, length);
-        memmove(buf + hdr.max + adjust,
-                buf + hdr.max,
-                (length - adjust) - hdr.max);
+        safe_memmove(buf, length,
+                        hdr.max + adjust,
+                        hdr.max,
+                        (length - adjust) - hdr.max);
     }
     if (adjust < 0) {
-        memmove(buf + hdr.max + adjust,
-                buf + hdr.max,
-                length - hdr.max);
+        safe_memmove(   buf, length,
+                        hdr.max + adjust,
+                        hdr.max,
+                        length - hdr.max);
         length += adjust;
         buf = realloc(buf, length);
     }
