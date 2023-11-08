@@ -1121,7 +1121,7 @@ _replace_options(unsigned char **inout_buf, size_t *inout_length,
     old_length = hdr.max - offset;
 
     /* Either increase or decrease the old length appropriately */
-    _HEXDUMPopt(buf, length, "resize before");
+    //_HEXDUMPopt(buf, length, "resize before");
     adjust = (int)(new_length - old_length);
     if (adjust > 0) {
         length += adjust;
@@ -1137,10 +1137,7 @@ _replace_options(unsigned char **inout_buf, size_t *inout_length,
         length += adjust;
         buf = realloc(buf, length);
     }
-    _adjust_length(buf, length, adjust, hdr);
-    _normalize_padding(&buf, &length);
 
-    _HEXDUMPopt(buf, length, "resize after");
     
     /* Now that we've resized the options field, overright
      * it with then new field */
