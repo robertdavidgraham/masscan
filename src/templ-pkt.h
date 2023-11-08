@@ -5,6 +5,7 @@
 #include "massip-addr.h"
 struct PayloadsUDP;
 struct MassVulnCheck;
+struct TemplateOptions;
 
 /**
  * Does a regression test of this module.
@@ -83,6 +84,8 @@ struct TemplateSet
 
 struct TemplateSet templ_copy(const struct TemplateSet *templ);
 
+
+
 /**
  * Initialize the "template" packets. As we spew out probes, we simply make
  * minor adjustments to the template, such as changing the target IP
@@ -115,7 +118,8 @@ template_packet_init(
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,
-    uint64_t entropy);
+    uint64_t entropy,
+    const struct TemplateOptions *templ_opts);
 
 /**
  * Sets the target/destination IP address of the packet, the destination port

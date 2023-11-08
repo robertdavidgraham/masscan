@@ -27,6 +27,7 @@
 #include "massip.h"
 #include "massip-parse.h"
 #include "massip-port.h"
+#include "templ-opts.h"
 #include <ctype.h>
 #include <limits.h>
 
@@ -575,6 +576,75 @@ parseInt(const char *str)
     return result;
 }
 
+/**
+ * a stricter function for determining if something is boolean.
+ */
+static bool
+isBoolean(const char *str) {
+    size_t length = str?strlen(str):0;
+
+    if (length == 0)
+        return false;
+
+    /* "0" or "1" is boolean */
+    if (isdigit(str[0])) {
+        if (strtoul(str,0,0) == 0)
+            return true;
+        else if (strtoul(str,0,0) == 1)
+            return true;
+        else
+            return false;
+    }
+
+    switch (str[0]) {
+        case 'e':
+        case 'E':
+            if (memcasecmp("enable", str, length)==0)
+                return true;
+            if (memcasecmp("enabled", str, length)==0)
+                return true;
+            return false;
+        case 'd':
+        case 'D':
+            if (memcasecmp("disable", str, length)==0)
+                return true;
+            if (memcasecmp("disabled", str, length)==0)
+                return true;
+            return false;
+
+        case 't':
+        case 'T':
+            if (memcasecmp("true", str, length)==0)
+                return true;
+            return false;
+        case 'f':
+        case 'F':
+            if (memcasecmp("false", str, length)==0)
+                return true;
+            return false;
+
+        case 'o':
+        case 'O':
+            if (memcasecmp("on", str, length)==0)
+                return true;
+            if (memcasecmp("off", str, length)==0)
+                return true;
+            return false;
+        case 'Y':
+        case 'y':
+            if (memcasecmp("yes", str, length)==0)
+                return true;
+            return false;
+        case 'n':
+        case 'N':
+            if (memcasecmp("no", str, length)==0)
+                return true;
+            return false;
+        default:
+            return false;
+    }
+}
+
 static unsigned
 parseBoolean(const char *str)
 {
@@ -587,23 +657,32 @@ parseBoolean(const char *str)
             return 1;
     }
     switch (str[0]) {
-    case 't':
+    case 'e': /* enable */
+    case 'E':
+        return 1;
+    case 'd': /* disable */
+    case 'D':
+        return 0;
+
+    case 't': /* true */
     case 'T':
         return 1;
-    case 'f':
+    case 'f': /* false */
     case 'F':
         return 0;
-    case 'o':
+
+    case 'o': /* on or off */
     case 'O':
         if (str[1] == 'f' || str[1] == 'F')
             return 0;
         else
             return 1;
         break;
-    case 'Y':
+
+    case 'Y': /* yes */
     case 'y':
         return 1;
-    case 'n':
+    case 'n': /* no */
     case 'N':
         return 0;
     }
@@ -1424,6 +1503,213 @@ static int SET_nobanners(struct Masscan *masscan, const char *name, const char *
     return CONF_OK;
 }
 
+static int SET_tcpmss(struct Masscan *masscan, const char *name, const char *value)
+{
+    /* h/t @IvreRocks */
+    static const unsigned default_mss = 1460;
+
+    if (masscan->echo) {
+        if (masscan->templ_opts) {
+            switch (masscan->templ_opts->tcp.is_mss) {
+                case Default:
+                    break;
+                case Add:
+                    if (masscan->templ_opts->tcp.mss == default_mss)
+                        fprintf(masscan->echo, "tcp-mss = %s\n", "enable");
+                    else
+                        fprintf(masscan->echo, "tcp-mss = %u\n",
+                                masscan->templ_opts->tcp.mss);
+                    break;
+                case Remove:
+                    fprintf(masscan->echo, "tcp-mss = %s\n", "disable");
+                    break;
+                default:
+                    break;
+            }
+        }
+        return 0;
+    }
+
+    if (masscan->templ_opts == NULL)
+        masscan->templ_opts = calloc(1, sizeof(*masscan->templ_opts));
+
+    if (value == 0 || value[0] == '\0') {
+        /* no following parameter, so interpret this to mean "enable" */
+        masscan->templ_opts->tcp.is_mss = Add;
+        masscan->templ_opts->tcp.mss = default_mss; /* 1460 */
+    } else if (isBoolean(value)) {
+        /* looking for "enable" or "disable", but any boolean works,
+         * like "true/false" or "off/on" */
+        if (parseBoolean(value)) {
+            masscan->templ_opts->tcp.is_mss = Add;
+            masscan->templ_opts->tcp.mss = default_mss; /* 1460 */
+        } else
+            masscan->templ_opts->tcp.is_mss = Remove;
+    } else if (isInteger(value)) {
+        /* A specific number was specified */
+        uint64_t num = parseInt(value);
+        if (num >= 0x10000)
+            goto fail;
+        masscan->templ_opts->tcp.is_mss = Add;
+        masscan->templ_opts->tcp.mss = (unsigned)num;
+    } else
+        goto fail;
+
+    return CONF_OK;
+fail:
+    fprintf(stderr, "[-] %s: bad value: %s\n", name, value);
+    return CONF_ERR;
+}
+
+static int SET_tcp_wscale(struct Masscan *masscan, const char *name, const char *value)
+{
+    static const unsigned default_value = 3;
+
+    if (masscan->echo) {
+        if (masscan->templ_opts) {
+            switch (masscan->templ_opts->tcp.is_wscale) {
+                case Default:
+                    break;
+                case Add:
+                    if (masscan->templ_opts->tcp.wscale == default_value)
+                        fprintf(masscan->echo, "tcp-wscale = %s\n", "enable");
+                    else
+                        fprintf(masscan->echo, "tcp-wscale = %u\n",
+                                masscan->templ_opts->tcp.wscale);
+                    break;
+                case Remove:
+                    fprintf(masscan->echo, "tcp-wscale = %s\n", "disable");
+                    break;
+                default:
+                    break;
+            }
+        }
+        return 0;
+    }
+
+    if (masscan->templ_opts == NULL)
+        masscan->templ_opts = calloc(1, sizeof(*masscan->templ_opts));
+
+    if (value == 0 || value[0] == '\0') {
+        masscan->templ_opts->tcp.is_wscale = Add;
+        masscan->templ_opts->tcp.wscale = default_value;
+    } else if (isBoolean(value)) {
+        if (parseBoolean(value)) {
+            masscan->templ_opts->tcp.is_wscale = Add;
+            masscan->templ_opts->tcp.wscale = default_value;
+        } else
+            masscan->templ_opts->tcp.is_wscale = Remove;
+    } else if (isInteger(value)) {
+        uint64_t num = parseInt(value);
+        if (num >= 255)
+            goto fail;
+        masscan->templ_opts->tcp.is_wscale = Add;
+        masscan->templ_opts->tcp.wscale = (unsigned)num;
+    } else
+        goto fail;
+
+    return CONF_OK;
+fail:
+    fprintf(stderr, "[-] %s: bad value: %s\n", name, value);
+    return CONF_ERR;
+}
+
+static int SET_tcp_tsecho(struct Masscan *masscan, const char *name, const char *value)
+{
+    static const unsigned default_value = 0x12345678;
+
+    if (masscan->echo) {
+        if (masscan->templ_opts) {
+            switch (masscan->templ_opts->tcp.is_tsecho) {
+                case Default:
+                    break;
+                case Add:
+                    if (masscan->templ_opts->tcp.tsecho == default_value)
+                        fprintf(masscan->echo, "tcp-tsecho = %s\n", "enable");
+                    else
+                        fprintf(masscan->echo, "tcp-tsecho = %u\n",
+                                masscan->templ_opts->tcp.tsecho);
+                    break;
+                case Remove:
+                    fprintf(masscan->echo, "tcp-tsecho = %s\n", "disable");
+                    break;
+                default:
+                    break;
+            }
+        }
+        return 0;
+    }
+
+    if (masscan->templ_opts == NULL)
+        masscan->templ_opts = calloc(1, sizeof(*masscan->templ_opts));
+
+    if (value == 0 || value[0] == '\0') {
+        masscan->templ_opts->tcp.is_tsecho = Add;
+        masscan->templ_opts->tcp.tsecho = default_value;
+    } else if (isBoolean(value)) {
+        if (parseBoolean(value)) {
+            masscan->templ_opts->tcp.is_tsecho = Add;
+            masscan->templ_opts->tcp.tsecho = default_value;
+        } else
+            masscan->templ_opts->tcp.is_tsecho = Remove;
+    } else if (isInteger(value)) {
+        uint64_t num = parseInt(value);
+        if (num >= 255)
+            goto fail;
+        masscan->templ_opts->tcp.is_tsecho = Add;
+        masscan->templ_opts->tcp.tsecho = (unsigned)num;
+    } else
+        goto fail;
+
+    return CONF_OK;
+fail:
+    fprintf(stderr, "[-] %s: bad value: %s\n", name, value);
+    return CONF_ERR;
+}
+
+static int SET_tcp_sackok(struct Masscan *masscan, const char *name, const char *value)
+{
+    if (masscan->echo) {
+        if (masscan->templ_opts) {
+            switch (masscan->templ_opts->tcp.is_sackok) {
+                case Default:
+                    break;
+                case Add:
+                    fprintf(masscan->echo, "tcp-sackok = %s\n", "enable");
+                    break;
+                case Remove:
+                    fprintf(masscan->echo, "tcp-sackok = %s\n", "disable");
+                    break;
+                default:
+                    break;
+            }
+        }
+        return 0;
+    }
+
+    if (masscan->templ_opts == NULL)
+        masscan->templ_opts = calloc(1, sizeof(*masscan->templ_opts));
+
+    if (value == 0 || value[0] == '\0') {
+        masscan->templ_opts->tcp.is_sackok = Add;
+    } else if (isBoolean(value)) {
+        if (parseBoolean(value)) {
+            masscan->templ_opts->tcp.is_sackok = Add;
+        } else
+            masscan->templ_opts->tcp.is_sackok = Remove;
+    } else if (isInteger(value)) {
+        if (parseInt(value) != 0)
+            masscan->templ_opts->tcp.is_sackok = Add;
+    } else
+        goto fail;
+
+    return CONF_OK;
+fail:
+    fprintf(stderr, "[-] %s: bad value: %s\n", name, value);
+    return CONF_ERR;
+}
+
+
 static int SET_noreset(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -1964,6 +2250,39 @@ static int SET_output_stylesheet(struct Masscan *masscan, const char *name, cons
     return CONF_OK;
 }
 
+static int SET_topports(struct Masscan *masscan, const char *name, const char *value)
+{
+    unsigned default_value = 20;
+
+    if (masscan->echo) {
+        /* don't echo: this instead triggers filling the `--port`
+         * list, so the ports themselves will be echoed, not this
+         * parameter */
+        return 0;
+    }
+
+    if (value == 0 || value[0] == '\0') {
+        /* can be specified by itself on the command-line, alone
+         * without a following parameter */
+        /* ex: `--top-ports` */
+        masscan->top_ports = default_value;
+    } else if (isBoolean(value)) {
+        /* ex: `--top-ports enable` */
+        if (parseBoolean(value))
+            masscan->top_ports = default_value;
+        else
+            masscan->top_ports = 0;
+    } else if (isInteger(value)) {
+        /* ex: `--top-ports 5` */
+        uint64_t num = parseInt(value);
+        masscan->top_ports = (unsigned)num;
+    } else {
+        fprintf(stderr, "[-] %s: bad value: %s\n", name, value);
+        return CONF_ERR;
+    }
+    return CONF_OK;
+}
+
 
 
 struct ConfigParameter {
@@ -1972,7 +2291,7 @@ struct ConfigParameter {
     unsigned flags;
     const char *alts[6];
 };
-enum {F_NONE, F_BOOL};
+enum {F_NONE, F_BOOL=1, F_NUMABLE=2};
 struct ConfigParameter config_parameters[] = {
     {"resume-index",    SET_resume_index,       0,      {0}},
     {"resume-count",    SET_resume_count,       0,      {0}},
@@ -1983,6 +2302,10 @@ struct ConfigParameter config_parameters[] = {
     {"shard",           SET_shard,              0,      {"shards",0}},
     {"banners",         SET_banners,            F_BOOL, {"banner",0}},
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
+    {"tcpmss",          SET_tcpmss,             F_NUMABLE, {0}},
+    {"tcp-wscale",      SET_tcp_wscale,         F_NUMABLE, {0}},
+    {"tcp-tsecho",      SET_tcp_tsecho,         F_NUMABLE, {0}},
+    {"tcp-sackok",      SET_tcp_sackok,         F_BOOL, {0}},
     {"retries",         SET_retries,            0,      {"retry", "max-retries", "max-retry", 0}},
     {"noreset",         SET_noreset,            F_BOOL, {0}},
     {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
@@ -2021,6 +2344,7 @@ struct ConfigParameter config_parameters[] = {
     {"stylesheet",      SET_output_stylesheet,  0,      {0}},
     {"script",          SET_script,             0,      {0}},
     {"SPACE",           SET_space,              0,      {0}},
+    {"top-ports",       SET_topports,           F_NUMABLE, {"top-port",0}},
     {0}
 };
 
@@ -2636,6 +2960,25 @@ masscan_set_parameter(struct Masscan *masscan,
     }
 }
 
+static bool
+is_numable(const char *name) {
+    size_t i;
+
+    for (i=0; config_parameters[i].name; i++) {
+        if (EQUALS(config_parameters[i].name, name)) {
+            return (config_parameters[i].flags & F_NUMABLE) == F_NUMABLE;
+        } else {
+            size_t j;
+            for (j=0; config_parameters[i].alts[j]; j++) {
+                if (EQUALS(config_parameters[i].alts[j], name)) {
+                    return (config_parameters[i].flags & F_NUMABLE) == F_NUMABLE;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 /***************************************************************************
  * Command-line parsing code assumes every --parm is followed by a value.
  * This is a list of the parameters that don't follow the default.
@@ -2797,26 +3140,52 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
         /*
          * --name=value
          * --name:value
-         * -- name value
+         * --name value
          */
         if (argv[i][0] == '-' && argv[i][1] == '-') {
-            if (strcmp(argv[i], "--help") == 0) {
+            const char *argname = argv[i] + 2;
+
+            if (EQUALS("help", argname)) {
                 masscan_help();
-            } else if (EQUALS("top-ports", argv[i]+2)) {
-                /* special handling here since the following parameter
-                 * is optional */
-                const char *value = "20";
-                unsigned n;
-                
-                /* Only consume the next parameter if it's a number,
-                 * otherwise default to 10000 */
-                if (i+1 < argc && isInteger(argv[i+1])) {
-                    value = argv[++i];
+                exit(1);
+            } else if (is_numable(argname)) {
+                /* May exist by itself like a bool or take an additional
+                 * numeric argument */
+                char name2[64];
+                const char *name = argname;
+                unsigned name_length;
+                const char *value;
+
+                /* Look for:
+                 * --name=value
+                 * --name:value */
+                value = strchr(argname, '=');
+                if (value == NULL)
+                    value = strchr(&argv[i][2], ':');
+                if (value) {
+                    name_length = (unsigned)(value - name);
+                } else {
+                    /* The next parameter contains the name */
+                    if (i+1 < argc) {
+                        value = argv[i+1];
+                        if (isInteger(value) || isBoolean(value))
+                            i++;
+                        else
+                            value = "";
+                    } else
+                        value = "";
+                    name_length = (unsigned)strlen(argname);
                 }
-                n = (unsigned)parseInt(value);
-                LOG(2, "top-ports = %u\n", n);
-                masscan->top_ports = n;
-               
+
+                /* create a copy of the name */
+                if (name_length > sizeof(name2) - 1) {
+                    fprintf(stderr, "%.*s: name too long\n", name_length, name);
+                    name_length = sizeof(name2) - 1;
+                }
+                memcpy(name2, name, name_length);
+                name2[name_length] = '\0';
+
+                masscan_set_parameter(masscan, name2, value);
             } else if (EQUALS("readscan", argv[i]+2)) {
                 /* Read in a binary file instead of scanning the network*/
                 masscan->op = Operation_ReadScan;

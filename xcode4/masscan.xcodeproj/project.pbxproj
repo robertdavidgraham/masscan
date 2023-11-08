@@ -24,6 +24,7 @@
 		11469CA22295D80A00FA76BE /* misc-rstfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11469CA12295D80A00FA76BE /* misc-rstfilter.c */; };
 		1155CF102AF2FE12001B235A /* proto-mc.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF0F2AF2FE12001B235A /* proto-mc.c */; };
 		1155CF132AF6EF72001B235A /* templ-nmap-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF112AF6EF72001B235A /* templ-nmap-payloads.c */; };
+		1155CF162AF8311C001B235A /* templ-tcp-hdr.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF152AF8311C001B235A /* templ-tcp-hdr.c */; };
 		115C0CAB18035BC5004E6CD7 /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
 		115C0CAC18035BC5004E6CD7 /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
 		11623F6A191E0DB00075EEE6 /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
@@ -164,6 +165,9 @@
 		1155CF0F2AF2FE12001B235A /* proto-mc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-mc.c"; sourceTree = "<group>"; };
 		1155CF112AF6EF72001B235A /* templ-nmap-payloads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-nmap-payloads.c"; sourceTree = "<group>"; };
 		1155CF122AF6EF72001B235A /* templ-nmap-payloads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-nmap-payloads.h"; sourceTree = "<group>"; };
+		1155CF142AF8311C001B235A /* templ-tcp-hdr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-tcp-hdr.h"; sourceTree = "<group>"; };
+		1155CF152AF8311C001B235A /* templ-tcp-hdr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-tcp-hdr.c"; sourceTree = "<group>"; };
+		1155CF172AF8509A001B235A /* templ-opts.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "templ-opts.h"; sourceTree = "<group>"; };
 		115C0CA318035BC5004E6CD7 /* out-record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "out-record.h"; sourceTree = "<group>"; };
 		115C0CA418035BC5004E6CD7 /* proto-dns-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-dns-parse.h"; sourceTree = "<group>"; };
 		115C0CA518035BC5004E6CD7 /* proto-netbios.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-netbios.c"; sourceTree = "<group>"; };
@@ -410,7 +414,6 @@
 				118E115425859D5200618314 /* util-bool.h */,
 				118E115525859D5300618314 /* util-checksum.c */,
 				118E115625859D5300618314 /* util-checksum.h */,
-				118E115325859D2400618314 /* proto-interactive.h */,
 			);
 			name = util;
 			sourceTree = "<group>";
@@ -530,10 +533,7 @@
 		11B360CA1F9016C00020F3A3 /* proto */ = {
 			isa = PBXGroup;
 			children = (
-				1155CF112AF6EF72001B235A /* templ-nmap-payloads.c */,
-				1155CF122AF6EF72001B235A /* templ-nmap-payloads.h */,
-				1155CF0F2AF2FE12001B235A /* proto-mc.c */,
-				1155CF0E2AF2FE12001B235A /* proto-mc.h */,
+				1155CF172AF8509A001B235A /* templ-opts.h */,
 				11A921AC17DBCC7E00DDFD32 /* proto-arp.c */,
 				11A921AD17DBCC7E00DDFD32 /* proto-arp.h */,
 				11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */,
@@ -554,6 +554,9 @@
 				11420DE219A9363A00DB5BFE /* proto-imap4.c */,
 				11420DE119A9361500DB5BFE /* proto-imap4.h */,
 				11420DDF19A90CB300DB5BFE /* proto-interactive.c */,
+				118E115325859D2400618314 /* proto-interactive.h */,
+				1155CF0F2AF2FE12001B235A /* proto-mc.c */,
+				1155CF0E2AF2FE12001B235A /* proto-mc.h */,
 				119AB2042051FFED008E4DDD /* proto-memcached.c */,
 				119AB2052051FFED008E4DDD /* proto-memcached.h */,
 				115C0CA518035BC5004E6CD7 /* proto-netbios.c */,
@@ -596,10 +599,14 @@
 				11B22ED418641DCC00DA5438 /* proto-x509.h */,
 				11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */,
 				11A8681D1819A6F7008E00B8 /* proto-zeroaccess.h */,
+				1155CF112AF6EF72001B235A /* templ-nmap-payloads.c */,
+				1155CF122AF6EF72001B235A /* templ-nmap-payloads.h */,
 				11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */,
 				11B2DD9D17DE4DD8007FC363 /* templ-payloads.h */,
 				11A921D117DBCC7E00DDFD32 /* templ-pkt.c */,
 				11A921D217DBCC7E00DDFD32 /* templ-pkt.h */,
+				1155CF152AF8311C001B235A /* templ-tcp-hdr.c */,
+				1155CF142AF8311C001B235A /* templ-tcp-hdr.h */,
 			);
 			name = proto;
 			sourceTree = "<group>";
@@ -768,6 +775,7 @@
 				11A921EA17DBCC7E00DDFD32 /* rand-primegen.c in Sources */,
 				11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */,
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
+				1155CF162AF8311C001B235A /* templ-tcp-hdr.c in Sources */,
 				11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */,
 				11B5897E21C0785C00DD6248 /* util-malloc.c in Sources */,
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,

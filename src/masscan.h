@@ -16,6 +16,7 @@
 struct Adapter;
 struct TemplateSet;
 struct Banner1;
+struct TemplateOptions;
 
 /**
  * This is the "operation" to be performed by masscan, which is almost always
@@ -204,7 +205,11 @@ struct Masscan
     unsigned is_hello_http:1;    /* --hello=http, use HTTP on all ports */
     unsigned is_scripting:1;    /* whether scripting is needed */
     unsigned is_capture_servername:1; /* --capture servername */
-        
+
+    /** Packet template options, such as whether we should add a TCP MSS
+     * value, or remove it from the packet */
+    struct TemplateOptions *templ_opts;
+
     /**
      * Wait forever for responses, instead of the default 10 seconds
      */
