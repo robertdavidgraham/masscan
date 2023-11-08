@@ -47,7 +47,7 @@
     This is a class of "format-preserving encryption". There are
     probably better constructions than what I'm using.
 */
-#include "rand-blackrock.h"
+#include "crypto-blackrock.h"
 #include "pixie-timer.h"
 #include "util-malloc.h"
 #include <stdint.h>

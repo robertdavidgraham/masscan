@@ -1,7 +1,7 @@
 #include "syn-cookie.h"
 #include "pixie-timer.h"
 #include "string_s.h"
-#include "siphash24.h"
+#include "crypto-siphash24.h"
 #include <assert.h>
 #include <time.h>
 #include <stdarg.h>

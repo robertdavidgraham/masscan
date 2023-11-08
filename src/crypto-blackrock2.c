@@ -1,4 +1,4 @@
-#include "rand-blackrock.h"
+#include "crypto-blackrock.h"
 #include "pixie-timer.h"
 #include "unusedparm.h"
 #include "util-malloc.h"

@@ -1,5 +1,5 @@
-#ifndef SIPHASH24_H
-#define SIPHASH24_H
+#ifndef CRYPTO_SIPHASH24_H
+#define CRYPTO_SIPHASH24_H
 #include <stdint.h>
 
 uint64_t

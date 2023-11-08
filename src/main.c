@@ -18,54 +18,54 @@
 #include "masscan.h"
 #include "masscan-version.h"
 #include "masscan-status.h"     /* open or closed */
-#include "rand-blackrock.h"     /* the BlackRock shuffling func */
-#include "rand-lcg.h"           /* the LCG randomization func */
-#include "templ-pkt.h"          /* packet template, that we use to send */
-#include "rawsock.h"            /* API on top of Linux, Windows, Mac OS X*/
-#include "logger.h"             /* adjust with -v command-line opt */
+#include "massip-parse.h"
+#include "massip-port.h"
 #include "main-status.h"        /* printf() regular status updates */
 #include "main-throttle.h"      /* rate limit */
 #include "main-dedup.h"         /* ignore duplicate responses */
 #include "main-ptrace.h"        /* for nmap --packet-trace feature */
-#include "proto-arp.h"          /* for responding to ARP requests */
+#include "main-globals.h"       /* all the global variables in the program */
+#include "main-readrange.h"
+#include "crypto-siphash24.h"   /* hash function, for hash tables */
+#include "crypto-blackrock.h"   /* the BlackRock shuffling func */
+#include "crypto-lcg.h"         /* the LCG randomization func */
+#include "crypto-base64.h"      /* base64 encode/decode */
+#include "templ-pkt.h"          /* packet template, that we use to send */
+#include "logger.h"             /* adjust with -v command-line opt */
 #include "stack-ndpv6.h"        /* IPv6 Neighbor Discovery Protocol */
 #include "stack-arpv4.h"        /* Handle ARP resolution and requests */
-#include "rawsock-adapter.h"
+#include "rawsock.h"            /* API on top of Linux, Windows, Mac OS X*/
+#include "rawsock-adapter.h"    /* Get Ethernet adapter configuration */
+#include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
+#include "syn-cookie.h"         /* for SYN-cookies on send */
+#include "output.h"             /* for outputting results */
+#include "rte-ring.h"           /* producer/consumer ring buffer */
+#include "stub-pcap.h"          /* dynamically load libpcap library */
+#include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
+#include "pixie-timer.h"        /* portable time functions */
+#include "pixie-threads.h"      /* portable threads */
+#include "pixie-backtrace.h"    /* maybe print backtrace on crash */
+#include "templ-payloads.h"     /* UDP packet payloads */
+#include "in-binary.h"          /* convert binary output to XML/JSON */
+#include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
+#include "scripting.h"
+#include "read-service-probes.h"
+#include "misc-rstfilter.h"
+#include "proto-x509.h"
+#include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
 #include "proto-tcp.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
 #include "proto-icmp.h"         /* handle ICMP responses */
 #include "proto-udp.h"          /* handle UDP responses */
-#include "syn-cookie.h"         /* for SYN-cookies on send */
-#include "output.h"             /* for outputting results */
-#include "rte-ring.h"           /* producer/consumer ring buffer */
-#include "rawsock-pcapfile.h"   /* for saving pcap files w/ raw packets */
-#include "stub-pcap.h"          /* dynamically load libpcap library */
-#include "smack.h"              /* Aho-corasick state-machine pattern-matcher */
-#include "pixie-timer.h"        /* portable time functions */
-#include "pixie-threads.h"      /* portable threads */
-#include "templ-payloads.h"     /* UDP packet payloads */
 #include "proto-snmp.h"         /* parse SNMP responses */
 #include "proto-ntp.h"          /* parse NTP responses */
 #include "proto-coap.h"         /* CoAP selftest */
-#include "in-binary.h"          /* convert binary output to XML/JSON */
-#include "main-globals.h"       /* all the global variables in the program */
 #include "proto-zeroaccess.h"
-#include "siphash24.h"
-#include "proto-x509.h"
-#include "crypto-base64.h"      /* base64 encode/decode */
-#include "pixie-backtrace.h"
 #include "proto-sctp.h"
 #include "proto-oproto.h"       /* Other protocols on top of IP */
-#include "vulncheck.h"          /* checking vulns like monlist, poodle, heartblee */
-#include "main-readrange.h"
-#include "scripting.h"
-#include "read-service-probes.h"
-#include "misc-rstfilter.h"
 #include "util-malloc.h"
 #include "util-checksum.h"
-#include "massip-parse.h"
-#include "massip-port.h"
 
 #include <assert.h>
 #include <limits.h>

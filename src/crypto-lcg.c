@@ -3,8 +3,8 @@
     generator.
 */
 
-#include "rand-lcg.h"
-#include "rand-primegen.h" /* DJB's prime factoring code */
+#include "crypto-lcg.h"
+#include "crypto-primegen.h" /* DJB's prime factoring code */
 #include "string_s.h"
 #include "util-malloc.h"
 

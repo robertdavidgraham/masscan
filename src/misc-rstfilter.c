@@ -1,6 +1,6 @@
 #include "misc-rstfilter.h"
 #include "util-malloc.h"
-#include "siphash24.h"
+#include "crypto-siphash24.h"
 #include <time.h>
 
 struct ResetFilter

@@ -6,7 +6,7 @@
 #include "proto-interactive.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "siphash24.h"
+#include "crypto-siphash24.h"
 #include "string_s.h"
 #include "unusedparm.h"
 #include <string.h>

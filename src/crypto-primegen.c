@@ -3,7 +3,7 @@
     such as making it work with Microsoft's compiler on Windows, and
     getting rid of warnings.
 */
-#include "rand-primegen.h"
+#include "crypto-primegen.h"
 
 /*
 B is 32 times X.

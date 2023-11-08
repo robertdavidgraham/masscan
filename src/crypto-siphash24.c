@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "siphash24.h"
+#include "crypto-siphash24.h"
 
 typedef uint64_t u64;
 typedef uint32_t u32;

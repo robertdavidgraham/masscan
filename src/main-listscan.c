@@ -1,6 +1,6 @@
 #include "masscan.h"
 #include "logger.h"
-#include "rand-blackrock.h"
+#include "crypto-blackrock.h"
 
 
 void

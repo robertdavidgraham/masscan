@@ -45,7 +45,7 @@
 		11A868171816F3A7008E00B8 /* masscan-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680D1816F3A7008E00B8 /* masscan-app.c */; };
 		11A868181816F3A7008E00B8 /* out-redis.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680F1816F3A7008E00B8 /* out-redis.c */; };
 		11A868191816F3A7008E00B8 /* pixie-file.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868101816F3A7008E00B8 /* pixie-file.c */; };
-		11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* siphash24.c */; };
+		11A8681A1816F3A7008E00B8 /* crypto-siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* crypto-siphash24.c */; };
 		11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */; };
 		11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219317DBCC7E00DDFD32 /* event-timeout.c */; };
 		11A921D617DBCC7E00DDFD32 /* logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* logger.c */; };
@@ -66,9 +66,9 @@
 		11A921E517DBCC7E00DDFD32 /* proto-banner1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */; };
 		11A921E617DBCC7E00DDFD32 /* proto-preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B017DBCC7E00DDFD32 /* proto-preprocess.c */; };
 		11A921E717DBCC7E00DDFD32 /* proto-tcp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B217DBCC7E00DDFD32 /* proto-tcp.c */; };
-		11A921E817DBCC7E00DDFD32 /* rand-blackrock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B417DBCC7E00DDFD32 /* rand-blackrock.c */; };
-		11A921E917DBCC7E00DDFD32 /* rand-lcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B617DBCC7E00DDFD32 /* rand-lcg.c */; };
-		11A921EA17DBCC7E00DDFD32 /* rand-primegen.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B817DBCC7E00DDFD32 /* rand-primegen.c */; };
+		11A921E817DBCC7E00DDFD32 /* crypto-blackrock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B417DBCC7E00DDFD32 /* crypto-blackrock.c */; };
+		11A921E917DBCC7E00DDFD32 /* crypto-lcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B617DBCC7E00DDFD32 /* crypto-lcg.c */; };
+		11A921EA17DBCC7E00DDFD32 /* crypto-primegen.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B817DBCC7E00DDFD32 /* crypto-primegen.c */; };
 		11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */; };
 		11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */; };
 		11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */; };
@@ -212,8 +212,8 @@
 		11A868101816F3A7008E00B8 /* pixie-file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-file.c"; sourceTree = "<group>"; };
 		11A868111816F3A7008E00B8 /* pixie-file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-file.h"; sourceTree = "<group>"; };
 		11A868121816F3A7008E00B8 /* pixie-sockets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-sockets.h"; sourceTree = "<group>"; };
-		11A868131816F3A7008E00B8 /* siphash24.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = siphash24.c; sourceTree = "<group>"; };
-		11A868141816F3A7008E00B8 /* siphash24.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = siphash24.h; sourceTree = "<group>"; };
+		11A868131816F3A7008E00B8 /* crypto-siphash24.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-siphash24.c"; sourceTree = "<group>"; };
+		11A868141816F3A7008E00B8 /* crypto-siphash24.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-siphash24.h"; sourceTree = "<group>"; };
 		11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-zeroaccess.c"; sourceTree = "<group>"; };
 		11A8681D1819A6F7008E00B8 /* proto-zeroaccess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-zeroaccess.h"; sourceTree = "<group>"; };
 		11A9218517DBCB3200DDFD32 /* masscan */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = masscan; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -250,12 +250,12 @@
 		11A921B117DBCC7E00DDFD32 /* proto-preprocess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-preprocess.h"; sourceTree = "<group>"; };
 		11A921B217DBCC7E00DDFD32 /* proto-tcp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-tcp.c"; sourceTree = "<group>"; };
 		11A921B317DBCC7E00DDFD32 /* proto-tcp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-tcp.h"; sourceTree = "<group>"; };
-		11A921B417DBCC7E00DDFD32 /* rand-blackrock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rand-blackrock.c"; sourceTree = "<group>"; };
-		11A921B517DBCC7E00DDFD32 /* rand-blackrock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rand-blackrock.h"; sourceTree = "<group>"; };
-		11A921B617DBCC7E00DDFD32 /* rand-lcg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rand-lcg.c"; sourceTree = "<group>"; };
-		11A921B717DBCC7E00DDFD32 /* rand-lcg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rand-lcg.h"; sourceTree = "<group>"; };
-		11A921B817DBCC7E00DDFD32 /* rand-primegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rand-primegen.c"; sourceTree = "<group>"; };
-		11A921B917DBCC7E00DDFD32 /* rand-primegen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "rand-primegen.h"; sourceTree = "<group>"; };
+		11A921B417DBCC7E00DDFD32 /* crypto-blackrock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-blackrock.c"; sourceTree = "<group>"; };
+		11A921B517DBCC7E00DDFD32 /* crypto-blackrock.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-blackrock.h"; sourceTree = "<group>"; };
+		11A921B617DBCC7E00DDFD32 /* crypto-lcg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-lcg.c"; sourceTree = "<group>"; };
+		11A921B717DBCC7E00DDFD32 /* crypto-lcg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-lcg.h"; sourceTree = "<group>"; };
+		11A921B817DBCC7E00DDFD32 /* crypto-primegen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "crypto-primegen.c"; sourceTree = "<group>"; };
+		11A921B917DBCC7E00DDFD32 /* crypto-primegen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "crypto-primegen.h"; sourceTree = "<group>"; };
 		11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getif.c"; sourceTree = "<group>"; };
 		11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getip.c"; sourceTree = "<group>"; };
 		11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "rawsock-getmac.c"; sourceTree = "<group>"; };
@@ -409,6 +409,7 @@
 		118E114F25859CFD00618314 /* util */ = {
 			isa = PBXGroup;
 			children = (
+				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11B5897C21C0785B00DD6248 /* util-malloc.h */,
 				11B5897D21C0785B00DD6248 /* util-malloc.c */,
 				118E115425859D5200618314 /* util-bool.h */,
@@ -633,14 +634,14 @@
 				11A773E91881BFC700B135DE /* crypto-base64.c */,
 				11A773EA1881BFC700B135DE /* crypto-base64.h */,
 				11B05EA418B9649F009C935E /* crypto-blackrock2.c */,
-				11A921B417DBCC7E00DDFD32 /* rand-blackrock.c */,
-				11A921B517DBCC7E00DDFD32 /* rand-blackrock.h */,
-				11A921B617DBCC7E00DDFD32 /* rand-lcg.c */,
-				11A921B717DBCC7E00DDFD32 /* rand-lcg.h */,
-				11A921B817DBCC7E00DDFD32 /* rand-primegen.c */,
-				11A921B917DBCC7E00DDFD32 /* rand-primegen.h */,
-				11A868131816F3A7008E00B8 /* siphash24.c */,
-				11A868141816F3A7008E00B8 /* siphash24.h */,
+				11A921B417DBCC7E00DDFD32 /* crypto-blackrock.c */,
+				11A921B517DBCC7E00DDFD32 /* crypto-blackrock.h */,
+				11A921B617DBCC7E00DDFD32 /* crypto-lcg.c */,
+				11A921B717DBCC7E00DDFD32 /* crypto-lcg.h */,
+				11A921B817DBCC7E00DDFD32 /* crypto-primegen.c */,
+				11A921B917DBCC7E00DDFD32 /* crypto-primegen.h */,
+				11A868131816F3A7008E00B8 /* crypto-siphash24.c */,
+				11A868141816F3A7008E00B8 /* crypto-siphash24.h */,
 				11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */,
 				11A921D017DBCC7E00DDFD32 /* syn-cookie.h */,
 			);
@@ -652,7 +653,6 @@
 			children = (
 				11469CA12295D80A00FA76BE /* misc-rstfilter.c */,
 				11469CA02295D80A00FA76BE /* misc-rstfilter.h */,
-				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11A921D317DBCC7E00DDFD32 /* xring.c */,
 				11A921D417DBCC7E00DDFD32 /* xring.h */,
 				11A921C717DBCC7E00DDFD32 /* rte-ring.c */,
@@ -770,9 +770,9 @@
 				1107E9B2228DF7BB003384B3 /* proto-tcp-rdp.c in Sources */,
 				11A921E617DBCC7E00DDFD32 /* proto-preprocess.c in Sources */,
 				11A921E717DBCC7E00DDFD32 /* proto-tcp.c in Sources */,
-				11A921E817DBCC7E00DDFD32 /* rand-blackrock.c in Sources */,
-				11A921E917DBCC7E00DDFD32 /* rand-lcg.c in Sources */,
-				11A921EA17DBCC7E00DDFD32 /* rand-primegen.c in Sources */,
+				11A921E817DBCC7E00DDFD32 /* crypto-blackrock.c in Sources */,
+				11A921E917DBCC7E00DDFD32 /* crypto-lcg.c in Sources */,
+				11A921EA17DBCC7E00DDFD32 /* crypto-primegen.c in Sources */,
 				11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */,
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
 				1155CF162AF8311C001B235A /* templ-tcp-hdr.c in Sources */,
@@ -821,7 +821,7 @@
 				11A868171816F3A7008E00B8 /* masscan-app.c in Sources */,
 				11A868181816F3A7008E00B8 /* out-redis.c in Sources */,
 				11A868191816F3A7008E00B8 /* pixie-file.c in Sources */,
-				11A8681A1816F3A7008E00B8 /* siphash24.c in Sources */,
+				11A8681A1816F3A7008E00B8 /* crypto-siphash24.c in Sources */,
 				1124DD6F25B4FF3C00EEFC2C /* stack-if.c in Sources */,
 				11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */,
 				11B22ED518641DCC00DA5438 /* proto-banout.c in Sources */,
