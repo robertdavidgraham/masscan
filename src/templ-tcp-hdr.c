@@ -73,7 +73,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <malloc.h> /*fixme: remove this*/
 
 struct tcp_opt_t {
     const unsigned char *buf;
