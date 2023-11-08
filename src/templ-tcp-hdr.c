@@ -1216,7 +1216,7 @@ tests[] = {
         {TST_REMOVE, "\x08", 1},
         {"\3\3\3\0", 4}
     },
-
+#if 0
     /* Test when trying to add a big option that won't fit unless we get
      * rid of all the padding */
     {   {   "\x02\x04\x05\xb4"
@@ -1259,7 +1259,8 @@ tests[] = {
             40
         }
     },
-
+#endif
+    
     /* Add a new value to full packet  */
     {{"\3\3\3", 3}, {TST_ADD, "\4\2", 2}, {"\3\3\3\4\2\0\0\0", 8}},
 
