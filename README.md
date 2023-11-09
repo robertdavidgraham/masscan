@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/robertdavidgraham/masscan.svg?branch=master)](https://travis-ci.org/robertdavidgraham/masscan.svg)
 
 # MASSCAN: Mass IP port scanner
 
