@@ -1380,32 +1380,25 @@ template_packet_init(
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,
-    uint64_t entropy,
-    const struct TemplateOptions *templ_opts)
+    uint64_t entropy)
 {
-    unsigned char *buf;
-    size_t length;
     templset->count = 0;
     templset->entropy = entropy;
 
-
-    /* [TCP] */
-    length = sizeof(default_tcp_template)-1;
-    buf = malloc(length);
-    memcpy(buf, default_tcp_template, length);
-    templ_tcp_apply_options(&buf, &length, templ_opts); /* mss, sack, wscale */
-    _template_init(&templset->pkts[Proto_TCP],
-                   source_mac, router_mac_ipv4, router_mac_ipv6,
-                   buf, length,
-                   data_link);
-    templset->count++;
-    free(buf);
 
     /* [SCTP] */
     _template_init(&templset->pkts[Proto_SCTP],
                    source_mac, router_mac_ipv4, router_mac_ipv6,
                    default_sctp_template,
                    sizeof(default_sctp_template)-1,
+                   data_link);
+    templset->count++;
+
+    /* [TCP] */
+    _template_init(&templset->pkts[Proto_TCP],
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
+                   default_tcp_template,
+                   sizeof(default_tcp_template)-1,
                    data_link);
     templset->count++;
 
@@ -1543,8 +1536,7 @@ template_selftest(void)
             0,  /* UDP payloads = empty */
             0,  /* Oproto payloads = empty */
             1,  /* Ethernet */
-            0,   /* no entropy */
-            &templ_opts
+            0   /* no entropy */
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;

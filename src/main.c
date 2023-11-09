@@ -1302,8 +1302,7 @@ main_scan(struct Masscan *masscan)
                     masscan->payloads.udp,
                     masscan->payloads.oproto,
                     stack_if_datalink(masscan->nic[index].adapter),
-                    masscan->seed,
-                    masscan->templ_opts);
+                    masscan->seed);
 
         /*
          * Set the "source port" of everything we transmit.
