@@ -20,6 +20,7 @@
 #include "proto-coap.h"         /* constrained app proto for IoT udp/5683*/
 #include "proto-ntp.h"
 #include "proto-dns.h"
+#include "proto-isakmp.h"
 #include "util-malloc.h"
 #include "massip.h"
 #include "templ-nmap-payloads.h"
@@ -310,6 +311,162 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
     {27960, 65536, 0xFFFFFFFF, 0, 0,
         "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x10"},
 
+    /* ISAKMP */
+    {500, 500, 352, 0, isakmp_set_cookie,
+     /* ISAKMP */
+     "\x00\x11\x22\x33\x44\x55\x66\x77"/* init_cookie */
+     "\x00\x00\x00\x00\x00\x00\x00\x00" /* resp_cookie*/
+     "\x01" /* next_payload: SA */
+     "\x10" /* version */
+     "\x02" /* exch_type: identity prot. */
+     "\x00" /* flags */
+     "\x00\x00\x00\x00" /* id */
+     "\x00\x00\x01\x60" /* length: 352 */
+     /* ISAKMP_SA */
+     "\x00" /* next_payload: None */
+     "\x00" /* reserved */
+     "\x01\x44" /* length: 324 */
+     "\x00\x00\x00\x01" /* DOI: IPSEC */
+     "\x00\x00\x00\x01" /* situation: identity */
+     /* Proposal */
+     "\x00" /* next_payload: None */
+     "\x00" /* reserved */
+     "\x01\x38" /* length: 312 */
+     "\x01" /* proposal: 1 */
+     "\x01" /* protocol: ISAKMP */
+     "\x00" /* SPIsize: 0 */
+     "\x0d" /* trans_count: 13 */
+     "" /* SPI */
+     /* Tranforms */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x20" /* length: 32 */
+     "\x00" /* num */
+     "\x01" /* id: KEY_IKE */
+     "\x00\x00" /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\x00\x01\x80\x04\x00\x02"
+     "\x80\x0b\x00\x01\x80\x0c\x00\x01"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'), ('Authentication', 'PSK'),
+        ('GroupDesc', '1024MODPgr'), ('LifeType', 'Seconds'),
+        ('LifeDuration', 1) */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x20" /* length: 32 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x01\x80\x02\x00\x01\x80\x03\x00\x01\x80\x04\x00\x02"
+     "\x80\x0b\x00\x01\x80\x0c\x00\x01"
+     /* ('Encryption', 'DES-CBC'), ('Hash', 'MD5'), ('Authentication', 'PSK'),
+        ('GroupDesc', '1024MODPgr'), ('LifeType', 'Seconds'),
+        ('LifeDuration', 1) */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x20" /* length: 32 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x07\x80\x02\x00\x04\x80\x03\x00\x01\x80\x04\x00\x0e"
+     "\x80\x0b\x00\x01\x80\x0c\x00\x01"
+     /* ('Encryption', 'AES-CBC'), ('Hash', 'SHA2-256'),
+        ('Authentication', 'PSK'), ('GroupDesc', '2048MODPgr'),
+        ('LifeType', 'Seconds'), ('LifeDuration', 1) */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\x00\x02"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'DSS') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\x00\x03"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'RSA Sig') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\x00\x04"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'RSA Encryption') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\x00\x08"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'ECDSA Sig') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfa\xdd"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'HybridInitRSA') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfa\xdf"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'HybridInitDSS') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfd\xe9"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'XAUTHInitPreShared') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfd\xeb"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'XAUTHInitDSS') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfd\xed"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'XAUTHInitRSA') */
+     "\x03" /* next_payload: Transform */
+     "\x00" /* reserved */
+     "\x00\x14" /* length: 20 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */
+     "\x80\x01\x00\x05\x80\x02\x00\x02\x80\x03\xfd\xef"
+     /* ('Encryption', '3DES-CBC'), ('Hash', 'SHA'),
+        ('Authentication', 'XAUTHInitRSAEncryption') */
+     "\x00" /* next_payload: None */
+     "\x00" /* reserved */
+     "\x00\x08" /* length: 8 */
+     "\x00" /* num */
+     "\x01"  /* id: KEY_IKE */
+     "\x00\x00"  /* reserved */},
 
     {0,0,0,0,0}
 };

@@ -170,6 +170,7 @@ struct SMBSTUFF {
     unsigned is_printed_ver:1;
     unsigned is_printed_guid:1;
     unsigned is_printed_time:1;
+    unsigned is_printed_boottime:1;
     unsigned nbt_length;
     unsigned nbt_err;
     
@@ -236,7 +237,13 @@ struct RDPSTUFF {
     } cc;
 };
 
+struct SSHSTUFF{
+    size_t packet_length;
+};
+
 struct ProtocolState {
+    unsigned char iter;
+    unsigned try_next;
     unsigned state;
     unsigned remaining;
     unsigned short port;
@@ -254,6 +261,7 @@ struct ProtocolState {
         struct SMBSTUFF smb;
         struct RDPSTUFF rdp;
         struct MCSTUFF mc;
+        struct SSHSTUFF ssh;
     } sub;
 };
 

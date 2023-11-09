@@ -118,7 +118,8 @@ template_packet_init(
     struct PayloadsUDP *udp_payloads,
     struct PayloadsUDP *oproto_payloads,
     int data_link,
-    uint64_t entropy);
+    uint64_t entropy,
+    int tcpmss);
 
 /**
  * Sets the target/destination IP address of the packet, the destination port

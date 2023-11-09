@@ -1015,7 +1015,18 @@ smb2_parse_negotiate(struct SMBSTUFF *smb, const unsigned char *px, size_t offse
                 break;
             case N_BOOT1: case N_BOOT2: case N_BOOT3: case N_BOOT4:
             case N_BOOT5: case N_BOOT6: case N_BOOT7: case N_BOOT8:
-                smb->parms.negotiate2.boot_time |= (px[offset]<<((state-N_BOOT1)*8));
+                smb->parms.negotiate2.boot_time |= ((uint64_t)px[offset]<<(uint64_t)((state-N_BOOT1)*8));
+                if (state == N_BOOT8 && !smb->is_printed_boottime) {
+                    char str[64] = "(err)";
+                    time_t timestamp = convert_windows_time(smb->parms.negotiate2.boot_time);
+                    struct tm tm = {0};
+                    size_t len;
+                    
+                    gmtime_s(&tm, &timestamp);
+                    len = strftime(str, sizeof(str), " boottime=%Y-%m-%d %H:%M:%S ", &tm);
+                    banout_append(banout, PROTO_SMB, str, len);
+                    smb->is_printed_boottime = 1;
+                }
                 state++;
                 break;
             case N_BLOB_OFFSET1:

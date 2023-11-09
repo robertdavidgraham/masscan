@@ -86,6 +86,11 @@
 #include <unistd.h>
 #endif
 
+/* number of different protocoles we can try at most
+ * on the same host:port (one per connection)
+ */
+#define MAX_ITER  2
+
 /*
  * yea I know globals suck
  */
@@ -229,6 +234,8 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
+    /* Wait to make sure receive_thread is ready */
+    pixie_usleep(1000000);
     LOG(1, "[+] starting transmit thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
@@ -762,8 +769,9 @@ receive_thread(void *v)
         unsigned port_them;
         unsigned seqno_me;
         unsigned seqno_them;
-        unsigned cookie;
+        unsigned cookie[MAX_ITER];
         unsigned Q = 0;
+        unsigned iter = 0;
 
         /*
          * RECEIVE
@@ -815,10 +823,14 @@ receive_thread(void *v)
 
         switch (parsed.ip_protocol) {
         case 132: /* SCTP */
-            cookie = syn_cookie(ip_them, port_them | (Proto_SCTP<<16), ip_me, port_me, entropy) & 0xFFFFFFFF;
+            /* compute all possible cookies for SCTP*/
+            for (unsigned int i = 0; i < MAX_ITER; i++)
+                cookie[i] = syn_cookie(ip_them, port_them | (Proto_SCTP<<16), ip_me, port_me, entropy + i) & 0xFFFFFFFF;
             break;
         default:
-            cookie = syn_cookie(ip_them, port_them, ip_me, port_me, entropy) & 0xFFFFFFFF;
+            /* compute all possible cookies for other protocols */
+            for (unsigned int i = 0; i < MAX_ITER; i++)
+                cookie[i] = syn_cookie(ip_them, port_them, ip_me, port_me, entropy + i) & 0xFFFFFFFF;
         }
 
         /* verify: my IP address */
@@ -914,7 +926,7 @@ receive_thread(void *v)
                 handle_icmp(out, secs, px, length, &parsed, entropy);
                 continue;
             case FOUND_SCTP:
-                handle_sctp(out, secs, px, length, cookie, &parsed, entropy);
+                handle_sctp(out, secs, px, length, cookie[0], &parsed, entropy);
                 break;
             case FOUND_OPROTO: /* other IP proto */
                 handle_oproto(out, secs, px, length, &parsed, entropy);
@@ -964,23 +976,25 @@ receive_thread(void *v)
                             port_me, port_them);
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
-                if (cookie != seqno_me - 1) {
+                /* check seqno against all possible cookies */
+                for (iter = 0; iter < MAX_ITER; iter++) {
+                    if (cookie[iter] == seqno_me-1)
+                       break;
                     ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
                     LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                        fmt.string, seqno_me-1, cookie);
+                        fmt.string, seqno_me-1, cookie[iter]);
+                }
+                if (iter == MAX_ITER) {
                     continue;
                 }
-
                 if (tcb == NULL) {
                     tcb = tcpcon_create_tcb(tcpcon,
                                     ip_me, ip_them,
                                     port_me, port_them,
                                     seqno_me, seqno_them+1,
-                                    parsed.ip_ttl);
+                                    parsed.ip_ttl, iter);
                     (*status_tcb_count)++;
-
                 }
-
                 Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_SYNACK,
                     0, 0, secs, usecs, seqno_them+1);
 
@@ -1042,7 +1056,6 @@ receive_thread(void *v)
    
         if (TCP_IS_SYNACK(px, parsed.transport_offset)
             || TCP_IS_RST(px, parsed.transport_offset)) {
-
             /* figure out the status */
             status = PortStatus_Unknown;
             if (TCP_IS_SYNACK(px, parsed.transport_offset))
@@ -1050,12 +1063,15 @@ receive_thread(void *v)
             if (TCP_IS_RST(px, parsed.transport_offset)) {
                 status = PortStatus_Closed;
             }
-
-            /* verify: syn-cookies */
-            if (cookie != seqno_me - 1) {
+            /* check seqno against all possible cookies */
+            for (iter = 0; iter < MAX_ITER; iter++) {
+                if (cookie[iter] == seqno_me-1)
+                   break;
                 ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
-                LOG(5, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
-                    fmt.string, seqno_me-1, cookie);
+                LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                    fmt.string, seqno_me-1, cookie[0]);
+            }
+            if (iter == MAX_ITER) {
                 continue;
             }
 
@@ -1302,7 +1318,8 @@ main_scan(struct Masscan *masscan)
                     masscan->payloads.udp,
                     masscan->payloads.oproto,
                     stack_if_datalink(masscan->nic[index].adapter),
-                    masscan->seed);
+                    masscan->seed,
+                    masscan->is_tcpmss);
 
         /*
          * Set the "source port" of everything we transmit.

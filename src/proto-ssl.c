@@ -385,6 +385,8 @@ parse_server_cert(
         LEN0, LEN1, LEN2,
         CLEN0, CLEN1, CLEN2,
         CERT,
+        CALEN0, CALEN1, CALEN2,
+        CACERT,
         UNKNOWN,
     };
 
@@ -404,6 +406,7 @@ parse_server_cert(
         DROPDOWN(i,length,state);
 
     case CLEN0:
+    case CALEN0:
         if (remaining < 3) {
             state = UNKNOWN;
             continue;
@@ -412,10 +415,12 @@ parse_server_cert(
         remaining--;
         DROPDOWN(i,length,state);
     case CLEN1:
+    case CALEN1:
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
         DROPDOWN(i,length,state);
     case CLEN2:
+    case CALEN2:
         cert_remaining = cert_remaining * 256 + px[i];
         remaining--;
         if (banner1->is_capture_cert) {
@@ -432,8 +437,10 @@ parse_server_cert(
         DROPDOWN(i,length,state);
 
     case CERT:
+    case CACERT:
         {
             unsigned len = (unsigned)length-i;
+	    unsigned proto = (state == CERT ? PROTO_X509_CERT : PROTO_X509_CACERT);
             if (len > remaining)
                 len = remaining;
             if (len > cert_remaining)
@@ -442,7 +449,7 @@ parse_server_cert(
             /* parse the certificate */
             if (banner1->is_capture_cert) {
                 banout_append_base64(banout, 
-                             PROTO_X509_CERT, 
+                             proto,
                              px+i, len,
                              &pstate->base64);
             }
@@ -459,11 +466,11 @@ parse_server_cert(
                  * a record of it */
                 if (banner1->is_capture_cert) {
                     banout_finalize_base64(banout, 
-                                           PROTO_X509_CERT, 
+                                           proto,
                                            &pstate->base64);        
-                    banout_end(banout, PROTO_X509_CERT);
+                    banout_end(banout, proto);
                 }
-                state = CLEN0;
+                state = CALEN0;
                 if (remaining == 0) {
                     if (!banner1->is_heartbleed)
                         tcp_close(more);
@@ -842,6 +849,7 @@ parse_alert(
                               );
                 
                     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
+                    pstate->try_next = 1;
                 }
                 DROPDOWN(i,length,state);
                 
@@ -1093,7 +1101,20 @@ ssl_hello_template[] =
 "\x02\x02\x04\x02\x05\x02\x06\x02"
 ;
 
-
+/*****************************************************************************
+ * This is the template "Client Hello" packet that is sent to the server
+ * to initiate the SSL connection. Right now, it's statically just transmitted
+ * on to the wire.
+ * TODO: we need to make this dynamically generated, so that users can
+ * select various options.
+ *****************************************************************************/
+static const char
+ssl_12_hello_template[] =
+"\x16\x03\x01\x01\x1a"
+"\x01"
+"\x00\x01\x16"
+"\x03\x03\x02\x58\x33\x79\x5f\x71\x03\xef\x07\xfe\x36\x61\xb0\x32\x81\xaa\x99\x10\x87\x6a\x8e\x5b\xf9\x03\x93\x44\x58\x4b\x19\xff\x42\x6a\x20\x64\x84\xcd\x28\x9c\xe9\xb1\x9d\xcd\x8a\x11\x4c\x3b\x40\x1c\x90\x02\xf2\xb5\x1a\xf1\x7e\x5d\xb8\x42\xc2\x1e\x17\x1e\x59\xa4\xac\x00\x3e\x13\x02\x13\x03\x13\x01\xc0\x2c\xc0\x30\x00\x9f\xcc\xa9\xcc\xa8\xcc\xaa\xc0\x2b\xc0\x2f\x00\x9e\xc0\x24\xc0\x28\x00\x6b\xc0\x23\xc0\x27\x00\x67\xc0\x0a\xc0\x14\x00\x39\xc0\x09\xc0\x13\x00\x33\x00\x9d\x00\x9c\x00\x3d\x00\x3c\x00\x35\x00\x2f\x00\xff\x01\x00\x00\x8f\x00\x0b\x00\x04\x03\x00\x01\x02\x00\x0a\x00\x0c\x00\x0a\x00\x1d\x00\x17\x00\x1e\x00\x19\x00\x18\x00\x23\x00\x00\x00\x16\x00\x00\x00\x17\x00\x00\x00\x0d\x00\x2a\x00\x28\x04\x03\x05\x03\x06\x03\x08\x07\x08\x08\x08\x09\x08\x0a\x08\x0b\x08\x04\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x03\x03\x03\x01\x03\x02\x04\x02\x05\x02\x06\x02\x00\x2b\x00\x09\x08\x03\x04\x03\x03\x03\x02\x03\x01\x00\x2d\x00\x02\x01\x01\x00\x33\x00\x26\x00\x24\x00\x1d\x00\x20\xb6\x87\xb7\x72\xb9\xcb\x07\xe0\x14\x0a\x14\x81\x3f\x3f\x0a\xcc\xc4\x7d\x80\xf7\xe8\xaa\x1e\x73\xb0\xa9\xad\xb8\x3a\xa7\x3c\x64";
+;
 /*****************************************************************************
  *****************************************************************************/
 static char *
@@ -1408,10 +1429,19 @@ ssl_selftest(void)
  * This is the 'plugin' structure that registers callbacks for this parser in
  * the main system.
  *****************************************************************************/
-struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1, 0,
+struct ProtocolParserStream banner_ssl_12 = {
+    "ssl", 443, ssl_12_hello_template, sizeof(ssl_12_hello_template)-1, 0,
     ssl_selftest,
     ssl_init,
     ssl_parse_record,
 };
 
+struct ProtocolParserStream banner_ssl = {
+    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1, 0,
+    ssl_selftest,
+    ssl_init,
+    ssl_parse_record,
+    0,
+    0,
+    &banner_ssl_12,
+};

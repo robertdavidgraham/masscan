@@ -27,6 +27,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_IMAP4:   return "imap";
     case PROTO_UDP_ZEROACCESS: return "zeroaccess";
     case PROTO_X509_CERT: return "X509";
+    case PROTO_X509_CACERT: return "X509CA";
     case PROTO_HTML_TITLE: return "title";
     case PROTO_HTML_FULL: return "html";
     case PROTO_NTP:     return "ntp";
@@ -34,6 +35,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_HEARTBLEED:    return "heartbleed";
     case PROTO_TICKETBLEED:    return "ticketbleed";
     case PROTO_VNC_RFB: return "vnc";
+    case PROTO_VNC_INFO: return "vnc-info";
     case PROTO_SAFE:    return "safe";
     case PROTO_MEMCACHED: return "memcached";
     case PROTO_SCRIPTING:      return "scripting";
@@ -44,6 +46,8 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_HTTP_SERVER:     return "http.server";
     case PROTO_MC:     return "minecraft";
 
+    case PROTO_ERROR: return "error";
+            
     default:
         sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;
@@ -73,6 +77,7 @@ masscan_string_to_app(const char *str)
         {"pop",     PROTO_POP3},
         {"imap",    PROTO_IMAP4},
         {"x509",    PROTO_X509_CERT},
+        {"x509ca",  PROTO_X509_CACERT},
         {"zeroaccess",  PROTO_UDP_ZEROACCESS},
         {"title",       PROTO_HTML_TITLE},
         {"html",        PROTO_HTML_FULL},
@@ -81,6 +86,7 @@ masscan_string_to_app(const char *str)
         {"heartbleed",  PROTO_HEARTBLEED},
         {"ticketbleed", PROTO_TICKETBLEED},
         {"vnc",         PROTO_VNC_RFB},
+        {"vnc",         PROTO_VNC_INFO},
         {"safe",        PROTO_SAFE},
         {"memcached",   PROTO_MEMCACHED},
         {"scripting",   PROTO_SCRIPTING},
