@@ -245,7 +245,7 @@ telnet_parse(  const struct Banner1 *banner1,
         if (r_offset) {
             unsigned char *outbuf = MALLOC(r_offset);
             memcpy(outbuf, reply, r_offset);
-            tcp_transmit(more, outbuf, r_offset, 1);
+            tcp_transmit(more, outbuf, r_offset, TCP__copy);
         }
     }
     pstate->state = state;

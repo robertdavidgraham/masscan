@@ -134,15 +134,6 @@ tcpcon_create_tcb(
     struct ProtocolParserStream *stream);
 
 
-/**
- * Acknowledge a FIN even if we've forgotten about the connection
- */
-void
-tcpcon_send_FIN(
-                struct TCP_ConnectionTable *tcpcon,
-                ipaddress ip_me, ipaddress ip_them,
-                unsigned port_me, unsigned port_them,
-                uint32_t seqno_them, uint32_t ackno_them);
 void
 tcpcon_send_RST(
                 struct TCP_ConnectionTable *tcpcon,

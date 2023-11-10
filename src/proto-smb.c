@@ -1456,14 +1456,14 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                         if (smb->parms.negotiate.SessionKey) {
                             unsigned char *buf;
                             
-                            buf = tcp_transmit_alloc(more, sizeof(smb1_null_session_setup));
+                            buf = malloc(sizeof(smb1_null_session_setup));
                             
                             memcpy(buf, smb1_null_session_setup, sizeof(smb1_null_session_setup));
                             buf[0x2f] = (unsigned char)(smb->parms.negotiate.SessionKey>> 0) & 0xFF;
                             buf[0x30] = (unsigned char)(smb->parms.negotiate.SessionKey>> 8) & 0xFF;
                             buf[0x31] = (unsigned char)(smb->parms.negotiate.SessionKey>>16) & 0xFF;
                             buf[0x32] = (unsigned char)(smb->parms.negotiate.SessionKey>>24) & 0xFF;
-                            tcp_transmit(more, buf, sizeof(smb1_null_session_setup), TCPTRAN_DYNAMIC);
+                            tcp_transmit(more, buf, sizeof(smb1_null_session_setup), TCP__adopt);
                             
                             /* NOTE: the following line is here to silence LLVM warnings about a potential
                              * memory leak. The 'tcp_transmit' function 'adopts' the pointer and will be

@@ -1401,13 +1401,14 @@ template_packet_init(
     length = sizeof(default_tcp_template) - 1;
     buf = MALLOC(length);
     memcpy(buf, default_tcp_template, length);
-    //templ_tcp_apply_option(&buf, &length, templ_opts);
+    templ_tcp_apply_options(&buf, &length, templ_opts);
     _template_init(&templset->pkts[Proto_TCP],
                    source_mac, router_mac_ipv4, router_mac_ipv6,
                    buf,
                    length,
                    data_link);
     templset->count++;
+    free(buf);
 
     /* [UDP] */
     _template_init(&templset->pkts[Proto_UDP],

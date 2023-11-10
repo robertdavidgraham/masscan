@@ -3,27 +3,12 @@
 #include "util-malloc.h"
 #include <stdlib.h>
 
-/*
- * TODO: we need to track the memory used for this better than with malloc(), such
- * as using a preallocated array of packet buffers. But for now, I'm just using
- * malloc() 'cause I'm a lazy programmer.
- */
-unsigned char *
-tcp_transmit_alloc(struct InteractiveData *more, size_t length)
-{
-    /* Note using this parameter yet, but in the future, we are going to have
-     * memory pools instead of heap malloc(), which will use this parameter */
-    UNUSEDPARM(more);
-
-    return MALLOC(length);
-}
-
 void
 tcp_close(struct InteractiveData *more)
 {
     if (more == NULL)
         return;
-    more->is_closing = 1;
+    more->send(more->tcpcon, more->tcb, "", 0, TCP__static, true, more->secs, more->usecs);
 }
 
 /*
@@ -31,11 +16,7 @@ tcp_close(struct InteractiveData *more)
  * to transmit, which will be transmitted later
  */
 void
-tcp_transmit(struct InteractiveData *more, const void *payload, size_t length, unsigned flags)
+tcp_transmit(struct InteractiveData *more, const void *payload, size_t length, enum TCP__flags flags)
 {
-    more->m_payload = payload;
-    more->m_length = (unsigned)length;
-    
-    if (flags & TCPTRAN_DYNAMIC)
-        more->is_payload_dynamic = 1;
+    more->send(more->tcpcon, more->tcb, payload, length, flags, more->is_closing, more->secs, more->usecs);
 }

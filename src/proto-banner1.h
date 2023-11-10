@@ -263,9 +263,6 @@ struct StreamState {
     } sub;
 };
 
-enum {
-    CTRL_SMALL_WINDOW = 1,
-};
 
 /**
  * A registration structure for various TCP stream protocols

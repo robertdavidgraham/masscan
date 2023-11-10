@@ -390,6 +390,9 @@
     <ClCompile Include="..\src\templ-tcp-hdr.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\proto-isakmp.c">
+      <Filter>Source Files\proto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -672,6 +675,9 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\templ-tcp-hdr.h">
+      <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-isakmp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
   </ItemGroup>
