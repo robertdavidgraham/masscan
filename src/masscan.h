@@ -187,7 +187,6 @@ struct Masscan
     unsigned is_pfring:1;       /* --pfring */
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
-    unsigned is_tcpmss:1;       /* --tcpmss */
     unsigned is_offline:1;      /* --offline */
     unsigned is_noreset:1;      /* --noreset, don't transmit RST */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */
@@ -209,7 +208,7 @@ struct Masscan
 
     /** Packet template options, such as whether we should add a TCP MSS
      * value, or remove it from the packet */
-    struct TemplateOptions *templ_opts;
+    struct TemplateOptions *templ_opts; /* e.g. --tcpmss */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

@@ -45,13 +45,14 @@
                         "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" /* padding string */
 #define SIZE_NEWKEYS (12+4)
 
+#define DEADSTORE(x) x=x
 
 /***************************************************************************
  ***************************************************************************/
 static void
 ssh_parse(  const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -130,13 +131,15 @@ ssh_parse(  const struct Banner1 *banner1,
             switch(px[i]) {
             case '\x14':
                 state = MSG_KEY_EXCHANGE_INIT;
-                break;
+                DEADSTORE(state); /*remove warning*/
             case '\x15':
                 state = MSG_NEW_KEYS;
+                DEADSTORE(state); /*remove warning*/
                 break;
             default:
                 state = CHECK_LENGTH; /* read & discard this message */
-            break;
+                DEADSTORE(state); /*remove warning*/
+                break;
             }
 
         case MSG_KEY_EXCHANGE_INIT:

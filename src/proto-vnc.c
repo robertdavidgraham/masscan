@@ -93,7 +93,7 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
 static void
 vnc_parse(  const struct Banner1 *banner1,
           void *banner1_private,
-          struct ProtocolState *pstate,
+          struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
           struct InteractiveData *more)

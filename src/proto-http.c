@@ -484,7 +484,7 @@ static void
 http_parse(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -709,7 +709,7 @@ static int
 http_selftest_parser(void)
 {
     struct Banner1 *banner1 = NULL;
-    struct ProtocolState pstate[1];
+    struct StreamState pstate[1];
     struct BannerOutput banout[1];
     struct InteractiveData more[1];
     

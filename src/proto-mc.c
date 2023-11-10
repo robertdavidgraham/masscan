@@ -47,7 +47,7 @@ memstr(void * mem, size_t len, char * str)
 static void
 mc_parse(  const struct Banner1 *banner1,
           void *banner1_private,
-          struct ProtocolState *pstate,
+          struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
           struct InteractiveData *more)

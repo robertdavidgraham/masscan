@@ -163,14 +163,14 @@ redis_out_open(struct Output *out, FILE *fp)
                   "$%u\r\n%s\r\n",
                   (unsigned)strlen(out->redis.password), out->redis.password);
 
-        count = send(fd, line, (int)strlen(line), 0);
+        count = send((SOCKET)fd, line, (int)strlen(line), 0);
         if (count != strlen(line))
         {
             LOG(0, "redis: error auth\n");
             exit(1);
         }
 
-        count = recv_line(fd, line, sizeof(line));
+        count = recv_line((SOCKET)fd, line, sizeof(line));
         if (count != 5 && memcmp(line, "+OK\r\n", 5) != 0)
         {
             LOG(0, "redis: unexpected response from redis server: %s\n", line);

@@ -94,8 +94,8 @@ handle_udp(struct Output *out, time_t timestamp,
             break;
     }
 
-    if (status == 0)
-        if (px != 0 && parsed->app_length == 0)
+    if (status == 0) {
+        if (px != 0 && parsed->app_length == 0) {
             output_report_status(
                             out,
                             timestamp,
@@ -106,15 +106,17 @@ handle_udp(struct Output *out, time_t timestamp,
                             0,
                             parsed->ip_ttl,
                             parsed->mac_src);
-        else
-	    output_report_banner(
-			    out,
-			    timestamp,
-			    ip_them,
-			    17, /* ip proto = udp */
-			    port_them,
-			    PROTO_NONE,
-			    parsed->ip_ttl,
-			    px + parsed->app_offset,
-			    parsed->app_length);
+        } else {
+            output_report_banner(
+                    out,
+                    timestamp,
+                    ip_them,
+                    17, /* ip proto = udp */
+                    port_them,
+                    PROTO_NONE,
+                    parsed->ip_ttl,
+                    px + parsed->app_offset,
+                    parsed->app_length);
+        }
+    }
 }

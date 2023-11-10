@@ -96,6 +96,10 @@ static inline int ipv6address_is_lessthan(ipv6address_t a, ipv6address_t b) {
  */
 int ipv6address_is_equal_prefixed(ipv6address_t lhs, ipv6address_t rhs, unsigned prefix);
 
+ipv6address_t ipv6address_add_uint64(ipv6address_t lhs, uint64_t rhs);
+ipv6address_t ipv6address_subtract(ipv6address_t lhs, ipv6address_t rhs);
+ipv6address_t ipv6address_add(ipv6address_t lhs, ipv6address_t rhs);
+
 /**
  * Given a typical EXTERNAL representation of an IPv6 address, which is
  * an array of 16 bytes, convert to the canonical INTERNAL address.

@@ -112,7 +112,7 @@ struct Patterns patterns[] = {
 unsigned
 banner1_parse(
         const struct Banner1 *banner1,
-        struct ProtocolState *tcb_state,
+        struct StreamState *tcb_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -706,7 +706,7 @@ banner1_selftest()
 {
     unsigned i;
     struct Banner1 *b;
-    struct ProtocolState tcb_state[1];
+    struct StreamState tcb_state[1];
     const unsigned char *px;
     unsigned length;
     struct BannerOutput banout[1];

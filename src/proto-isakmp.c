@@ -7,7 +7,7 @@
 #include "massip-port.h"
 #include "output.h"
 
-unsigned
+static unsigned
 isakmp_parse(struct Output *out, time_t timestamp,
             const unsigned char *px, unsigned length,
             struct PreprocessedInfo *parsed,

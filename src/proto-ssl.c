@@ -128,7 +128,7 @@ static void
 parse_server_hello(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -371,7 +371,7 @@ static void
 parse_server_cert(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -519,7 +519,7 @@ static void
 parse_handshake(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -665,7 +665,7 @@ static void
 parse_heartbeat(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -785,7 +785,7 @@ static void
 parse_alert(
                 const struct Banner1 *banner1,
                 void *banner1_private,
-                struct ProtocolState *pstate,
+                struct StreamState *pstate,
                 const unsigned char *px, size_t length,
                 struct BannerOutput *banout,
                 struct InteractiveData *more)
@@ -849,7 +849,6 @@ parse_alert(
                               );
                 
                     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
-                    pstate->try_next = 1;
                 }
                 DROPDOWN(i,length,state);
                 
@@ -890,7 +889,7 @@ static void
 ssl_parse_record(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -1267,7 +1266,7 @@ static int
 ssl_selftest(void)
 {
     struct Banner1 *banner1;
-    struct ProtocolState state[1];
+    struct StreamState state[1];
     unsigned ii;
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];

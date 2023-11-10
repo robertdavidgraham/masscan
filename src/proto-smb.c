@@ -1674,7 +1674,7 @@ static void
 smb_parse_record(
                  const struct Banner1 *banner1,
                  void *banner1_private,
-                 struct ProtocolState *pstate,
+                 struct StreamState *pstate,
                  const unsigned char *px, size_t max,
                  struct BannerOutput *banout,
                  struct InteractiveData *more)
@@ -1895,7 +1895,7 @@ static int
 smb_do_test(const char *substring, const unsigned char *packet_bytes, size_t length)
 {
     struct Banner1 *banner1;
-    struct ProtocolState state[1];
+    struct StreamState state[1];
     struct BannerOutput banout1[1];
     struct InteractiveData more;
     int x;
@@ -2072,7 +2072,7 @@ smb_selftest(void)
 /*****************************************************************************
  *****************************************************************************/
 static void
-smb_cleanup(struct ProtocolState *pstate)
+smb_cleanup(struct StreamState *pstate)
 {
     struct SMBSTUFF *smb = &pstate->sub.smb;
     if (smb->spnego.ntlmssp.buf)

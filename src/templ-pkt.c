@@ -1381,10 +1381,10 @@ template_packet_init(
     struct PayloadsUDP *oproto_payloads,
     int data_link,
     uint64_t entropy,
-    int tcpmss)
+    const struct TemplateOptions *templ_opts)
 {
-    /* Modifications to support --tcp-mss */
-    char *modified_tcp_template;
+    unsigned char *buf;
+    size_t length;
     templset->count = 0;
     templset->entropy = entropy;
 
@@ -1398,22 +1398,14 @@ template_packet_init(
     templset->count++;
 
     /* [TCP] */
-    size_t modified_tcp_template_len = sizeof(default_tcp_template) - 1;
-    modified_tcp_template = MALLOC(sizeof(default_tcp_template));
-    memcpy(modified_tcp_template, default_tcp_template, sizeof(default_tcp_template));
-
-    if (!tcpmss) {
-        modified_tcp_template_len -= 4;
-    } else {
-        modified_tcp_template[17] += 4;
-        /* Extend the TCP header size by 4 for the 4 byte MSS option (0x0050 -> 0x0060) */
-        modified_tcp_template[46] = ((modified_tcp_template[46] >> 4 & 0xf) + 1) << 4;
-    }
-
+    length = sizeof(default_tcp_template) - 1;
+    buf = MALLOC(length);
+    memcpy(buf, default_tcp_template, length);
+    //templ_tcp_apply_option(&buf, &length, templ_opts);
     _template_init(&templset->pkts[Proto_TCP],
                    source_mac, router_mac_ipv4, router_mac_ipv6,
-                   modified_tcp_template,
-                   modified_tcp_template_len + (tcpmss ? 4 : 0),
+                   buf,
+                   length,
                    data_link);
     templset->count++;
 
@@ -1552,7 +1544,7 @@ template_selftest(void)
             0,  /* Oproto payloads = empty */
             1,  /* Ethernet */
             0,  /* no entropy */
-            0   /* no TCP MSS */
+            &templ_opts
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;
     failures += tmplset->pkts[Proto_UDP].proto  != Proto_UDP;

@@ -68,6 +68,7 @@ struct TelnetOptions options[] = {
     {0,0}
 };
 
+#if 0
 static const char *
 option_name_lookup(unsigned optnum)
 {
@@ -78,6 +79,7 @@ option_name_lookup(unsigned optnum)
     }
     return 0;
 }
+#endif
 
 enum {
     FLAG_WILL=1,
@@ -91,7 +93,7 @@ enum {
 static void
 telnet_parse(  const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more)
@@ -109,7 +111,7 @@ telnet_parse(  const struct Banner1 *banner1,
         TELNET_SB_DATA,
         TELNET_INVALID,
     };
-    static const char *foobar[4] = {"DO", "DONT", "WILL", "WONT"};
+    //static const char *foobar[4] = {"DO", "DONT", "WILL", "WONT"};
     unsigned char nego[256] = {0};
 
     UNUSEDPARM(banner1_private);
@@ -265,7 +267,7 @@ static int
 telnet_selftest_item(const char *input, const char *output)
 {
     struct Banner1 *banner1;
-    struct ProtocolState pstate[1];
+    struct StreamState pstate[1];
     struct BannerOutput banout1[1];
     struct InteractiveData more;
     int x;

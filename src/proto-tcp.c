@@ -56,6 +56,7 @@ struct TCP_Control_Block
     struct TimeoutEntry timeout[1];
 
     unsigned char ttl;
+    unsigned char syns_sent; /* reconnect */
     unsigned tcpstate:4;
     unsigned is_ipv6:1;
 
@@ -78,10 +79,11 @@ struct TCP_Control_Block
      * If Running a script, the thread object
      */
     struct ScriptingThread *scripting_thread;
+    struct ProtocolParserStream *stream;
     
     struct BannerOutput banout;
 
-    struct ProtocolState banner1_state;
+    struct StreamState banner1_state;
 
     unsigned packet_number;
 };
@@ -106,10 +108,19 @@ struct TCP_ConnectionTable {
     struct Output *out;
     
     struct ScriptingVM *scripting_vm;
+
+    /** This is for creating follow-up connections based on the first
+     * connection. Given an existing IP/port, it returns a different
+     * one for the new conenction. */
+    struct {
+        const void *data;
+        void *(*cb)(const void *in_src, const ipaddress ip, unsigned port,
+                    ipaddress *next_ip, unsigned *next_port);
+    } next_ip_port;
 };
 
 enum {
-    STATE_SYN_SENT,
+    STATE_SYN_SENT=0, /* must be zero */
     //STATE_SYN_RECEIVED,
     STATE_ESTABLISHED_SEND, /* our own special state, can only send */
     STATE_ESTABLISHED_RECV, /* our own special state, can only receive */
@@ -235,6 +246,7 @@ tcpcon_set_http_header(struct TCP_ConnectionTable *tcpcon,
                             value_length,
                             what);
 }
+
 
 /***************************************************************************
  * Called at startup, when processing command-line options, to set
@@ -678,12 +690,10 @@ tcpcon_destroy_tcb(
 {
     unsigned index;
     struct TCP_Control_Block **r_entry;
-    ipaddress_formatted_t fmt;
     
     UNUSEDPARM(reason);
 
-    fmt = ipaddress_fmt(tcb->ip_them);
-    LOG(1, "%s %u - closing\n", fmt.string, tcb->port_them);
+    LOGip(0, tcb->ip_them, tcb->port_them, "closing (reason=%u) (me=%u)\n", reason, tcb->port_me);
 
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
@@ -795,11 +805,13 @@ tcpcon_create_tcb(
     ipaddress ip_me, ipaddress ip_them,
     unsigned port_me, unsigned port_them,
     unsigned seqno_me, unsigned seqno_them,
-    unsigned ttl, unsigned char iter)
+    unsigned ttl,
+    struct ProtocolParserStream *stream)
 {
     unsigned index;
     struct TCP_Control_Block tmp;
     struct TCP_Control_Block *tcb;
+
 
     assert(ip_me.version != 0 && ip_them.version != 0);
 
@@ -831,6 +843,13 @@ tcpcon_create_tcb(
         tcb->port_me = (unsigned short)port_me;
         tcb->port_them = (unsigned short)port_them;
 
+        /* Get the protocol handler assigned to this port */
+        if (stream == NULL) {
+            struct Banner1 *banner1 = tcpcon->banner1;
+            stream = banner1->payloads.tcp[port_them];
+        }
+        tcb->stream = stream;
+
         tcb->seqno_them_first = seqno_them; /* ipv6-todo */
         tcb->seqno_me = seqno_me;
         tcb->seqno_them = seqno_them;
@@ -838,7 +857,6 @@ tcpcon_create_tcb(
         tcb->ackno_them = seqno_me;
         tcb->when_created = global_now;
         tcb->banner1_state.port = tmp.port_them;
-        tcb->banner1_state.iter = iter;
         tcb->ttl = (unsigned char)ttl;
 
         timeout_init(tcb->timeout);
@@ -852,7 +870,7 @@ tcpcon_create_tcb(
         tcpcon->active_count++;
     }
 
-    tcb_lookup(tcpcon, ip_me, ip_them, port_me, port_them);
+    tcpcon_lookup_tcb(tcpcon, ip_me, ip_them, port_me, port_them);
 
     return tcb;
 }
@@ -862,7 +880,7 @@ tcpcon_create_tcb(
 /***************************************************************************
  ***************************************************************************/
 struct TCP_Control_Block *
-tcb_lookup(
+tcpcon_lookup_tcb(
     struct TCP_ConnectionTable *tcpcon,
     ipaddress ip_me, ipaddress ip_them,
     unsigned port_me, unsigned port_them)
@@ -910,6 +928,7 @@ tcpcon_send_packet(
     unsigned ctrl)
 {
     struct PacketBuffer *response = 0;
+    unsigned is_syn = (tcp_flags == 0x02);
     
     assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
 
@@ -945,7 +964,7 @@ tcpcon_send_packet(
         tcpcon->pkt_template,
         tcb->ip_them, tcb->port_them,
         tcb->ip_me, tcb->port_me,
-        tcb->seqno_me, tcb->seqno_them,
+        tcb->seqno_me - is_syn, tcb->seqno_them,
         tcp_flags,
         payload, payload_length,
         response->px, sizeof(response->px)
@@ -1223,7 +1242,102 @@ enum AppAction {
 /***************************************************************************
  ***************************************************************************/
 static void
-application(struct TCP_ConnectionTable *tcpcon,
+_next_IP_port(struct TCP_ConnectionTable *tcpcon,
+              ipaddress *ip_me,
+              unsigned *port_me) {
+    const struct stack_src_t *src = tcpcon->stack->src;
+    unsigned index;
+
+    /* Get another source port, because we can't use the existing
+     * one for new connection */
+    index = *port_me - src->port.first + 1;
+    *port_me = src->port.first + index;
+    if (*port_me >= src->port.last) {
+        *port_me = src->port.first;
+
+        /* We've wrapped the ports, so therefore choose another source
+         * IP address as well. */
+        switch (ip_me->version) {
+            case 4:
+                index = ip_me->ipv4 - src->ipv4.first + 1;
+                ip_me->ipv4 = src->ipv4.first + index;
+                if (ip_me->ipv4 >= src->ipv4.last)
+                    ip_me->ipv4 = src->ipv4.first;
+                break;
+            case 6: {
+                /* TODO: this code is untested, yolo */
+                ipv6address_t diff;
+
+                diff = ipv6address_subtract(ip_me->ipv6, src->ipv6.first);
+                diff = ipv6address_add_uint64(diff, 1);
+                ip_me->ipv6 = ipv6address_add(src->ipv6.first, diff);
+                if (ipv6address_is_lessthan(src->ipv6.last, ip_me->ipv6))
+                    ip_me->ipv6 = src->ipv6.first;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+_do_reconnect(struct TCP_ConnectionTable *tcpcon,
+              const struct TCP_Control_Block *old_tcb,
+              struct ProtocolParserStream *stream,
+              unsigned secs, unsigned usecs,
+              unsigned established) {
+    struct TCP_Control_Block *new_tcb;
+
+    ipaddress ip_them = old_tcb->ip_them;
+    unsigned port_them = old_tcb->port_them;
+    ipaddress ip_me = old_tcb->ip_me;
+    unsigned port_me = old_tcb->port_me;
+    unsigned seqno;
+
+
+    /*
+     * First, get another port number and potentially ip address
+     */
+    _next_IP_port(tcpcon, &ip_me, &port_me);
+
+    LOGip(0, ip_me, port_me, "create new connection\n");
+
+    /*
+     * Calculate the SYN cookie
+     */
+    seqno = (unsigned)syn_cookie(ip_them, port_them,
+                                 ip_me, port_me,
+                                 tcpcon->entropy);
+
+    /*
+     * Now create a new TCB for this new connection
+     */
+    new_tcb = tcpcon_create_tcb(
+                    tcpcon,
+                    ip_me, ip_them,
+                    port_me, port_them,
+                    seqno+1, 0,
+                    255,
+                    stream);
+    new_tcb->established = established;
+
+    /* Add a timeout, which will eventually cause this connection to
+     * be deleted. */
+    timeouts_add(tcpcon->timeouts,
+                 new_tcb->timeout,
+                 offsetof(struct TCP_Control_Block, timeout),
+                 TICKS_FROM_TV(secs+1,usecs)
+                 );
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+application_notify(struct TCP_ConnectionTable *tcpcon,
                  struct TCP_Control_Block *tcb,
                  enum AppAction action, const void *payload, size_t payload_length,
                  unsigned secs, unsigned usecs)
@@ -1236,10 +1350,12 @@ application(struct TCP_ConnectionTable *tcpcon,
         App_ReceiveNext,
         App_SendNext,
     };
-    
+
+
     switch (tcb->established) {
         case App_Connect:
-            if (banner1->payloads.tcp[tcb->port_them] == &banner_scripting) {
+            /* Attach a protocol to this connection */
+            if (tcb->stream == &banner_scripting) {
                 //int x;
                 ; //tcb->scripting_thread = scripting_thread_new(tcpcon->scripting_vm);
                 ; //x = scripting_thread_run(tcb->scripting_thread);
@@ -1259,43 +1375,37 @@ application(struct TCP_ConnectionTable *tcpcon,
                 tcb->tcpstate = STATE_ESTABLISHED_RECV;
                 tcb->established = App_ReceiveHello;
             }
+
+            /* We have a receive a SYNACK here. If there are multiple handlers
+             * for this port, then attempt another connection using the
+             * other protocol handlers. For example, for SSL, we might want
+             * to try both TLSv1.0 and TLSv1.3 */
+            if (tcb->stream && tcb->stream->next) {
+                _do_reconnect(tcpcon,
+                              tcb, tcb->stream->next,
+                              secs, usecs,
+                              App_Connect);
+            }
             break;
         case App_ReceiveHello:
             if (action == APP_RECV_TIMEOUT) {
-                struct ProtocolParserStream *stream = banner1->payloads.tcp[tcb->port_them];
-                
+                struct ProtocolParserStream *stream = tcb->stream;
                 if (stream) {
-                    for (unsigned i = 0; i < tcb->banner1_state.iter; i++) {
-                        if (stream->next) {
-                            stream = stream->next;
-                        } else {
-                            break;
-                        }
-                    }
                     struct InteractiveData more = {0};
                     unsigned ctrl = 0;
                     
                     if (stream->transmit_hello)
                         stream->transmit_hello(banner1, &more);
                     else {
-                        struct ProtocolParserStream *b = banner1->payloads.tcp[tcb->port_them];
-                        for (unsigned i = 0; i < tcb->banner1_state.iter; i++) {
-                            if (b->next) {
-                                b = b->next;
-                            } else {
-                                break;
-                            }
-                        }
-                        more.m_length = b->hello_length;
-                        more.m_payload = b->hello;
+                        more.m_length = (unsigned)stream->hello_length;
+                        more.m_payload = stream->hello;
                         more.is_payload_dynamic = 0;
                     }
                     
                     /*
-                     * Kludge
+                     * Kludge, extreme kludge
                      */
-                    if (banner1->payloads.tcp[tcb->port_them] == &banner_ssl ||
-                            banner1->payloads.tcp[tcb->port_them] == &banner_ssl_12) {
+                    if (stream == &banner_ssl || stream == &banner_ssl_12) {
                         tcb->banner1_state.is_sent_sslhello = 1;
                     }
                     
@@ -1390,64 +1500,6 @@ application(struct TCP_ConnectionTable *tcpcon,
                                  );
                     //tcpcon_destroy_tcb(tcpcon, tcb, Reason_StateDone);
                 }
-
-                if (tcb->banner1_state.try_next) {
-                    /* create a new TCP SYN packet in the sending queue */
-                    struct PacketBuffer *response = 0;
-                    assert(tcb->ip_me.version != 0 && tcb->ip_them.version != 0);
-
-
-                    /* Get a buffer for sending the response packet. This thread doesn't
-                    * send the packet itself. Instead, it formats a packet, then hands
-                    * that packet off to a transmit thread for later transmission. */
-                    response = stack_get_packetbuffer(tcpcon->stack);
-                    if (response == NULL) {
-                        static int is_warning_printed = 0;
-                        if (!is_warning_printed) {
-                            LOG(0, "packet buffers empty (should be impossible)\n");
-                            is_warning_printed = 1;
-                        }
-                        fflush(stdout);
-
-                        /* FIXME: I'm no sure the best way to handle this.
-                        * This would result from a bug in the code,
-                        * but I'm not sure what should be done in response */
-                        pixie_usleep(100); /* no packet available */
-                    }
-                    if (response == NULL)
-                        return;
-
-                    /* Format the packet as requested. Note that there are really only
-                    * four types of packets:
-                    * 1. a SYN-ACK packet with no payload
-                    * 2. an ACK packet with no payload
-                    * 3. a RST packet with no payload
-                    * 4. a PSH-ACK packet WITH PAYLOAD
-                    */
-                    response->length = tcp_create_packet(
-                        tcpcon->pkt_template,
-                        tcb->ip_them, tcb->port_them,
-                        tcb->ip_me, tcb->port_me + 1,
-                        /* XXX: the trick here is to use a different key for the syn-cookie
-                         * in order to differentiate in the receiving thread the different
-                         * protocol attempts we are doing on the same ip:port
-                         */
-                        syn_cookie_ipv4(tcb->ip_them.ipv4, tcb->port_them, tcb->ip_me.ipv4, tcb->port_me + 1, tcpcon->entropy + tcb->banner1_state.iter + 1), 0,
-                        /* SYN */
-                        0x002,
-                        0, 0,
-                        response->px, sizeof(response->px)
-                        );
-
-                    if (tcpcon->stack->src->port.last < tcb->port_me + 1) {
-                        tcpcon->stack->src->port.last = tcb->port_me + 1;
-                    }
-                    /* Put this buffer on the transmit queue. Remember: transmits happen
-                    * from a transmit-thread only, and this function is being called
-                    * from a receive-thread. Therefore, instead of transmiting ourselves,
-                    * we hae to queue it up for later transmission. */
-                    stack_transmit_packetbuffer(tcpcon->stack, response);
-                }
             }
             break;
         case App_SendNext:
@@ -1485,9 +1537,10 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
     if (tcb == NULL)
         return 0;
 
-    LOGip(5, tcb->ip_them, tcb->port_them, "=%s : %s                  \n",
+    LOGip(0, tcb->ip_them, tcb->port_them, "=%s : %s                  %u\n",
           state_to_string(tcb->tcpstate),
-          what_to_string(what));
+          what_to_string(what),
+          tcb->port_me);
 
     /* Make sure no connection lasts more than ~30 seconds */
     if (what == TCP_WHAT_TIMEOUT) {
@@ -1525,21 +1578,41 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
              * something */
         case STATE_SYN_SENT:
             switch (what) {
-                case TCP_WHAT_RST:
-                case TCP_WHAT_TIMEOUT:
-                //case TCP_WHAT_SYNACK:
-                case TCP_WHAT_FIN:
+                case TCP_WHAT_TIMEOUT: {
+                        LOGip(0, tcb->ip_me, tcb->port_me, "### timeout %u\n",
+                              tcb->tcpstate);
+                        /* We've sent a SYN, but didn't get SYN-ACK, so
+                         * send another */
+                        tcb->syns_sent++;
+
+                        /* Send a SYN */
+                        tcpcon_send_packet(tcpcon, tcb, 0x02 /*SYN*/, 0, 0, 0);
+
+                        /* set a timeout waiting for response */
+                        timeouts_add(tcpcon->timeouts,
+                                     tcb->timeout,
+                                     offsetof(struct TCP_Control_Block, timeout),
+                                     TICKS_FROM_TV(secs+tcb->syns_sent,usecs)
+                                     );
+                    }
+                    break;
                 case TCP_WHAT_ACK:
+                case TCP_WHAT_RST:
+                case TCP_WHAT_FIN:
                 case TCP_WHAT_DATA:
                     break;
                 case TCP_WHAT_SYNACK:
+                    tcb->seqno_them = seqno_them;
+                    tcb->seqno_them_first = seqno_them;
+
                     /* Send "ACK" to acknowlege their "SYN-ACK" */
+                    LOGip(0, tcb->ip_them, tcb->port_them, "send syn-ack %u\n", tcb->port_me);
                     LOGSEND(tcb, "peer(ACK) [acknowledge SYN-ACK 1]");
                     tcpcon_send_packet(tcpcon, tcb,
                                        0x10,
                                        0, 0, 0);
                     LOGSEND(tcb, "app(connected)");
-                    application(tcpcon, tcb, APP_CONNECTED, 0, 0, secs, usecs);
+                    application_notify(tcpcon, tcb, APP_CONNECTED, 0, 0, secs, usecs);
                     break;
                 }
             break;
@@ -1591,7 +1664,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                             tcb->is_payload_dynamic = 0;
                             
                             LOGSEND(tcb, "app(sent)");
-                            application(tcpcon, tcb, APP_SEND_SENT, 0, 0, secs, usecs);
+                            application_notify(tcpcon, tcb, APP_SEND_SENT, 0, 0, secs, usecs);
                             tcb->tcpstate = STATE_ESTABLISHED_RECV;
                             LOGSEND(tcb, "+timeout");
                             timeouts_add(   tcpcon->timeouts,
@@ -1620,7 +1693,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                          * server might send us.
                          */
                         LOGSEND(tcb, "app(timeout)");
-                        application(tcpcon, tcb, APP_RECV_TIMEOUT, 0, 0, secs, usecs);
+                        application_notify(tcpcon, tcb, APP_RECV_TIMEOUT, 0, 0, secs, usecs);
                     } else if (tcb->tcpstate == STATE_ESTABLISHED_SEND) {
                         /*
                          * We did not get a complete ACK of our sent data, so retransmit
@@ -1681,7 +1754,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                     }
                     
                     LOGSEND(tcb, "app(payload)");
-                    application(tcpcon, tcb, APP_RECV_PAYLOAD, payload, payload_length, secs, usecs);
+                    application_notify(tcpcon, tcb, APP_RECV_PAYLOAD, payload, payload_length, secs, usecs);
                     
                     /* Send ack for the data */
                     LOGSEND(tcb, "peer(ACK) [acknowledge payload 2]");

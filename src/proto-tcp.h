@@ -10,6 +10,7 @@ struct TCP_Control_Block;
 struct TemplatePacket;
 struct TCP_ConnectionTable;
 struct lua_State;
+struct ProtocolParserStream;
 
 #define TCP_SEQNO(px,i) (px[i+4]<<24|px[i+5]<<16|px[i+6]<<8|px[i+7])
 #define TCP_ACKNO(px,i) (px[i+8]<<24|px[i+9]<<16|px[i+10]<<8|px[i+11])
@@ -18,6 +19,7 @@ struct lua_State;
 #define TCP_IS_ACK(px,i) ((TCP_FLAGS(px,i) & 0x10) == 0x10)
 #define TCP_IS_RST(px,i) ((TCP_FLAGS(px,i) & 0x4) == 0x4)
 #define TCP_IS_FIN(px,i) ((TCP_FLAGS(px,i) & 0x1) == 0x1)
+
 
 /**
  * [KLUDGE] The 'tcpcon' module doesn't have access to the main configuration,
@@ -114,7 +116,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block 
  * Lookup a connection record based on IP/ports.
  */
 struct TCP_Control_Block *
-tcb_lookup(
+tcpcon_lookup_tcb(
     struct TCP_ConnectionTable *tcpcon,
     ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst);
@@ -128,7 +130,8 @@ tcpcon_create_tcb(
     ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
-    unsigned ttl, unsigned char iter);
+    unsigned ttl,
+    struct ProtocolParserStream *stream);
 
 
 /**

@@ -1504,13 +1504,6 @@ static int SET_nobanners(struct Masscan *masscan, const char *name, const char *
     return CONF_OK;
 }
 
-static int SET_tcpmss(struct Masscan *masscan, const char *name, const char *value)
-{
-    UNUSEDPARM(name);
-    masscan->is_tcpmss = parseBoolean(value);
-    return CONF_OK;
-}
-
 static int SET_noreset(struct Masscan *masscan, const char *name, const char *value)
 {
     UNUSEDPARM(name);
@@ -2309,7 +2302,6 @@ struct ConfigParameter config_parameters[] = {
     {"shard",           SET_shard,              0,      {"shards",0}},
     {"banners",         SET_banners,            F_BOOL, {"banner",0}},
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
-    {"tcpmss",          SET_tcpmss,             F_BOOL, {"tcpmss",0}},
     {"retries",         SET_retries,            0,      {"retry", "max-retries", "max-retry", 0}},
     {"noreset",         SET_noreset,            F_BOOL, {0}},
     {"nmap-payloads",   SET_nmap_payloads,      0,      {"nmap-payload",0}},
@@ -2348,7 +2340,7 @@ struct ConfigParameter config_parameters[] = {
     {"stylesheet",      SET_output_stylesheet,  0,      {0}},
     {"script",          SET_script,             0,      {0}},
     {"SPACE",           SET_space,              0,      {0}},
-    {"tcp-mss",         SET_tcp_mss,            F_NUMABLE, {0}},
+    {"tcp-mss",         SET_tcp_mss,            F_NUMABLE, {"tcpmss",0}},
     {"tcp-wscale",      SET_tcp_wscale,         F_NUMABLE, {0}},
     {"tcp-tsecho",      SET_tcp_tsecho,         F_NUMABLE, {0}},
     {"tcp-sackok",      SET_tcp_sackok,         F_BOOL, {0}},
@@ -3706,9 +3698,6 @@ masscan_echo(struct Masscan *masscan, FILE *fp, unsigned is_echo_all)
             }
         }
         fprintf(fp, "\n");
-    }    
-    if (masscan->is_tcpmss) {
-        fprintf(fp, "tcpmss = true\n");
     }
 }
 

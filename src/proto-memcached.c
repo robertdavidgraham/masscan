@@ -107,7 +107,7 @@ static void
 memcached_tcp_parse(  
           const struct Banner1 *banner1,
           void *banner1_private,
-          struct ProtocolState *pstate,
+          struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
           struct InteractiveData *more)
@@ -360,7 +360,7 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
 
     /* Parse the remainder of the packet as if this were TCP */
     {
-        struct ProtocolState stuff[1];
+        struct StreamState stuff[1];
 
         memset(stuff, 0, sizeof(stuff[0]));
 

@@ -10,12 +10,12 @@
 
 struct InteractiveData;
 struct Banner1;
-struct ProtocolState;
+struct StreamState;
 
 typedef void (*BannerParser)(
               const struct Banner1 *banner1,
               void *banner1_private,
-              struct ProtocolState *stream_state,
+              struct StreamState *stream_state,
               const unsigned char *px, size_t length,
               struct BannerOutput *banout,
               struct InteractiveData *more);
@@ -241,9 +241,7 @@ struct SSHSTUFF{
     size_t packet_length;
 };
 
-struct ProtocolState {
-    unsigned char iter;
-    unsigned try_next;
+struct StreamState {
     unsigned state;
     unsigned remaining;
     unsigned short port;
@@ -284,11 +282,11 @@ struct ProtocolParserStream {
     void (*parse)(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *stream_state,
+        struct StreamState *stream_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more);
-    void (*cleanup)(struct ProtocolState *stream_state);
+    void (*cleanup)(struct StreamState *stream_state);
     void (*transmit_hello)(const struct Banner1 *banner1, struct InteractiveData *more);
     
     /* When multiple items are registered for a port. When one
@@ -341,7 +339,7 @@ banner1_destroy(struct Banner1 *b);
 unsigned
 banner1_parse(
         const struct Banner1 *banner1,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
         struct InteractiveData *more);
