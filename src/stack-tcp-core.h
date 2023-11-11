@@ -103,6 +103,7 @@ enum TCP_What {
     TCP_WHAT_FIN,
     TCP_WHAT_ACK,
     TCP_WHAT_DATA,
+    TCP_WHAT_CLOSE
 };
 
 int

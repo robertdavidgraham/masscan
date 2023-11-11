@@ -2284,6 +2284,16 @@ fail:
 }
 
 
+static int SET_debug_tcp(struct Masscan *masscan, const char *name, const char *value) {
+    extern int is_tcp_debug;
+    if (value == 0 || value[0] == '\0')
+        is_tcp_debug = 1;
+    else
+        is_tcp_debug = parseBoolean(value);
+    return CONF_OK;
+}
+
+
 
 struct ConfigParameter {
     const char *name;
@@ -2345,6 +2355,8 @@ struct ConfigParameter config_parameters[] = {
     {"tcp-tsecho",      SET_tcp_tsecho,         F_NUMABLE, {0}},
     {"tcp-sackok",      SET_tcp_sackok,         F_BOOL, {0}},
     {"top-ports",       SET_topports,           F_NUMABLE, {"top-port",0}},
+
+    {"debug-tcp",       SET_debug_tcp,          F_BOOL, {"tcp-debug", 0}},
     {0}
 };
 

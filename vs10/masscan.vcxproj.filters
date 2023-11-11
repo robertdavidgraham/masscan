@@ -75,9 +75,6 @@
     <ClCompile Include="..\src\proto-ssh.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-tcp.c">
-      <Filter>Source Files\proto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\proto-udp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
@@ -255,9 +252,6 @@
     <ClCompile Include="..\src\proto-vnc.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\proto-interactive.c">
-      <Filter>Source Files\proto</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\in-filter.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
@@ -393,6 +387,12 @@
     <ClCompile Include="..\src\proto-isakmp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\stack-handle.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-tcp-core.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
@@ -420,9 +420,6 @@
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-ssh.h">
-      <Filter>Source Files\proto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-tcp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-netbios.h">
@@ -544,9 +541,6 @@
     </ClInclude>
     <ClInclude Include="..\src\main-readrange.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\proto-interactive.h">
-      <Filter>Source Files\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\src\proto-ftp.h">
       <Filter>Source Files\proto</Filter>
@@ -679,6 +673,12 @@
     </ClInclude>
     <ClInclude Include="..\src\proto-isakmp.h">
       <Filter>Source Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-handle.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-tcp-core.h">
+      <Filter>Source Files\stack</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -62,7 +62,6 @@
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-imap4.c" />
-    <ClCompile Include="..\src\proto-interactive.c" />
     <ClCompile Include="..\src\proto-isakmp.c" />
     <ClCompile Include="..\src\proto-mc.c" />
     <ClCompile Include="..\src\proto-memcached.c" />
@@ -79,7 +78,6 @@
     <ClCompile Include="..\src\proto-ssl-test.c" />
     <ClCompile Include="..\src\proto-ssl.c" />
     <ClCompile Include="..\src\proto-tcp-rdp.c" />
-    <ClCompile Include="..\src\proto-tcp.c" />
     <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
     <ClCompile Include="..\src\main-dedup.c" />
@@ -111,10 +109,12 @@
     <ClCompile Include="..\src\smack1.c" />
     <ClCompile Include="..\src\smackqueue.c" />
     <ClCompile Include="..\src\stack-arpv4.c" />
+    <ClCompile Include="..\src\stack-handle.c" />
     <ClCompile Include="..\src\stack-if.c" />
     <ClCompile Include="..\src\stack-ndpv6.c" />
     <ClCompile Include="..\src\stack-queue.c" />
     <ClCompile Include="..\src\stack-src.c" />
+    <ClCompile Include="..\src\stack-tcp-core.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\stub-lua.c" />
     <ClCompile Include="..\src\stub-pcap.c" />
@@ -178,7 +178,6 @@
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-imap4.h" />
-    <ClInclude Include="..\src\proto-interactive.h" />
     <ClInclude Include="..\src\proto-isakmp.h" />
     <ClInclude Include="..\src\proto-mc.h" />
     <ClInclude Include="..\src\proto-memcached.h" />
@@ -195,7 +194,6 @@
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp-rdp.h" />
-    <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-tcp-telnet.h" />
     <ClInclude Include="..\src\proto-udp.h" />
     <ClInclude Include="..\src\proto-vnc.h" />
@@ -210,9 +208,11 @@
     <ClInclude Include="..\src\smack.h" />
     <ClInclude Include="..\src\smackqueue.h" />
     <ClInclude Include="..\src\stack-arpv4.h" />
+    <ClInclude Include="..\src\stack-handle.h" />
     <ClInclude Include="..\src\stack-ndpv6.h" />
     <ClInclude Include="..\src\stack-queue.h" />
     <ClInclude Include="..\src\stack-src.h" />
+    <ClInclude Include="..\src\stack-tcp-core.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\stub-lua.h" />
     <ClInclude Include="..\src\stub-pcap.h" />
