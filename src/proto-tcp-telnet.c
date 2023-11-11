@@ -1,6 +1,6 @@
 #include "proto-tcp-telnet.h"
 #include "proto-banner1.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "util-malloc.h"
@@ -96,7 +96,7 @@ telnet_parse(  const struct Banner1 *banner1,
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
     size_t offset;
@@ -269,7 +269,7 @@ telnet_selftest_item(const char *input, const char *output)
     struct Banner1 *banner1;
     struct StreamState pstate[1];
     struct BannerOutput banout1[1];
-    struct InteractiveData more;
+    struct stack_handle_t more;
     int x;
     
     /*

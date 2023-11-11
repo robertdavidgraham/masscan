@@ -8,7 +8,7 @@
 #include "proto-x509.h"
 #include "proto-spnego.h"
 
-struct InteractiveData;
+struct stack_handle_t;
 struct Banner1;
 struct StreamState;
 
@@ -18,7 +18,7 @@ typedef void (*BannerParser)(
               struct StreamState *stream_state,
               const unsigned char *px, size_t length,
               struct BannerOutput *banout,
-              struct InteractiveData *more);
+              struct stack_handle_t *more);
 struct Banner1
 {
     struct lua_State *L;
@@ -282,9 +282,9 @@ struct ProtocolParserStream {
         struct StreamState *stream_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
+        struct stack_handle_t *more);
     void (*cleanup)(struct StreamState *stream_state);
-    void (*transmit_hello)(const struct Banner1 *banner1, struct InteractiveData *more);
+    void (*transmit_hello)(const struct Banner1 *banner1, struct stack_handle_t *more);
     
     /* When multiple items are registered for a port. When one
      * connection is closed, the next will be opened.*/
@@ -339,7 +339,7 @@ banner1_parse(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
+        struct stack_handle_t *more);
 
 
 

@@ -4,7 +4,7 @@
 #include "smack.h"
 #include "rawsock-pcapfile.h"
 #include "proto-preprocess.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
@@ -115,7 +115,7 @@ banner1_parse(
         struct StreamState *tcb_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     size_t x;
     unsigned offset = 0;
@@ -744,7 +744,7 @@ banner1_selftest()
     memset(tcb_state, 0, sizeof(tcb_state[0]));
 
     for (i=0; i<length; i++) {
-        struct InteractiveData more = {0,0};
+        struct stack_handle_t more = {0,0};
 
         banner1_parse(
                     b,

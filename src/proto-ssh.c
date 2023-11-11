@@ -2,7 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include <ctype.h>
 
 #define PAYLOAD_BANNER  "SSH-2.0-OPENSSH_7.9\r\n"
@@ -55,7 +55,7 @@ ssh_parse(  const struct Banner1 *banner1,
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
     size_t packet_length = pstate -> sub.ssh.packet_length;

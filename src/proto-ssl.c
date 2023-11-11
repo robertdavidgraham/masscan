@@ -46,7 +46,7 @@
     open TCP connections with minimal memory usage.
  */
 #include "proto-ssl.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
@@ -131,7 +131,7 @@ parse_server_hello(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
@@ -374,7 +374,7 @@ parse_server_cert(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     struct SSL_SERVER_CERT *data = &pstate->sub.ssl.x.server_cert;
     unsigned state = data->state;
@@ -522,7 +522,7 @@ parse_handshake(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -668,7 +668,7 @@ parse_heartbeat(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -788,7 +788,7 @@ parse_alert(
                 struct StreamState *pstate,
                 const unsigned char *px, size_t length,
                 struct BannerOutput *banout,
-                struct InteractiveData *more)
+                struct stack_handle_t *more)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -892,7 +892,7 @@ ssl_parse_record(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
@@ -1270,7 +1270,7 @@ ssl_selftest(void)
     unsigned ii;
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];
-    struct InteractiveData more;
+    struct stack_handle_t more;
     unsigned x;
 
     /*

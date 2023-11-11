@@ -8,7 +8,7 @@
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "output.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"
@@ -29,7 +29,7 @@ versioning_tcp_parse(
                     struct StreamState *pstate,
                     const unsigned char *px, size_t length,
                     struct BannerOutput *banout,
-                    struct InteractiveData *more)
+                    struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
    

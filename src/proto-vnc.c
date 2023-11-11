@@ -1,6 +1,6 @@
 #include "proto-vnc.h"
 #include "proto-banner1.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "string_s.h"
@@ -96,7 +96,7 @@ vnc_parse(  const struct Banner1 *banner1,
           struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
     unsigned i;

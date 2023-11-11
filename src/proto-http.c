@@ -1,13 +1,13 @@
 #include "proto-http.h"
 #include "proto-banner1.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "smack.h"
 #include "unusedparm.h"
 #include "string_s.h"
 #include "masscan-app.h"
 #include "util-malloc.h"
 #include "util-bool.h"
-#include "proto-tcp.h"
+#include "stack-tcp-core.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -385,7 +385,11 @@ http_change_field(unsigned char **inout_header, size_t header_length,
  ***************************************************************************/
 static const char
 http_hello[] =      "GET / HTTP/1.0\r\n"
+#ifdef IVRE_BUILD
                     "User-Agent: ivre-masscan/1.3 https://ivre.rocks/\r\n"
+#else
+                    "User-Agent: ivre-masscan/1.3 https://github.com/robertdavidgraham/\r\n"
+#endif
                     "Accept: */*\r\n"
                     //"Connection: Keep-Alive\r\n"
                     //"Content-Length: 0\r\n"
@@ -487,7 +491,7 @@ http_parse(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *more)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -711,7 +715,7 @@ http_selftest_parser(void)
     struct Banner1 *banner1 = NULL;
     struct StreamState pstate[1];
     struct BannerOutput banout[1];
-    struct InteractiveData more[1];
+    struct stack_handle_t more[1];
     
     memset(pstate, 0, sizeof(pstate[0]));
     memset(banout, 0, sizeof(banout[0]));

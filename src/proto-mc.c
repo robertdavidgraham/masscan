@@ -2,7 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "output.h"
 #include <ctype.h>
 #include <string.h>
@@ -50,7 +50,7 @@ mc_parse(  const struct Banner1 *banner1,
           struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct stack_handle_t *more)
 {
     size_t i;
     struct MCSTUFF *mc = &pstate->sub.mc;

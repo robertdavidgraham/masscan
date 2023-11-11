@@ -54,7 +54,7 @@
 #include "proto-x509.h"
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
-#include "proto-tcp.h"          /* for TCP/IP connection table */
+#include "stack-tcp-core.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
 #include "proto-icmp.h"         /* handle ICMP responses */
 #include "proto-udp.h"          /* handle UDP responses */
@@ -983,20 +983,20 @@ receive_thread(void *v)
                     (*status_tcb_count)++;
                 }
                 Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_SYNACK,
-                    0, 0, secs, usecs, seqno_them+1);
+                    0, 0, secs, usecs, seqno_them+1, seqno_me);
 
             } else if (tcb) {
                 /* If this is an ACK, then handle that first */
                 if (TCP_IS_ACK(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_ACK,
-                        0, seqno_me, secs, usecs, seqno_them);
+                        0, 0, secs, usecs, seqno_them, seqno_me);
                 }
 
                 /* If this contains payload, handle that second */
                 if (parsed.app_length) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_DATA,
                         px + parsed.app_offset, parsed.app_length,
-                        secs, usecs, seqno_them);
+                        secs, usecs, seqno_them, seqno_me);
                 }
 
                 /* If this is a FIN, handle that. Note that ACK +
@@ -1004,13 +1004,13 @@ receive_thread(void *v)
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_FIN,
-                        0, parsed.app_length, secs, usecs, seqno_them);
+                        0, parsed.app_length, secs, usecs, seqno_them, seqno_me);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
                 if (TCP_IS_RST(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_RST,
-                        0, 0, secs, usecs, seqno_them);
+                        0, 0, secs, usecs, seqno_them, seqno_me);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
                 ipaddress_formatted_t fmt;

@@ -33,7 +33,7 @@
 #include "logger.h"
 #include "masscan-app.h"
 #include "output.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"

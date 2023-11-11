@@ -3,7 +3,7 @@
  
  */
 #include "proto-smb.h"
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
@@ -1240,7 +1240,7 @@ smb2_parse_header(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
  *****************************************************************************/
 static size_t
 smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct BannerOutput *banout,
-                 struct InteractiveData *more)
+                 struct stack_handle_t *more)
 {
     size_t len; /*scratch variables used in a couple places */
     unsigned state = smb->nbt_state;
@@ -1677,7 +1677,7 @@ smb_parse_record(
                  struct StreamState *pstate,
                  const unsigned char *px, size_t max,
                  struct BannerOutput *banout,
-                 struct InteractiveData *more)
+                 struct stack_handle_t *more)
 {
     size_t i;
     unsigned state = pstate->state;
@@ -1897,7 +1897,7 @@ smb_do_test(const char *substring, const unsigned char *packet_bytes, size_t len
     struct Banner1 *banner1;
     struct StreamState state[1];
     struct BannerOutput banout1[1];
-    struct InteractiveData more;
+    struct stack_handle_t more;
     int x;
     
     banner1 = banner1_create();

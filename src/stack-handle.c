@@ -1,10 +1,10 @@
-#include "proto-interactive.h"
+#include "stack-handle.h"
 #include "unusedparm.h"
 #include "util-malloc.h"
 #include <stdlib.h>
 
 void
-tcp_close(struct InteractiveData *more)
+tcp_close(struct stack_handle_t *more)
 {
     if (more == NULL)
         return;
@@ -16,7 +16,7 @@ tcp_close(struct InteractiveData *more)
  * to transmit, which will be transmitted later
  */
 void
-tcp_transmit(struct InteractiveData *more, const void *payload, size_t length, enum TCP__flags flags)
+tcp_transmit(struct stack_handle_t *more, const void *payload, size_t length, enum TCP__flags flags)
 {
     more->send(more->tcpcon, more->tcb, payload, length, flags, more->is_closing, more->secs, more->usecs);
 }
