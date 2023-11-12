@@ -106,9 +106,15 @@ enum TCP_What {
     TCP_WHAT_CLOSE
 };
 
-int
+enum TCB_result {
+    TCB__okay,
+    TCB__destroyed
+};
+
+enum TCB_result
 stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
-    int what, const void *p, size_t length,
+    enum TCP_What what, 
+    const unsigned char *payload, size_t payload_length,
     unsigned secs, unsigned usecs,
     unsigned seqno_them, unsigned ackno_them);
 
@@ -123,7 +129,9 @@ tcpcon_lookup_tcb(
     unsigned port_src, unsigned port_dst);
 
 /**
- * Create a new TCB (TCP control block)
+ * Create a new TCB (TCP control block. It's created only in two places,
+ * either because we've initiated an outbound TCP connection, or we've
+ * received incoming SYN-ACK from a probe.
  */
 struct TCP_Control_Block *
 tcpcon_create_tcb(
@@ -132,7 +140,8 @@ tcpcon_create_tcb(
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
     unsigned ttl,
-    struct ProtocolParserStream *stream);
+    struct ProtocolParserStream *stream,
+    unsigned secs, unsigned usecs);
 
 
 void

@@ -979,7 +979,8 @@ receive_thread(void *v)
                                     ip_me, ip_them,
                                     port_me, port_them,
                                     seqno_me, seqno_them+1,
-                                    parsed.ip_ttl, NULL);
+                                    parsed.ip_ttl, NULL,
+                                    secs, usecs);
                     (*status_tcb_count)++;
                 }
                 Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_SYNACK,
@@ -1004,7 +1005,10 @@ receive_thread(void *v)
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_FIN,
-                        0, parsed.app_length, secs, usecs, seqno_them, seqno_me);
+                            0, 0, 
+                            secs, usecs, 
+                            seqno_them + parsed.app_length, /* the FIN comes after any data in the packet */
+                            seqno_me);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */

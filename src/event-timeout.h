@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stddef.h> /* offsetof*/
+#include "util-bool.h" /* <stdbool.h> */
 #if defined(_MSC_VER)
 #undef inline
 #define inline _inline
@@ -33,6 +34,16 @@ struct TimeoutEntry {
      * the original structure that contains it */
     unsigned offset;
 };
+
+/***************************************************************************
+ ***************************************************************************/
+static inline bool
+timeout_is_unlinked(const struct TimeoutEntry *entry) {
+    if (entry->prev == 0 || entry->next == 0)
+        return true;
+    else
+        return false;
+}
 
 /***************************************************************************
  ***************************************************************************/

@@ -236,27 +236,25 @@ state_to_string(int state)
 static void
 vLOGtcb(const struct TCP_Control_Block *tcb, int dir, const char *fmt, va_list marker)
 {
-    if (true) {
-        char sz[80];
-        ipaddress_formatted_t fmt1 = ipaddress_fmt(tcb->ip_them);
+    char sz[80];
+    ipaddress_formatted_t fmt1 = ipaddress_fmt(tcb->ip_them);
 
-        snprintf(sz, sizeof(sz), "[%s:%u %4u,%4u] %s [%4u,%4u] {%s} ",
-                fmt1.string, tcb->port_them,
-                tcb->seqno_them - tcb->seqno_them_first,
-                tcb->ackno_me - tcb->seqno_them_first,
-                (dir > 0) ? "-->" : "<--",
-                tcb->seqno_me - tcb->seqno_me_first,
-                tcb->ackno_them - tcb->seqno_me_first,
-                state_to_string(tcb->tcpstate)
-                );
-        if (dir == 2) {
-            char *brace = strchr(sz, '{');
-            memset(sz, ' ', brace-sz);
-        }
-        fprintf(stderr, "%s", sz);
-        vfprintf(stderr, fmt, marker);
-        fflush(stderr);
+    snprintf(sz, sizeof(sz), "[%s:%u %4u,%4u] %s [%4u,%4u] {%s} ",
+            fmt1.string, tcb->port_them,
+            tcb->seqno_them - tcb->seqno_them_first,
+            tcb->ackno_me - tcb->seqno_them_first,
+            (dir > 0) ? "-->" : "<--",
+            tcb->seqno_me - tcb->seqno_me_first,
+            tcb->ackno_them - tcb->seqno_me_first,
+            state_to_string(tcb->tcpstate)
+            );
+    if (dir == 2) {
+        char *brace = strchr(sz, '{');
+        memset(sz, ' ', brace-sz);
     }
+    fprintf(stderr, "%s", sz);
+    vfprintf(stderr, fmt, marker);
+    fflush(stderr);
 }
 int is_tcp_debug = 0;
 
@@ -284,6 +282,7 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
 
     for (;;) {
         struct TCP_Control_Block *tcb;
+        enum TCB_result x;
 
         /*
          * Get the next event that is older than the current time
@@ -301,10 +300,7 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
         /*
          * Process this timeout
          */
-        stack_incoming_tcp(
-            tcpcon,
-            tcb,
-            TCP_WHAT_TIMEOUT,
+        x = stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_TIMEOUT,
             0, 0,
             secs, usecs,
             tcb->seqno_them,
@@ -318,7 +314,7 @@ tcpcon_timeouts(struct TCP_ConnectionTable *tcpcon, unsigned secs, unsigned usec
          * so I put some code here as a catch-all: if the TCB hasn't been
          * deleted, but hasn't been inserted back into the timeout system,
          * then insert it here. */
-        if (tcb->timeout->prev == 0 && tcb->is_active) {
+        if (x != TCB__destroyed && timeout_is_unlinked(tcb->timeout)) {
             timeouts_add(   tcpcon->timeouts,
                             tcb->timeout,
                             offsetof(struct TCP_Control_Block, timeout),
@@ -842,8 +838,6 @@ tcpcon_destroy_tcb(
     
     UNUSEDPARM(reason);
 
-    //LOGip(0, tcb->ip_them, tcb->port_them, "closing (reason=%u) (me=%u)\n", reason, tcb->port_me);
-
     /*
      * The TCB doesn't point to it's location in the table. Therefore, we
      * have to do a lookup to find the head pointer in the table.
@@ -967,7 +961,8 @@ tcpcon_create_tcb(
     unsigned port_me, unsigned port_them,
     unsigned seqno_me, unsigned seqno_them,
     unsigned ttl,
-    struct ProtocolParserStream *stream)
+    struct ProtocolParserStream *stream,
+    unsigned secs, unsigned usecs)
 {
     unsigned index;
     struct TCP_Control_Block tmp;
@@ -1023,8 +1018,14 @@ tcpcon_create_tcb(
     tcb->ttl = (unsigned char)ttl;
     tcb->mss = 1400;
 
-    /* zero out the timeout system */
+    /* Insert the TCB into the timeout. A TCB must always have a timeout
+     * active. */
     timeout_init(tcb->timeout);
+    timeouts_add(tcpcon->timeouts,
+                 tcb->timeout,
+                 offsetof(struct TCP_Control_Block, timeout),
+                 TICKS_FROM_TV(secs+1,usecs)
+                 );
 
     /* Get the protocol handler assigned to this port */
     tcb->banner1_state.port = (unsigned short)port_them;
@@ -1279,12 +1280,12 @@ tcpcon_send_RST(
  * time. Will resend the segments.
  ***************************************************************************/
 static void
-_tcp_seg_resend(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb, unsigned secs, unsigned usecs) {
+_tcb_seg_resend(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb) {
     struct TCP_Segment *seg = tcb->segments;
 
     if (seg) {
         if (tcb->seqno_me != seg->seqno) {
-            fprintf(stderr, "SEQNO FAILURE\n");
+            fprintf(stderr, "SEQNO FAILURE diff=%d %s\n", tcb->seqno_me - seg->seqno, seg->is_fin?"FIN":"");
             exit(1);
         }
 
@@ -1301,20 +1302,12 @@ _tcp_seg_resend(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tc
         }
     }
                         
-    /* Now that we've resent the packet, register another
-      * timeout in order to resend it yet again if not
-      * acknowledged. */
-    timeouts_add(tcpcon->timeouts,
-                    tcb->timeout,
-                    offsetof(struct TCP_Control_Block, timeout),
-                    TICKS_FROM_TV(secs+2,usecs)
-                    );
 }
 
 /***************************************************************************
  ***************************************************************************/
 static void 
-_tcp_seg_send(void *in_tcpcon, void *in_tcb, 
+_tcb_seg_send(void *in_tcpcon, void *in_tcb, 
         const void *buf, size_t length, 
         enum TCP__flags flags, bool is_fin,
         unsigned secs, unsigned usecs) {
@@ -1346,7 +1339,7 @@ _tcp_seg_send(void *in_tcpcon, void *in_tcb,
                 free((void*)buf); /* discard const */
                 buf = NULL;
             }
-            goto reset_timeout;
+            return;
         }
     }
 
@@ -1389,21 +1382,10 @@ _tcp_seg_send(void *in_tcpcon, void *in_tcb,
         if (flags == TCP__adopt)
             flags = TCP__copy;
 
-        _tcp_seg_send(tcpcon, tcb,
+        _tcb_seg_send(tcpcon, tcb,
                       (unsigned char*)buf + length, length_more,
                       flags, is_fin, secs, usecs);
     }
-
-reset_timeout:
-    /* Add a timeout so that we can resend the data in case it
-     * goes missing. Note that we put this back in the timeout
-     * system regardless if we've sent data. */
-    timeouts_add(   tcpcon->timeouts,
-                    tcb->timeout,
-                    offsetof(struct TCP_Control_Block, timeout),
-                    TICKS_FROM_TV(secs+1,usecs)
-                    );
-
 
     //tcb->established = App_SendNext;
 
@@ -1451,30 +1433,61 @@ _tcp_seg_acknowledge(
         return 0;
     }
 
+    /* Handle FIN specially */
+    if (tcb->segments && tcb->segments->is_fin) {
+        struct TCP_Segment *seg = tcb->segments;
+        
+        if (seg->seqno == tcb->seqno_me) {
+            /* Do nothing, it's been acked */
+            return 0;
+        } else if (seg->seqno = tcb->seqno_me+1) {
+            LOGtcb(tcb, 1, "ACKed %u-bytes\n", seg->length);
+            tcb->seqno_me += 1;
+            tcb->ackno_them += 1;
+            return 1;
+        } else {
+            LOGtcb(tcb, 1, "@@@@@BAD ACK of FIN@@@@\n", seg->length);
+            return 0;
+        }
+    }
+
     /* Retire outstanding segments */
     {
         unsigned length = ackno - tcb->seqno_me;
-        struct TCP_Segment *seg = tcb->segments;
-        while (seg && length >= seg->length) {
+        while (tcb->segments && length >= tcb->segments->length) {
+            struct TCP_Segment *seg = tcb->segments;
+            tcb->segments = seg->next;
+
+            length -= seg->length;
+            tcb->seqno_me += seg->length;
+            tcb->ackno_them += seg->length;
+            
+            LOGtcb(tcb, 1, "ACKed %u-bytes\n", seg->length);
+
+            /* free the old segment */
             switch (seg->flags) {
             case TCP__static:
                 break;
             case TCP__adopt:
             case TCP__copy:
                 free(seg->buf);
+                break;
             default:
                 ;
             }
-            length -= seg->length + seg->is_fin;
-            tcb->seqno_me += seg->length + seg->is_fin;
-            tcb->ackno_them += seg->length + seg->is_fin;
-
-            LOGtcb(tcb, 1, "ACKed %u-bytes %s\n", seg->length, seg->is_fin?"FIN":"");
-            
-            seg = seg->next;
+            if (seg->is_fin)
+                tcb->segments = seg;
+            else
+                free(seg);
         }
 
-        if (seg && length < seg->length) {
+        if (tcb->segments && length < tcb->segments->length) {
+            struct TCP_Segment *seg = tcb->segments;
+            
+            tcb->seqno_me += length + seg->is_fin;
+            tcb->ackno_them += length + seg->is_fin;
+            LOGtcb(tcb, 1, "ACKed %u-bytes %s\n", length, seg->is_fin?"FIN":"");
+
             /* This segment needs to be reduced */
             if (seg->flags == TCP__adopt || seg->flags == TCP__copy) {
                 size_t new_length = seg->length - length;
@@ -1487,9 +1500,7 @@ _tcp_seg_acknowledge(
             } else {
                 seg->buf += length;
             }
-            tcb->seqno_me += length;
-            tcb->ackno_them += length;
-            LOGnet(tcb->port_me, tcb->ip_them, "acked = %u-bytes (*)\n", seg->length);
+            
         }
     }
     
@@ -1528,7 +1539,7 @@ enum AppAction {
     APP_RECV_TIMEOUT,
     APP_RECV_PAYLOAD,
     APP_SEND_SENT,
-    APP_CLOSE
+    APP_CLOSE /*FIN received */
 };
 
 
@@ -1615,16 +1626,9 @@ _do_reconnect(struct TCP_ConnectionTable *tcpcon,
                     port_me, port_them,
                     seqno+1, 0,
                     255,
-                    stream);
+                    stream,
+                    secs, usecs);
     new_tcb->established = established;
-
-    /* Add a timeout, which will eventually cause this connection to
-     * be deleted. */
-    timeouts_add(tcpcon->timeouts,
-                 new_tcb->timeout,
-                 offsetof(struct TCP_Control_Block, timeout),
-                 TICKS_FROM_TV(secs+1,usecs)
-                 );
 }
 
 static void
@@ -1655,6 +1659,7 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
         App_ReceiveHello,
         App_ReceiveNext,
         App_SendNext,
+        App_Close,
     };
 
 
@@ -1718,7 +1723,7 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
                         
                         netapi.tcpcon = tcpcon;
                         netapi.tcb = tcb;
-                        netapi.send = _tcp_seg_send;
+                        netapi.send = _tcb_seg_send;
                         netapi.is_closing = 0;
                         netapi.secs = secs;
                         netapi.usecs = usecs;
@@ -1727,8 +1732,8 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
                     } else if (stream->hello_length) {
                         /* We just have a template to blindly copy some bytes onto the wire
                          * in order to trigger/probe for a response */
-                        _tcp_seg_send(tcpcon, tcb, stream->hello, stream->hello_length, TCP__static, false, secs, usecs);
-                        _tcp_seg_close(tcpcon, tcb, secs, usecs);
+                        _tcb_seg_send(tcpcon, tcb, stream->hello, stream->hello_length, TCP__static, false, secs, usecs);
+                        //_tcp_seg_close(tcpcon, tcb, secs, usecs);
                     }
                 }                
                 break;
@@ -1740,7 +1745,7 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
         case App_ReceiveNext:
             if (action == APP_RECV_PAYLOAD) {
                 struct stack_handle_t netapi = {
-                    tcpcon, tcb, _tcp_seg_send, 0, secs, usecs};
+                    tcpcon, tcb, _tcb_seg_send, 0, secs, usecs};
                 
                 /* [--banners]
                  * This is an important part of the system, where the TCP
@@ -1755,6 +1760,9 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
                                    payload_length,
                                    &netapi);
 
+            } else if (action == APP_CLOSE) {
+                tcpcon_flush_banners(tcpcon, tcb);
+                _tcp_seg_close(tcpcon, tcb, secs, usecs);
             }
             break;
         case App_SendNext:
@@ -1802,7 +1810,7 @@ _tcb_seg_recv(struct TCP_ConnectionTable *tcpcon,
                   bool is_fin)
 {
     /* Special case when packet contains only a FIN */
-    if (payload_length == 0 && is_fin && (tcb->seqno_them - seqno_them) == 1) {
+    if (payload_length == 0 && is_fin && (tcb->seqno_them - seqno_them) == 0) {
         tcb->is_their_fin = 1;
         tcb->seqno_them += 1;
         tcb->ackno_me += 1;
@@ -1851,13 +1859,8 @@ _tcb_seg_recv(struct TCP_ConnectionTable *tcpcon,
 }
 
 static void
-_tcb_send_ack(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb, unsigned secs, unsigned usecs, unsigned timeout) {
+_tcb_send_ack(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb) {
         tcpcon_send_packet(tcpcon, tcb, 0x10, 0, 0);
-        timeouts_add(tcpcon->timeouts,
-            tcb->timeout,
-            offsetof(struct TCP_Control_Block, timeout),
-            TICKS_FROM_TV(secs+timeout,usecs)
-        );
 }
 
 
@@ -1869,21 +1872,61 @@ _tcb_send_ack(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb,
  * you see drawn everywhere, where they have states like "TIME_WAIT". Only
  * we don't really have those states.
  *****************************************************************************/
-int
+enum TCB_result
 stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
               struct TCP_Control_Block *tcb,
-              int in_what, const void *vpayload, size_t payload_length,
+              enum TCP_What what, const unsigned char *payload, size_t payload_length,
               unsigned secs, unsigned usecs,
               unsigned seqno_them, unsigned ackno_them)
 {
-    enum TCP_What what = in_what;
-    const unsigned char *payload = (const unsigned char *)vpayload;
-    unsigned next_timeout = 1; /* one second in the future */
 
-    if (tcb == NULL)
-        return 0;
+    /* FILTER
+     * Reject out-of-order payloads 
+     */
+    if (payload_length) {
+        /* Wrapping technique: If there is a gap between this
+         * packet and the last one, then it means there is a missing
+         * packet somewhere. In that case, this calculation will
+         * wrap and `payload_offset` will be some huge number in the future.
+         * If there is no gap, then this will be zero.
+         * If there's overlap between this packet and the previous, `payload_offset`
+         * will be a small number less than the `length` of this packet.
+         * If it's a retransmission, the numbers will be the same
+         */
+        unsigned payload_offset = tcb->seqno_them - seqno_them;
+        if (payload_offset == 0)
+            ;
+        else if (payload_length >= payload_offset) {
+            /* Discard this packet entirely. Note that any ACK or FIN is handled
+             * as a separate incoming event */
+            LOGtcb(tcb, 1, "payload out of order len=%u, off=%u\n", payload_length, payload_offset);
+            return TCB__okay;
+        } else {
+            /* Truncate the beginning of the payload so that there's no overlap */
+            LOGtcb(tcb, 1, "truncated overlap by %u bytes\n", payload_offset);
+            payload_length -= payload_offset;
+            seqno_them += payload_offset;
+            payload += payload_offset;
+        }
+    }
+    
+    /* FILTER:
+     * Reject out-of-order FINs.
+     * Handle duplicate FINs here
+     */
+    if (what == TCP_WHAT_FIN) {
+        if (seqno_them == tcb->seqno_them - 1) {
+            /* Duplicate FIN, respond with ACK */
+            LOGtcb(tcb, 1, "duplicate FIN\n");
+            _tcb_send_ack(tcpcon, tcb);
+            return TCB__okay;
+        } else if (seqno_them != tcb->seqno_them) {
+            /* out of order FIN, so drop it */
+            LOGtcb(tcb, 1, "out-of-order FIN\n");
+            return TCB__okay;
+        }
+    }
 
-    if (in_what != TCP_WHAT_SYNACK)
     LOGtcb(tcb, 1, "##%s##\n", what_to_string(what));
 
     /* Make sure no connection lasts longer than ~30 seconds */
@@ -1895,14 +1938,14 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
             LOGSEND(tcb, "peer(RST)");
             tcpcon_send_packet(tcpcon, tcb, 0x04 /*RST*/, 0, 0);
             tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
-            return 1;
+            return TCB__destroyed;
         }
     }
     
     if (what == TCP_WHAT_RST) {
         LOGSEND(tcb, "tcb(destroy)");
         tcpcon_destroy_tcb(tcpcon, tcb, Reason_RST);
-        return 1;
+        return TCB__destroyed;
     }
     
     
@@ -1927,7 +1970,6 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
 
                     /* Send a SYN */
                     tcpcon_send_packet(tcpcon, tcb, 0x02 /*SYN*/, 0, 0);
-                    next_timeout = tcb->syns_sent;
                     break;
                 case TCP_WHAT_SYNACK:
                     tcb->seqno_them = seqno_them;
@@ -1952,7 +1994,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         case STATE_ESTABLISHED_SEND:
             switch (what) {
                 case TCP_WHAT_CLOSE:
-                    _tcp_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
+                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
                     _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
                     break;
                 case TCP_WHAT_FIN:
@@ -1960,10 +2002,10 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                         /* I have ACKed all their data, so therefore process this */
                         _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
                         _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
-                        _tcb_send_ack(tcpcon, tcb, secs, usecs, STATE_CLOSE_WAIT);
+                        _tcb_send_ack(tcpcon, tcb);
                     } else {
                         /* I haven't received all their data, so ignore it until I do */
-                        _tcb_send_ack(tcpcon, tcb, secs, usecs, STATE_CLOSE_WAIT);
+                        _tcb_send_ack(tcpcon, tcb);
                     }
                     break;    
                 case TCP_WHAT_ACK:
@@ -1987,7 +2029,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                     break;
                 case TCP_WHAT_TIMEOUT:
                     /* They haven't acknowledged everything yet, so resend the last segment */
-                    _tcp_seg_resend(tcpcon, tcb, secs, usecs);
+                    _tcb_seg_resend(tcpcon, tcb);
                     break;
                 case TCP_WHAT_DATA:
                     /* We don't receive data while in the sending state. We force them
@@ -2004,18 +2046,21 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         case STATE_ESTABLISHED_RECV:
             switch (what) {
                 case TCP_WHAT_CLOSE:
-                    _tcp_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
+                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
                     _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
                     break;
                 case TCP_WHAT_FIN:
                     if (seqno_them == tcb->seqno_them) {
                         /* I have ACKed all their data, so therefore process this */
                         _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
-                        _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
-                        _tcb_send_ack(tcpcon, tcb, secs, usecs, STATE_CLOSE_WAIT);
+                        _tcb_change_state_to(tcb, STATE_CLOSE_WAIT);
+                        _tcb_send_ack(tcpcon, tcb);
+                        application_notify(tcpcon, tcb, APP_CLOSE,
+                                0, payload_length, secs, usecs);
+
                     } else {
                         /* I haven't received all their data, so ignore it until I do */
-                        _tcb_send_ack(tcpcon, tcb, secs, usecs, STATE_CLOSE_WAIT);
+                        _tcb_send_ack(tcpcon, tcb);
                     }
                     break;
                 case TCP_WHAT_ACK:
@@ -2048,7 +2093,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_FIN:
                     _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
                     _tcb_change_state_to(tcb, STATE_CLOSING);
-                    _tcb_send_ack(tcpcon, tcb, secs, usecs, 1);
+                    _tcb_send_ack(tcpcon, tcb);
                     break;
                 case TCP_WHAT_ACK:
                     _tcp_seg_acknowledge(tcb, ackno_them);
@@ -2070,7 +2115,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                     }
                     break;
                 case TCP_WHAT_TIMEOUT:
-                    _tcp_seg_resend(tcpcon, tcb, secs, usecs);
+                    _tcb_seg_resend(tcpcon, tcb);
                     break;
                 case TCP_WHAT_DATA:
                     _tcb_seg_recv(tcpcon, tcb, payload, payload_length, seqno_them, secs, usecs, false);
@@ -2086,17 +2131,17 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
             switch (what) {
                 case TCP_WHAT_TIMEOUT:
                     tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
-                    return 1;
+                    return TCB__destroyed;
                 case TCP_WHAT_ACK:
                     _tcp_seg_acknowledge(tcb, ackno_them);
                     if (_tcb_they_have_acked_my_fin(tcb)) {
                         tcpcon_destroy_tcb(tcpcon, tcb, Reason_FIN);
-                        return 1;
+                        return TCB__destroyed;
                     }
                     break;
                 case TCP_WHAT_FIN:
                     /* I've already acknowledged their FIN, but hey, do it again */
-                    _tcb_send_ack(tcpcon, tcb, secs, usecs, 1);
+                    _tcb_send_ack(tcpcon, tcb);
                     break;
                 default:
                     LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
@@ -2112,7 +2157,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                     /* giving up */
                     if (tcb->tcpstate == STATE_TIME_WAIT) {
                         tcpcon_destroy_tcb(tcpcon, tcb, Reason_Timeout);
-                        return 1;
+                        return TCB__destroyed;
                     }
                     break;
                 case TCP_WHAT_ACK:
@@ -2138,21 +2183,40 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                     break;
             }
             break;
-
+        case STATE_CLOSE_WAIT:
+            /* Waiting for app to call `close()` */
+            switch (what) {
+            case TCP_WHAT_CLOSE:
+                _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
+                _tcb_change_state_to(tcb, STATE_LAST_ACK);
+                break;
+            default:
+                LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
+                break;
+            }
+            break;
         case STATE_LAST_ACK:
-            LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
+            switch (what) {
+            case TCP_WHAT_TIMEOUT:
+                /* They haven't acknowledged everything yet, so resend the last segment */
+                _tcb_seg_resend(tcpcon, tcb);
+                break;
+            case TCP_WHAT_ACK:
+                if (_tcp_seg_acknowledge(tcb, ackno_them)) {
+                    tcpcon_destroy_tcb(tcpcon, tcb, Reason_Shutdown);
+                    return TCB__destroyed;
+                }
+                break;
+            default:
+                LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
+                break;
+            }
+            break;
             break;
         default:
             LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
             break;
     }
-
-    timeouts_add(   tcpcon->timeouts,
-                    tcb->timeout,
-                    offsetof(struct TCP_Control_Block, timeout),
-                    TICKS_FROM_TV(secs+next_timeout,usecs)
-                    );
-
-    return 1;
+    return TCB__okay;
 }
 
