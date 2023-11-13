@@ -2,7 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include <ctype.h>
 
 #define PAYLOAD_BANNER  "SSH-2.0-OPENSSH_7.9\r\n"
@@ -55,7 +55,7 @@ ssh_parse(  const struct Banner1 *banner1,
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     size_t packet_length = pstate -> sub.ssh.packet_length;
@@ -85,13 +85,13 @@ ssh_parse(  const struct Banner1 *banner1,
         switch (state) {
         case BANNER:
             if (px[i] == '\n') {
-                tcp_transmit(more, PAYLOAD_BANNER, SIZE_BANNER, 0);
+                tcpapi_send(socket, PAYLOAD_BANNER, SIZE_BANNER, 0);
                 packet_length = 0;
                 state = LENGTH_1;
             }
             if (px[i] == '\0' || !(isspace(px[i]) || isprint(px[i]))) {
                 state = ERROR;
-                tcp_close(more);
+                tcpapi_close(socket);
                 continue;
             }
             break;
@@ -144,13 +144,13 @@ ssh_parse(  const struct Banner1 *banner1,
 
         case MSG_KEY_EXCHANGE_INIT:
             packet_length--;
-            tcp_transmit(more, PAYLOAD_KEY_EXHANGE_INIT, SIZE_KEY_EXCHANGE_INIT, 0);
+            tcpapi_send(socket, PAYLOAD_KEY_EXHANGE_INIT, SIZE_KEY_EXCHANGE_INIT, 0);
             state = CHECK_LENGTH;
             break;
 
         case MSG_NEW_KEYS:
             packet_length--;
-            tcp_transmit(more, PAYLOAD_NEWKEYS, SIZE_NEWKEYS,0);
+            tcpapi_send(socket, PAYLOAD_NEWKEYS, SIZE_NEWKEYS,0);
             state = BEFORE_END;
             break;
 
@@ -165,7 +165,7 @@ ssh_parse(  const struct Banner1 *banner1,
             break;
 
         case END:
-            tcp_close(more);
+            tcpapi_close(socket);
             state = 0xffffffff;
             break;
 

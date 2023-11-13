@@ -2,7 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "proto-ssl.h"
 #include <ctype.h>
 #include <string.h>
@@ -16,7 +16,7 @@ ftp_parse(  const struct Banner1 *banner1,
           struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct stack_handle_t *more)
+          struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -42,7 +42,7 @@ ftp_parse(  const struct Banner1 *banner1,
             case 103:
                 if (!isdigit(px[i]&0xFF)) {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 } else {
                     ftp->code *= 10;
                     ftp->code += (px[i] - '0');
@@ -62,7 +62,7 @@ ftp_parse(  const struct Banner1 *banner1,
                     banout_append_char(banout, PROTO_FTP, px[i]);
                 } else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 5:
@@ -70,7 +70,7 @@ ftp_parse(  const struct Banner1 *banner1,
                     continue;
                 else if (px[i] == '\n') {
                     if (ftp->is_last) {
-                        tcp_transmit(more, "AUTH TLS\r\n", 10, 0);
+                        tcpapi_send(socket, "AUTH TLS\r\n", 10, 0);
                         state = 100;
                         banout_append_char(banout, PROTO_FTP, px[i]);
                     } else {
@@ -79,7 +79,7 @@ ftp_parse(  const struct Banner1 *banner1,
                     }
                 } else if (px[i] == '\0' || !isprint(px[i])) {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                     continue;
                 } else {
                     banout_append_char(banout, PROTO_FTP, px[i]);
@@ -100,15 +100,15 @@ ftp_parse(  const struct Banner1 *banner1,
                         pstate->port = (unsigned short)port;
                         state = 0;
                         
-                        tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
+                        tcpapi_send(socket, banner_ssl.hello, banner_ssl.hello_length, 0);
                         
                     } else {
                         state = 0xffffffff;
-                        tcp_close(more);
+                        tcpapi_close(socket);
                     }
                 } else if (px[i] == '\0' || !isprint(px[i])) {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                     continue;
                 } else {
                     banout_append_char(banout, PROTO_FTP, px[i]);

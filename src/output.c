@@ -35,7 +35,7 @@
 #include "masscan.h"
 #include "masscan-status.h"
 #include "string_s.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "proto-banner1.h"
 #include "masscan-app.h"
 #include "main-globals.h"

@@ -18,7 +18,7 @@ typedef void (*BannerParser)(
               struct StreamState *stream_state,
               const unsigned char *px, size_t length,
               struct BannerOutput *banout,
-              struct stack_handle_t *more);
+              struct stack_handle_t *socket);
 struct Banner1
 {
     struct lua_State *L;
@@ -38,7 +38,7 @@ struct Banner1
     unsigned is_poodle_sslv3:1;
 
     struct {
-        struct ProtocolParserStream *tcp[65536];
+        const struct ProtocolParserStream *tcp[65536];
     } payloads;
     
     BannerParser parser[PROTO_end_of_list];
@@ -263,6 +263,12 @@ struct StreamState {
     } sub;
 };
 
+enum StreamFlags {
+    SF__none = 0,
+    SF__close = 0x01, /* send FIN after the static Hello is sent*/
+    SF__nowait_hello = 0x02,    /* send our hello immediately, don't wait for their hello */
+};
+
 
 /**
  * A registration structure for various TCP stream protocols
@@ -273,7 +279,7 @@ struct ProtocolParserStream {
     unsigned port;
     const void *hello;
     size_t hello_length;
-    unsigned ctrl_flags;
+    enum StreamFlags flags;
     int (*selftest)(void);
     void *(*init)(struct Banner1 *b);
     void (*parse)(
@@ -282,9 +288,9 @@ struct ProtocolParserStream {
         struct StreamState *stream_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more);
+        struct stack_handle_t *socket);
     void (*cleanup)(struct StreamState *stream_state);
-    void (*transmit_hello)(const struct Banner1 *banner1, struct stack_handle_t *more);
+    void (*transmit_hello)(const struct Banner1 *banner1, struct stack_handle_t *socket);
     
     /* When multiple items are registered for a port. When one
      * connection is closed, the next will be opened.*/
@@ -339,7 +345,7 @@ banner1_parse(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more);
+        struct stack_handle_t *socket);
 
 
 

@@ -31,7 +31,7 @@
 #include "crypto-lcg.h"         /* the LCG randomization func */
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "templ-pkt.h"          /* packet template, that we use to send */
-#include "logger.h"             /* adjust with -v command-line opt */
+#include "util-logger.h"             /* adjust with -v command-line opt */
 #include "stack-ndpv6.h"        /* IPv6 Neighbor Discovery Protocol */
 #include "stack-arpv4.h"        /* Handle ARP resolution and requests */
 #include "rawsock.h"            /* API on top of Linux, Windows, Mac OS X*/

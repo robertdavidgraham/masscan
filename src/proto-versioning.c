@@ -2,13 +2,13 @@
     SERVICE VERSIONING
  
  */
-#include "versioning.h"
+#include "proto-versioning.h"
 #include "proto-banner1.h"
 #include "smack.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "output.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"
@@ -29,14 +29,14 @@ versioning_tcp_parse(
                     struct StreamState *pstate,
                     const unsigned char *px, size_t length,
                     struct BannerOutput *banout,
-                    struct stack_handle_t *more)
+                    struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
    
     
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
     UNUSEDPARM(px);
     UNUSEDPARM(length);
     UNUSEDPARM(banout);

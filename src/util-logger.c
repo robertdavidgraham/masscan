@@ -8,7 +8,7 @@
     Details about scan results go to <stdout>, so that they can easily
     be redirected to a file.
 */
-#include "logger.h"
+#include "util-logger.h"
 #include "string_s.h"
 #include <stdarg.h>
 #include <stdio.h>

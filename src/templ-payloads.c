@@ -13,7 +13,7 @@
 #include "massip-port.h"
 #include "rawsock-pcapfile.h"   /* for reading payloads from pcap files */
 #include "proto-preprocess.h"   /* parse packets */
-#include "logger.h"
+#include "util-logger.h"
 #include "proto-zeroaccess.h"   /* botnet p2p protocol */
 #include "proto-snmp.h"
 #include "proto-memcached.h"

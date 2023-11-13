@@ -1,6 +1,6 @@
 #include "proto-vnc.h"
 #include "proto-banner1.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "string_s.h"
@@ -96,7 +96,7 @@ vnc_parse(  const struct Banner1 *banner1,
           struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct stack_handle_t *more)
+          struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -145,7 +145,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     };
                     unsigned version = pstate->sub.vnc.version % 10;
                     
-                    tcp_transmit(more, response[version], 12, 0);
+                    tcpapi_send(socket, response[version], 12, 0);
 
                     if (version < 7)
                         /* Version 3.3: the server selects either "none" or
@@ -160,7 +160,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     }
                 } else {
                     state = 0xFFFFFFFF;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case RFB3_3_SECURITYTYPES:
@@ -192,11 +192,11 @@ vnc_parse(  const struct Banner1 *banner1,
                 else if (pstate->sub.vnc.sectype == 1) {
                     /* v3.3 sectype=none
                      * We move immediately to ClientInit stage */
-                    tcp_transmit(more, "\x01", 1, 0);
+                    tcpapi_send(socket, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
                 } else {
                     state = RFB_DONE;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case RFB_SECURITYRESULT+3:
@@ -204,7 +204,7 @@ vnc_parse(  const struct Banner1 *banner1,
                 pstate->sub.vnc.sectype |= px[i];
                 if (pstate->sub.vnc.sectype == 0) {
                     /* security OK, move to client init */
-                    tcp_transmit(more, "\x01", 1, 0);
+                    tcpapi_send(socket, "\x01", 1, 0);
                     state = RFB_SERVERINIT;
                 } else {
                     /* error occurred, so grab error message */
@@ -220,7 +220,7 @@ vnc_parse(  const struct Banner1 *banner1,
             case RFB_SECURITYERROR+4:
                 if (pstate->sub.vnc.sectype == 0) {
                     state = RFB_DONE;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 } else {
                     pstate->sub.vnc.sectype--;
                     banout_append_char(banout, PROTO_VNC_INFO, px[i]);
@@ -244,13 +244,13 @@ vnc_parse(  const struct Banner1 *banner1,
                     banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
                     if (pstate->sub.vnc.version < 7) {
                         state = RFB_SERVERINIT;
-                        tcp_transmit(more, "\x01", 1, 0);
+                        tcpapi_send(socket, "\x01", 1, 0);
                     } else if (pstate->sub.vnc.version == 7) {
                         state = RFB_SERVERINIT;
-                        tcp_transmit(more, "\x01\x01", 2, 0);
+                        tcpapi_send(socket, "\x01\x01", 2, 0);
                     } else {
                         state = RFB_SECURITYRESULT;
-                        tcp_transmit(more, "\x01", 1, 0);
+                        tcpapi_send(socket, "\x01", 1, 0);
                     }
                 } else {
                     banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
@@ -309,7 +309,7 @@ vnc_parse(  const struct Banner1 *banner1,
                     banout_append(banout, PROTO_VNC_INFO, "Name: ", AUTO_LEN);
                 } else {
                     state = RFB_DONE;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
                 
@@ -319,14 +319,14 @@ vnc_parse(  const struct Banner1 *banner1,
                 if (pstate->sub.vnc.sectype == 0) {
                     banout_append(banout, PROTO_VNC_INFO, "\n", AUTO_LEN);
                     state = RFB_DONE;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
 
 
                 
             case RFB_DONE:
-                tcp_close(more);
+                tcpapi_close(socket);
                 i = (unsigned)length;
                 break;
             default:

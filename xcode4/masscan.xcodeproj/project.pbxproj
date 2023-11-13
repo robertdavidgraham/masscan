@@ -19,7 +19,7 @@
 		11420DD819A8160500DB5BFE /* proto-ftp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD719A8160500DB5BFE /* proto-ftp.c */; };
 		11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDA19A84A9E00DB5BFE /* proto-smtp.c */; };
 		11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDD19A8FDE300DB5BFE /* proto-pop3.c */; };
-		11420DE019A90CB300DB5BFE /* stack-handle.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDF19A90CB300DB5BFE /* stack-handle.c */; };
+		11420DE019A90CB300DB5BFE /* stack-tcp-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDF19A90CB300DB5BFE /* stack-tcp-app.c */; };
 		11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DE219A9363A00DB5BFE /* proto-imap4.c */; };
 		11469CA22295D80A00FA76BE /* misc-rstfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11469CA12295D80A00FA76BE /* misc-rstfilter.c */; };
 		1155CF102AF2FE12001B235A /* proto-mc.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF0F2AF2FE12001B235A /* proto-mc.c */; };
@@ -48,7 +48,7 @@
 		11A8681A1816F3A7008E00B8 /* crypto-siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* crypto-siphash24.c */; };
 		11A8681E1819A6F7008E00B8 /* proto-zeroaccess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */; };
 		11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219317DBCC7E00DDFD32 /* event-timeout.c */; };
-		11A921D617DBCC7E00DDFD32 /* logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* logger.c */; };
+		11A921D617DBCC7E00DDFD32 /* util-logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* util-logger.c */; };
 		11A921D717DBCC7E00DDFD32 /* main-conf.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219717DBCC7E00DDFD32 /* main-conf.c */; };
 		11A921D817DBCC7E00DDFD32 /* main-dedup.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219817DBCC7E00DDFD32 /* main-dedup.c */; };
 		11A921D917DBCC7E00DDFD32 /* main-initadapter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219A17DBCC7E00DDFD32 /* main-initadapter.c */; };
@@ -116,7 +116,7 @@
 		11DD36432107E7ED00CBE1DE /* vulncheck.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363F2107E7ED00CBE1DE /* vulncheck.c */; };
 		11DD36442107E7ED00CBE1DE /* vulncheck-ntp-monlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36402107E7ED00CBE1DE /* vulncheck-ntp-monlist.c */; };
 		11DD36462107EB8700CBE1DE /* scripting-masscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36452107EB8700CBE1DE /* scripting-masscan.c */; };
-		11DD36492108DCBB00CBE1DE /* versioning.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36472108DCBB00CBE1DE /* versioning.c */; };
+		11DD36492108DCBB00CBE1DE /* proto-versioning.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36472108DCBB00CBE1DE /* proto-versioning.c */; };
 		11DD364B2108E0CB00CBE1DE /* scripting-banner.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD364A2108E0CB00CBE1DE /* scripting-banner.c */; };
 		11DE129620ABC2650041135D /* proto-smb.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DE129520ABC2650041135D /* proto-smb.c */; };
 		11E76DB41889BC5200061F45 /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
@@ -157,7 +157,7 @@
 		11420DDA19A84A9E00DB5BFE /* proto-smtp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-smtp.c"; sourceTree = "<group>"; };
 		11420DDC19A8F2D200DB5BFE /* proto-pop3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-pop3.h"; sourceTree = "<group>"; };
 		11420DDD19A8FDE300DB5BFE /* proto-pop3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-pop3.c"; sourceTree = "<group>"; };
-		11420DDF19A90CB300DB5BFE /* stack-handle.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-handle.c"; sourceTree = "<group>"; };
+		11420DDF19A90CB300DB5BFE /* stack-tcp-app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "stack-tcp-app.c"; sourceTree = "<group>"; };
 		11420DE119A9361500DB5BFE /* proto-imap4.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "proto-imap4.h"; sourceTree = "<group>"; };
 		11420DE219A9363A00DB5BFE /* proto-imap4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-imap4.c"; sourceTree = "<group>"; };
 		11469CA02295D80A00FA76BE /* misc-rstfilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "misc-rstfilter.h"; sourceTree = "<group>"; };
@@ -186,7 +186,7 @@
 		118B9B2F25A00FA900F5FB0B /* massip-parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "massip-parse.c"; sourceTree = "<group>"; };
 		118B9B3025A00FA900F5FB0B /* massip-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "massip-parse.h"; sourceTree = "<group>"; };
 		118B9B3125A00FA900F5FB0B /* massip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = massip.c; sourceTree = "<group>"; };
-		118E115325859D2400618314 /* stack-handle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-handle.h"; sourceTree = "<group>"; };
+		118E115325859D2400618314 /* stack-tcp-api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-tcp-api.h"; sourceTree = "<group>"; };
 		118E115425859D5200618314 /* util-bool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-bool.h"; sourceTree = "<group>"; };
 		118E115525859D5300618314 /* util-checksum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-checksum.c"; sourceTree = "<group>"; };
 		118E115625859D5300618314 /* util-checksum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-checksum.h"; sourceTree = "<group>"; };
@@ -220,8 +220,8 @@
 		11A9218517DBCB3200DDFD32 /* masscan */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = masscan; sourceTree = BUILT_PRODUCTS_DIR; };
 		11A9219317DBCC7E00DDFD32 /* event-timeout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "event-timeout.c"; sourceTree = "<group>"; };
 		11A9219417DBCC7E00DDFD32 /* event-timeout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "event-timeout.h"; sourceTree = "<group>"; };
-		11A9219517DBCC7E00DDFD32 /* logger.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = logger.c; sourceTree = "<group>"; };
-		11A9219617DBCC7E00DDFD32 /* logger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logger.h; sourceTree = "<group>"; };
+		11A9219517DBCC7E00DDFD32 /* util-logger.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-logger.c"; sourceTree = "<group>"; };
+		11A9219617DBCC7E00DDFD32 /* util-logger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-logger.h"; sourceTree = "<group>"; };
 		11A9219717DBCC7E00DDFD32 /* main-conf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-conf.c"; sourceTree = "<group>"; };
 		11A9219817DBCC7E00DDFD32 /* main-dedup.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "main-dedup.c"; sourceTree = "<group>"; };
 		11A9219917DBCC7E00DDFD32 /* main-dedup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "main-dedup.h"; sourceTree = "<group>"; };
@@ -324,6 +324,7 @@
 		11BE533525A6441100451F95 /* massip-addr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "massip-addr.c"; sourceTree = "<group>"; };
 		11C000632AFDA178001EB0EB /* proto-isakmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-isakmp.c"; sourceTree = "<group>"; };
 		11C000642AFDA179001EB0EB /* proto-isakmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-isakmp.h"; sourceTree = "<group>"; };
+		11C000672B01CB16001EB0EB /* stack-tcp-app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-tcp-app.h"; sourceTree = "<group>"; };
 		11C936BF1EDCE77F0023D32E /* in-filter.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-filter.c"; sourceTree = "<group>"; };
 		11C936C01EDCE77F0023D32E /* in-filter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "in-filter.h"; sourceTree = "<group>"; };
 		11C936C11EDCE77F0023D32E /* in-report.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "in-report.c"; sourceTree = "<group>"; };
@@ -342,8 +343,8 @@
 		11DD363F2107E7ED00CBE1DE /* vulncheck.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vulncheck.c; sourceTree = "<group>"; };
 		11DD36402107E7ED00CBE1DE /* vulncheck-ntp-monlist.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "vulncheck-ntp-monlist.c"; sourceTree = "<group>"; };
 		11DD36452107EB8700CBE1DE /* scripting-masscan.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "scripting-masscan.c"; sourceTree = "<group>"; };
-		11DD36472108DCBB00CBE1DE /* versioning.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = versioning.c; sourceTree = "<group>"; };
-		11DD36482108DCBB00CBE1DE /* versioning.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = versioning.h; sourceTree = "<group>"; };
+		11DD36472108DCBB00CBE1DE /* proto-versioning.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-versioning.c"; sourceTree = "<group>"; };
+		11DD36482108DCBB00CBE1DE /* proto-versioning.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-versioning.h"; sourceTree = "<group>"; };
 		11DD364A2108E0CB00CBE1DE /* scripting-banner.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "scripting-banner.c"; sourceTree = "<group>"; };
 		11DE129420ABC2650041135D /* proto-smb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "proto-smb.h"; sourceTree = "<group>"; };
 		11DE129520ABC2650041135D /* proto-smb.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "proto-smb.c"; sourceTree = "<group>"; };
@@ -396,6 +397,7 @@
 		118E114E2585931800618314 /* stack */ = {
 			isa = PBXGroup;
 			children = (
+				11C000672B01CB16001EB0EB /* stack-tcp-app.h */,
 				1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */,
 				1124DD6E25B4FF3C00EEFC2C /* stack-arpv4.h */,
 				1124DD6C25B4FF3C00EEFC2C /* stack-if.c */,
@@ -405,8 +407,8 @@
 				11B6297725995AA100D4786F /* stack-queue.h */,
 				11A921B217DBCC7E00DDFD32 /* stack-tcp-core.c */,
 				11A921B317DBCC7E00DDFD32 /* stack-tcp-core.h */,
-				118E115325859D2400618314 /* stack-handle.h */,
-				11420DDF19A90CB300DB5BFE /* stack-handle.c */,
+				118E115325859D2400618314 /* stack-tcp-api.h */,
+				11420DDF19A90CB300DB5BFE /* stack-tcp-app.c */,
 				11A8680B1816F3A7008E00B8 /* stack-src.c */,
 				11A8680C1816F3A7008E00B8 /* stack-src.h */,
 			);
@@ -541,6 +543,8 @@
 		11B360CA1F9016C00020F3A3 /* proto */ = {
 			isa = PBXGroup;
 			children = (
+				11DD36482108DCBB00CBE1DE /* proto-versioning.h */,
+				11DD36472108DCBB00CBE1DE /* proto-versioning.c */,
 				11A921AC17DBCC7E00DDFD32 /* proto-arp.c */,
 				11A921AD17DBCC7E00DDFD32 /* proto-arp.h */,
 				11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */,
@@ -671,8 +675,8 @@
 				11A921A717DBCC7E00DDFD32 /* packet-queue.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
 				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
-				11A9219517DBCC7E00DDFD32 /* logger.c */,
-				11A9219617DBCC7E00DDFD32 /* logger.h */,
+				11A9219517DBCC7E00DDFD32 /* util-logger.c */,
+				11A9219617DBCC7E00DDFD32 /* util-logger.h */,
 			);
 			name = misc;
 			sourceTree = "<group>";
@@ -681,8 +685,6 @@
 			isa = PBXGroup;
 			children = (
 				11DD364A2108E0CB00CBE1DE /* scripting-banner.c */,
-				11DD36472108DCBB00CBE1DE /* versioning.c */,
-				11DD36482108DCBB00CBE1DE /* versioning.h */,
 				11DD36452107EB8700CBE1DE /* scripting-masscan.c */,
 				11DD363C2107E7ED00CBE1DE /* vulncheck-heartbleed.c */,
 				11DD36402107E7ED00CBE1DE /* vulncheck-ntp-monlist.c */,
@@ -750,7 +752,7 @@
 				11A921D517DBCC7E00DDFD32 /* event-timeout.c in Sources */,
 				11DD36412107E7ED00CBE1DE /* vulncheck-heartbleed.c in Sources */,
 				118B9B3325A00FA900F5FB0B /* massip-rangesv6.c in Sources */,
-				11A921D617DBCC7E00DDFD32 /* logger.c in Sources */,
+				11A921D617DBCC7E00DDFD32 /* util-logger.c in Sources */,
 				119969002141AB3600E82767 /* stub-pfring.c in Sources */,
 				11A921D717DBCC7E00DDFD32 /* main-conf.c in Sources */,
 				11A921D817DBCC7E00DDFD32 /* main-dedup.c in Sources */,
@@ -785,7 +787,7 @@
 				11A921EF17DBCC7E00DDFD32 /* rawsock-getmac.c in Sources */,
 				11B5897E21C0785C00DD6248 /* util-malloc.c in Sources */,
 				11A921F017DBCC7E00DDFD32 /* rawsock-getroute.c in Sources */,
-				11DD36492108DCBB00CBE1DE /* versioning.c in Sources */,
+				11DD36492108DCBB00CBE1DE /* proto-versioning.c in Sources */,
 				11D0FAFB22763F4900332FA7 /* proto-coap.c in Sources */,
 				11C936C41EDCE77F0023D32E /* in-report.c in Sources */,
 				11A921F117DBCC7E00DDFD32 /* rawsock-pcapfile.c in Sources */,
@@ -854,7 +856,7 @@
 				11420DDB19A84A9F00DB5BFE /* proto-smtp.c in Sources */,
 				11DD363421067BD400CBE1DE /* out-tcp-services.c in Sources */,
 				11420DDE19A8FDE300DB5BFE /* proto-pop3.c in Sources */,
-				11420DE019A90CB300DB5BFE /* stack-handle.c in Sources */,
+				11420DE019A90CB300DB5BFE /* stack-tcp-app.c in Sources */,
 				11420DE319A9363B00DB5BFE /* proto-imap4.c in Sources */,
 				118B9B3425A00FA900F5FB0B /* massip-parse.c in Sources */,
 				1124DD6B25B4FF1600EEFC2C /* out-hostonly.c in Sources */,

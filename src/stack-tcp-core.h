@@ -140,7 +140,7 @@ tcpcon_create_tcb(
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
     unsigned ttl,
-    struct ProtocolParserStream *stream,
+    const struct ProtocolParserStream *stream,
     unsigned secs, unsigned usecs);
 
 

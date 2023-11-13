@@ -15,7 +15,7 @@
 #include "massip-addr.h"
 #include "masscan-version.h"
 #include "string_s.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "proto-banner1.h"
 #include "templ-payloads.h"
 #include "crypto-base64.h"

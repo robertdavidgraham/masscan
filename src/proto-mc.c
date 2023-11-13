@@ -2,7 +2,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "output.h"
 #include <ctype.h>
 #include <string.h>
@@ -50,7 +50,7 @@ mc_parse(  const struct Banner1 *banner1,
           struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct stack_handle_t *more)
+          struct stack_handle_t *socket)
 {
     size_t i;
     struct MCSTUFF *mc = &pstate->sub.mc;
@@ -62,7 +62,7 @@ mc_parse(  const struct Banner1 *banner1,
             mc->brackcount--;
     }
     if(mc->brackcount <= 0)
-        more->is_closing = 1;
+        tcpapi_close(socket);
 
     if((mc->imgstart&&mc->imgend) || mc->brackcount <= 0) { // we already found and removed image data
         banout_append(banout, PROTO_MC,px,length);

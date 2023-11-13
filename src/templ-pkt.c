@@ -15,7 +15,7 @@
 #include "proto-sctp.h"
 #include "string_s.h"
 #include "pixie-timer.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "templ-payloads.h"
 #include "syn-cookie.h"
 #include "unusedparm.h"

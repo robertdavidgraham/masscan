@@ -51,7 +51,8 @@
  *
  */
 #include "stack-tcp-core.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
+#include "stack-tcp-app.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -64,7 +65,7 @@
 #include "syn-cookie.h"
 #include "event-timeout.h"      /* for tracking future events */
 #include "rawsock.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "templ-pkt.h"
 #include "pixie-timer.h"
 #include "stack-queue.h"
@@ -72,13 +73,13 @@
 #include "proto-ssl.h"
 #include "proto-http.h"
 #include "proto-smb.h"
+#include "proto-versioning.h"
 #include "output.h"
 #include "string_s.h"
 #include "main-globals.h"
 #include "crypto-base64.h"
 #include "util-malloc.h"
 #include "scripting.h"
-#include "versioning.h"
 
 
 #ifdef _MSC_VER
@@ -140,7 +141,7 @@ struct TCP_Control_Block
      * it. (Most payloads are static memory) */
     unsigned is_payload_dynamic:1;
 
-    unsigned established;
+    unsigned app_state;
 
     struct TCP_Segment *segments;
 
@@ -154,7 +155,7 @@ struct TCP_Control_Block
      * If Running a script, the thread object
      */
     struct ScriptingThread *scripting_thread;
-    struct ProtocolParserStream *stream;
+    const struct ProtocolParserStream *stream;
     
     struct BannerOutput banout;
 
@@ -201,7 +202,8 @@ enum {
     STATE_ESTABLISHED_RECV, /* our own special state, can only receive */
     STATE_CLOSE_WAIT,
     STATE_LAST_ACK,
-    STATE_FIN_WAIT1,
+    STATE_FIN_WAIT1_SEND,
+    STATE_FIN_WAIT1_RECV,
     STATE_FIN_WAIT2,
     STATE_CLOSING,
     STATE_TIME_WAIT,
@@ -219,7 +221,8 @@ state_to_string(int state)
             //STATE_SYN_RECEIVED,
         case STATE_CLOSE_WAIT:      return "CLOSE-WAIT";
         case STATE_LAST_ACK:        return "LAST-ACK";
-        case STATE_FIN_WAIT1:       return "FIN-WAIT-1";
+        case STATE_FIN_WAIT1_SEND:  return "FIN-WAIT-1-SEND";
+        case STATE_FIN_WAIT1_RECV:  return "FIN-WAIT-1-RECV";
         case STATE_FIN_WAIT2:       return "FIN-WAIT-2";
         case STATE_CLOSING:         return "CLOSING";
         case STATE_TIME_WAIT:       return "TIME-WAIT";
@@ -239,15 +242,16 @@ vLOGtcb(const struct TCP_Control_Block *tcb, int dir, const char *fmt, va_list m
     char sz[80];
     ipaddress_formatted_t fmt1 = ipaddress_fmt(tcb->ip_them);
 
-    snprintf(sz, sizeof(sz), "[%s:%u %4u,%4u] %s [%4u,%4u] {%s} ",
-            fmt1.string, tcb->port_them,
-            tcb->seqno_them - tcb->seqno_them_first,
-            tcb->ackno_me - tcb->seqno_them_first,
-            (dir > 0) ? "-->" : "<--",
-            tcb->seqno_me - tcb->seqno_me_first,
-            tcb->ackno_them - tcb->seqno_me_first,
-            state_to_string(tcb->tcpstate)
-            );
+    snprintf(sz, sizeof(sz), "[%s:%u %4u,%4u] %s:%5u [%4u,%4u] {%s} ",
+             fmt1.string, tcb->port_them,
+             tcb->seqno_them - tcb->seqno_them_first,
+             tcb->ackno_me - tcb->seqno_them_first,
+             (dir > 0) ? "-->" : "<--",
+             tcb->port_me,
+             tcb->seqno_me - tcb->seqno_me_first,
+             tcb->ackno_them - tcb->seqno_me_first,
+             state_to_string(tcb->tcpstate)
+             );
     if (dir == 2) {
         char *brace = strchr(sz, '{');
         memset(sz, ' ', brace-sz);
@@ -599,11 +603,10 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
         }
         port = (unsigned)strtoul(p+1, 0, 0);
 
-        x = banner1->payloads.tcp[port];
-        if (x == NULL) {
-            x = CALLOC(1, sizeof(*x));
-            x->name = "(allocated)";
-        }
+        x = CALLOC(1, sizeof(*x));
+        if (banner1->payloads.tcp[port])
+            memcpy(x, banner1->payloads.tcp[port], sizeof (*x));
+        x->name = "(allocated)";
 
         x->hello = MALLOC(value_length);
         x->hello_length = base64_decode((char*)x->hello, value_length, value, value_length);
@@ -739,6 +742,7 @@ static int TCB_EQUALS(const struct TCP_Control_Block *lhs, const struct TCP_Cont
  ***************************************************************************/
 static void
 _tcb_change_state_to(struct TCP_Control_Block *tcb, unsigned new_state) {
+
     LOGtcb(tcb, 2, "to {%s}\n", state_to_string(new_state));
     tcb->tcpstate = new_state;
 }
@@ -791,9 +795,11 @@ enum DestroyReason {
  * called when TCB is destroyed. This may also be called earlier, such
  * as when a FIN is received.
  ***************************************************************************/
-static void
-tcpcon_flush_banners(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tcb)
+void
+banner_flush(struct stack_handle_t *socket)
 {
+    struct TCP_ConnectionTable *tcpcon = socket->tcpcon;
+    struct TCP_Control_Block *tcb = socket->tcb;
     struct BannerOutput *banout;
     
     /* Go through and print all the banners. Some protocols have 
@@ -864,7 +870,12 @@ tcpcon_destroy_tcb(
      * time, there'll only be one. After printing them out, delete the
      * banners.
      */
-    tcpcon_flush_banners(tcpcon, tcb);
+    {
+        struct stack_handle_t socket[1] = {tcpcon, tcb, 0, 0};
+        banner_flush(socket);
+    }
+
+    LOGtcb(tcb, 2, "--DESTROYED--\n");
 
     /*
      * If there are any queued segments to transmit, then free them
@@ -961,7 +972,7 @@ tcpcon_create_tcb(
     unsigned port_me, unsigned port_them,
     unsigned seqno_me, unsigned seqno_them,
     unsigned ttl,
-    struct ProtocolParserStream *stream,
+    const struct ProtocolParserStream *stream,
     unsigned secs, unsigned usecs)
 {
     unsigned index;
@@ -1309,8 +1320,7 @@ _tcb_seg_resend(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *tc
 static void 
 _tcb_seg_send(void *in_tcpcon, void *in_tcb, 
         const void *buf, size_t length, 
-        enum TCP__flags flags, bool is_fin,
-        unsigned secs, unsigned usecs) {
+        enum TCP__flags flags) {
 
     struct TCP_ConnectionTable *tcpcon = (struct TCP_ConnectionTable *)in_tcpcon;
     struct TCP_Control_Block *tcb = (struct TCP_Control_Block *)in_tcb;
@@ -1318,12 +1328,12 @@ _tcb_seg_send(void *in_tcpcon, void *in_tcb,
     struct TCP_Segment **next;
     unsigned seqno = tcb->seqno_me;
     size_t length_more = 0;
+    bool is_fin = (flags == TCP__close_fin);
 
     if (length > tcb->mss) {
         length_more = length - tcb->mss;
         length = tcb->mss;
     }
-
 
 
     if (length == 0 && !is_fin)
@@ -1352,14 +1362,17 @@ _tcb_seg_send(void *in_tcpcon, void *in_tcb,
     seg->length = length;
     seg->flags = flags;
     switch (flags) {
-    case TCP__static:
-    case TCP__adopt:
-        seg->buf = (void *)buf;
-        break;
-    case TCP__copy:
-        seg->buf = malloc(length);
-        memcpy(seg->buf, buf, length);
-        break;
+        case TCP__static:
+        case TCP__adopt:
+            seg->buf = (void *)buf;
+            break;
+        case TCP__copy:
+            seg->buf = malloc(length);
+            memcpy(seg->buf, buf, length);
+            break;
+        case TCP__close_fin:
+            seg->buf = 0;
+            break;
     }
     if (length_more == 0)
         seg->is_fin = is_fin;
@@ -1373,7 +1386,8 @@ _tcb_seg_send(void *in_tcpcon, void *in_tcb,
         LOGtcb(tcb, 0, "xmit = %u-bytes %s @ %u\n", length, is_fin?"FIN":"",
                seg->seqno-tcb->seqno_me_first);
         tcpcon_send_packet(tcpcon, tcb, 0x18 | (is_fin?1:0), seg->buf, seg->length);
-        _tcb_change_state_to(tcb, STATE_ESTABLISHED_SEND);
+        if (!is_fin)
+            _tcb_change_state_to(tcb, STATE_ESTABLISHED_SEND);
     }
 
     /* If the input buffer was too large to fit a single segment, then
@@ -1384,7 +1398,7 @@ _tcb_seg_send(void *in_tcpcon, void *in_tcb,
 
         _tcb_seg_send(tcpcon, tcb,
                       (unsigned char*)buf + length, length_more,
-                      flags, is_fin, secs, usecs);
+                      flags);
     }
 
     //tcb->established = App_SendNext;
@@ -1434,17 +1448,17 @@ _tcp_seg_acknowledge(
     }
 
     /* Handle FIN specially */
+handle_fin:
     if (tcb->segments && tcb->segments->is_fin) {
         struct TCP_Segment *seg = tcb->segments;
-        
-        if (seg->seqno == tcb->seqno_me) {
-            /* Do nothing, it's been acked */
-            return 0;
-        } else if (seg->seqno = tcb->seqno_me+1) {
-            LOGtcb(tcb, 1, "ACKed %u-bytes\n", seg->length);
+
+        if (seg->seqno+1 == ackno) {
+            LOGtcb(tcb, 1, "ACKed FIN\n");
             tcb->seqno_me += 1;
             tcb->ackno_them += 1;
             return 1;
+        } else if (seg->seqno == ackno) {
+            return 0;
         } else {
             LOGtcb(tcb, 1, "@@@@@BAD ACK of FIN@@@@\n", seg->length);
             return 0;
@@ -1456,6 +1470,10 @@ _tcp_seg_acknowledge(
         unsigned length = ackno - tcb->seqno_me;
         while (tcb->segments && length >= tcb->segments->length) {
             struct TCP_Segment *seg = tcb->segments;
+
+            if (seg->is_fin)
+                goto handle_fin;
+
             tcb->segments = seg->next;
 
             length -= seg->length;
@@ -1466,19 +1484,21 @@ _tcp_seg_acknowledge(
 
             /* free the old segment */
             switch (seg->flags) {
-            case TCP__static:
-                break;
-            case TCP__adopt:
-            case TCP__copy:
-                free(seg->buf);
-                break;
-            default:
-                ;
+                case TCP__static:
+                    break;
+                case TCP__adopt:
+                case TCP__copy:
+                    if (seg->buf) {
+                        free(seg->buf);
+                        seg->buf = NULL;
+                    }
+                    break;
+                default:
+                    ;
             }
-            if (seg->is_fin)
-                tcb->segments = seg;
-            else
-                free(seg);
+            free(seg);
+            if (ackno == tcb->ackno_them)
+                return 1; /* good ACK */
         }
 
         if (tcb->segments && length < tcb->segments->length) {
@@ -1509,19 +1529,38 @@ _tcp_seg_acknowledge(
 }
 
 
+void
+banner_set_sslhello(struct stack_handle_t *socket, bool is_true) {
+    struct TCP_Control_Block *tcb = socket->tcb;
+    tcb->banner1_state.is_sent_sslhello = is_true;
+}
+
+void
+banner_set_small_window(struct stack_handle_t *socket, bool is_true) {
+    struct TCP_Control_Block *tcb = socket->tcb;
+    tcb->is_small_window = is_true;
+}
+
+bool
+banner_is_heartbleed(const struct stack_handle_t *socket) {
+    struct TCP_ConnectionTable *tcpcon = socket->tcpcon;
+    return tcpcon->banner1->is_heartbleed != 0;
+}
+
 /***************************************************************************
  * Parse the information we get from the server we are scanning. Typical
  * examples are SSH banners, FTP banners, or the response from HTTP
  * requests
  ***************************************************************************/
-static size_t
-parse_banner(
-    struct TCP_ConnectionTable *tcpcon,
-    struct TCP_Control_Block *tcb,
+size_t
+banner_parse(
+             struct stack_handle_t *socket,
     const unsigned char *payload,
-    size_t payload_length,
-    struct stack_handle_t *netapi)
+    size_t payload_length
+    )
 {
+    struct TCP_ConnectionTable *tcpcon = socket->tcpcon;
+    struct TCP_Control_Block *tcb = socket->tcb;
     assert(tcb->banout.max_length);
     
     banner1_parse(
@@ -1530,17 +1569,11 @@ parse_banner(
                                     payload,
                                     payload_length,
                                     &tcb->banout,
-                                    netapi);
+                                    socket);
     return payload_length;
 }
 
-enum AppAction {
-    APP_CONNECTED,
-    APP_RECV_TIMEOUT,
-    APP_RECV_PAYLOAD,
-    APP_SEND_SENT,
-    APP_CLOSE /*FIN received */
-};
+
 
 
 /***************************************************************************
@@ -1591,7 +1624,7 @@ _next_IP_port(struct TCP_ConnectionTable *tcpcon,
 static void
 _do_reconnect(struct TCP_ConnectionTable *tcpcon,
               const struct TCP_Control_Block *old_tcb,
-              struct ProtocolParserStream *stream,
+              const struct ProtocolParserStream *stream,
               unsigned secs, unsigned usecs,
               unsigned established) {
     struct TCP_Control_Block *new_tcb;
@@ -1608,10 +1641,10 @@ _do_reconnect(struct TCP_ConnectionTable *tcpcon,
      */
     _next_IP_port(tcpcon, &ip_me, &port_me);
 
-    LOGip(0, ip_me, port_me, "create new connection\n");
-
     /*
-     * Calculate the SYN cookie
+     * Calculate the SYN cookie, the same algorithm as for when spewing
+     * SYN packets. However, since we'll probably be using a different
+     * port or IP address, it'll be different in practice.
      */
     seqno = (unsigned)syn_cookie(ip_them, port_them,
                                  ip_me, port_me,
@@ -1628,14 +1661,16 @@ _do_reconnect(struct TCP_ConnectionTable *tcpcon,
                     255,
                     stream,
                     secs, usecs);
-    new_tcb->established = established;
+    new_tcb->app_state = established;
 }
 
 static void
-_tcp_seg_close(struct TCP_ConnectionTable *tcpcon,
-              struct TCP_Control_Block *tcb,
+_tcb_seg_close(void *in_tcpcon,
+              void *in_tcb,
               unsigned secs, unsigned usecs) {
-    
+    struct TCP_ConnectionTable *tcpcon = (struct TCP_ConnectionTable *)in_tcpcon;
+    struct TCP_Control_Block *tcb = (struct TCP_Control_Block *)in_tcb;
+
     stack_incoming_tcp(tcpcon, tcb,
                   TCP_WHAT_CLOSE,
                   0, 0, 
@@ -1643,148 +1678,133 @@ _tcp_seg_close(struct TCP_ConnectionTable *tcpcon,
                   tcb->seqno_them, tcb->ackno_them);
 }
 
+/***************************************************************************
+ ***************************************************************************/
+int
+tcpapi_set_timeout(struct stack_handle_t *socket,
+                        unsigned secs,
+                        unsigned usecs
+                        ) {
+    struct TCP_ConnectionTable *tcpcon = socket->tcpcon;
+    struct TCP_Control_Block *tcb = socket->tcb;
+
+    if (socket == NULL)
+        return SOCKERR_EBADF;
+
+    timeouts_add(tcpcon->timeouts,
+             tcb->timeout,
+             offsetof(struct TCP_Control_Block, timeout),
+             TICKS_FROM_TV(socket->secs+secs, socket->usecs)
+             );
+    return 0;
+}
+
 
 /***************************************************************************
  ***************************************************************************/
-static void
-application_notify(struct TCP_ConnectionTable *tcpcon,
-                 struct TCP_Control_Block *tcb,
-                 enum AppAction action, const void *payload, size_t payload_length,
-                 unsigned secs, unsigned usecs)
-{
-    struct Banner1 *banner1 = tcpcon->banner1;
-    
-    enum {
-        App_Connect,
-        App_ReceiveHello,
-        App_ReceiveNext,
-        App_SendNext,
-        App_Close,
-    };
+int
+tcpapi_recv(struct stack_handle_t *socket) {
+    struct TCP_Control_Block *tcb;
 
+    if (socket == 0 || socket->tcb == 0)
+        return SOCKERR_EBADF;
+    tcb = socket->tcb;
 
-    switch (tcb->established) {
-        case App_Connect:
-            /* Attach a protocol to this connection */
-            if (tcb->stream == &banner_scripting) {
-                //int x;
-                ; //tcb->scripting_thread = scripting_thread_new(tcpcon->scripting_vm);
-                ; //x = scripting_thread_run(tcb->scripting_thread);
-            } else {
-                /*
-                 * Wait 1 second for "server hello" (like SSH), and if that's
-                 * not found, then transmit a "client hello"
-                 */
-                assert(action == APP_CONNECTED);
-                LOGSEND(tcb, "+timeout");
-                timeouts_add( tcpcon->timeouts,
-                             tcb->timeout,
-                             offsetof(struct TCP_Control_Block, timeout),
-                             TICKS_FROM_TV(secs+tcpcon->timeout_hello,usecs)
-                             );
-                /* Start of connection */
-                _tcb_change_state_to(tcb, STATE_ESTABLISHED_RECV);
-                tcb->established = App_ReceiveHello;
-            }
-
-            /* We have a receive a SYNACK here. If there are multiple handlers
-             * for this port, then attempt another connection using the
-             * other protocol handlers. For example, for SSL, we might want
-             * to try both TLSv1.0 and TLSv1.3 */
-            if (tcb->stream && tcb->stream->next) {
-                _do_reconnect(tcpcon,
-                              tcb, tcb->stream->next,
-                              secs, usecs,
-                              App_Connect);
-            }
-            break;
-        case App_ReceiveHello:
-            if (action == APP_RECV_TIMEOUT) {
-                struct ProtocolParserStream *stream = tcb->stream;
-                if (stream) {
-
-                    /*
-                     * Kludge, extreme kludge
-                     * I don't even know what this does any longer
-                     */
-                    if (stream == &banner_ssl || stream == &banner_ssl_12) {
-                        tcb->banner1_state.is_sent_sslhello = 1;
-                    }
-                    if (tcpcon->banner1->is_heartbleed) {
-                        tcb->is_small_window = true;
-                    }
-
-
-                    if (stream->transmit_hello) {
-                        /* We have a callback function for the protocol stream that will 
-                         * craft a packet, such as maybe generate an HTTP request containing
-                         * valid "Host:" field. */
-                        struct stack_handle_t netapi;
-                        
-                        netapi.tcpcon = tcpcon;
-                        netapi.tcb = tcb;
-                        netapi.send = _tcb_seg_send;
-                        netapi.is_closing = 0;
-                        netapi.secs = secs;
-                        netapi.usecs = usecs;
-
-                        stream->transmit_hello(banner1, &netapi);
-                    } else if (stream->hello_length) {
-                        /* We just have a template to blindly copy some bytes onto the wire
-                         * in order to trigger/probe for a response */
-                        _tcb_seg_send(tcpcon, tcb, stream->hello, stream->hello_length, TCP__static, false, secs, usecs);
-                        //_tcp_seg_close(tcpcon, tcb, secs, usecs);
-                    }
-                }                
-                break;
-            } else if (action == APP_RECV_PAYLOAD) {
-                tcb->established = App_ReceiveNext;
-                /* fall through */
-            }
-            /* fall through */
-        case App_ReceiveNext:
-            if (action == APP_RECV_PAYLOAD) {
-                struct stack_handle_t netapi = {
-                    tcpcon, tcb, _tcb_seg_send, 0, secs, usecs};
-                
-                /* [--banners]
-                 * This is an important part of the system, where the TCP
-                 * stack passes incoming packet payloads off to the application
-                 * layer protocol parsers. This is where, in Sockets API, you
-                 * might call the 'recv()' function.
-                 */
-                parse_banner(
-                                   tcpcon,
-                                   tcb,
-                                   payload,
-                                   payload_length,
-                                   &netapi);
-
-            } else if (action == APP_CLOSE) {
-                tcpcon_flush_banners(tcpcon, tcb);
-                _tcp_seg_close(tcpcon, tcb, secs, usecs);
-            }
-            break;
-        case App_SendNext:
-            if (action == APP_SEND_SENT) {
-                _tcb_change_state_to(tcb, STATE_ESTABLISHED_RECV);;
-                tcb->established = App_ReceiveNext;
-            }
-            break;
+    switch (tcb->tcpstate) {
         default:
-            LOG(0, "TCP state error\n");
-            exit(1);
+        case STATE_ESTABLISHED_SEND:
+            _tcb_change_state_to(socket->tcb, STATE_ESTABLISHED_RECV);
             break;
+        case STATE_FIN_WAIT1_RECV:
+            _tcb_change_state_to(socket->tcb, STATE_FIN_WAIT1_RECV);
+            break;
+        case STATE_FIN_WAIT1_SEND:
+            _tcb_change_state_to(socket->tcb, STATE_FIN_WAIT1_RECV);
+            break;
+    }
+    return 0;
+}
+
+int
+tcpapi_send(struct stack_handle_t *socket,
+            const void *buf, size_t length,
+            enum TCP__flags flags) {
+    struct TCP_Control_Block *tcb;
+
+    if (socket == 0 || socket->tcb == 0)
+        return SOCKERR_EBADF;
+
+    tcb = socket->tcb;
+    switch (tcb->tcpstate) {
+        case STATE_ESTABLISHED_RECV:
+            _tcb_change_state_to(tcb, STATE_ESTABLISHED_SEND);
+            /*follow through*/
+        case STATE_ESTABLISHED_SEND:
+            _tcb_seg_send(socket->tcpcon, tcb, buf, length, flags);
+            return 0;
+        default:
+            LOG(1, "TCP app attempted SEND in wrong state\n");
+            return 1;
     }
 }
 
-static bool
-_tcb_has_reached_my_fin(struct TCP_Control_Block *tcb) {
-    if (tcb->segments && tcb->segments->is_fin && tcb->segments->length == 0)
-        return true;
-    else
-        return false;
+int
+tcpapi_reconnect(struct stack_handle_t *old_socket,
+               struct ProtocolParserStream *new_stream,
+               unsigned new_app_state) {
+    if (old_socket == 0 || old_socket->tcb == 0)
+        return SOCKERR_EBADF;
+
+    _do_reconnect(old_socket->tcpcon,
+                  old_socket->tcb,
+                  new_stream,
+                  old_socket->secs, old_socket->usecs,
+                  new_app_state);
+    return 0;
 }
+
+unsigned
+tcpapi_change_app_state(struct stack_handle_t *socket, unsigned new_app_state) {
+    struct TCP_Control_Block *tcb;
+
+    if (socket == 0 || socket->tcb == 0)
+        return SOCKERR_EBADF;
+
+    tcb = socket->tcb;
+    tcb->app_state = new_app_state;
+    return new_app_state;
+}
+
+int
+tcpapi_close(struct stack_handle_t *socket) {
+    _tcb_seg_close(socket->tcpcon,
+                   socket->tcb,
+                   socket->secs,
+                   socket->usecs);
+    return 0;
+}
+
+/***************************************************************************
+ ***************************************************************************/
+static unsigned
+application_notify(struct TCP_ConnectionTable *tcpcon,
+                   struct TCP_Control_Block *tcb,
+                   enum App_Event event, const void *payload, size_t payload_length,
+                   unsigned secs, unsigned usecs)
+{
+    struct Banner1 *banner1 = tcpcon->banner1;
+    const struct ProtocolParserStream *stream = tcb->stream;
+    struct stack_handle_t socket[1] = {
+        tcpcon, tcb, secs, usecs};
+
+    return application_event(socket,
+                             tcb->app_state, event,
+                             stream, banner1,
+                             payload, payload_length,
+                             secs, usecs);
+}
+
+
 
 static bool
 _tcb_they_have_acked_my_fin(struct TCP_Control_Block *tcb) {
@@ -1796,10 +1816,6 @@ _tcb_they_have_acked_my_fin(struct TCP_Control_Block *tcb) {
         return false;
 }
 
-static bool
-_tcb_has_reached_their_fin(struct TCP_Control_Block *tcb) {
-    return tcb->is_their_fin;
-}
 
 static int
 _tcb_seg_recv(struct TCP_ConnectionTable *tcpcon,
@@ -1994,20 +2010,20 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         case STATE_ESTABLISHED_SEND:
             switch (what) {
                 case TCP_WHAT_CLOSE:
-                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
-                    _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
+                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__close_fin);
+                    _tcb_change_state_to(tcb, STATE_FIN_WAIT1_SEND);
                     break;
                 case TCP_WHAT_FIN:
                     if (seqno_them == tcb->seqno_them) {
                         /* I have ACKed all their data, so therefore process this */
                         _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
-                        _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
+                        _tcb_change_state_to(tcb, STATE_FIN_WAIT1_SEND);
                         _tcb_send_ack(tcpcon, tcb);
                     } else {
                         /* I haven't received all their data, so ignore it until I do */
                         _tcb_send_ack(tcpcon, tcb);
                     }
-                    break;    
+                    break;
                 case TCP_WHAT_ACK:
                     _tcp_seg_acknowledge(tcb, ackno_them);
 
@@ -2021,11 +2037,6 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                         application_notify(tcpcon, tcb, APP_SEND_SENT, 0, 0, secs, usecs);
 
                     }
-                    timeouts_add(tcpcon->timeouts,
-                                    tcb->timeout,
-                                    offsetof(struct TCP_Control_Block, timeout),
-                                    TICKS_FROM_TV(secs+10,usecs)
-                                    );
                     break;
                 case TCP_WHAT_TIMEOUT:
                     /* They haven't acknowledged everything yet, so resend the last segment */
@@ -2046,15 +2057,15 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         case STATE_ESTABLISHED_RECV:
             switch (what) {
                 case TCP_WHAT_CLOSE:
-                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
-                    _tcb_change_state_to(tcb, STATE_FIN_WAIT1);
+                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__close_fin);
+                    _tcb_change_state_to(tcb, STATE_FIN_WAIT1_RECV);
                     break;
                 case TCP_WHAT_FIN:
                     if (seqno_them == tcb->seqno_them) {
                         /* I have ACKed all their data, so therefore process this */
                         _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
                         _tcb_change_state_to(tcb, STATE_CLOSE_WAIT);
-                        _tcb_send_ack(tcpcon, tcb);
+                        //_tcb_send_ack(tcpcon, tcb);
                         application_notify(tcpcon, tcb, APP_CLOSE,
                                 0, payload_length, secs, usecs);
 
@@ -2088,34 +2099,58 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
          FIN-WAIT-1 + FIN --> CLOSING
          FIN-WAIT-1 + ACK-of-FIN --> FIN-WAIT-2
         */
-        case STATE_FIN_WAIT1:
+        case STATE_FIN_WAIT1_SEND:
+            switch (what) {
+                case TCP_WHAT_FIN:
+                    //_tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
+                    //_tcb_change_state_to(tcb, STATE_CLOSING);
+                    //_tcb_send_ack(tcpcon, tcb);
+                    /* Ignore their FIN while in the SENDing state. */
+                    break;
+                case TCP_WHAT_ACK:
+                    /* Apply the ack */
+                    if (_tcp_seg_acknowledge(tcb, ackno_them)) {
+
+                        /* Same a in ESTABLISHED_SEND, once they've acknowledged
+                         * all reception BEFORE THE FIN, then change the state */
+                        if (tcb->segments == NULL || tcb->segments->length == 0) {
+                            /* All the payload has been sent. Notify the application of this, so that they
+                             * can send more if the want, or switch to listening. */
+                            _tcb_change_state_to(tcb, STATE_FIN_WAIT1_RECV);
+                            application_notify(tcpcon, tcb, APP_SEND_SENT, 0, 0, secs, usecs);
+                        }
+                    }
+                    break;
+                case TCP_WHAT_TIMEOUT:
+                    _tcb_seg_resend(tcpcon, tcb); /* also resends FINs */
+                    break;
+                case TCP_WHAT_DATA:
+                    /* Ignore any data received while in the SEND state */
+                    break;
+                default:
+                    LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
+                    break;
+            }
+            break;
+        case STATE_FIN_WAIT1_RECV:
             switch (what) {
                 case TCP_WHAT_FIN:
                     _tcb_seg_recv(tcpcon, tcb, 0, 0, seqno_them, secs, usecs, true);
                     _tcb_change_state_to(tcb, STATE_CLOSING);
                     _tcb_send_ack(tcpcon, tcb);
+                    application_notify(tcpcon, tcb, APP_CLOSE, 0, 0, secs, usecs);
                     break;
                 case TCP_WHAT_ACK:
-                    _tcp_seg_acknowledge(tcb, ackno_them);
-                    
-                    if (_tcb_they_have_acked_my_fin(tcb)) {
-                        _tcb_change_state_to(tcb, STATE_FIN_WAIT2);
-                        timeouts_add(tcpcon->timeouts,
-                                        tcb->timeout,
-                                        offsetof(struct TCP_Control_Block, timeout),
-                                        TICKS_FROM_TV(secs+5,usecs)
-                                        );
-                    } else {
-                        /* wait for more acknowledgements to arrive */
-                        timeouts_add(   tcpcon->timeouts,
-                                        tcb->timeout,
-                                        offsetof(struct TCP_Control_Block, timeout),
-                                        TICKS_FROM_TV(secs+1,usecs)
-                                        );
+                    /* Apply the ack */
+                    if (_tcp_seg_acknowledge(tcb, ackno_them)) {
+                        if (_tcb_they_have_acked_my_fin(tcb)) {
+                            _tcb_change_state_to(tcb, STATE_FIN_WAIT2);
+                            application_notify(tcpcon, tcb, APP_CLOSE, 0, 0, secs, usecs);
+                        }
                     }
                     break;
                 case TCP_WHAT_TIMEOUT:
-                    _tcb_seg_resend(tcpcon, tcb);
+                    _tcb_seg_resend(tcpcon, tcb); /* also recv FIN */
                     break;
                 case TCP_WHAT_DATA:
                     _tcb_seg_recv(tcpcon, tcb, payload, payload_length, seqno_them, secs, usecs, false);
@@ -2178,6 +2213,11 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_RST:
                 case TCP_WHAT_DATA:
                     break;
+                case TCP_WHAT_CLOSE:
+                    /* FIXME: to reach this state, we've already done a close.
+                     * FIXME: but this happens twice, because only have
+                     * FIXME: a single close function. */
+                    break;
                 default:
                     LOGtcb(tcb, 1, "%s **** UNHANDLED EVENT ****\n", what_to_string(what));
                     break;
@@ -2187,7 +2227,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
             /* Waiting for app to call `close()` */
             switch (what) {
             case TCP_WHAT_CLOSE:
-                _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__static, true, secs, usecs);
+                _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__close_fin);
                 _tcb_change_state_to(tcb, STATE_LAST_ACK);
                 break;
             default:

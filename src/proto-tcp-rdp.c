@@ -1,7 +1,7 @@
 
 #include "proto-tcp-rdp.h"
 #include "proto-banner1.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "util-malloc.h"
@@ -204,7 +204,7 @@ rdp_parse(  const struct Banner1 *banner1,
              struct StreamState *pstate,
              const unsigned char *px, size_t length,
              struct BannerOutput *banout,
-             struct stack_handle_t *more)
+             struct stack_handle_t *socket)
 {
     unsigned state = pstate->state & 0xFFFFFF;
     struct RDPSTUFF *rdp = &pstate->sub.rdp;
@@ -218,7 +218,7 @@ rdp_parse(  const struct Banner1 *banner1,
     };
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
     
     for (offset=0; offset<length; offset++) {
         unsigned char c = px[offset];
@@ -305,7 +305,7 @@ rdp_selftest_item(const char *input, size_t length, const char *expect)
     struct Banner1 *banner1;
     struct StreamState pstate[1];
     struct BannerOutput banout1[1];
-    struct stack_handle_t more;
+    struct stack_handle_t more = {0};
     int x;
     
     /*

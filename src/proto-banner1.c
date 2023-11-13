@@ -4,7 +4,7 @@
 #include "smack.h"
 #include "rawsock-pcapfile.h"
 #include "proto-preprocess.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "proto-banner1.h"
 #include "proto-http.h"
 #include "proto-ssl.h"
@@ -19,10 +19,11 @@
 #include "proto-vnc.h"
 #include "proto-memcached.h"
 #include "proto-mc.h"
+#include "proto-versioning.h"
 #include "masscan-app.h"
 #include "scripting.h"
-#include "versioning.h"
 #include "util-malloc.h"
+#include "util-logger.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -115,7 +116,7 @@ banner1_parse(
         struct StreamState *tcb_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     size_t x;
     unsigned offset = 0;
@@ -171,14 +172,14 @@ banner1_parse(
                                 tcb_state,
                                 s, s_len,
                                 banout,
-                                more);
+                                socket);
             }
             banner1_parse(
                             banner1,
                             tcb_state,
                             px, length,
                             banout,
-                            more);
+                            socket);
         } else {
             banout_append(banout, PROTO_HEUR, px, length);
         }
@@ -189,7 +190,7 @@ banner1_parse(
                              tcb_state,
                              px, length,
                              banout,
-                             more);
+                             socket);
             break;
         case PROTO_SMTP:
             banner_smtp.parse(   banner1,
@@ -197,7 +198,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              socket);
             break;
             
         case PROTO_TELNET:
@@ -206,7 +207,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              socket);
             break;
         case PROTO_RDP:
             banner_rdp.parse(   banner1,
@@ -214,7 +215,7 @@ banner1_parse(
                                 tcb_state,
                                 px, length,
                                 banout,
-                                more);
+                                socket);
             break;
         case PROTO_POP3:
             banner_pop3.parse(   banner1,
@@ -222,7 +223,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              socket);
             break;
     case PROTO_IMAP4:
             banner_imap4.parse(banner1,
@@ -230,7 +231,7 @@ banner1_parse(
                               tcb_state,
                               px, length,
                               banout,
-                              more);
+                              socket);
             break;
             
     case PROTO_SSH1:
@@ -243,7 +244,7 @@ banner1_parse(
                             tcb_state,
                             px, length,
                             banout,
-                            more);
+                            socket);
         break;
     case PROTO_HTTP:
         banner_http.parse(
@@ -252,7 +253,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        socket);
         break;
     case PROTO_SSL3:
         banner_ssl.parse(
@@ -261,7 +262,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        socket);
         break;
     case PROTO_SMB:
         banner_smb1.parse(
@@ -270,7 +271,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        socket);
         break;
     case PROTO_VNC_RFB:
         banner_vnc.parse(    banner1,
@@ -278,7 +279,7 @@ banner1_parse(
                              tcb_state,
                              px, length,
                              banout,
-                             more);
+                             socket);
         break;
     case PROTO_MEMCACHED:
         banner_memcached.parse(    banner1,
@@ -286,7 +287,7 @@ banner1_parse(
                              tcb_state,
                              px, length,
                              banout,
-                             more);
+                             socket);
         break;
     case PROTO_SCRIPTING:
         banner_scripting.parse(    banner1,
@@ -294,7 +295,7 @@ banner1_parse(
                                    tcb_state,
                                    px, length,
                                    banout,
-                                   more);
+                                   socket);
         break;
     case PROTO_VERSIONING:
         banner_versioning.parse(      banner1,
@@ -302,7 +303,7 @@ banner1_parse(
                                    tcb_state,
                                    px, length,
                                    banout,
-                                   more);
+                                   socket);
         break;
     case PROTO_MC:
         banner_mc.parse(
@@ -311,7 +312,7 @@ banner1_parse(
                         tcb_state,
                         px, length,
                         banout,
-                        more);
+                        socket);
         break;
 
     default:
@@ -726,6 +727,8 @@ banner1_selftest()
     length = (unsigned)strlen(http_header);
 
 
+    LOG(1, "[ ] banners: selftesting\n");
+
     /*
      * First, test the "banout" subsystem
      */
@@ -823,8 +826,18 @@ banner1_selftest()
             fprintf(stderr, "RDP banner: selftest failed\n");
             return 1;
         }
-        
-        return x;
+
+        if (x)
+            goto failure;
+        else
+            goto success;
     }
+
+success:
+    LOG(1, "[+] banners: success\n");
+    return 0;
+failure:
+    LOG(1, "[-] banners: failure\n");
+    return 1;
 }
 

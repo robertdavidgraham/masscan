@@ -1,6 +1,6 @@
 #include "proto-http.h"
 #include "proto-banner1.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "smack.h"
 #include "unusedparm.h"
 #include "string_s.h"
@@ -491,7 +491,7 @@ http_parse(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -512,7 +512,7 @@ http_parse(
     };
 
     UNUSEDPARM(banner1_private);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
 
     state2 = (state>>16) & 0xFFFF;
     id = (state>>8) & 0xFF;
@@ -523,7 +523,7 @@ http_parse(
     case 0: case 1: case 2: case 3: case 4:
         if (toupper(px[i]) != "HTTP/"[state]) {
             state = DONE_PARSING;
-            tcp_close(more);
+            tcpapi_close(socket);
         } else
             state++;
         break;
@@ -532,7 +532,7 @@ http_parse(
             state++;
         else if (!isdigit(px[i])) {
             state = DONE_PARSING;
-            tcp_close(more);
+            tcpapi_close(socket);
         }
         break;
     case 6:
@@ -540,7 +540,7 @@ http_parse(
             state++;
         else if (!isdigit(px[i])) {
             state = DONE_PARSING;
-            tcp_close(more);
+            tcpapi_close(socket);
         }
         break;
     case 7:
@@ -715,11 +715,10 @@ http_selftest_parser(void)
     struct Banner1 *banner1 = NULL;
     struct StreamState pstate[1];
     struct BannerOutput banout[1];
-    struct stack_handle_t more[1];
+
     
     memset(pstate, 0, sizeof(pstate[0]));
     memset(banout, 0, sizeof(banout[0]));
-    memset(more, 0, sizeof(more[0]));
 
     /*
      * Test start
@@ -732,7 +731,7 @@ http_selftest_parser(void)
     /*
      * Run Test
      */
-    http_parse(banner1, 0, pstate, (const unsigned  char *)test_response, strlen(test_response), banout, more);
+    http_parse(banner1, 0, pstate, (const unsigned  char *)test_response, strlen(test_response), banout, 0);
     
     
     /*

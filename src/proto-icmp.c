@@ -1,7 +1,7 @@
 #include "proto-icmp.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "output.h"
 #include "masscan-status.h"
 #include "massip-port.h"

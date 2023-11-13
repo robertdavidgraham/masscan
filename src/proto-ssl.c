@@ -46,7 +46,7 @@
     open TCP connections with minimal memory usage.
  */
 #include "proto-ssl.h"
-#include "stack-handle.h"
+#include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
@@ -131,7 +131,7 @@ parse_server_hello(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     struct SSL_SERVER_HELLO *hello = &pstate->sub.ssl.x.server_hello;
     unsigned state = hello->state;
@@ -155,7 +155,7 @@ parse_server_hello(
     UNUSEDPARM(banout);
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
 
     /* What this structure looks like in ASN.1 format
        struct {
@@ -374,7 +374,7 @@ parse_server_cert(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     struct SSL_SERVER_CERT *data = &pstate->sub.ssl.x.server_cert;
     unsigned state = data->state;
@@ -472,8 +472,11 @@ parse_server_cert(
                 }
                 state = CALEN0;
                 if (remaining == 0) {
-                    if (!banner1->is_heartbleed)
-                        tcp_close(more);
+                    /* FIXME: reduce this logic, it should only flush the
+                     * FIXME: ertificate, not close the connection*/
+                    if (!banner1->is_heartbleed) {
+                        ; //tcpapi_close(socket);
+                    }
                 }
             }
         }
@@ -522,7 +525,7 @@ parse_handshake(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -580,7 +583,7 @@ parse_handshake(
             static const char heartbleed_request[] = 
                 "\x15\x03\x02\x00\x02\x01\x80"
                 "\x18\x03\x02\x00\x03\x01" "\x40\x00";
-            tcp_transmit(more, heartbleed_request, sizeof(heartbleed_request)-1, 0);
+            tcpapi_send(socket, heartbleed_request, sizeof(heartbleed_request)-1, 0);
         }
         DROPDOWN(i,length,state);
 
@@ -618,7 +621,7 @@ parse_handshake(
                                        pstate,
                                        px+i, len,
                                        banout,
-                                       more);
+                                       socket);
                     break;
                 case 11: /* server certificate */
                     parse_server_cert(  banner1,
@@ -626,7 +629,7 @@ parse_handshake(
                                       pstate,
                                       px+i, len,
                                       banout,
-                                      more);
+                                      socket);
                     break;
             }
 
@@ -668,7 +671,7 @@ parse_heartbeat(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -681,7 +684,7 @@ parse_heartbeat(
         UNKNOWN,
     };
 
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
     UNUSEDPARM(banner1_private);
 
     /*
@@ -788,7 +791,7 @@ parse_alert(
                 struct StreamState *pstate,
                 const unsigned char *px, size_t length,
                 struct BannerOutput *banout,
-                struct stack_handle_t *more)
+                struct stack_handle_t *socket)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -800,7 +803,7 @@ parse_alert(
         UNKNOWN,
     };
     
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
     UNUSEDPARM(banner1_private);
     
     /*
@@ -892,7 +895,7 @@ ssl_parse_record(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *more)
+        struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
@@ -916,7 +919,7 @@ ssl_parse_record(
             
     /* 
      * The initial state parses the "type" byte. There are only a few types
-     * defined so far, the values 20-25, but more can be defined in the 
+     * defined so far, the values 20-25, but socket can be defined in the
      * future. The standard explicitly says that they must be lower than 128,
      * so if the high-order bit is set, we know that the byte is invalid,
      * and that something is wrong.
@@ -999,7 +1002,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    socket);
                     break;
                 case 22: /* handshake */
                     parse_handshake(banner1,
@@ -1007,7 +1010,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    socket);
                     break;
                 case 23: /* application data */
                     /* encrypted, always*/
@@ -1019,7 +1022,7 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    more);
+                                    socket);
                     break;
             }
             
@@ -1270,7 +1273,7 @@ ssl_selftest(void)
     unsigned ii;
     struct BannerOutput banout1[1];
     struct BannerOutput banout2[1];
-    struct stack_handle_t more;
+
     unsigned x;
 
     /*
@@ -1345,7 +1348,7 @@ ssl_selftest(void)
                          ssl_test_case_3+i,
                          1,
                          banout1,
-                         &more
+                         0
                          );
     }
     /*if (0) {
@@ -1380,7 +1383,7 @@ ssl_selftest(void)
                 (const unsigned char *)ssl_test_case_3+ii,
                 1,
                 banout2,
-                &more
+                0
                 );
     banner1_destroy(banner1);
     banout_release(banout2);
@@ -1436,7 +1439,8 @@ struct ProtocolParserStream banner_ssl_12 = {
 };
 
 struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1, 0,
+    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1,
+    SF__close, /* send FIN after the hello */
     ssl_selftest,
     ssl_init,
     ssl_parse_record,

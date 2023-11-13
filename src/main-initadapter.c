@@ -1,5 +1,5 @@
 #include "masscan.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "rawsock.h"
 #include "rawsock-adapter.h"
 #include "stack-arpv4.h"
