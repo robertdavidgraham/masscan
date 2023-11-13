@@ -127,7 +127,7 @@ ftp_parse(  const struct Banner1 *banner1,
 static void *
 ftp_init(struct Banner1 *banner1)
 {
-    UNUSEDPARM(banner1);
+    //banner1->payloads.tcp[21] = &banner_ftp;
     return 0;
 }
 

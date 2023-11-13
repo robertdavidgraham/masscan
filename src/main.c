@@ -1315,8 +1315,8 @@ main_scan(struct Masscan *masscan)
         if (masscan->nic[index].src.port.range == 0) {
             unsigned port = 40000 + now % 20000;
             masscan->nic[index].src.port.first = port;
-            masscan->nic[index].src.port.last = port;
-            masscan->nic[index].src.port.range = 1;
+            masscan->nic[index].src.port.last = port + 16;
+            masscan->nic[index].src.port.range = 16;
         }
 
         stack = stack_create(parms->source_mac, &masscan->nic[index].src);

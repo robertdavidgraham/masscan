@@ -628,8 +628,8 @@ banner1_create(void)
     banner_mc.init(b);
 
     /* scripting/versioning come after the rest */
-    banner_scripting.init(b);
-    banner_versioning.init(b);
+    //banner_scripting.init(b);
+    //banner_versioning.init(b);
 
 
     return b;

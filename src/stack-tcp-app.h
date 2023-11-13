@@ -11,6 +11,7 @@ enum App_Event {
     APP_CONNECTED,
     APP_RECV_TIMEOUT,
     APP_RECV_PAYLOAD,
+    APP_SENDING,
     APP_SEND_SENT,
     APP_CLOSE /*FIN received */
 };
@@ -24,8 +25,8 @@ application_event(  struct stack_handle_t *socket,
                   unsigned state, enum App_Event event,
                   const struct ProtocolParserStream *stream,
                   struct Banner1 *banner1,
-                  const void *payload, size_t payload_length,
-                  unsigned secs, unsigned usecs);
+                  const void *payload, size_t payload_length
+                  );
 
 void
 banner_set_sslhello(struct stack_handle_t *socket, bool is_true);

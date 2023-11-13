@@ -126,9 +126,6 @@
     <ClCompile Include="..\src\event-timeout.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\logger.c">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\main-dedup.c">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
@@ -291,9 +288,6 @@
     <ClCompile Include="..\src\stub-pfring.c">
       <Filter>Source Files\stubs</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\versioning.c">
-      <Filter>Source Files\versioning</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\vulncheck.c">
       <Filter>Source Files\vulncheck</Filter>
     </ClCompile>
@@ -387,11 +381,20 @@
     <ClCompile Include="..\src\proto-isakmp.c">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\stack-handle.c">
-      <Filter>Source Files\stack</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\stack-tcp-core.c">
       <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto-versioning.c">
+      <Filter>Source Files\versioning</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stack-tcp-app.c">
+      <Filter>Source Files\stack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-logger.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util-errormsg.c">
+      <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -450,9 +453,6 @@
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\event-timeout.h">
-      <Filter>Source Files\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\logger.h">
       <Filter>Source Files\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\src\main-dedup.h">
@@ -587,9 +587,6 @@
     <ClInclude Include="..\src\stub-pfring.h">
       <Filter>Source Files\stubs</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\versioning.h">
-      <Filter>Source Files\versioning</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\vulncheck.h">
       <Filter>Source Files\vulncheck</Filter>
     </ClInclude>
@@ -674,11 +671,23 @@
     <ClInclude Include="..\src\proto-isakmp.h">
       <Filter>Source Files\proto</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\stack-handle.h">
-      <Filter>Source Files\stack</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\stack-tcp-core.h">
       <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\proto-versioning.h">
+      <Filter>Source Files\versioning</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-tcp-api.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stack-tcp-app.h">
+      <Filter>Source Files\stack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-logger.h">
+      <Filter>Source Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util-errormsg.h">
+      <Filter>Source Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

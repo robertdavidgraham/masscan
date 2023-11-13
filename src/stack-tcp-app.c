@@ -5,24 +5,48 @@
 #include "unusedparm.h"
 #include "util-malloc.h"
 #include "util-logger.h"
+#include "util-errormsg.h"
 #include <stdlib.h>
 
-
+enum {
+    App_Connect,
+    App_ReceiveHello,
+    App_ReceiveNext,
+    App_SendFirst,
+    App_SendNext,
+    App_Close,
+};
+static const char *state_to_string(unsigned state) {
+    switch (state) {
+    case App_Connect: return "connect";
+    case App_ReceiveHello: return "wait-for-hello";
+    case App_ReceiveNext: return "receive";
+    case App_SendFirst: return "send-first";
+    case App_SendNext: return "send";
+    case App_Close: return "close";
+    default: return "unknown";
+    }
+}
+static const char *event_to_string(enum App_Event ev) {
+    switch (ev) {
+    case APP_CONNECTED: return "connected";
+    case APP_RECV_TIMEOUT: return "timeout";
+    case APP_RECV_PAYLOAD: return "payload";
+    case APP_SEND_SENT: return "sent";
+    case APP_CLOSE: return "close";
+    default: return "unknown";
+    }
+}
+  
 unsigned
-application_event(  struct stack_handle_t *socket,
+application_event(struct stack_handle_t *socket,
                   unsigned state, enum App_Event event,
                   const struct ProtocolParserStream *stream,
                   struct Banner1 *banner1,
-                  const void *payload, size_t payload_length,
-                  unsigned secs, unsigned usecs) {
-    enum {
-        App_Connect,
-        App_ReceiveHello,
-        App_ReceiveNext,
-        App_SendFirst,
-        App_SendNext,
-        App_Close,
-    };
+                  const void *payload, size_t payload_length
+                  ) {
+
+
 
 again:
     switch (state) {
@@ -43,18 +67,19 @@ again:
                      * received in this period, then timeout will cause us
                      * to switch to sending
                      */
-                    if (stream && (stream->flags & SF__nowait_hello) == 0) {
-                        tcpapi_set_timeout(socket, 2 /*tcpcon->timeout_hello*/, 0);
-                        tcpapi_recv(socket);
-                        tcpapi_change_app_state(socket, App_ReceiveHello);
-                    } else {
+                    if (stream != NULL && (stream->flags & SF__nowait_hello) != 0) {
                         tcpapi_change_app_state(socket, App_SendFirst);
                         state = App_SendFirst;
                         goto again;
+                    } else {
+                        tcpapi_set_timeout(socket, 2 /*tcpcon->timeout_hello*/, 0);
+                        tcpapi_recv(socket);
+                        tcpapi_change_app_state(socket, App_ReceiveHello);
                     }
                     break;
                 default:
-                    LOG(1, "TCP.app: unknown state event\n");
+                    ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
+                        state_to_string(state), event_to_string(event));
                     break;
             }
 
@@ -78,7 +103,8 @@ again:
                     state = App_ReceiveNext;
                     goto again;
                 default:
-                    LOG(1, "TCP.app: unknown state event\n");
+                    ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
+                        state_to_string(state), event_to_string(event));
                     break;
             }
             break;
@@ -105,8 +131,14 @@ again:
                     break;
                 case APP_RECV_TIMEOUT:
                     break;
+                case APP_SENDING:
+                    /* A higher level protocol has started sending packets while processing
+                     * a receive, therefore, change to the SEND state */
+                    tcpapi_change_app_state(socket, App_SendNext);
+                    break;
                 default:
-                    LOG(0, "TCP.app: unknown state event\n");
+                    ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
+                        state_to_string(state), event_to_string(event));
                     break;
             }
             break;
@@ -162,13 +194,14 @@ again:
                     tcpapi_change_app_state(socket, App_ReceiveNext);
                     break;
                 default:
-                    LOG(0, "TCP.app: unknown state=%u event=%u\n", state, event);
+                    ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
+                        state_to_string(state), event_to_string(event));
                     break;
             }
             break;
         default:
-            LOG(0, "TCP state error\n");
-            exit(1);
+            ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
+                state_to_string(state), event_to_string(event));
             break;
     }
     return 0;
