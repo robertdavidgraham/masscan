@@ -154,11 +154,11 @@ On FreeBSD and older MacOS, use an `ipfw` command:
 On newer MacOS and OpenBSD, use the `pf` packet-filter utility. 
 Edit the file `/etc/pf.conf` to add a line like the following:
 
-    block in proto tcp from any to any port 40000
+    block in proto tcp from any to any port 40000:40015
     
 Then to enable the firewall, run the command:
     
-    # pfctrl -E    
+    # pfctl -E    
 
 If the firewall is already running, then either reboot or reload the rules
 with the following command:
