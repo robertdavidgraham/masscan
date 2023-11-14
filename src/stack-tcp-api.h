@@ -14,7 +14,7 @@ enum TCP__flags {
 
 enum {
     SOCKERR_NONE=0, /* no error */
-    SOCKERR_EBADF,  /* bad socket descriptor */
+    SOCKERR_EBADF=10,  /* bad socket descriptor */
 };
 
 typedef struct stack_handle_t {
@@ -58,6 +58,10 @@ tcpapi_reconnect(struct stack_handle_t *old_socket,
                  struct ProtocolParserStream *new_stream,
                  unsigned new_app_state);
 
+/**
+ * The "app state" variable is stored opaquely in the `tcb` structure, so
+ * to reset it, we need an access function.
+ */
 unsigned
 tcpapi_change_app_state(struct stack_handle_t *socket, unsigned new_app_state);
 

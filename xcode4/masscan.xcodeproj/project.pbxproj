@@ -32,6 +32,121 @@
 		118B9B3325A00FA900F5FB0B /* massip-rangesv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2C25A00FA800F5FB0B /* massip-rangesv6.c */; };
 		118B9B3425A00FA900F5FB0B /* massip-parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2F25A00FA900F5FB0B /* massip-parse.c */; };
 		118B9B3525A00FA900F5FB0B /* massip.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B3125A00FA900F5FB0B /* massip.c */; };
+		118D67C42B02D58F00271F7F /* util-errormsg.c in Sources */ = {isa = PBXBuildFile; fileRef = 118D67C22B02CBA000271F7F /* util-errormsg.c */; };
+		118D67C72B02DD6F00271F7F /* stack-queue.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B6297525995AA100D4786F /* stack-queue.c */; };
+		118D67C82B02DD6F00271F7F /* event-timeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219317DBCC7E00DDFD32 /* event-timeout.c */; };
+		118D67C92B02DD6F00271F7F /* vulncheck-heartbleed.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363C2107E7ED00CBE1DE /* vulncheck-heartbleed.c */; };
+		118D67CA2B02DD6F00271F7F /* massip-rangesv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2C25A00FA800F5FB0B /* massip-rangesv6.c */; };
+		118D67CB2B02DD6F00271F7F /* util-logger.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219517DBCC7E00DDFD32 /* util-logger.c */; };
+		118D67CC2B02DD6F00271F7F /* stub-pfring.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FE2141AB3600E82767 /* stub-pfring.c */; };
+		118D67CD2B02DD6F00271F7F /* main-conf.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219717DBCC7E00DDFD32 /* main-conf.c */; };
+		118D67CE2B02DD6F00271F7F /* main-dedup.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219817DBCC7E00DDFD32 /* main-dedup.c */; };
+		118D67CF2B02DD6F00271F7F /* main-initadapter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219A17DBCC7E00DDFD32 /* main-initadapter.c */; };
+		118D67D02B02DD6F00271F7F /* main-status.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219B17DBCC7E00DDFD32 /* main-status.c */; };
+		118D67D12B02DD6F00271F7F /* rawsock-getip6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115825859E6F00618314 /* rawsock-getip6.c */; };
+		118D67D22B02DD6F00271F7F /* main-throttle.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219D17DBCC7E00DDFD32 /* main-throttle.c */; };
+		118D67D32B02DD6F00271F7F /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A9219F17DBCC7E00DDFD32 /* main.c */; };
+		118D67D42B02DD6F00271F7F /* vulncheck-sslv3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363D2107E7ED00CBE1DE /* vulncheck-sslv3.c */; };
+		118D67D52B02DD6F00271F7F /* out-binary.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A117DBCC7E00DDFD32 /* out-binary.c */; };
+		118D67D62B02DD6F00271F7F /* out-null.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A217DBCC7E00DDFD32 /* out-null.c */; };
+		118D67D72B02DD6F00271F7F /* proto-ntlmssp.c in Sources */ = {isa = PBXBuildFile; fileRef = 110ED16720CB0BC200690C91 /* proto-ntlmssp.c */; };
+		118D67D82B02DD6F00271F7F /* out-text.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A317DBCC7E00DDFD32 /* out-text.c */; };
+		118D67D92B02DD6F00271F7F /* out-xml.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A417DBCC7E00DDFD32 /* out-xml.c */; };
+		118D67DA2B02DD6F00271F7F /* output.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A517DBCC7E00DDFD32 /* output.c */; };
+		118D67DB2B02DD6F00271F7F /* pixie-threads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921A817DBCC7E00DDFD32 /* pixie-threads.c */; };
+		118D67DC2B02DD6F00271F7F /* pixie-timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921AA17DBCC7E00DDFD32 /* pixie-timer.c */; };
+		118D67DD2B02DD6F00271F7F /* read-service-probes.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FB21388A3B00E82767 /* read-service-probes.c */; };
+		118D67DE2B02DD6F00271F7F /* proto-arp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921AC17DBCC7E00DDFD32 /* proto-arp.c */; };
+		118D67DF2B02DD6F00271F7F /* proto-banner1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921AE17DBCC7E00DDFD32 /* proto-banner1.c */; };
+		118D67E02B02DD6F00271F7F /* stub-pcap.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FF2141AB3600E82767 /* stub-pcap.c */; };
+		118D67E12B02DD6F00271F7F /* proto-tcp-rdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1107E9B1228DF7BB003384B3 /* proto-tcp-rdp.c */; };
+		118D67E22B02DD6F00271F7F /* proto-preprocess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B017DBCC7E00DDFD32 /* proto-preprocess.c */; };
+		118D67E32B02DD6F00271F7F /* stack-tcp-core.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B217DBCC7E00DDFD32 /* stack-tcp-core.c */; };
+		118D67E42B02DD6F00271F7F /* crypto-blackrock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B417DBCC7E00DDFD32 /* crypto-blackrock.c */; };
+		118D67E52B02DD6F00271F7F /* crypto-lcg.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B617DBCC7E00DDFD32 /* crypto-lcg.c */; };
+		118D67E62B02DD6F00271F7F /* crypto-primegen.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921B817DBCC7E00DDFD32 /* crypto-primegen.c */; };
+		118D67E72B02DD6F00271F7F /* rawsock-getif.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BD17DBCC7E00DDFD32 /* rawsock-getif.c */; };
+		118D67E82B02DD6F00271F7F /* rawsock-getip.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BE17DBCC7E00DDFD32 /* rawsock-getip.c */; };
+		118D67E92B02DD6F00271F7F /* proto-isakmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C000632AFDA178001EB0EB /* proto-isakmp.c */; };
+		118D67EA2B02DD6F00271F7F /* templ-tcp-hdr.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF152AF8311C001B235A /* templ-tcp-hdr.c */; };
+		118D67EB2B02DD6F00271F7F /* rawsock-getmac.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921BF17DBCC7E00DDFD32 /* rawsock-getmac.c */; };
+		118D67EC2B02DD6F00271F7F /* util-malloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B5897D21C0785B00DD6248 /* util-malloc.c */; };
+		118D67ED2B02DD6F00271F7F /* rawsock-getroute.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C017DBCC7E00DDFD32 /* rawsock-getroute.c */; };
+		118D67EE2B02DD6F00271F7F /* proto-versioning.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36472108DCBB00CBE1DE /* proto-versioning.c */; };
+		118D67EF2B02DD6F00271F7F /* proto-coap.c in Sources */ = {isa = PBXBuildFile; fileRef = 11D0FAFA22763F4900332FA7 /* proto-coap.c */; };
+		118D67F02B02DD6F00271F7F /* in-report.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936C11EDCE77F0023D32E /* in-report.c */; };
+		118D67F12B02DD6F00271F7F /* rawsock-pcapfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C117DBCC7E00DDFD32 /* rawsock-pcapfile.c */; };
+		118D67F22B02DD6F00271F7F /* rawsock.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C517DBCC7E00DDFD32 /* rawsock.c */; };
+		118D67F32B02DD6F00271F7F /* scripting-banner.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD364A2108E0CB00CBE1DE /* scripting-banner.c */; };
+		118D67F42B02DD6F00271F7F /* rte-ring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C717DBCC7E00DDFD32 /* rte-ring.c */; };
+		118D67F52B02DD6F00271F7F /* smack1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CA17DBCC7E00DDFD32 /* smack1.c */; };
+		118D67F62B02DD6F00271F7F /* massip-rangesv4.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2B25A00FA800F5FB0B /* massip-rangesv4.c */; };
+		118D67F72B02DD6F00271F7F /* smackqueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CB17DBCC7E00DDFD32 /* smackqueue.c */; };
+		118D67F82B02DD6F00271F7F /* string_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CD17DBCC7E00DDFD32 /* string_s.c */; };
+		118D67F92B02DD6F00271F7F /* stack-ndpv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B6297625995AA100D4786F /* stack-ndpv6.c */; };
+		118D67FA2B02DD6F00271F7F /* syn-cookie.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */; };
+		118D67FB2B02DD6F00271F7F /* stack-arpv4.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */; };
+		118D67FC2B02DD6F00271F7F /* templ-nmap-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF112AF6EF72001B235A /* templ-nmap-payloads.c */; };
+		118D67FD2B02DD6F00271F7F /* util-errormsg.c in Sources */ = {isa = PBXBuildFile; fileRef = 118D67C22B02CBA000271F7F /* util-errormsg.c */; };
+		118D67FE2B02DD6F00271F7F /* templ-pkt.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D117DBCC7E00DDFD32 /* templ-pkt.c */; };
+		118D67FF2B02DD6F00271F7F /* xring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D317DBCC7E00DDFD32 /* xring.c */; };
+		118D68002B02DD6F00271F7F /* proto-smb.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DE129520ABC2650041135D /* proto-smb.c */; };
+		118D68012B02DD6F00271F7F /* templ-payloads.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B2DD9C17DE4DD8007FC363 /* templ-payloads.c */; };
+		118D68022B02DD6F00271F7F /* proto-http.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E717E0DAD4001BCE3A /* proto-http.c */; };
+		118D68032B02DD6F00271F7F /* proto-icmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80E917E0DAD4001BCE3A /* proto-icmp.c */; };
+		118D68042B02DD6F00271F7F /* proto-ssh.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80EB17E0DAD4001BCE3A /* proto-ssh.c */; };
+		118D68052B02DD6F00271F7F /* main-ptrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC80F517E0ED47001BCE3A /* main-ptrace.c */; };
+		118D68062B02DD6F00271F7F /* proto-memcached.c in Sources */ = {isa = PBXBuildFile; fileRef = 119AB2042051FFED008E4DDD /* proto-memcached.c */; };
+		118D68072B02DD6F00271F7F /* scripting-masscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36452107EB8700CBE1DE /* scripting-masscan.c */; };
+		118D68082B02DD6F00271F7F /* massip.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B3125A00FA900F5FB0B /* massip.c */; };
+		118D68092B02DD6F00271F7F /* proto-mc.c in Sources */ = {isa = PBXBuildFile; fileRef = 1155CF0F2AF2FE12001B235A /* proto-mc.c */; };
+		118D680A2B02DD6F00271F7F /* massip-addr.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BE533525A6441100451F95 /* massip-addr.c */; };
+		118D680B2B02DD6F00271F7F /* main-listscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C017E506B400925E7E /* main-listscan.c */; };
+		118D680C2B02DD6F00271F7F /* proto-dns.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C317E7834000925E7E /* proto-dns.c */; };
+		118D680D2B02DD6F00271F7F /* proto-udp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C517E7834000925E7E /* proto-udp.c */; };
+		118D680E2B02DD6F00271F7F /* proto-snmp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B039C917EA092B00925E7E /* proto-snmp.c */; };
+		118D680F2B02DD6F00271F7F /* proto-netbios.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA518035BC5004E6CD7 /* proto-netbios.c */; };
+		118D68102B02DD6F00271F7F /* vulncheck.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363F2107E7ED00CBE1DE /* vulncheck.c */; };
+		118D68112B02DD6F00271F7F /* proto-ssl.c in Sources */ = {isa = PBXBuildFile; fileRef = 115C0CA718035BC5004E6CD7 /* proto-ssl.c */; };
+		118D68122B02DD6F00271F7F /* in-binary.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868081816F3A7008E00B8 /* in-binary.c */; };
+		118D68132B02DD6F00271F7F /* stack-src.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680B1816F3A7008E00B8 /* stack-src.c */; };
+		118D68142B02DD6F00271F7F /* vulncheck-ntp-monlist.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36402107E7ED00CBE1DE /* vulncheck-ntp-monlist.c */; };
+		118D68152B02DD6F00271F7F /* misc-rstfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11469CA12295D80A00FA76BE /* misc-rstfilter.c */; };
+		118D68162B02DD6F00271F7F /* masscan-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680D1816F3A7008E00B8 /* masscan-app.c */; };
+		118D68172B02DD6F00271F7F /* out-redis.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8680F1816F3A7008E00B8 /* out-redis.c */; };
+		118D68182B02DD6F00271F7F /* pixie-file.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868101816F3A7008E00B8 /* pixie-file.c */; };
+		118D68192B02DD6F00271F7F /* crypto-siphash24.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A868131816F3A7008E00B8 /* crypto-siphash24.c */; };
+		118D681A2B02DD6F00271F7F /* stack-if.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6C25B4FF3C00EEFC2C /* stack-if.c */; };
+		118D681B2B02DD6F00271F7F /* proto-zeroaccess.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A8681C1819A6F7008E00B8 /* proto-zeroaccess.c */; };
+		118D681C2B02DD6F00271F7F /* proto-banout.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED018641DCC00DA5438 /* proto-banout.c */; };
+		118D681D2B02DD6F00271F7F /* proto-ssl-test.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED218641DCC00DA5438 /* proto-ssl-test.c */; };
+		118D681E2B02DD6F00271F7F /* util-checksum.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115525859D5300618314 /* util-checksum.c */; };
+		118D681F2B02DD6F00271F7F /* proto-x509.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B22ED318641DCC00DA5438 /* proto-x509.c */; };
+		118D68202B02DD6F00271F7F /* crypto-base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A773E91881BFC700B135DE /* crypto-base64.c */; };
+		118D68212B02DD6F00271F7F /* pixie-backtrace.c in Sources */ = {isa = PBXBuildFile; fileRef = 11E76DB21889BC5200061F45 /* pixie-backtrace.c */; };
+		118D68222B02DD6F00271F7F /* proto-sctp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11AC2F99188CE34A008CB623 /* proto-sctp.c */; };
+		118D68232B02DD6F00271F7F /* out-grepable.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA295F18902CEE0064A759 /* out-grepable.c */; };
+		118D68242B02DD6F00271F7F /* proto-tcp-telnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296018902CEE0064A759 /* proto-tcp-telnet.c */; };
+		118D68252B02DD6F00271F7F /* proto-ntp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11BA296A189060220064A759 /* proto-ntp.c */; };
+		118D68262B02DD6F00271F7F /* scripting.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363A2107DFEB00CBE1DE /* scripting.c */; };
+		118D68272B02DD6F00271F7F /* crypto-blackrock2.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B05EA418B9649F009C935E /* crypto-blackrock2.c */; };
+		118D68282B02DD6F00271F7F /* out-ndjson.c in Sources */ = {isa = PBXBuildFile; fileRef = 112A87191F9D8DF200D4D240 /* out-ndjson.c */; };
+		118D68292B02DD6F00271F7F /* main-readrange.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B05EA518B9649F009C935E /* main-readrange.c */; };
+		118D682A2B02DD6F00271F7F /* out-json.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A50CAD191C128F006D5802 /* out-json.c */; };
+		118D682B2B02DD6F00271F7F /* out-certs.c in Sources */ = {isa = PBXBuildFile; fileRef = 11623F69191E0DB00075EEE6 /* out-certs.c */; };
+		118D682C2B02DD6F00271F7F /* out-unicornscan.c in Sources */ = {isa = PBXBuildFile; fileRef = 11126596197A086B00DC5987 /* out-unicornscan.c */; };
+		118D682D2B02DD6F00271F7F /* proto-vnc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD219A2D47A00DB5BFE /* proto-vnc.c */; };
+		118D682E2B02DD6F00271F7F /* in-filter.c in Sources */ = {isa = PBXBuildFile; fileRef = 11C936BF1EDCE77F0023D32E /* in-filter.c */; };
+		118D682F2B02DD6F00271F7F /* proto-ftp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DD719A8160500DB5BFE /* proto-ftp.c */; };
+		118D68302B02DD6F00271F7F /* proto-oproto.c in Sources */ = {isa = PBXBuildFile; fileRef = 110C79AF22833AF9003FAC94 /* proto-oproto.c */; };
+		118D68312B02DD6F00271F7F /* proto-smtp.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDA19A84A9E00DB5BFE /* proto-smtp.c */; };
+		118D68322B02DD6F00271F7F /* out-tcp-services.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD363321067BD300CBE1DE /* out-tcp-services.c */; };
+		118D68332B02DD6F00271F7F /* proto-pop3.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDD19A8FDE300DB5BFE /* proto-pop3.c */; };
+		118D68342B02DD6F00271F7F /* stack-tcp-app.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DDF19A90CB300DB5BFE /* stack-tcp-app.c */; };
+		118D68352B02DD6F00271F7F /* proto-imap4.c in Sources */ = {isa = PBXBuildFile; fileRef = 11420DE219A9363A00DB5BFE /* proto-imap4.c */; };
+		118D68362B02DD6F00271F7F /* massip-parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2F25A00FA900F5FB0B /* massip-parse.c */; };
+		118D68372B02DD6F00271F7F /* out-hostonly.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6A25B4FF1600EEFC2C /* out-hostonly.c */; };
+		118D68382B02DD6F00271F7F /* stub-lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36362107DE9700CBE1DE /* stub-lua.c */; };
 		118E115725859D5300618314 /* util-checksum.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115525859D5300618314 /* util-checksum.c */; };
 		118E115925859E6F00618314 /* rawsock-getip6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115825859E6F00618314 /* rawsock-getip6.c */; };
 		119968FC21388A3C00E82767 /* read-service-probes.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FB21388A3B00E82767 /* read-service-probes.c */; };
@@ -123,6 +238,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		118D683A2B02DD6F00271F7F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		11A9218317DBCB3200DDFD32 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -186,6 +310,9 @@
 		118B9B2F25A00FA900F5FB0B /* massip-parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "massip-parse.c"; sourceTree = "<group>"; };
 		118B9B3025A00FA900F5FB0B /* massip-parse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "massip-parse.h"; sourceTree = "<group>"; };
 		118B9B3125A00FA900F5FB0B /* massip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = massip.c; sourceTree = "<group>"; };
+		118D67C12B02CBA000271F7F /* util-errormsg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "util-errormsg.h"; sourceTree = "<group>"; };
+		118D67C22B02CBA000271F7F /* util-errormsg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "util-errormsg.c"; sourceTree = "<group>"; };
+		118D683E2B02DD6F00271F7F /* masscan copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "masscan copy"; sourceTree = BUILT_PRODUCTS_DIR; };
 		118E115325859D2400618314 /* stack-tcp-api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-tcp-api.h"; sourceTree = "<group>"; };
 		118E115425859D5200618314 /* util-bool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-bool.h"; sourceTree = "<group>"; };
 		118E115525859D5300618314 /* util-checksum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-checksum.c"; sourceTree = "<group>"; };
@@ -238,7 +365,6 @@
 		11A921A417DBCC7E00DDFD32 /* out-xml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "out-xml.c"; sourceTree = "<group>"; };
 		11A921A517DBCC7E00DDFD32 /* output.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = output.c; sourceTree = "<group>"; };
 		11A921A617DBCC7E00DDFD32 /* output.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = output.h; sourceTree = "<group>"; };
-		11A921A717DBCC7E00DDFD32 /* packet-queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "packet-queue.h"; sourceTree = "<group>"; };
 		11A921A817DBCC7E00DDFD32 /* pixie-threads.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-threads.c"; sourceTree = "<group>"; };
 		11A921A917DBCC7E00DDFD32 /* pixie-threads.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "pixie-threads.h"; sourceTree = "<group>"; };
 		11A921AA17DBCC7E00DDFD32 /* pixie-timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "pixie-timer.c"; sourceTree = "<group>"; };
@@ -353,6 +479,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		118D68392B02DD6F00271F7F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		11A9218217DBCB3200DDFD32 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -418,6 +551,8 @@
 		118E114F25859CFD00618314 /* util */ = {
 			isa = PBXGroup;
 			children = (
+				118D67C22B02CBA000271F7F /* util-errormsg.c */,
+				118D67C12B02CBA000271F7F /* util-errormsg.h */,
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
 				11B5897C21C0785B00DD6248 /* util-malloc.h */,
 				11B5897D21C0785B00DD6248 /* util-malloc.c */,
@@ -441,6 +576,7 @@
 			isa = PBXGroup;
 			children = (
 				11A9218517DBCB3200DDFD32 /* masscan */,
+				118D683E2B02DD6F00271F7F /* masscan copy */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -672,7 +808,6 @@
 				11A921CC17DBCC7E00DDFD32 /* smackqueue.h */,
 				11A921CD17DBCC7E00DDFD32 /* string_s.c */,
 				11A921CE17DBCC7E00DDFD32 /* string_s.h */,
-				11A921A717DBCC7E00DDFD32 /* packet-queue.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
 				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
 				11A9219517DBCC7E00DDFD32 /* util-logger.c */,
@@ -700,6 +835,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		118D67C52B02DD6F00271F7F /* masscan copy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 118D683B2B02DD6F00271F7F /* Build configuration list for PBXNativeTarget "masscan copy" */;
+			buildPhases = (
+				118D67C62B02DD6F00271F7F /* Sources */,
+				118D68392B02DD6F00271F7F /* Frameworks */,
+				118D683A2B02DD6F00271F7F /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "masscan copy";
+			productName = xcode4;
+			productReference = 118D683E2B02DD6F00271F7F /* masscan copy */;
+			productType = "com.apple.product-type.tool";
+		};
 		11A9218417DBCB3200DDFD32 /* masscan */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 11A9218F17DBCB3200DDFD32 /* Build configuration list for PBXNativeTarget "masscan" */;
@@ -739,11 +891,133 @@
 			projectRoot = "";
 			targets = (
 				11A9218417DBCB3200DDFD32 /* masscan */,
+				118D67C52B02DD6F00271F7F /* masscan copy */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		118D67C62B02DD6F00271F7F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				118D67C72B02DD6F00271F7F /* stack-queue.c in Sources */,
+				118D67C82B02DD6F00271F7F /* event-timeout.c in Sources */,
+				118D67C92B02DD6F00271F7F /* vulncheck-heartbleed.c in Sources */,
+				118D67CA2B02DD6F00271F7F /* massip-rangesv6.c in Sources */,
+				118D67CB2B02DD6F00271F7F /* util-logger.c in Sources */,
+				118D67CC2B02DD6F00271F7F /* stub-pfring.c in Sources */,
+				118D67CD2B02DD6F00271F7F /* main-conf.c in Sources */,
+				118D67CE2B02DD6F00271F7F /* main-dedup.c in Sources */,
+				118D67CF2B02DD6F00271F7F /* main-initadapter.c in Sources */,
+				118D67D02B02DD6F00271F7F /* main-status.c in Sources */,
+				118D67D12B02DD6F00271F7F /* rawsock-getip6.c in Sources */,
+				118D67D22B02DD6F00271F7F /* main-throttle.c in Sources */,
+				118D67D32B02DD6F00271F7F /* main.c in Sources */,
+				118D67D42B02DD6F00271F7F /* vulncheck-sslv3.c in Sources */,
+				118D67D52B02DD6F00271F7F /* out-binary.c in Sources */,
+				118D67D62B02DD6F00271F7F /* out-null.c in Sources */,
+				118D67D72B02DD6F00271F7F /* proto-ntlmssp.c in Sources */,
+				118D67D82B02DD6F00271F7F /* out-text.c in Sources */,
+				118D67D92B02DD6F00271F7F /* out-xml.c in Sources */,
+				118D67DA2B02DD6F00271F7F /* output.c in Sources */,
+				118D67DB2B02DD6F00271F7F /* pixie-threads.c in Sources */,
+				118D67DC2B02DD6F00271F7F /* pixie-timer.c in Sources */,
+				118D67DD2B02DD6F00271F7F /* read-service-probes.c in Sources */,
+				118D67DE2B02DD6F00271F7F /* proto-arp.c in Sources */,
+				118D67DF2B02DD6F00271F7F /* proto-banner1.c in Sources */,
+				118D67E02B02DD6F00271F7F /* stub-pcap.c in Sources */,
+				118D67E12B02DD6F00271F7F /* proto-tcp-rdp.c in Sources */,
+				118D67E22B02DD6F00271F7F /* proto-preprocess.c in Sources */,
+				118D67E32B02DD6F00271F7F /* stack-tcp-core.c in Sources */,
+				118D67E42B02DD6F00271F7F /* crypto-blackrock.c in Sources */,
+				118D67E52B02DD6F00271F7F /* crypto-lcg.c in Sources */,
+				118D67E62B02DD6F00271F7F /* crypto-primegen.c in Sources */,
+				118D67E72B02DD6F00271F7F /* rawsock-getif.c in Sources */,
+				118D67E82B02DD6F00271F7F /* rawsock-getip.c in Sources */,
+				118D67E92B02DD6F00271F7F /* proto-isakmp.c in Sources */,
+				118D67EA2B02DD6F00271F7F /* templ-tcp-hdr.c in Sources */,
+				118D67EB2B02DD6F00271F7F /* rawsock-getmac.c in Sources */,
+				118D67EC2B02DD6F00271F7F /* util-malloc.c in Sources */,
+				118D67ED2B02DD6F00271F7F /* rawsock-getroute.c in Sources */,
+				118D67EE2B02DD6F00271F7F /* proto-versioning.c in Sources */,
+				118D67EF2B02DD6F00271F7F /* proto-coap.c in Sources */,
+				118D67F02B02DD6F00271F7F /* in-report.c in Sources */,
+				118D67F12B02DD6F00271F7F /* rawsock-pcapfile.c in Sources */,
+				118D67F22B02DD6F00271F7F /* rawsock.c in Sources */,
+				118D67F32B02DD6F00271F7F /* scripting-banner.c in Sources */,
+				118D67F42B02DD6F00271F7F /* rte-ring.c in Sources */,
+				118D67F52B02DD6F00271F7F /* smack1.c in Sources */,
+				118D67F62B02DD6F00271F7F /* massip-rangesv4.c in Sources */,
+				118D67F72B02DD6F00271F7F /* smackqueue.c in Sources */,
+				118D67F82B02DD6F00271F7F /* string_s.c in Sources */,
+				118D67F92B02DD6F00271F7F /* stack-ndpv6.c in Sources */,
+				118D67FA2B02DD6F00271F7F /* syn-cookie.c in Sources */,
+				118D67FB2B02DD6F00271F7F /* stack-arpv4.c in Sources */,
+				118D67FC2B02DD6F00271F7F /* templ-nmap-payloads.c in Sources */,
+				118D67FD2B02DD6F00271F7F /* util-errormsg.c in Sources */,
+				118D67FE2B02DD6F00271F7F /* templ-pkt.c in Sources */,
+				118D67FF2B02DD6F00271F7F /* xring.c in Sources */,
+				118D68002B02DD6F00271F7F /* proto-smb.c in Sources */,
+				118D68012B02DD6F00271F7F /* templ-payloads.c in Sources */,
+				118D68022B02DD6F00271F7F /* proto-http.c in Sources */,
+				118D68032B02DD6F00271F7F /* proto-icmp.c in Sources */,
+				118D68042B02DD6F00271F7F /* proto-ssh.c in Sources */,
+				118D68052B02DD6F00271F7F /* main-ptrace.c in Sources */,
+				118D68062B02DD6F00271F7F /* proto-memcached.c in Sources */,
+				118D68072B02DD6F00271F7F /* scripting-masscan.c in Sources */,
+				118D68082B02DD6F00271F7F /* massip.c in Sources */,
+				118D68092B02DD6F00271F7F /* proto-mc.c in Sources */,
+				118D680A2B02DD6F00271F7F /* massip-addr.c in Sources */,
+				118D680B2B02DD6F00271F7F /* main-listscan.c in Sources */,
+				118D680C2B02DD6F00271F7F /* proto-dns.c in Sources */,
+				118D680D2B02DD6F00271F7F /* proto-udp.c in Sources */,
+				118D680E2B02DD6F00271F7F /* proto-snmp.c in Sources */,
+				118D680F2B02DD6F00271F7F /* proto-netbios.c in Sources */,
+				118D68102B02DD6F00271F7F /* vulncheck.c in Sources */,
+				118D68112B02DD6F00271F7F /* proto-ssl.c in Sources */,
+				118D68122B02DD6F00271F7F /* in-binary.c in Sources */,
+				118D68132B02DD6F00271F7F /* stack-src.c in Sources */,
+				118D68142B02DD6F00271F7F /* vulncheck-ntp-monlist.c in Sources */,
+				118D68152B02DD6F00271F7F /* misc-rstfilter.c in Sources */,
+				118D68162B02DD6F00271F7F /* masscan-app.c in Sources */,
+				118D68172B02DD6F00271F7F /* out-redis.c in Sources */,
+				118D68182B02DD6F00271F7F /* pixie-file.c in Sources */,
+				118D68192B02DD6F00271F7F /* crypto-siphash24.c in Sources */,
+				118D681A2B02DD6F00271F7F /* stack-if.c in Sources */,
+				118D681B2B02DD6F00271F7F /* proto-zeroaccess.c in Sources */,
+				118D681C2B02DD6F00271F7F /* proto-banout.c in Sources */,
+				118D681D2B02DD6F00271F7F /* proto-ssl-test.c in Sources */,
+				118D681E2B02DD6F00271F7F /* util-checksum.c in Sources */,
+				118D681F2B02DD6F00271F7F /* proto-x509.c in Sources */,
+				118D68202B02DD6F00271F7F /* crypto-base64.c in Sources */,
+				118D68212B02DD6F00271F7F /* pixie-backtrace.c in Sources */,
+				118D68222B02DD6F00271F7F /* proto-sctp.c in Sources */,
+				118D68232B02DD6F00271F7F /* out-grepable.c in Sources */,
+				118D68242B02DD6F00271F7F /* proto-tcp-telnet.c in Sources */,
+				118D68252B02DD6F00271F7F /* proto-ntp.c in Sources */,
+				118D68262B02DD6F00271F7F /* scripting.c in Sources */,
+				118D68272B02DD6F00271F7F /* crypto-blackrock2.c in Sources */,
+				118D68282B02DD6F00271F7F /* out-ndjson.c in Sources */,
+				118D68292B02DD6F00271F7F /* main-readrange.c in Sources */,
+				118D682A2B02DD6F00271F7F /* out-json.c in Sources */,
+				118D682B2B02DD6F00271F7F /* out-certs.c in Sources */,
+				118D682C2B02DD6F00271F7F /* out-unicornscan.c in Sources */,
+				118D682D2B02DD6F00271F7F /* proto-vnc.c in Sources */,
+				118D682E2B02DD6F00271F7F /* in-filter.c in Sources */,
+				118D682F2B02DD6F00271F7F /* proto-ftp.c in Sources */,
+				118D68302B02DD6F00271F7F /* proto-oproto.c in Sources */,
+				118D68312B02DD6F00271F7F /* proto-smtp.c in Sources */,
+				118D68322B02DD6F00271F7F /* out-tcp-services.c in Sources */,
+				118D68332B02DD6F00271F7F /* proto-pop3.c in Sources */,
+				118D68342B02DD6F00271F7F /* stack-tcp-app.c in Sources */,
+				118D68352B02DD6F00271F7F /* proto-imap4.c in Sources */,
+				118D68362B02DD6F00271F7F /* massip-parse.c in Sources */,
+				118D68372B02DD6F00271F7F /* out-hostonly.c in Sources */,
+				118D68382B02DD6F00271F7F /* stub-lua.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		11A9218117DBCB3200DDFD32 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -802,6 +1076,7 @@
 				11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */,
 				1124DD7025B4FF3C00EEFC2C /* stack-arpv4.c in Sources */,
 				1155CF132AF6EF72001B235A /* templ-nmap-payloads.c in Sources */,
+				118D67C42B02D58F00271F7F /* util-errormsg.c in Sources */,
 				11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */,
 				11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */,
 				11DE129620ABC2650041135D /* proto-smb.c in Sources */,
@@ -867,6 +1142,53 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		118D683C2B02DD6F00271F7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				CONFIGURATION_BUILD_DIR = ../bin;
+				CONFIGURATION_TEMP_DIR = ../tmp;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = NO;
+				OBJROOT = ../tmp;
+				OTHER_LDFLAGS = "-lpcap";
+				"OTHER_TEST_FLAGS[sdk=*]" = "--selftest";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				RUN_CLANG_STATIC_ANALYZER = YES;
+				SYMROOT = ../bin;
+				TEST_AFTER_BUILD = YES;
+			};
+			name = Debug;
+		};
+		118D683D2B02DD6F00271F7F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
+				CONFIGURATION_BUILD_DIR = ../bin;
+				CONFIGURATION_TEMP_DIR = ../tmp;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = NO;
+				OBJROOT = ../tmp;
+				OTHER_LDFLAGS = "-lpcap";
+				OTHER_TEST_FLAGS = "--selftest";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = ../bin;
+				TEST_AFTER_BUILD = YES;
+			};
+			name = Release;
+		};
 		11A9218D17DBCB3200DDFD32 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -926,9 +1248,10 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = NO;
+				GCC_WARN_UNUSED_VARIABLE = NO;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
-				"OTHER_TEST_FLAGS[sdk=*]" = "--selftest";
+				"OTHER_TEST_FLAGS[sdk=macosx*]" = "--selftest";
 				PRODUCT_NAME = masscan;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SYMROOT = ../bin;
@@ -950,6 +1273,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
 				GCC_WARN_UNUSED_PARAMETER = NO;
+				GCC_WARN_UNUSED_VARIABLE = NO;
 				OBJROOT = ../tmp;
 				OTHER_LDFLAGS = "-lpcap";
 				OTHER_TEST_FLAGS = "--selftest";
@@ -962,6 +1286,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		118D683B2B02DD6F00271F7F /* Build configuration list for PBXNativeTarget "masscan copy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				118D683C2B02DD6F00271F7F /* Debug */,
+				118D683D2B02DD6F00271F7F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		11A9217F17DBCB3200DDFD32 /* Build configuration list for PBXProject "masscan" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

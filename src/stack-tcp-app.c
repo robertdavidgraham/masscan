@@ -34,6 +34,7 @@ static const char *event_to_string(enum App_Event ev) {
     case APP_RECV_PAYLOAD: return "payload";
     case APP_SEND_SENT: return "sent";
     case APP_CLOSE: return "close";
+    case APP_SENDING: return "sending";
     default: return "unknown";
     }
 }
@@ -102,6 +103,10 @@ again:
                     tcpapi_change_app_state(socket, App_ReceiveNext);
                     state = App_ReceiveNext;
                     goto again;
+                case APP_CLOSE:
+                    banner_flush(socket);
+                    tcpapi_close(socket);
+                    break;
                 default:
                     ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
                         state_to_string(state), event_to_string(event));
@@ -135,6 +140,9 @@ again:
                     /* A higher level protocol has started sending packets while processing
                      * a receive, therefore, change to the SEND state */
                     tcpapi_change_app_state(socket, App_SendNext);
+                    break;
+                case APP_SEND_SENT:
+                    /* FIXME */
                     break;
                 default:
                     ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",
@@ -192,6 +200,8 @@ again:
                      * was sent. Therefore, change the receive state */
                     tcpapi_recv(socket);
                     tcpapi_change_app_state(socket, App_ReceiveNext);
+                    break;
+                case APP_SENDING:
                     break;
                 default:
                     ERRMSG("TCP.app: unhandled event: state=%s event=%s\n",

@@ -1399,7 +1399,7 @@ _tcb_seg_send(void *in_tcpcon, void *in_tcb,
     if (length_more == 0)
         seg->is_fin = is_fin;
 
-    if (!seg->is_fin && seg->length)
+    if (!seg->is_fin && seg->length && tcb->tcpstate != STATE_ESTABLISHED_SEND)
         application_notify(tcpcon, tcb, APP_SENDING, seg->buf, seg->length, 0, 0);
 
     LOGtcb(tcb, 0, "send = %u-bytes %s @ %u\n", length, is_fin?"FIN":"",
@@ -1806,14 +1806,17 @@ tcpapi_change_app_state(struct stack_handle_t *socket, unsigned new_app_state) {
 
     tcb = socket->tcb;
 
-    printf("%u --> %u\n", tcb->app_state, new_app_state);
+    //printf("%u --> %u\n", tcb->app_state, new_app_state);
 
     tcb->app_state = new_app_state;
     return new_app_state;
 }
 
+
 int
 tcpapi_close(struct stack_handle_t *socket) {
+    if (socket == NULL || socket->tcb == NULL)
+        return SOCKERR_EBADF;
     _tcb_seg_close(socket->tcpcon,
                    socket->tcb,
                    socket->secs,
@@ -1929,20 +1932,24 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
          * will be a small number less than the `length` of this packet.
          * If it's a retransmission, the numbers will be the same
          */
-        unsigned payload_offset = tcb->seqno_them - seqno_them;
-        if (payload_offset == 0)
-            ;
-        else if (payload_length >= payload_offset) {
-            /* Discard this packet entirely. Note that any ACK or FIN is handled
-             * as a separate incoming event */
-            LOGtcb(tcb, 1, "payload out of order len=%u, off=%u\n", payload_length, payload_offset);
+        int payload_offset = seqno_them - tcb->seqno_them;
+        if (payload_offset < 0) {
+            /* This is a retrnasmission that we've already acknowledged */
+            if (payload_offset <= 0 - payload_length) {
+                /* Both begin and end are old, so simply discard it */
+                return TCB__okay;
+            } else {
+                /* Otherwise shorten the payload */
+                payload_length += payload_offset;
+                payload -= payload_offset;
+                seqno_them -= payload_offset;
+                assert(payload_length < 2000);
+            }
+        } else if (payload_offset > 0) {
+            /* This is an out-of-order fragment in the future. an important design
+             * of this light-weight stack is that we don't support this, and
+             * force the other side to retransmit such packets */
             return TCB__okay;
-        } else {
-            /* Truncate the beginning of the payload so that there's no overlap */
-            LOGtcb(tcb, 1, "truncated overlap by %u bytes\n", payload_offset);
-            payload_length -= payload_offset;
-            seqno_them += payload_offset;
-            payload += payload_offset;
         }
     }
     
@@ -2255,14 +2262,19 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         case STATE_CLOSE_WAIT:
             /* Waiting for app to call `close()` */
             switch (what) {
-            case TCP_WHAT_CLOSE:
-                _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__close_fin);
-                _tcb_change_state_to(tcb, STATE_LAST_ACK);
-                break;
-            default:
-                ERRMSGip(tcb->ip_them, tcb->port_them, "%s:%s **** UNHANDLED EVENT ****\n", 
-                        state_to_string(tcb->tcpstate), what_to_string(what));
-                break;
+                case TCP_WHAT_CLOSE:
+                    _tcb_seg_send(tcpcon, tcb, 0, 0, TCP__close_fin);
+                    _tcb_change_state_to(tcb, STATE_LAST_ACK);
+                    break;
+                case TCP_WHAT_TIMEOUT:
+                    /* Remind the app that it's waiting for it to be closed */
+                    application_notify(tcpcon, tcb, APP_CLOSE,
+                            0, payload_length, secs, usecs);
+                    break;
+                default:
+                    ERRMSGip(tcb->ip_them, tcb->port_them, "%s:%s **** UNHANDLED EVENT ****\n",
+                            state_to_string(tcb->tcpstate), what_to_string(what));
+                    break;
             }
             break;
         case STATE_LAST_ACK:

@@ -8,6 +8,7 @@
 #pragma warning(disable: 4204)
 #endif
 
+
 static unsigned long long _entropy = (unsigned long long)&_entropy;
 
 void errmsg_init(unsigned long long in_entropy) {
