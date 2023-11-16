@@ -35,13 +35,14 @@
 #include "masscan.h"
 #include "masscan-status.h"
 #include "string_s.h"
-#include "util-logger.h"
 #include "proto-banner1.h"
 #include "masscan-app.h"
 #include "main-globals.h"
 #include "pixie-file.h"
 #include "pixie-sockets.h"
 #include "util-malloc.h"
+#include "util-errormsg.h"
+#include "util-logger.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -781,8 +782,11 @@ output_report_status(struct Output *out, time_t timestamp, int status,
     }
 
 
-    if (fp == NULL)
+    if (fp == NULL) {
+        ERRMSG("no output file, use `--output-filename <filename>` to set one\n");
+        ERRMSG("for `stdout`, use `--output-filename -`\n");
         return;
+    }
 
     /* Rotate, if we've pass the time limit. Rotating the log files happens
      * inline while writing output, whenever there's output to write to the

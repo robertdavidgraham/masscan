@@ -1782,7 +1782,7 @@ int main(int argc, char *argv[])
              * read the binary files, and output them again depending upon
              * the output parameters
              */
-            read_binary_scanfile(masscan, start, stop, argv);
+            readscan_binary_scanfile(masscan, start, stop, argv);
 
         }
         break;

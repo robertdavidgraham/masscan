@@ -2117,6 +2117,12 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_DATA:
                     _tcb_seg_recv(tcpcon, tcb, payload, payload_length, seqno_them, secs, usecs, false);
                     break;
+                case TCP_WHAT_SYNACK:
+                    /* This happens when a delayed SYN-ACK arrives from the target.
+                     * I see these fairly often from host 178.159.37.125.
+                     * We are going to make them silent for now, but eventually, keep
+                     * statistics about this sort of thing. */
+                    break;
                 default:
                     ERRMSGip(tcb->ip_them, tcb->port_them, "%s:%s **** UNHANDLED EVENT ****\n", 
                         state_to_string(tcb->tcpstate), what_to_string(what));
@@ -2211,6 +2217,13 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
                 case TCP_WHAT_FIN:
                     /* I've already acknowledged their FIN, but hey, do it again */
                     _tcb_send_ack(tcpcon, tcb);
+                    break;
+                case TCP_WHAT_CLOSE:
+                    /* The application this machine has issued a second `tcpapi_close()` request.
+                     * This represents a bug in the application process. One place where I see this
+                     * when scanning 193.109.9.122:992.
+                     * FIXME TODO */
+                    ; /* make this silent for now */
                     break;
                 default:
                     ERRMSGip(tcb->ip_them, tcb->port_them, "%s:%s **** UNHANDLED EVENT ****\n", 
