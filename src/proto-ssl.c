@@ -392,6 +392,7 @@ parse_server_cert(
 
     UNUSEDPARM(banner1);
     UNUSEDPARM(banner1_private);
+    UNUSEDPARM(socket);
 
     for (i=0; i<length; i++)
     switch (state) {

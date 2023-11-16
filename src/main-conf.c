@@ -2332,7 +2332,10 @@ fail:
 
 
 static int SET_debug_tcp(struct Masscan *masscan, const char *name, const char *value) {
-    extern int is_tcp_debug;
+    extern int is_tcp_debug; /* global */
+    UNUSEDPARM(name);
+    UNUSEDPARM(masscan);
+
     if (value == 0 || value[0] == '\0')
         is_tcp_debug = 1;
     else

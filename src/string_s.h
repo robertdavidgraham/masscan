@@ -50,8 +50,6 @@
 #undef itoa
 #define itoa        ITOA_FUNCTION_IS_BAD
 
-#undef strerror
-#define strerror    STRERROR_FUNCTION_IS_BAD
 
 const char *strerror_x(int x);
 

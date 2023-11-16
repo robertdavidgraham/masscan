@@ -1935,7 +1935,7 @@ stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon,
         int payload_offset = seqno_them - tcb->seqno_them;
         if (payload_offset < 0) {
             /* This is a retrnasmission that we've already acknowledged */
-            if (payload_offset <= 0 - payload_length) {
+            if (payload_offset <= 0 - (int)payload_length) {
                 /* Both begin and end are old, so simply discard it */
                 return TCB__okay;
             } else {

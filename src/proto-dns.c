@@ -446,7 +446,4 @@ handle_dns(struct Output *out, time_t timestamp,
                 px + offset, txtlen);
         return 1;
     }
-
-
-    return 0;
 }

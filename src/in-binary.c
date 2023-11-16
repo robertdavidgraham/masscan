@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 static const size_t BUF_MAX = 1024*1024;
 
 struct MasscanRecord {
