@@ -444,6 +444,7 @@ handle_dns(struct Output *out, time_t timestamp,
                 PROTO_DNS_VERSIONBIND,
                 parsed->ip_ttl,
                 px + offset, txtlen);
+        return 1;
     }
 
 

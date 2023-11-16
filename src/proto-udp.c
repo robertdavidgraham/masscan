@@ -1,6 +1,7 @@
 #include "proto-udp.h"
 #include "proto-coap.h"
 #include "proto-dns.h"
+#include "proto-isakmp.h"
 #include "proto-netbios.h"
 #include "proto-snmp.h"
 #include "proto-memcached.h"
@@ -59,6 +60,18 @@ handle_udp(struct Output *out, time_t timestamp,
     unsigned port_them = parsed->port_src;
     unsigned status = 0;
 
+    /* Report "open" status regardless  */
+    output_report_status(
+                             out,
+                             timestamp,
+                             PortStatus_Open,
+                             ip_them,
+                             17, /* ip proto = udp */
+                             port_them,
+                             0,
+                             parsed->ip_ttl,
+                             parsed->mac_src);
+
 
     switch (port_them) {
         case 53: /* DNS - Domain Name System (amplifier) */
@@ -73,8 +86,13 @@ handle_udp(struct Output *out, time_t timestamp,
         case 161: /* SNMP - Simple Network Managment Protocol (amplifier) */
             status = handle_snmp(out, timestamp, px, length, parsed, entropy);
             break;
+        case 500: /* ISAKMP - IPsec key negotiation */
+            status = isakmp_parse(out, timestamp,
+                                px + parsed->app_offset, parsed->app_length, parsed, entropy);
+            break;
         case 5683:
-            status = coap_handle_response(out, timestamp, px + parsed->app_offset, parsed->app_length, parsed, entropy);
+            status = coap_handle_response(out, timestamp, 
+                                px + parsed->app_offset, parsed->app_length, parsed, entropy);
             break;
         case 11211: /* memcached (amplifier) */
             px += parsed->app_offset;
@@ -94,19 +112,12 @@ handle_udp(struct Output *out, time_t timestamp,
             break;
     }
 
-    if (status == 0) {
-        if (px != 0 && parsed->app_length == 0) {
-            output_report_status(
-                            out,
-                            timestamp,
-                            PortStatus_Open,
-                            ip_them,
-                            17, /* ip proto = udp */
-                            port_them,
-                            0,
-                            parsed->ip_ttl,
-                            parsed->mac_src);
-        } else {
+    
+    /* Report banner if some parser didn't already do so.
+     * Also report raw dump if `--rawudp` specified on the
+     * command-line, even if a protocol above already created a more detailed
+     * banner. */
+    if (status == 0 || out->is_banner_rawudp) {
             output_report_banner(
                     out,
                     timestamp,
@@ -117,6 +128,5 @@ handle_udp(struct Output *out, time_t timestamp,
                     parsed->ip_ttl,
                     px + parsed->app_offset,
                     parsed->app_length);
-        }
     }
 }

@@ -314,7 +314,7 @@ struct PayloadUDP_Default hard_coded_udp_payloads[] = {
     /* ISAKMP */
     {500, 500, 352, 0, isakmp_set_cookie,
      /* ISAKMP */
-     "\x00\x11\x22\x33\x44\x55\x66\x77"/* init_cookie */
+     "\x00\x11\x22\x33\x44\x55\x66\x77"/* init_cookie, overwritten on send() */
      "\x00\x00\x00\x00\x00\x00\x00\x00" /* resp_cookie*/
      "\x01" /* next_payload: SA */
      "\x10" /* version */

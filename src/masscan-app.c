@@ -46,6 +46,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_MC:              return "minecraft";
     case PROTO_VNC_RFB:         return "vnc";
     case PROTO_VNC_INFO:        return "vnc-info";
+    case PROTO_ISAKMP:          return "isakmp";
         
     case PROTO_ERROR:           return "error";
             
@@ -98,6 +99,7 @@ masscan_string_to_app(const char *str)
         {"minecraft",   PROTO_MC},
         {"vnc",         PROTO_VNC_RFB},
         {"vnc-info",    PROTO_VNC_INFO},
+        {"isakmp",      PROTO_ISAKMP},
         {0,0}
     };
     size_t i;
