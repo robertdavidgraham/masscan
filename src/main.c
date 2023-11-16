@@ -1843,6 +1843,7 @@ int main(int argc, char *argv[])
             x += zeroaccess_selftest();
             x += nmapserviceprobes_selftest();
             x += rstfilter_selftest();
+            x += masscan_app_selftest();
 
 
             if (x != 0) {
