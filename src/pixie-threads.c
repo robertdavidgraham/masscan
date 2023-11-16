@@ -5,7 +5,8 @@
 #include <Windows.h>
 #include <process.h>
 #endif
-#if defined(__GNUC__)
+
+#if defined(__GNUC__) && !defined(WIN32)
 #include <unistd.h>
 #include <pthread.h>
 #include <sched.h>

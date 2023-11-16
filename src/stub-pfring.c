@@ -27,12 +27,11 @@ PFRING_is_installed(void)
 {
 #if defined(__linux__)
     FILE *fp;
-    int err;
     char line[256];
     int found = 0;
 
-    err = fopen_s(&fp, "/proc/modules", "rb");
-    if (err)
+    fp = fopen("/proc/modules", "rb");
+    if (fp == NULL)
         return 0;
 
     while (fgets(line, sizeof(line), fp)) {
@@ -67,12 +66,12 @@ PFRING_init(void)
     LOG(6, "pfring: looking for 'libpfring.so'\n");
     h = dlopen("libpfring.so", RTLD_LAZY);
     if (h == NULL) {
-        LOG(2, "pfring: error: dlopen('libpfring.so'): %s\n", strerror_x(errno));
+        LOG(2, "pfring: error: dlopen('libpfring.so'): %s\n", strerror(errno));
         return 0;
     } else
         LOG(2, "pfring: found 'libpfring.so'!\n");
 
-#define LOADSYM(name) if ((PFRING.name = dlsym(h, "pfring_"#name)) == 0) {LOG(2, "pfring_%s: not found in 'libpfring.so': %s\n", #name, strerror_x(errno));err=1;}
+#define LOADSYM(name) if ((PFRING.name = dlsym(h, "pfring_"#name)) == 0) {LOG(2, "pfring_%s: not found in 'libpfring.so': %s\n", #name, strerror(errno));err=1;}
     LOADSYM(open);
     LOADSYM(close);
     LOADSYM(enable_ring);

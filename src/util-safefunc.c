@@ -65,7 +65,8 @@ safe_strcpy(char *dst, size_t sizeof_dst, const char *src)
 
 
 
-errno_t safe_localtime(struct tm* _tm, const time_t *time)
+int
+safe_localtime(struct tm* _tm, const time_t *time)
 {
     struct tm *x;
 
@@ -78,7 +79,10 @@ errno_t safe_localtime(struct tm* _tm, const time_t *time)
 
     return 0;
 }
-errno_t safe_gmtime(struct tm* _tm, const time_t *time)
+
+
+int
+safe_gmtime(struct tm* _tm, const time_t *time)
 {
     struct tm *x;
 

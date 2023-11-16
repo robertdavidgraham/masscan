@@ -110,7 +110,6 @@ rawsock_init(void)
 /* variables used to print DHCP time info */
     //struct tm newtime;
     //char buffer[32];
-    //errno_t error;
 
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
     pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));

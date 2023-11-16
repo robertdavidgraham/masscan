@@ -59,8 +59,8 @@
  * `strlcpy()` in glibc.
  */
 void safe_strcpy(char *dst, size_t sizeof_dst, const char *src);
-errno_t safe_localtime(struct tm* _tm, const time_t *time);
-errno_t safe_gmtime(struct tm* _tm, const time_t *time);
+int safe_localtime(struct tm* _tm, const time_t *time);
+int safe_gmtime(struct tm* _tm, const time_t *time);
 
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900)
@@ -79,6 +79,8 @@ errno_t safe_gmtime(struct tm* _tm, const time_t *time);
 /*Visual Studio 2010*/
 # include <stdio.h>
 # include <string.h>
+#pragma warning(disable: 4996)
+#define snprintf _snprintf
 # define strcasecmp     _stricmp
 # define memcasecmp     _memicmp
 # ifndef PRIu64
@@ -94,12 +96,10 @@ errno_t safe_gmtime(struct tm* _tm, const time_t *time);
 # define strcasecmp     _stricmp
 # define memcasecmp     _memicmp
 # define vsnprintf     _vsnprintf
- typedef int errno_t;
 
 #elif defined(__GNUC__) && (__GNUC__ >= 4)
 #include <inttypes.h>
- int memcasecmp(const void *lhs, const void *rhs, size_t length);
- typedef int errno_t;
+ int memcasecmp(const void *lhs, const void *rhs, size_t length);;
 
 #else
 # warning unknown compiler

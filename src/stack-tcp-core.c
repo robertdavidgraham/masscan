@@ -240,7 +240,7 @@ state_to_string(int state)
 static void
 vLOGtcb(const struct TCP_Control_Block *tcb, int dir, const char *fmt, va_list marker)
 {
-    char sz[80];
+    char sz[256];
     ipaddress_formatted_t fmt1 = ipaddress_fmt(tcb->ip_them);
 
     snprintf(sz, sizeof(sz), "[%s:%u %4u,%4u] %s:%5u [%4u,%4u] {%s} ",
@@ -872,8 +872,8 @@ tcpcon_destroy_tcb(
      * banners.
      */
     {
-        struct stack_handle_t socket[1] = {tcpcon, tcb, 0, 0};
-        banner_flush(socket);
+        struct stack_handle_t socket = {tcpcon, tcb, 0, 0};
+        banner_flush(&socket);
     }
 
     LOGtcb(tcb, 2, "--DESTROYED--\n");
@@ -1168,11 +1168,6 @@ tcpcon_send_packet(
      * from a receive-thread. Therefore, instead of transmiting ourselves,
      * we hae to queue it up for later transmission. */
     stack_transmit_packetbuffer(tcpcon->stack, response);
-
-    if ((tcp_flags & 0x01) == 0x10) {
-        LOGtcb(tcb, 0, "xmit FIN myseqno=%u\n", tcb->seqno_me-tcb->seqno_me_first + payload_length);
-    }
-
 }
 
 /***************************************************************************
@@ -1326,10 +1321,10 @@ application_notify(struct TCP_ConnectionTable *tcpcon,
 {
     struct Banner1 *banner1 = tcpcon->banner1;
     const struct ProtocolParserStream *stream = tcb->stream;
-    struct stack_handle_t socket[1] = {
+    struct stack_handle_t socket = {
         tcpcon, tcb, secs, usecs};
 
-    return application_event(socket,
+    return application_event(&socket,
                              tcb->app_state, event,
                              stream, banner1,
                              payload, payload_length

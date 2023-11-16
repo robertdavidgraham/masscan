@@ -1,3 +1,10 @@
+# If Windows, then assume the compiler is `gcc` for the
+# MinGW environment. I can't figure out how to tell if it's
+# actually MingGW. FIXME TODO
+ifeq ($(OS),Windows_NT)
+    CC = gcc
+endif
+
 # Try to figure out the default compiler. I dont know the best
 # way to do this with `gmake`. If you have better ideas, please
 # submit a pull request on github.

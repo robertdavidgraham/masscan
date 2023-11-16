@@ -427,11 +427,10 @@ static void
 ranges_from_file(struct RangeList *ranges, const char *filename)
 {
     FILE *fp;
-    errno_t err;
     unsigned line_number = 0;
 
-    err = fopen_s(&fp, filename, "rt");
-    if (err) {
+    fp = fopen(filename, "rt");
+    if (fp) {
         perror(filename);
         exit(1); /* HARD EXIT: because if it's an exclusion file, we don't
                   * want to continue. We don't want ANY chance of
