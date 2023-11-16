@@ -13,34 +13,35 @@ enum ApplicationProtocol {
     PROTO_HTTP,
     PROTO_FTP,
     PROTO_DNS_VERSIONBIND,
-    PROTO_SNMP,             /* simple network management protocol, udp/161 */
-    PROTO_NBTSTAT,          /* netbios, udp/137 */
+    PROTO_SNMP,             /* 7 - simple network management protocol, udp/161 */
+    PROTO_NBTSTAT,          /* 8 - netbios, udp/137 */
     PROTO_SSL3,
-    PROTO_SMB,              /* SMB tcp/139 and tcp/445 */
-    PROTO_SMTP,
-    PROTO_POP3,
-    PROTO_IMAP4,
+    PROTO_SMB,              /* 10 - SMB tcp/139 and tcp/445 */
+    PROTO_SMTP,             /* 11 - transfering email */
+    PROTO_POP3,             /* 12 - fetching email */
+    PROTO_IMAP4,            /* 13 - fetching email */
     PROTO_UDP_ZEROACCESS,
-    PROTO_X509_CERT,
+    PROTO_X509_CERT,        /* 15 - just the cert */
     PROTO_X509_CACERT,
     PROTO_HTML_TITLE,
     PROTO_HTML_FULL,
-    PROTO_NTP,              /* network time protocol, udp/123 */
+    PROTO_NTP,              /* 19 - network time protocol, udp/123 */
     PROTO_VULN,
     PROTO_HEARTBLEED,
     PROTO_TICKETBLEED,
-    PROTO_VNC_RFB,
-    PROTO_VNC_INFO,
+    PROTO_VNC_OLD,
     PROTO_SAFE,
-    PROTO_MEMCACHED,
+    PROTO_MEMCACHED,        /* 25 - memcached */
     PROTO_SCRIPTING,
     PROTO_VERSIONING,
-    PROTO_COAP,         /* constrained app proto, udp/5683, RFC7252 */
-    PROTO_TELNET,
-    PROTO_RDP,          /* Microsoft Remote Desktop Protocol tcp/3389 */
-    PROTO_HTTP_SERVER,  /* HTTP "Server:" field */
-    PROTO_MC,           /* Minecraft server */
-
+    PROTO_COAP,             /* 28 - constrained app proto, udp/5683, RFC7252 */
+    PROTO_TELNET,           /* 29 - ye old remote terminal */
+    PROTO_RDP,              /* 30 - Microsoft Remote Desktop Protocol tcp/3389 */
+    PROTO_HTTP_SERVER,      /* 31 - HTTP "Server:" field */
+    PROTO_MC,               /* 32 - Minecraft server */
+    PROTO_VNC_RFB,
+    PROTO_VNC_INFO,
+    
     PROTO_ERROR,
 
     PROTO_end_of_list /* must be last one */
@@ -51,5 +52,8 @@ masscan_app_to_string(enum ApplicationProtocol proto);
 
 enum ApplicationProtocol
 masscan_string_to_app(const char *str);
+
+int
+masscan_app_selftest(void);
 
 #endif
