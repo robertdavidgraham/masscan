@@ -392,7 +392,8 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     out->redis.port = masscan->redis.port;
     out->redis.ip = masscan->redis.ip;
     out->redis.password = masscan ->redis.password;
-    out->is_banner = masscan->is_banners;
+    out->is_banner = masscan->is_banners;               /* --banners */
+    out->is_banner_rawudp = masscan->is_banners_rawudp; /* --rawudp */
     out->is_gmt = masscan->is_gmt;
     out->is_interactive = masscan->output.is_interactive;
     out->is_show_open = masscan->output.is_show_open;
@@ -779,10 +780,7 @@ output_report_status(struct Output *out, time_t timestamp, int status,
         fprintf(stdout, "\n");
         fflush(stdout);
 
-    }
-
-
-    if (fp == NULL) {
+    } else if (fp == NULL) {
         ERRMSG("no output file, use `--output-filename <filename>` to set one\n");
         ERRMSG("for `stdout`, use `--output-filename -`\n");
         return;

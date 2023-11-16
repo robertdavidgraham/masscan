@@ -187,6 +187,7 @@ struct Masscan
     unsigned is_pfring:1;       /* --pfring */
     unsigned is_sendq:1;        /* --sendq */
     unsigned is_banners:1;      /* --banners */
+    unsigned is_banners_rawudp:1; /* --rawudp */
     unsigned is_offline:1;      /* --offline */
     unsigned is_noreset:1;      /* --noreset, don't transmit RST */
     unsigned is_gmt:1;          /* --gmt, all times in GMT */

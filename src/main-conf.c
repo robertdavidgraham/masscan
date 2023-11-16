@@ -1112,6 +1112,20 @@ static int SET_banners(struct Masscan *masscan, const char *name, const char *va
     return CONF_OK;
 }
 
+static int SET_banners_rawudp(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->is_banners_rawudp || masscan->echo_all)
+            fprintf(masscan->echo, "rawudp = %s\n", masscan->is_banners_rawudp?"true":"false");
+       return 0;
+    }
+    masscan->is_banners_rawudp = parseBoolean(value);
+    if (masscan->is_banners_rawudp)
+        masscan->is_banners = true;
+    return CONF_OK;
+}
+
 static int SET_capture(struct Masscan *masscan, const char *name, const char *value)
 {
     if (masscan->echo) {
@@ -2343,7 +2357,8 @@ struct ConfigParameter config_parameters[] = {
     {"randomize-hosts", SET_randomize_hosts,    F_BOOL, {0}},
     {"rate",            SET_rate,               0,      {"max-rate",0}},
     {"shard",           SET_shard,              0,      {"shards",0}},
-    {"banners",         SET_banners,            F_BOOL, {"banner",0}},
+    {"banners",         SET_banners,            F_BOOL, {"banner",0}}, /* --banners */
+    {"rawudp",          SET_banners_rawudp,     F_BOOL, {"rawudp",0}}, /* --rawudp */
     {"nobanners",       SET_nobanners,          F_BOOL, {"nobanner",0}},
     {"retries",         SET_retries,            0,      {"retry", "max-retries", "max-retry", 0}},
     {"noreset",         SET_noreset,            F_BOOL, {0}},
@@ -3236,7 +3251,8 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                 masscan->op = Operation_ReadScan;
                 
                 /* Default to reading banners */
-                masscan->is_banners = 1;
+                masscan->is_banners = true;
+                masscan->is_banners_rawudp = true;
 
                 /* This option may be followed by many filenames, therefore,
                  * skip forward in the argument list until the next
