@@ -10,7 +10,7 @@
     I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-logger.h"
 
 /*****************************************************************************
@@ -38,7 +38,7 @@ rawsock_get_adapter_mac(const char *ifname, unsigned char *mac)
         goto end;
     }
 
-    strcpy_s(ifr.ifr_name, IFNAMSIZ, ifname);
+    safe_strcpy(ifr.ifr_name, IFNAMSIZ, ifname);
     x = ioctl(fd, SIOCGIFHWADDR, (char *)&ifr);
     if (x < 0) {
         perror("ioctl");

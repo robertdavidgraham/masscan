@@ -14,7 +14,7 @@
 #include "masscan.h"
 #include "massip-addr.h"
 #include "masscan-version.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-logger.h"
 #include "proto-banner1.h"
 #include "templ-payloads.h"
@@ -296,7 +296,7 @@ masscan_echo_nic(struct Masscan *masscan, FILE *fp, unsigned i)
     if (masscan->nic_count <= 1)
         idx_str[0] = '\0';
     else
-        sprintf_s(idx_str, sizeof(idx_str), "[%u]", i);
+        snprintf(idx_str, sizeof(idx_str), "[%u]", i);
 
     if (masscan->nic[i].ifname[0])
         fprintf(fp, "adapter%s = %s\n", idx_str, masscan->nic[i].ifname);
@@ -391,17 +391,16 @@ masscan_save_state(struct Masscan *masscan)
 {
     char filename[512];
     FILE *fp;
-    int err;
 
-
-    strcpy_s(filename, sizeof(filename), "paused.conf");
+    safe_strcpy(filename, sizeof(filename), "paused.conf");
     fprintf(stderr, "                                   "
                     "                                   \r");
     fprintf(stderr, "saving resume file to: %s\n", filename);
 
-    err = fopen_s(&fp, filename, "wt");
-    if (err) {
-        perror(filename);
+    fp = fopen(filename, "wt");
+    if (fp == NULL) {
+        fprintf(stderr, "[-] FAIL: saving resume file\n");
+        fprintf(stderr, "[-] %s: %s\n", filename, strerror(errno));
         return;
     }
 
@@ -1205,7 +1204,6 @@ static int SET_hello_file(struct Masscan *masscan, const char *name, const char 
 {
     unsigned index;
     FILE *fp;
-    int x;
     char buf[16384];
     char buf2[16384];
     size_t bytes_read;
@@ -1225,10 +1223,10 @@ static int SET_hello_file(struct Masscan *masscan, const char *name, const char 
     }
 
     /* When connecting via TCP, send this file */
-    x = fopen_s(&fp, value, "rb");
-    if (x != 0) {
-        LOG(0, "[FAILED] could not read hello file\n");
-        perror(value);
+    fp = fopen(value, "rb");
+    if (fp == NULL) {
+        LOG(0, "[-] [FAILED] --hello-file\n");
+        LOG(0, "[-] %s: %s\n", value, strerror(errno));
         return CONF_ERR;
     }
     
@@ -1244,7 +1242,7 @@ static int SET_hello_file(struct Masscan *masscan, const char *name, const char 
     bytes_encoded = base64_encode(buf2, sizeof(buf2)-1, buf, bytes_read);
     buf2[bytes_encoded] = '\0';
     
-    sprintf_s(foo, sizeof(foo), "hello-string[%u]", (unsigned)index);
+    snprintf(foo, sizeof(foo), "hello-string[%u]", (unsigned)index);
     
     masscan_set_parameter(masscan, foo, buf2);
 
@@ -1636,7 +1634,7 @@ static int SET_output_filename(struct Masscan *masscan, const char *name, const 
     }
     if (masscan->output.format == 0)
         masscan->output.format = Output_XML; /*TODO: Why is the default XML?*/
-    strcpy_s(masscan->output.filename,
+    safe_strcpy(masscan->output.filename,
              sizeof(masscan->output.filename),
              value);
     return CONF_OK;
@@ -1806,7 +1804,7 @@ static int SET_pcap_filename(struct Masscan *masscan, const char *name, const ch
         return 0;
     }
     if (value)
-        strcpy_s(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
+        safe_strcpy(masscan->pcap_filename, sizeof(masscan->pcap_filename), value);
     return CONF_OK;
 }
 
@@ -1960,7 +1958,7 @@ static int SET_rotate_directory(struct Masscan *masscan, const char *name, const
         }
         return 0;
     }
-    strcpy_s(   masscan->output.rotate.directory,
+    safe_strcpy(   masscan->output.rotate.directory,
              sizeof(masscan->output.rotate.directory),
              value);
     /* strip trailing slashes */
@@ -2087,7 +2085,7 @@ static int SET_output_stylesheet(struct Masscan *masscan, const char *name, cons
     if (masscan->output.format == 0)
         masscan->output.format = Output_XML;
     
-    strcpy_s(masscan->output.stylesheet, sizeof(masscan->output.stylesheet), value);
+    safe_strcpy(masscan->output.stylesheet, sizeof(masscan->output.stylesheet), value);
     return CONF_OK;
 }
 
@@ -2462,7 +2460,7 @@ masscan_set_parameter(struct Masscan *masscan,
         }
         if (masscan->nic_count < index + 1)
             masscan->nic_count = index + 1;
-        sprintf_s(  masscan->nic[index].ifname,
+        snprintf(  masscan->nic[index].ifname,
                     sizeof(masscan->nic[index].ifname),
                     "%s",
                     value);
@@ -2751,7 +2749,7 @@ masscan_set_parameter(struct Masscan *masscan,
         /* The timeout for banners TCP connections */
         masscan->tcp_connection_timeout = (unsigned)parseInt(value);
     } else if (EQUALS("datadir", name)) {
-        strcpy_s(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
+        safe_strcpy(masscan->nmap.datadir, sizeof(masscan->nmap.datadir), value);
     } else if (EQUALS("data-length", name)) {
         unsigned x = (unsigned)strtoul(value, 0, 0);
         if (x >= 1514 - 14 - 40) {
@@ -2901,7 +2899,7 @@ masscan_set_parameter(struct Masscan *masscan,
 
         masscan->redis.port = port;
         masscan->output.format = Output_Redis;
-        strcpy_s(masscan->output.filename, 
+        safe_strcpy(masscan->output.filename, 
                  sizeof(masscan->output.filename), 
                  "<redis>");
     } else if(EQUALS("redis-pwd", name)) {
@@ -3156,17 +3154,16 @@ masscan_load_database_files(struct Masscan *masscan)
     }
 
     /*
-     * "nmap-payloads"
+     * `--nmap-payloads`
      */
     filename = masscan->payloads.nmap_payloads_filename;
     if (filename) {
         FILE *fp;
-        int err;
         
-        
-        err = fopen_s(&fp, filename, "rt");
-        if (err || fp == NULL) {
-            perror(filename);
+        fp = fopen(filename, "rt");
+        if (fp == NULL) {
+            fprintf(stderr, "[-] FAIL: --nmap-payloads\n");
+            fprintf(stderr, "[-] %s:%s\n", filename, strerror(errno));
         } else {
             if (masscan->payloads.udp == NULL)
                 masscan->payloads.udp = payloads_udp_create();
@@ -3869,14 +3866,16 @@ void
 masscan_read_config_file(struct Masscan *masscan, const char *filename)
 {
     FILE *fp;
-    errno_t err;
     char line[65536];
 
-    err = fopen_s(&fp, filename, "rt");
-    if (err) {
+    fp = fopen(filename, "rt");
+    if (fp == NULL) {
         char dir[512];
         char *x;
-        perror(filename);
+        
+        fprintf(stderr, "[-] FAIL: reading configuration file\n");
+        fprintf(stderr, "[-] %s: %s\n", filename, strerror(errno));
+
         x = getcwd(dir, sizeof(dir));
         if (x)
             fprintf(stderr, "[-] cwd = %s\n", dir);

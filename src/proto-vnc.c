@@ -3,7 +3,7 @@
 #include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "smack.h"
 #include <ctype.h>
 
@@ -82,7 +82,7 @@ vnc_append_sectype(struct BannerOutput *banout, unsigned sectype)
             banout_append(banout, PROTO_VNC_INFO, "  Apple35", AUTO_LEN);
             break;
         default:
-            sprintf_s(foo, sizeof(foo), "  %u", sectype);
+            snprintf(foo, sizeof(foo), "  %u", sectype);
             banout_append(banout, PROTO_VNC_INFO, foo, AUTO_LEN);
             break;
     }
@@ -266,7 +266,7 @@ vnc_parse(  const struct Banner1 *banner1,
             case RFB_SERVERINIT+1:
                 pstate->sub.vnc.width <<= 8;
                 pstate->sub.vnc.width |= px[i];
-                sprintf_s(foo, sizeof(foo), " width=%u", pstate->sub.vnc.width);
+                snprintf(foo, sizeof(foo), " width=%u", pstate->sub.vnc.width);
                 banout_append(banout, PROTO_VNC_RFB, foo, AUTO_LEN);
                 state++;
                 break;
@@ -277,7 +277,7 @@ vnc_parse(  const struct Banner1 *banner1,
             case RFB_SERVERINIT+3:
                 pstate->sub.vnc.height <<= 8;
                 pstate->sub.vnc.height |= px[i];
-                sprintf_s(foo, sizeof(foo), " height=%u", pstate->sub.vnc.height);
+                snprintf(foo, sizeof(foo), " height=%u", pstate->sub.vnc.height);
                 banout_append(banout, PROTO_VNC_RFB, foo, AUTO_LEN);
                 state++;
                 break;

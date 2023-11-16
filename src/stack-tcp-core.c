@@ -75,7 +75,7 @@
 #include "proto-smb.h"
 #include "proto-versioning.h"
 #include "output.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "main-globals.h"
 #include "crypto-base64.h"
 #include "util-malloc.h"
@@ -232,7 +232,7 @@ state_to_string(int state)
         case STATE_ESTABLISHED_RECV:return "ESTABLISHED_RECV";
 
         default:
-            sprintf_s(buf, sizeof(buf), "%d", state);
+            snprintf(buf, sizeof(buf), "%d", state);
             return buf;
     }
 }
@@ -404,7 +404,7 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
 
     if (name_equals(name, "http-payload")) {
         char lenstr[64];
-        sprintf_s(lenstr, sizeof(lenstr), "%u", (unsigned)value_length);
+        snprintf(lenstr, sizeof(lenstr), "%u", (unsigned)value_length);
 
         banner_http.hello_length = http_change_requestline(
                                 (unsigned char**)&banner_http.hello,
@@ -1241,7 +1241,7 @@ what_to_string(enum TCP_What state)
         case TCP_WHAT_DATA: return "DATA";
         case TCP_WHAT_CLOSE: return "CLOSE";
         default:
-            sprintf_s(buf, sizeof(buf), "%d", state);
+            snprintf(buf, sizeof(buf), "%d", state);
             return buf;
     }
 }

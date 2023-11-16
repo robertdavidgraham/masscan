@@ -687,7 +687,7 @@ receive_thread(void *v)
 
         if (masscan->tcp_connection_timeout) {
             char foo[64];
-            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
+            snprintf(foo, sizeof(foo), "%u", masscan->tcp_connection_timeout);
             tcpcon_set_parameter(   tcpcon,
                                  "timeout",
                                  strlen(foo),
@@ -695,7 +695,7 @@ receive_thread(void *v)
         }
         if (masscan->tcp_hello_timeout) {
             char foo[64];
-            sprintf_s(foo, sizeof(foo), "%u", masscan->tcp_hello_timeout);
+            snprintf(foo, sizeof(foo), "%u", masscan->tcp_hello_timeout);
             tcpcon_set_parameter(   tcpcon,
                                  "hello-timeout",
                                  strlen(foo),
@@ -726,7 +726,7 @@ receive_thread(void *v)
 
         for (pay = masscan->payloads.tcp; pay; pay = pay->next) {
             char name[64];
-            sprintf_s(name, sizeof(name), "hello-string[%u]", pay->port);
+            snprintf(name, sizeof(name), "hello-string[%u]", pay->port);
             tcpcon_set_parameter(   tcpcon, 
                                     name, 
                                     strlen(pay->payload_base64), 
@@ -1347,7 +1347,7 @@ main_scan(struct Masscan *masscan)
         struct tm x;
 
         now = time(0);
-        gmtime_s(&x, &now);
+        safe_gmtime(&x, &now);
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S GMT", &x);
         LOG(0, "Starting masscan " MASSCAN_VERSION " (http://bit.ly/14GZzcT) at %s\n",
             buffer);
@@ -1604,7 +1604,7 @@ int main(int argc, char *argv[])
     masscan->redis.password = NULL;
     masscan->payloads.udp = payloads_udp_create();
     masscan->payloads.oproto = payloads_oproto_create();
-    strcpy_s(   masscan->output.rotate.directory,
+    safe_strcpy(   masscan->output.rotate.directory,
                 sizeof(masscan->output.rotate.directory),
                 ".");
     masscan->is_capture_cert = 1;

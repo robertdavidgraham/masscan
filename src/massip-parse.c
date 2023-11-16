@@ -14,7 +14,7 @@
 #include "util-logger.h"
 #include "util-bool.h"
 #include "util-malloc.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "unusedparm.h"
 
 #include <string.h>
@@ -844,10 +844,10 @@ massip_parse_file(struct MassIP *massip, const char *filename)
     if (strcmp(filename, "-") == 0) {
         fp = stdin;
     } else {
-        int err;
-        err = fopen_s(&fp, filename, "rb");
-        if (err || fp == NULL) {
-            perror(filename);
+        fp = fopen(filename, "rb");
+        if (fp == NULL) {
+            fprintf(stderr, "[-] FAIL: parsing IP addresses\n");
+            fprintf(stderr, "[-] %s: %s\n", filename, strerror(errno));
             exit(1);
         }
     }

@@ -5,7 +5,7 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-malloc.h"
 #include "util-logger.h"
 
@@ -380,7 +380,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
             ipv4 = ntohl(rtInfo->gateWay.s_addr);
             if (ipv4 == 0)
                 continue;
-            strcpy_s(ifname, sizeof_ifname, rtInfo->ifName);
+            safe_strcpy(ifname, sizeof_ifname, rtInfo->ifName);
         }
 
     }
@@ -473,7 +473,7 @@ again:
          * we'll use that one
          */
         if (ipv4) {
-            sprintf_s(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);
+            snprintf(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);
         }
 
     }

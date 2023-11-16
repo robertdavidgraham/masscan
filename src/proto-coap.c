@@ -40,7 +40,7 @@
 #include "syn-cookie.h"
 #include "massip-port.h"
 #include "util-malloc.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-bool.h"
 #include <ctype.h>
 #include <string.h>
@@ -352,7 +352,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
     /* Response code */
     {
         char buf[64];
-        sprintf_s(buf, sizeof(buf), "rsp=%u.%u(%s)", code>>5, code&0x1F, response_code(code));
+        snprintf(buf, sizeof(buf), "rsp=%u.%u(%s)", code>>5, code&0x1F, response_code(code));
         banout_append(banout, PROTO_COAP, buf, AUTO_LEN);
         //code >>= 5;
     }
@@ -361,7 +361,7 @@ coap_parse(const unsigned char *px, size_t length, struct BannerOutput *banout,
     /* If there was a token, the print it. */
     if (token) {
         char buf[64];
-        sprintf_s(buf, sizeof(buf), " token=0x%llu", token);
+        snprintf(buf, sizeof(buf), " token=0x%llu", token);
         banout_append(banout, PROTO_COAP, buf, AUTO_LEN);
     }
     

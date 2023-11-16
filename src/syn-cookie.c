@@ -1,6 +1,6 @@
 #include "syn-cookie.h"
 #include "pixie-timer.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "crypto-siphash24.h"
 #include <assert.h>
 #include <time.h>
@@ -20,7 +20,6 @@ get_entropy(void)
 {
     uint64_t entropy[2] = {0,0};
     unsigned i;
-    int err;
 
     /*
      * Gather some random bits
@@ -32,24 +31,25 @@ get_entropy(void)
         entropy[0] ^= __rdtsc();
 #endif
         time(0);
-        err = fopen_s(&fp, "/", "r");
+        fp = fopen("/", "r");
         entropy[1] <<= 1;
         entropy[1] |= entropy[0]>>63;
         entropy[0] <<= 1;
-        if (err == 0 && fp) {
+        if (fp) {
             fclose(fp);
         }
     }
 
     entropy[0] ^= time(0);
 
-#if defined(__linux__)
+    /* Always try to open this file, even on platforms like Windows
+     * where it's not going to exist. */
     {
         FILE *fp;
 
-        err = fopen_s(&fp, "/dev/urandom", "r");
-        if (err == 0 && fp) {
-            int x;
+        fp = fopen("/dev/urandom", "r");
+        if (fp) {
+            size_t x;
             uint64_t urand = 0;
             x = fread(&urand, 1, sizeof(urand), fp);
             entropy[0] ^= urand;
@@ -61,7 +61,6 @@ get_entropy(void)
         }
         entropy[0] ^= pixie_nanotime();
     }
-#endif
 
     return entropy[0] ^ entropy[1];
 }

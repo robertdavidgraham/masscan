@@ -12,7 +12,7 @@
  I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "massip-parse.h"
 
 /*****************************************************************************

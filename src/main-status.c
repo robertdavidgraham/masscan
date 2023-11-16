@@ -12,7 +12,7 @@
 #include "pixie-timer.h"
 #include "unusedparm.h"
 #include "main-globals.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-bool.h"
 #include <stdio.h>
 

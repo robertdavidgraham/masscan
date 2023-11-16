@@ -504,7 +504,7 @@ probably faster than you want anyway.
 A bounty is offered for vulnerabilities, see the VULNINFO.md file for more
 information.
 
-This project uses safe functions like `strcpy_s()` instead of unsafe functions
+This project uses safe functions like `safe_strcpy()` instead of unsafe functions
 like `strcpy()`.
 
 This project has automated unit regression tests (`make regress`).

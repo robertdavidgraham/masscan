@@ -5,7 +5,7 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-malloc.h"
 #include "massip-parse.h"
 #include "util-logger.h"

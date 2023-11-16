@@ -2,7 +2,7 @@
 #include "masscan-app.h"
 #include "masscan-status.h"
 #include "out-record.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include <assert.h>
 
 /****************************************************************************
@@ -17,7 +17,7 @@ binary_out_open(struct Output *out, FILE *fp)
 
 
     memset(firstrecord, 0, 2+'a');
-    sprintf_s(firstrecord, 2+'a', "masscan/1.1\ns:%u\n", 
+    snprintf(firstrecord, 2+'a', "masscan/1.1\ns:%u\n", 
         (unsigned)out->when_scan_started);
     bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
     if (bytes_written != 2+'a') {
@@ -40,7 +40,7 @@ binary_out_close(struct Output *out, FILE *fp)
     UNUSEDPARM(out);
 
     memset(firstrecord, 0, 2+'a');
-    sprintf_s(firstrecord, 2+'a', "masscan/1.1");
+    snprintf(firstrecord, 2+'a', "masscan/1.1");
     bytes_written = fwrite(firstrecord, 1, 2+'a', fp);
     if (bytes_written != 2+'a') {
         perror("output");

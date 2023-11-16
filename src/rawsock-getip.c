@@ -12,7 +12,7 @@
  I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "massip-parse.h"
 
 /*****************************************************************************
@@ -37,7 +37,7 @@ rawsock_get_adapter_ip(const char *ifname)
     fd = socket(AF_INET, SOCK_DGRAM, 0);
 
     ifr.ifr_addr.sa_family = AF_INET;
-    strcpy_s(ifr.ifr_name, IFNAMSIZ, ifname);
+    safe_strcpy(ifr.ifr_name, IFNAMSIZ, ifname);
 
     x = ioctl(fd, SIOCGIFADDR, &ifr);
     if (x < 0) {

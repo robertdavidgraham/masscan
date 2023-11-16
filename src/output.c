@@ -34,7 +34,7 @@
 #include "output.h"
 #include "masscan.h"
 #include "masscan-status.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "proto-banner1.h"
 #include "masscan-app.h"
 #include "main-globals.h"
@@ -103,7 +103,7 @@ status_string(enum PortStatus status)
 const char *
 reason_string(int x, char *buffer, size_t sizeof_buffer)
 {
-    sprintf_s(buffer, sizeof_buffer, "%s%s%s%s%s%s%s%s",
+    snprintf(buffer, sizeof_buffer, "%s%s%s%s%s%s%s%s",
         (x&0x01)?"fin-":"",
         (x&0x02)?"syn-":"",
         (x&0x04)?"rst-":"",
@@ -357,7 +357,7 @@ indexed_filename(const char *filename, unsigned index)
     
 
     /* format the new name */
-    sprintf_s(new_filename, new_length, "%.*s.%02u%s",
+    snprintf(new_filename, new_length, "%.*s.%02u%s",
               (unsigned)ext, filename,
               index,
               filename+ext);
@@ -550,9 +550,9 @@ output_do_rotate(struct Output *out, int is_closing)
 
     /* Get the proper timestamp for the file */
     if (out->is_gmt) {
-        err = gmtime_s(&tm, &out->rotate.last);
+        err = safe_gmtime(&tm, &out->rotate.last);
     } else {
-        err = localtime_s(&tm, &out->rotate.last);
+        err = safe_localtime(&tm, &out->rotate.last);
     }
     if (err != 0) {
         free(new_filename);
@@ -575,7 +575,7 @@ again:
             x_off = strlen(filename);
             x_len = 0;
         }
-        sprintf_s(new_filename, new_filename_size,
+        snprintf(new_filename, new_filename_size,
                       "%s/%.*s-%05u%.*s",
                 dir,
                 (unsigned)x_off, filename,
@@ -583,7 +583,7 @@ again:
                 (unsigned)x_len, filename + x_off
                 );
     } else {
-        sprintf_s(new_filename, new_filename_size,
+        snprintf(new_filename, new_filename_size,
                   "%s/%02u%02u%02u-%02u%02u%02u" "-%s",
             dir,
             tm.tm_year % 100,
@@ -636,7 +636,7 @@ again:
 
         fp = open_rotate(out, filename);
         if (fp == NULL) {
-            LOG(0, "rotate: %s: failed: %s\n", filename, strerror_x(errno));
+            LOG(0, "rotate: %s: failed: %s\n", filename, strerror(errno));
         } else {
             close_rotate(out, out->fp);
             out->fp = fp;
