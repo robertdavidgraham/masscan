@@ -8,7 +8,7 @@
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "output.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"
@@ -107,10 +107,10 @@ static void
 memcached_tcp_parse(  
           const struct Banner1 *banner1,
           void *banner1_private,
-          struct ProtocolState *pstate,
+          struct StreamState *pstate,
           const unsigned char *px, size_t length,
           struct BannerOutput *banout,
-          struct InteractiveData *more)
+          struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -119,7 +119,7 @@ memcached_tcp_parse(
 
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
 
     if (sm_memcached_responses == 0)
         return;
@@ -360,7 +360,7 @@ memcached_udp_parse(struct Output *out, time_t timestamp,
 
     /* Parse the remainder of the packet as if this were TCP */
     {
-        struct ProtocolState stuff[1];
+        struct StreamState stuff[1];
 
         memset(stuff, 0, sizeof(stuff[0]));
 

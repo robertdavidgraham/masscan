@@ -9,7 +9,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "proto-ssl.h"
 #include <ctype.h>
 #include <string.h>
@@ -20,10 +20,10 @@
 static void
 imap4_parse(  const struct Banner1 *banner1,
            void *banner1_private,
-           struct ProtocolState *pstate,
+           struct StreamState *pstate,
            const unsigned char *px, size_t length,
            struct BannerOutput *banout,
-           struct InteractiveData *more)
+           struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -43,7 +43,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 1:
@@ -52,7 +52,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     continue;
                 } else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 /* fall through */
             case 2:
@@ -61,7 +61,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 3:
@@ -70,7 +70,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 4:
@@ -89,7 +89,7 @@ imap4_parse(  const struct Banner1 *banner1,
             case 5:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a001 CAPABILITY\r\n", 17, 0);
+                    tcpapi_send(socket, "a001 CAPABILITY\r\n", 17, 0);
                     state = 100;
                 }
                 break;
@@ -102,7 +102,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 101:
@@ -112,7 +112,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 102:
@@ -122,7 +122,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 103:
@@ -131,7 +131,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 303:
@@ -140,7 +140,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 104:
@@ -150,13 +150,13 @@ imap4_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 105:
                 banout_append_char(banout, PROTO_IMAP4, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "a002 STARTTLS\r\n", 15, 0);
+                    tcpapi_send(socket, "a002 STARTTLS\r\n", 15, 0);
                     state = 300;
                 }
                 break;
@@ -178,7 +178,7 @@ imap4_parse(  const struct Banner1 *banner1,
                     pstate->port = (unsigned short)port;
                     state = 0;
                     
-                    tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
+                    tcpapi_send(socket, banner_ssl.hello, banner_ssl.hello_length, 0);
                     break;
                 }
                 break;

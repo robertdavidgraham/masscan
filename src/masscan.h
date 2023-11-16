@@ -208,7 +208,7 @@ struct Masscan
 
     /** Packet template options, such as whether we should add a TCP MSS
      * value, or remove it from the packet */
-    struct TemplateOptions *templ_opts;
+    struct TemplateOptions *templ_opts; /* e.g. --tcpmss */
 
     /**
      * Wait forever for responses, instead of the default 10 seconds

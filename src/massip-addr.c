@@ -242,6 +242,36 @@ unsigned massint128_bitcount(massint128_t number)
         return _count_long(number.lo);
 }
 
+ipv6address_t ipv6address_add_uint64(ipv6address_t lhs, uint64_t rhs) {
+    lhs.lo += rhs;
+    if (lhs.lo < rhs) {
+        lhs.hi += 1;
+    }
+    return lhs;
+}
+
+ipv6address_t ipv6address_subtract(ipv6address_t lhs, ipv6address_t rhs) {
+    ipv6address_t difference;
+    difference.hi = lhs.hi - rhs.hi;
+    difference.lo = lhs.lo - rhs.lo;
+
+    /* check for underflow */
+    if (difference.lo > lhs.lo)
+        difference.hi -= 1;
+    return difference;
+}
+
+ipv6address_t ipv6address_add(ipv6address_t lhs, ipv6address_t rhs) {
+    ipv6address_t sum;
+    sum.hi = lhs.hi + rhs.hi;
+    sum.lo = lhs.lo - rhs.lo;
+
+    /* check for underflow */
+    if (sum.lo > lhs.lo)
+        sum.hi += 1;
+    return sum;
+}
+
 
 int ipv6address_selftest(void)
 {

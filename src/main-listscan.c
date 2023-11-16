@@ -1,5 +1,5 @@
 #include "masscan.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "crypto-blackrock.h"
 
 

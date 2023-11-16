@@ -22,6 +22,7 @@ enum ApplicationProtocol {
     PROTO_IMAP4,
     PROTO_UDP_ZEROACCESS,
     PROTO_X509_CERT,
+    PROTO_X509_CACERT,
     PROTO_HTML_TITLE,
     PROTO_HTML_FULL,
     PROTO_NTP,              /* network time protocol, udp/123 */
@@ -29,6 +30,7 @@ enum ApplicationProtocol {
     PROTO_HEARTBLEED,
     PROTO_TICKETBLEED,
     PROTO_VNC_RFB,
+    PROTO_VNC_INFO,
     PROTO_SAFE,
     PROTO_MEMCACHED,
     PROTO_SCRIPTING,
@@ -38,6 +40,8 @@ enum ApplicationProtocol {
     PROTO_RDP,          /* Microsoft Remote Desktop Protocol tcp/3389 */
     PROTO_HTTP_SERVER,  /* HTTP "Server:" field */
     PROTO_MC,           /* Minecraft server */
+
+    PROTO_ERROR,
 
     PROTO_end_of_list /* must be last one */
 };

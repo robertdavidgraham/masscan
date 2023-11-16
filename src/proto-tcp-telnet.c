@@ -1,6 +1,6 @@
 #include "proto-tcp-telnet.h"
 #include "proto-banner1.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "util-malloc.h"
@@ -68,6 +68,7 @@ struct TelnetOptions options[] = {
     {0,0}
 };
 
+#if 0
 static const char *
 option_name_lookup(unsigned optnum)
 {
@@ -78,6 +79,7 @@ option_name_lookup(unsigned optnum)
     }
     return 0;
 }
+#endif
 
 enum {
     FLAG_WILL=1,
@@ -91,10 +93,10 @@ enum {
 static void
 telnet_parse(  const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more)
+        struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     size_t offset;
@@ -109,29 +111,21 @@ telnet_parse(  const struct Banner1 *banner1,
         TELNET_SB_DATA,
         TELNET_INVALID,
     };
-    static const char *foobar[4] = {"DO", "DONT", "WILL", "WONT"};
+    //static const char *foobar[4] = {"DO", "DONT", "WILL", "WONT"};
     unsigned char nego[256] = {0};
 
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
 
     for (offset=0; offset<length; offset++) {
         int c = px[offset];
+        banout_append_char(banout, PROTO_TELNET, c);
         switch (state) {
             case 0:
-                if (c == 0xFF) {
+                if (c == 0xFF)
                     /* Telnet option code negotiation */
                     state = TELNET_IAC;
-                } else if (c == '\r') {
-                    /* Ignore carriage returns */
-                    continue;
-                } else if (c == '\n') {
-                    banout_append(banout, PROTO_TELNET, "\\n ", AUTO_LEN);
-                } else {
-                    /* Append the raw text */
-                    banout_append_char(banout, PROTO_TELNET, c);
-                }
                 break;
             case TELNET_IAC:
                 switch (c) {
@@ -139,39 +133,30 @@ telnet_parse(  const struct Banner1 *banner1,
                         state = 0;
                         break;
                     case 246: /* 0xF6 Are you there? - The function AYT. */
-                        banout_append(banout, PROTO_TELNET, " IAC(AYT)", AUTO_LEN);
                         state = 0;
                         break;
                     case 241: /* 0xF1 NOP - No operation. */
-                        banout_append(banout, PROTO_TELNET, " IAC(NOP)", AUTO_LEN);
                         state = 0;
                         break;
                     case 242: /* 0xF2 Data mark */
-                        banout_append(banout, PROTO_TELNET, " IAC(MRK)", AUTO_LEN);
                         state = 0;
                         break;
                     case 243: /* 0xF3 BRK - NVT character BRK. */
-                        banout_append(banout, PROTO_TELNET, " IAC(NOP)", AUTO_LEN);
                         state = 0;
                         break;
                     case 244: /* 0xF4 Interrupt process - The function IP. */
-                        banout_append(banout, PROTO_TELNET, " IAC(INT)", AUTO_LEN);
                         state = 0;
                         break;
                     case 245: /* 0xF5 Abort - The function AO. */
-                        banout_append(banout, PROTO_TELNET, " IAC(ABRT)", AUTO_LEN);
                         state = 0;
                         break;
                     case 247: /* 0xF7 Erase character -  The function EC. */
-                        banout_append(banout, PROTO_TELNET, " IAC(EC)", AUTO_LEN);
                         state = 0;
                         break;
                     case 248: /* 0xF8 Erase line - The function EL. */
-                        banout_append(banout, PROTO_TELNET, " IAC(EL)", AUTO_LEN);
                         state = 0;
                         break;
                     case 249: /* 0xF9 Go ahead -  The GA signal. */
-                        banout_append(banout, PROTO_TELNET, " IAC(GA)", AUTO_LEN);
                         state = 0;
                         break;
                     case 250: /* 0xFA SB - Start of subnegotiation */
@@ -199,26 +184,9 @@ telnet_parse(  const struct Banner1 *banner1,
             case TELNET_SB_DATA:
                 if (c == 0xFF)
                     state = TELNET_IAC;
-                else
-                    ;
                 break;
             case TELNET_SB:
-                {
-                    const char *name = option_name_lookup(c);
-                    char tmp[16];
-                    if (name == NULL) {
-                        sprintf_s(tmp, sizeof(tmp), "0x%02x", c);
-                        name = tmp;
-                    }
-                    if (name[0]) {
-                        banout_append_char(banout, PROTO_TELNET, ' ');
-                        banout_append(banout, PROTO_TELNET, "SB", AUTO_LEN);
-                        banout_append_char(banout, PROTO_TELNET, '(');
-                        banout_append(banout, PROTO_TELNET, name, AUTO_LEN);
-                        banout_append_char(banout, PROTO_TELNET, ')');
-                    }
-                    state = TELNET_SB_DATA;
-                }
+                state = TELNET_SB_DATA;
                 break;
             case TELNET_DO:
             case TELNET_DONT:
@@ -238,21 +206,6 @@ telnet_parse(  const struct Banner1 *banner1,
                         nego[c] = FLAG_DONT;
                         break;
                 }
-            {
-                const char *name = option_name_lookup(c);
-                char tmp[16];
-                if (name == NULL) {
-                    sprintf_s(tmp, sizeof(tmp), "0x%02x", c);
-                    name = tmp;
-                }
-                if (name[0]) {
-                    banout_append_char(banout, PROTO_TELNET, ' ');
-                    banout_append(banout, PROTO_TELNET, foobar[state-TELNET_DO], AUTO_LEN);
-                    banout_append_char(banout, PROTO_TELNET, '(');
-                    banout_append(banout, PROTO_TELNET, name, AUTO_LEN);
-                    banout_append_char(banout, PROTO_TELNET, ')');
-                }
-            }
                 state = 0;
                 break;
             default:
@@ -292,7 +245,7 @@ telnet_parse(  const struct Banner1 *banner1,
         if (r_offset) {
             unsigned char *outbuf = MALLOC(r_offset);
             memcpy(outbuf, reply, r_offset);
-            tcp_transmit(more, outbuf, r_offset, 1);
+            tcpapi_send(socket, outbuf, r_offset, TCP__copy);
         }
     }
     pstate->state = state;
@@ -314,9 +267,9 @@ static int
 telnet_selftest_item(const char *input, const char *output)
 {
     struct Banner1 *banner1;
-    struct ProtocolState pstate[1];
+    struct StreamState pstate[1];
     struct BannerOutput banout1[1];
-    struct InteractiveData more;
+
     int x;
     
     /*
@@ -335,7 +288,7 @@ telnet_selftest_item(const char *input, const char *output)
                  (const unsigned char *)input,
                  strlen(input),
                  banout1,
-                 &more
+                 0
                  );
     //fprintf(stderr, "%.*s\n", (int)banout_string_length(banout1, PROTO_TELNET), banout_string(banout1, PROTO_TELNET));
     /*
@@ -360,7 +313,7 @@ telnet_selftest(void)
         const char *input;
         const char *output;
     } tests[] = {
-        {"\xff\xfd\x1flogin:", "login"},
+        {"\xff\xfd\x1flogin:", "login:"},
         {"\xff\xfd\x27\xff\xfd\x18 ", " "},
         {
             "\xff\xfb\x25\xff\xfd\x03\xff\xfb\x18\xff\xfb\x1f\xff\xfb\x20\xff" \
@@ -375,7 +328,7 @@ telnet_selftest(void)
         },
         {   "\xff\xfd\x01\xff\xfd\x1f\xff\xfd\x21\xff\xfb\x01\xff\xfb\x03\x46"
             "\x36\x37\x30\x0d\x0a\x0d\x4c\x6f\x67\x69\x6e\x3a\x20",
-            "F670\\n Login:"
+            "F670\r\n\rLogin:"
         },
         {0,0}
     };

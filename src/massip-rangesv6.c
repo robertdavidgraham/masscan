@@ -4,7 +4,7 @@
 #include "massip-rangesv6.h"
 #include "massip-rangesv4.h"
 #include "util-malloc.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "massip.h"
 #include "massip-parse.h"
 

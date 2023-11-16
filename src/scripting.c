@@ -1,7 +1,7 @@
 #include "masscan.h"
 #include "scripting.h"
 #include "stub-lua.h"
-#include "logger.h"
+#include "util-logger.h"
 
 #include <stdlib.h>
 

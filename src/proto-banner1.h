@@ -8,17 +8,17 @@
 #include "proto-x509.h"
 #include "proto-spnego.h"
 
-struct InteractiveData;
+struct stack_handle_t;
 struct Banner1;
-struct ProtocolState;
+struct StreamState;
 
 typedef void (*BannerParser)(
               const struct Banner1 *banner1,
               void *banner1_private,
-              struct ProtocolState *stream_state,
+              struct StreamState *stream_state,
               const unsigned char *px, size_t length,
               struct BannerOutput *banout,
-              struct InteractiveData *more);
+              struct stack_handle_t *socket);
 struct Banner1
 {
     struct lua_State *L;
@@ -38,7 +38,7 @@ struct Banner1
     unsigned is_poodle_sslv3:1;
 
     struct {
-        struct ProtocolParserStream *tcp[65536];
+        const struct ProtocolParserStream *tcp[65536];
     } payloads;
     
     BannerParser parser[PROTO_end_of_list];
@@ -170,6 +170,7 @@ struct SMBSTUFF {
     unsigned is_printed_ver:1;
     unsigned is_printed_guid:1;
     unsigned is_printed_time:1;
+    unsigned is_printed_boottime:1;
     unsigned nbt_length;
     unsigned nbt_err;
     
@@ -236,7 +237,11 @@ struct RDPSTUFF {
     } cc;
 };
 
-struct ProtocolState {
+struct SSHSTUFF{
+    size_t packet_length;
+};
+
+struct StreamState {
     unsigned state;
     unsigned remaining;
     unsigned short port;
@@ -254,12 +259,16 @@ struct ProtocolState {
         struct SMBSTUFF smb;
         struct RDPSTUFF rdp;
         struct MCSTUFF mc;
+        struct SSHSTUFF ssh;
     } sub;
 };
 
-enum {
-    CTRL_SMALL_WINDOW = 1,
+enum StreamFlags {
+    SF__none = 0,
+    SF__close = 0x01, /* send FIN after the static Hello is sent*/
+    SF__nowait_hello = 0x02,    /* send our hello immediately, don't wait for their hello */
 };
+
 
 /**
  * A registration structure for various TCP stream protocols
@@ -270,18 +279,18 @@ struct ProtocolParserStream {
     unsigned port;
     const void *hello;
     size_t hello_length;
-    unsigned ctrl_flags;
+    enum StreamFlags flags;
     int (*selftest)(void);
     void *(*init)(struct Banner1 *b);
     void (*parse)(
         const struct Banner1 *banner1,
         void *banner1_private,
-        struct ProtocolState *stream_state,
+        struct StreamState *stream_state,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
-    void (*cleanup)(struct ProtocolState *stream_state);
-    void (*transmit_hello)(const struct Banner1 *banner1, struct InteractiveData *more);
+        struct stack_handle_t *socket);
+    void (*cleanup)(struct StreamState *stream_state);
+    void (*transmit_hello)(const struct Banner1 *banner1, struct stack_handle_t *socket);
     
     /* When multiple items are registered for a port. When one
      * connection is closed, the next will be opened.*/
@@ -333,10 +342,10 @@ banner1_destroy(struct Banner1 *b);
 unsigned
 banner1_parse(
         const struct Banner1 *banner1,
-        struct ProtocolState *pstate,
+        struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct InteractiveData *more);
+        struct stack_handle_t *socket);
 
 
 

@@ -103,6 +103,7 @@
  ****************************************************************************/
 #include "smack.h"
 #include "smackqueue.h"
+#include "util-logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1706,6 +1707,8 @@ smack_selftest(void)
     static const size_t END_TEST_THINGY1 = 9001;
     static const size_t END_TEST_THINGY2 = 9002;
 
+    LOG(1, "[ ] smack: selftest started\n");
+
     /*
      * using SMACK is 5 steps:
      * #1 create an instance at program startup
@@ -1795,7 +1798,6 @@ smack_selftest(void)
     smack_destroy(s);
 
     
-
-
+    LOG(1, "[+] smack: success!\n");
     return 0;
 }

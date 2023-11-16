@@ -1,6 +1,6 @@
 #include "proto-arp.h"
 #include "proto-preprocess.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "output.h"
 #include "masscan-status.h"
 #include "unusedparm.h"

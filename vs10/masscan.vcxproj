@@ -62,7 +62,7 @@
     <ClCompile Include="..\src\proto-http.c" />
     <ClCompile Include="..\src\proto-icmp.c" />
     <ClCompile Include="..\src\proto-imap4.c" />
-    <ClCompile Include="..\src\proto-interactive.c" />
+    <ClCompile Include="..\src\proto-isakmp.c" />
     <ClCompile Include="..\src\proto-mc.c" />
     <ClCompile Include="..\src\proto-memcached.c" />
     <ClCompile Include="..\src\proto-netbios.c" />
@@ -78,8 +78,6 @@
     <ClCompile Include="..\src\proto-ssl-test.c" />
     <ClCompile Include="..\src\proto-ssl.c" />
     <ClCompile Include="..\src\proto-tcp-rdp.c" />
-    <ClCompile Include="..\src\proto-tcp.c" />
-    <ClCompile Include="..\src\logger.c" />
     <ClCompile Include="..\src\main-conf.c" />
     <ClCompile Include="..\src\main-dedup.c" />
     <ClCompile Include="..\src\main-initadapter.c" />
@@ -92,6 +90,7 @@
     <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\proto-tcp-telnet.c" />
     <ClCompile Include="..\src\proto-udp.c" />
+    <ClCompile Include="..\src\proto-versioning.c" />
     <ClCompile Include="..\src\proto-vnc.c" />
     <ClCompile Include="..\src\proto-x509.c" />
     <ClCompile Include="..\src\proto-zeroaccess.c" />
@@ -114,6 +113,8 @@
     <ClCompile Include="..\src\stack-ndpv6.c" />
     <ClCompile Include="..\src\stack-queue.c" />
     <ClCompile Include="..\src\stack-src.c" />
+    <ClCompile Include="..\src\stack-tcp-app.c" />
+    <ClCompile Include="..\src\stack-tcp-core.c" />
     <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\stub-lua.c" />
     <ClCompile Include="..\src\stub-pcap.c" />
@@ -124,8 +125,9 @@
     <ClCompile Include="..\src\templ-pkt.c" />
     <ClCompile Include="..\src\templ-tcp-hdr.c" />
     <ClCompile Include="..\src\util-checksum.c" />
+    <ClCompile Include="..\src\util-errormsg.c" />
+    <ClCompile Include="..\src\util-logger.c" />
     <ClCompile Include="..\src\util-malloc.c" />
-    <ClCompile Include="..\src\versioning.c" />
     <ClCompile Include="..\src\vulncheck-heartbleed.c" />
     <ClCompile Include="..\src\vulncheck-ntp-monlist.c" />
     <ClCompile Include="..\src\vulncheck-sslv3.c" />
@@ -143,7 +145,6 @@
     <ClInclude Include="..\src\main-globals.h" />
     <ClInclude Include="..\src\event-timeout.h" />
     <ClInclude Include="..\src\in-binary.h" />
-    <ClInclude Include="..\src\logger.h" />
     <ClInclude Include="..\src\main-dedup.h" />
     <ClInclude Include="..\src\main-ptrace.h" />
     <ClInclude Include="..\src\main-readrange.h" />
@@ -177,7 +178,7 @@
     <ClInclude Include="..\src\proto-http.h" />
     <ClInclude Include="..\src\proto-icmp.h" />
     <ClInclude Include="..\src\proto-imap4.h" />
-    <ClInclude Include="..\src\proto-interactive.h" />
+    <ClInclude Include="..\src\proto-isakmp.h" />
     <ClInclude Include="..\src\proto-mc.h" />
     <ClInclude Include="..\src\proto-memcached.h" />
     <ClInclude Include="..\src\proto-netbios.h" />
@@ -193,9 +194,9 @@
     <ClInclude Include="..\src\proto-ssh.h" />
     <ClInclude Include="..\src\proto-ssl.h" />
     <ClInclude Include="..\src\proto-tcp-rdp.h" />
-    <ClInclude Include="..\src\proto-tcp.h" />
     <ClInclude Include="..\src\proto-tcp-telnet.h" />
     <ClInclude Include="..\src\proto-udp.h" />
+    <ClInclude Include="..\src\proto-versioning.h" />
     <ClInclude Include="..\src\proto-vnc.h" />
     <ClInclude Include="..\src\proto-x509.h" />
     <ClInclude Include="..\src\proto-zeroaccess.h" />
@@ -211,6 +212,9 @@
     <ClInclude Include="..\src\stack-ndpv6.h" />
     <ClInclude Include="..\src\stack-queue.h" />
     <ClInclude Include="..\src\stack-src.h" />
+    <ClInclude Include="..\src\stack-tcp-api.h" />
+    <ClInclude Include="..\src\stack-tcp-app.h" />
+    <ClInclude Include="..\src\stack-tcp-core.h" />
     <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\stub-lua.h" />
     <ClInclude Include="..\src\stub-pcap.h" />
@@ -223,8 +227,9 @@
     <ClInclude Include="..\src\templ-tcp-hdr.h" />
     <ClInclude Include="..\src\util-bool.h" />
     <ClInclude Include="..\src\util-checksum.h" />
+    <ClInclude Include="..\src\util-errormsg.h" />
+    <ClInclude Include="..\src\util-logger.h" />
     <ClInclude Include="..\src\util-malloc.h" />
-    <ClInclude Include="..\src\versioning.h" />
     <ClInclude Include="..\src\vulncheck.h" />
     <ClInclude Include="..\src\xring.h" />
   </ItemGroup>

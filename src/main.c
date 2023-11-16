@@ -31,7 +31,7 @@
 #include "crypto-lcg.h"         /* the LCG randomization func */
 #include "crypto-base64.h"      /* base64 encode/decode */
 #include "templ-pkt.h"          /* packet template, that we use to send */
-#include "logger.h"             /* adjust with -v command-line opt */
+#include "util-logger.h"             /* adjust with -v command-line opt */
 #include "stack-ndpv6.h"        /* IPv6 Neighbor Discovery Protocol */
 #include "stack-arpv4.h"        /* Handle ARP resolution and requests */
 #include "rawsock.h"            /* API on top of Linux, Windows, Mac OS X*/
@@ -54,7 +54,7 @@
 #include "proto-x509.h"
 #include "proto-arp.h"          /* for responding to ARP requests */
 #include "proto-banner1.h"      /* for snatching banners from systems */
-#include "proto-tcp.h"          /* for TCP/IP connection table */
+#include "stack-tcp-core.h"          /* for TCP/IP connection table */
 #include "proto-preprocess.h"   /* quick parse of packets */
 #include "proto-icmp.h"         /* handle ICMP responses */
 #include "proto-udp.h"          /* handle UDP responses */
@@ -158,7 +158,14 @@ struct ThreadPair {
     size_t thread_handle_recv;
 };
 
-
+struct source_t {
+    unsigned ipv4;
+    unsigned ipv4_mask;
+    unsigned port;
+    unsigned port_mask;
+    ipv6address ipv6;
+    ipv6address ipv6_mask;
+};
 
 /***************************************************************************
  * We support a range of source IP/port. This function converts that
@@ -167,28 +174,24 @@ struct ThreadPair {
 static void
 adapter_get_source_addresses(const struct Masscan *masscan,
             unsigned nic_index,
-            unsigned *src_ipv4,
-            unsigned *src_ipv4_mask,
-            unsigned *src_port,
-            unsigned *src_port_mask,
-            ipv6address *src_ipv6,
-            ipv6address *src_ipv6_mask)
+            struct source_t *src)
 {
-    const struct stack_src_t *src = &masscan->nic[nic_index].src;
+    const struct stack_src_t *ifsrc = &masscan->nic[nic_index].src;
     static ipv6address mask = {~0ULL, ~0ULL};
 
-    *src_ipv4 = src->ipv4.first;
-    *src_ipv4_mask = src->ipv4.last - src->ipv4.first;
+    src->ipv4 = ifsrc->ipv4.first;
+    src->ipv4_mask = ifsrc->ipv4.last - ifsrc->ipv4.first;
 
-    *src_port = src->port.first;
-    *src_port_mask = src->port.last - src->port.first;
+    src->port = ifsrc->port.first;
+    src->port_mask = ifsrc->port.last - ifsrc->port.first;
 
-    *src_ipv6 = src->ipv6.first;
+    src->ipv6 = ifsrc->ipv6.first;
 
     /* TODO: currently supports only a single address. This needs to
      * be fixed to support a list of addresses */
-    *src_ipv6_mask = mask;
+    src->ipv6_mask = mask;
 }
+
 
 /***************************************************************************
  * This thread spews packets as fast as it can
@@ -218,17 +221,14 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     struct Adapter *adapter = parms->adapter;
     uint64_t packets_sent = 0;
     unsigned increment = masscan->shard.of * masscan->nic_count;
-    unsigned src_ipv4;
-    unsigned src_ipv4_mask;
-    unsigned src_port;
-    unsigned src_port_mask;
-    ipv6address src_ipv6;
-    ipv6address src_ipv6_mask;
+    struct source_t src;
     uint64_t seed = masscan->seed;
     uint64_t repeats = 0; /* --infinite repeats */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
 
+    /* Wait to make sure receive_thread is ready */
+    pixie_usleep(1000000);
     LOG(1, "[+] starting transmit thread #%u\n", parms->nic_index);
 
     /* export a pointer to this variable outside this threads so
@@ -241,10 +241,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
 
     /* Normally, we have just one source address. In special cases, though
      * we can have multiple. */
-    adapter_get_source_addresses(masscan, parms->nic_index,
-                &src_ipv4, &src_ipv4_mask,
-                &src_port, &src_port_mask,
-                &src_ipv6, &src_ipv6_mask);
+    adapter_get_source_addresses(masscan, parms->nic_index, &src);
 
 
     /* "THROTTLER" rate-limits how fast we transmit, set with the
@@ -345,8 +342,8 @@ infinite:
                 ip_them = range6list_pick(&masscan->targets.ipv6, xXx % count_ipv6);
                 port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv6);
 
-                ip_me = src_ipv6;
-                port_me = src_port;
+                ip_me = src.ipv6;
+                port_me = src.port;
                 
                 cookie = syn_cookie_ipv6(ip_them, port_them, ip_me, port_me, entropy);
 
@@ -378,16 +375,16 @@ infinite:
                  * SYN-COOKIE LOGIC
                  *  Figure out the source IP/port, and the SYN cookie
                  */
-                if (src_ipv4_mask > 1 || src_port_mask > 1) {
+                if (src.ipv4_mask > 1 || src.port_mask > 1) {
                     uint64_t ck = syn_cookie_ipv4((unsigned)(i+repeats),
                                             (unsigned)((i+repeats)>>32),
                                             (unsigned)xXx, (unsigned)(xXx>>32),
                                             entropy);
-                    port_me = src_port + (ck & src_port_mask);
-                    ip_me = src_ipv4 + ((ck>>16) & src_ipv4_mask);
+                    port_me = src.port + (ck & src.port_mask);
+                    ip_me = src.ipv4 + ((ck>>16) & src.ipv4_mask);
                 } else {
-                    ip_me = src_ipv4;
-                    port_me = src_port;
+                    ip_me = src.ipv4;
+                    port_me = src.port;
                 }
                 cookie = syn_cookie_ipv4(ip_them, port_them, ip_me, port_me, entropy);
 
@@ -548,6 +545,7 @@ receive_thread(void *v)
     uint64_t entropy = masscan->seed;
     struct ResetFilter *rf;
     struct stack_t *stack = parms->stack;
+    struct source_t src = {0};
 
     
     
@@ -625,8 +623,14 @@ receive_thread(void *v)
          * Initialize TCP scripting
          */
         scripting_init_tcp(tcpcon, masscan->scripting.L);
-        
-        
+
+        /*
+         * Get the possible source IP addresses and ports that masscan
+         * might be using to transmit from.
+         */
+        adapter_get_source_addresses(masscan, parms->nic_index, &src);
+                               
+
         /*
          * Set some flags [kludge]
          */
@@ -959,43 +963,41 @@ receive_thread(void *v)
             struct TCP_Control_Block *tcb;
 
             /* does a TCB already exist for this connection? */
-            tcb = tcb_lookup(tcpcon,
+            tcb = tcpcon_lookup_tcb(tcpcon,
                             ip_me, ip_them,
                             port_me, port_them);
 
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (cookie != seqno_me - 1) {
                     ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
-                    LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                    LOG(0, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
                         fmt.string, seqno_me-1, cookie);
                     continue;
                 }
-
                 if (tcb == NULL) {
                     tcb = tcpcon_create_tcb(tcpcon,
                                     ip_me, ip_them,
                                     port_me, port_them,
                                     seqno_me, seqno_them+1,
-                                    parsed.ip_ttl);
+                                    parsed.ip_ttl, NULL,
+                                    secs, usecs);
                     (*status_tcb_count)++;
-
                 }
-
                 Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_SYNACK,
-                    0, 0, secs, usecs, seqno_them+1);
+                    0, 0, secs, usecs, seqno_them+1, seqno_me);
 
             } else if (tcb) {
                 /* If this is an ACK, then handle that first */
                 if (TCP_IS_ACK(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_ACK,
-                        0, seqno_me, secs, usecs, seqno_them);
+                        0, 0, secs, usecs, seqno_them, seqno_me);
                 }
 
                 /* If this contains payload, handle that second */
                 if (parsed.app_length) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_DATA,
                         px + parsed.app_offset, parsed.app_length,
-                        secs, usecs, seqno_them);
+                        secs, usecs, seqno_them, seqno_me);
                 }
 
                 /* If this is a FIN, handle that. Note that ACK +
@@ -1003,13 +1005,16 @@ receive_thread(void *v)
                 if (TCP_IS_FIN(px, parsed.transport_offset)
                     && !TCP_IS_RST(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_FIN,
-                        0, parsed.app_length, secs, usecs, seqno_them);
+                            0, 0, 
+                            secs, usecs, 
+                            seqno_them + parsed.app_length, /* the FIN comes after any data in the packet */
+                            seqno_me);
                 }
 
                 /* If this is a RST, then we'll be closing the connection */
                 if (TCP_IS_RST(px, parsed.transport_offset)) {
                     Q += stack_incoming_tcp(tcpcon, tcb, TCP_WHAT_RST,
-                        0, 0, secs, usecs, seqno_them);
+                        0, 0, secs, usecs, seqno_them, seqno_me);
                 }
             } else if (TCP_IS_FIN(px, parsed.transport_offset)) {
                 ipaddress_formatted_t fmt;
@@ -1042,7 +1047,6 @@ receive_thread(void *v)
    
         if (TCP_IS_SYNACK(px, parsed.transport_offset)
             || TCP_IS_RST(px, parsed.transport_offset)) {
-
             /* figure out the status */
             status = PortStatus_Unknown;
             if (TCP_IS_SYNACK(px, parsed.transport_offset))
@@ -1054,7 +1058,7 @@ receive_thread(void *v)
             /* verify: syn-cookies */
             if (cookie != seqno_me - 1) {
                 ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
-                LOG(5, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
                     fmt.string, seqno_me-1, cookie);
                 continue;
             }
@@ -1311,8 +1315,8 @@ main_scan(struct Masscan *masscan)
         if (masscan->nic[index].src.port.range == 0) {
             unsigned port = 40000 + now % 20000;
             masscan->nic[index].src.port.first = port;
-            masscan->nic[index].src.port.last = port;
-            masscan->nic[index].src.port.range = 1;
+            masscan->nic[index].src.port.last = port + 16;
+            masscan->nic[index].src.port.range = 16;
         }
 
         stack = stack_create(parms->source_mac, &masscan->nic[index].src);
@@ -1778,7 +1782,7 @@ int main(int argc, char *argv[])
              * read the binary files, and output them again depending upon
              * the output parameters
              */
-            read_binary_scanfile(masscan, start, stop, argv);
+            readscan_binary_scanfile(masscan, start, stop, argv);
 
         }
         break;

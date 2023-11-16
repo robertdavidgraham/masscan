@@ -18,7 +18,7 @@
 */
 #include "main-throttle.h"
 #include "pixie-timer.h"
-#include "logger.h"
+#include "util-logger.h"
 #include <string.h>
 #include <stdio.h>
 

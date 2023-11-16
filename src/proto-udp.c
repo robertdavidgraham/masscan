@@ -8,7 +8,7 @@
 #include "proto-zeroaccess.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "output.h"
 #include "masscan-status.h"
 #include "unusedparm.h"
@@ -94,16 +94,29 @@ handle_udp(struct Output *out, time_t timestamp,
             break;
     }
 
-    if (status == 0)
-        output_report_status(
-                        out,
-                        timestamp,
-                        PortStatus_Open,
-                        ip_them,
-                        17, /* ip proto = udp */
-                        port_them,
-                        0,
-                        0,
-                        parsed->mac_src);
-
+    if (status == 0) {
+        if (px != 0 && parsed->app_length == 0) {
+            output_report_status(
+                            out,
+                            timestamp,
+                            PortStatus_Open,
+                            ip_them,
+                            17, /* ip proto = udp */
+                            port_them,
+                            0,
+                            parsed->ip_ttl,
+                            parsed->mac_src);
+        } else {
+            output_report_banner(
+                    out,
+                    timestamp,
+                    ip_them,
+                    17, /* ip proto = udp */
+                    port_them,
+                    PROTO_NONE,
+                    parsed->ip_ttl,
+                    px + parsed->app_offset,
+                    parsed->app_length);
+        }
+    }
 }

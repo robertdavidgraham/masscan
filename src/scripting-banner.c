@@ -6,10 +6,10 @@
 #include "proto-banner1.h"
 #include "smack.h"
 #include "unusedparm.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "masscan-app.h"
 #include "output.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "proto-preprocess.h"
 #include "proto-ssl.h"
 #include "proto-udp.h"
@@ -24,9 +24,9 @@
 /***************************************************************************
  ***************************************************************************/
 static void
-scripting_transmit_hello(const struct Banner1 *banner1, struct InteractiveData *more)
+scripting_transmit_hello(const struct Banner1 *banner1, struct stack_handle_t *socket)
 {
-    UNUSEDPARM(banner1); UNUSEDPARM(more);
+    UNUSEDPARM(banner1); UNUSEDPARM(socket);
     LOG(0, "SCRIPTING: HELLO\n");
 }
 
@@ -36,17 +36,17 @@ static void
 scripting_tcp_parse(
                      const struct Banner1 *banner1,
                      void *banner1_private,
-                     struct ProtocolState *pstate,
+                     struct StreamState *pstate,
                      const unsigned char *px, size_t length,
                      struct BannerOutput *banout,
-                     struct InteractiveData *more)
+                     struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     
     
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(banner1);
-    UNUSEDPARM(more);
+    UNUSEDPARM(socket);
     UNUSEDPARM(banout);
     UNUSEDPARM(px);
     UNUSEDPARM(length);
@@ -60,7 +60,7 @@ static void
 register_script_for_port(struct Banner1 *b, int port)
 {
     LOG(0, "SCRIPTING: using port %d\n", port);
-    b->payloads.tcp[port] = (struct ProtocolParserStream *)&banner_scripting;
+    b->payloads.tcp[port] = (const struct ProtocolParserStream *)&banner_scripting;
 }
 
 /***************************************************************************

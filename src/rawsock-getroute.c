@@ -8,7 +8,7 @@
 #include "string_s.h"
 #include "util-malloc.h"
 #include "massip-parse.h"
-#include "logger.h"
+#include "util-logger.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun__)
 #include <unistd.h>

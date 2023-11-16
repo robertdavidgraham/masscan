@@ -10,6 +10,7 @@ struct TCP_Control_Block;
 struct TemplatePacket;
 struct TCP_ConnectionTable;
 struct lua_State;
+struct ProtocolParserStream;
 
 #define TCP_SEQNO(px,i) (px[i+4]<<24|px[i+5]<<16|px[i+6]<<8|px[i+7])
 #define TCP_ACKNO(px,i) (px[i+8]<<24|px[i+9]<<16|px[i+10]<<8|px[i+11])
@@ -18,6 +19,7 @@ struct lua_State;
 #define TCP_IS_ACK(px,i) ((TCP_FLAGS(px,i) & 0x10) == 0x10)
 #define TCP_IS_RST(px,i) ((TCP_FLAGS(px,i) & 0x4) == 0x4)
 #define TCP_IS_FIN(px,i) ((TCP_FLAGS(px,i) & 0x1) == 0x1)
+
 
 /**
  * [KLUDGE] The 'tcpcon' module doesn't have access to the main configuration,
@@ -101,26 +103,35 @@ enum TCP_What {
     TCP_WHAT_FIN,
     TCP_WHAT_ACK,
     TCP_WHAT_DATA,
+    TCP_WHAT_CLOSE
 };
 
-int
+enum TCB_result {
+    TCB__okay,
+    TCB__destroyed
+};
+
+enum TCB_result
 stack_incoming_tcp(struct TCP_ConnectionTable *tcpcon, struct TCP_Control_Block *entry,
-    int what, const void *p, size_t length,
+    enum TCP_What what, 
+    const unsigned char *payload, size_t payload_length,
     unsigned secs, unsigned usecs,
-    unsigned seqno_them);
+    unsigned seqno_them, unsigned ackno_them);
 
 
 /**
  * Lookup a connection record based on IP/ports.
  */
 struct TCP_Control_Block *
-tcb_lookup(
+tcpcon_lookup_tcb(
     struct TCP_ConnectionTable *tcpcon,
     ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst);
 
 /**
- * Create a new TCB (TCP control block)
+ * Create a new TCB (TCP control block. It's created only in two places,
+ * either because we've initiated an outbound TCP connection, or we've
+ * received incoming SYN-ACK from a probe.
  */
 struct TCP_Control_Block *
 tcpcon_create_tcb(
@@ -128,18 +139,11 @@ tcpcon_create_tcb(
     ipaddress ip_src, ipaddress ip_dst,
     unsigned port_src, unsigned port_dst,
     unsigned my_seqno, unsigned their_seqno,
-    unsigned ttl);
+    unsigned ttl,
+    const struct ProtocolParserStream *stream,
+    unsigned secs, unsigned usecs);
 
 
-/**
- * Acknowledge a FIN even if we've forgotten about the connection
- */
-void
-tcpcon_send_FIN(
-                struct TCP_ConnectionTable *tcpcon,
-                ipaddress ip_me, ipaddress ip_them,
-                unsigned port_me, unsigned port_them,
-                uint32_t seqno_them, uint32_t ackno_them);
 void
 tcpcon_send_RST(
                 struct TCP_ConnectionTable *tcpcon,

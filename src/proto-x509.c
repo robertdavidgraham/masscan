@@ -90,7 +90,7 @@ TBSCertificate  ::=  SEQUENCE  {
 #include "proto-banout.h"
 #include "masscan-app.h"
 #include "smack.h"
-#include "logger.h"
+#include "util-logger.h"
 #include <assert.h>
 #include <ctype.h>
 #include <string.h>

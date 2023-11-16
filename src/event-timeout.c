@@ -24,7 +24,7 @@
     code and causing the bug to come back again.
 */
 #include "event-timeout.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "util-malloc.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -47,6 +47,13 @@ struct Timeouts {
      * Every time we check timeouts, we simply move it forward in time.
      */
     uint64_t current_index;
+
+    /**
+     * Counts the number of outstanding timeouts. Adding a timeout increments
+     * this number, and removing a timeout decrements this number. The
+     * program shouldn't exit until this number is zero.
+     */
+    uint64_t outstanding_count;
 
     /**
      * The number of slots is a power-of-2, so the mask is just this
@@ -104,6 +111,8 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     unsigned index;
 
     /* Unlink from wherever the entry came from */
+    if (entry->timestamp)
+        timeouts->outstanding_count--;
     timeout_unlink(entry);
 
     if (entry->prev) {
@@ -122,6 +131,8 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
     entry->prev = &timeouts->slots[index];
     if (entry->next)
         entry->next->prev = &entry->next;
+
+    timeouts->outstanding_count++;
 }
 
 /***************************************************************************
@@ -155,6 +166,7 @@ timeouts_remove(struct Timeouts *timeouts, uint64_t timestamp)
     }
 
     /* unlink this entry from the timeout system */
+    timeouts--;
     timeout_unlink(entry);
 
     /* return a pointer to the structure holding this entry */

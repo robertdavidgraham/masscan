@@ -18,7 +18,7 @@
 #include "stack-arpv4.h"
 #include "stack-queue.h"
 #include "string_s.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "pixie-timer.h"
 #include "proto-preprocess.h"
 #include "util-checksum.h"

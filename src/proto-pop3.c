@@ -9,7 +9,7 @@
 #include "proto-banner1.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "proto-ssl.h"
 #include <ctype.h>
 #include <string.h>
@@ -20,10 +20,10 @@
 static void
 pop3_parse(  const struct Banner1 *banner1,
            void *banner1_private,
-           struct ProtocolState *pstate,
+           struct StreamState *pstate,
            const unsigned char *px, size_t length,
            struct BannerOutput *banout,
-           struct InteractiveData *more)
+           struct stack_handle_t *socket)
 {
     unsigned state = pstate->state;
     unsigned i;
@@ -42,14 +42,14 @@ pop3_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if ("+OK"[state] != px[i]) {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 } else
                     state++;
                 break;
             case 3:
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "CAPA\r\n", 6, 0);
+                    tcpapi_send(socket, "CAPA\r\n", 6, 0);
                     state++;
                 }
                 break;
@@ -62,7 +62,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 5:
@@ -72,7 +72,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     state++;
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 6:
@@ -82,7 +82,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     state += 2; /* oops, I had too many states here */
                 else {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             case 8:
@@ -108,7 +108,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     continue;
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
-                    tcp_transmit(more, "STLS\r\n", 6, 0);
+                    tcpapi_send(socket, "STLS\r\n", 6, 0);
                     state = 204;
                 } else {
                     state = 8;
@@ -128,7 +128,7 @@ pop3_parse(  const struct Banner1 *banner1,
                     pstate->port = (unsigned short)port;
                     state = 0;
                     
-                    tcp_transmit(more, banner_ssl.hello, banner_ssl.hello_length, 0);
+                    tcpapi_send(socket, banner_ssl.hello, banner_ssl.hello_length, 0);
                     
                     break;
                 }
@@ -140,7 +140,7 @@ pop3_parse(  const struct Banner1 *banner1,
                 banout_append_char(banout, PROTO_POP3, px[i]);
                 if (px[i] == '\n') {
                     state = 0xffffffff;
-                    tcp_close(more);
+                    tcpapi_close(socket);
                 }
                 break;
             default:

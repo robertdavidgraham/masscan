@@ -9,7 +9,7 @@ struct Masscan;
  * JSON or XML.
  */
 void
-read_binary_scanfile(struct Masscan *masscan, 
+readscan_binary_scanfile(struct Masscan *masscan, 
                      int arg_first, int arg_max, char *argv[]);
 
 #endif

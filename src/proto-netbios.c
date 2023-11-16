@@ -3,7 +3,7 @@
 #include "proto-dns-parse.h"
 #include "proto-preprocess.h"
 #include "syn-cookie.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "output.h"
 #include "masscan-app.h"
 #include "proto-banner1.h"

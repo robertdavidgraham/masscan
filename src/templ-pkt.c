@@ -15,7 +15,7 @@
 #include "proto-sctp.h"
 #include "string_s.h"
 #include "pixie-timer.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "templ-payloads.h"
 #include "syn-cookie.h"
 #include "unusedparm.h"
@@ -1389,18 +1389,6 @@ template_packet_init(
     templset->entropy = entropy;
 
 
-    /* [TCP] */
-    length = sizeof(default_tcp_template)-1;
-    buf = malloc(length);
-    memcpy(buf, default_tcp_template, length);
-    templ_tcp_apply_options(&buf, &length, templ_opts); /* mss, sack, wscale */
-    _template_init(&templset->pkts[Proto_TCP],
-                   source_mac, router_mac_ipv4, router_mac_ipv6,
-                   buf, length,
-                   data_link);
-    templset->count++;
-    free(buf);
-
     /* [SCTP] */
     _template_init(&templset->pkts[Proto_SCTP],
                    source_mac, router_mac_ipv4, router_mac_ipv6,
@@ -1408,6 +1396,19 @@ template_packet_init(
                    sizeof(default_sctp_template)-1,
                    data_link);
     templset->count++;
+
+    /* [TCP] */
+    length = sizeof(default_tcp_template) - 1;
+    buf = MALLOC(length);
+    memcpy(buf, default_tcp_template, length);
+    templ_tcp_apply_options(&buf, &length, templ_opts);
+    _template_init(&templset->pkts[Proto_TCP],
+                   source_mac, router_mac_ipv4, router_mac_ipv6,
+                   buf,
+                   length,
+                   data_link);
+    templset->count++;
+    free(buf);
 
     /* [UDP] */
     _template_init(&templset->pkts[Proto_UDP],
@@ -1543,7 +1544,7 @@ template_selftest(void)
             0,  /* UDP payloads = empty */
             0,  /* Oproto payloads = empty */
             1,  /* Ethernet */
-            0,   /* no entropy */
+            0,  /* no entropy */
             &templ_opts
             );
     failures += tmplset->pkts[Proto_TCP].proto  != Proto_TCP;

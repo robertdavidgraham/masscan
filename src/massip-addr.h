@@ -79,9 +79,21 @@ static inline int ipv6address_is_invalid(ipv6address_t a) {
     return a.hi == ~0ULL && a.lo == ~0ULL;
 }
 
+
 /** Compare two IPv6 addresses */
 static inline int ipv6address_is_equal(ipv6address_t a, ipv6address_t b) {
     return a.hi == b.hi && a.lo == b.lo;
+}
+
+static inline int ipaddress_is_equal(ipaddress a, ipaddress b) {
+    if (a.version != b.version)
+        return 0;
+    if (a.version == 4) {
+        return a.ipv4 == b.ipv4;
+    } else if (a.version == 6) {
+        return ipv6address_is_equal(a.ipv6, b.ipv6);
+    } else
+        return 0;
 }
 
 /** Compare two IPv6 addresses, to see which one comes frist. This is used
@@ -95,6 +107,10 @@ static inline int ipv6address_is_lessthan(ipv6address_t a, ipv6address_t b) {
  * Mask the lower bits of each address and test if the upper bits are equal
  */
 int ipv6address_is_equal_prefixed(ipv6address_t lhs, ipv6address_t rhs, unsigned prefix);
+
+ipv6address_t ipv6address_add_uint64(ipv6address_t lhs, uint64_t rhs);
+ipv6address_t ipv6address_subtract(ipv6address_t lhs, ipv6address_t rhs);
+ipv6address_t ipv6address_add(ipv6address_t lhs, ipv6address_t rhs);
 
 /**
  * Given a typical EXTERNAL representation of an IPv6 address, which is

@@ -6,7 +6,7 @@
 */
 #include "rawsock.h"
 #include "templ-pkt.h"
-#include "logger.h"
+#include "util-logger.h"
 #include "main-ptrace.h"
 #include "string_s.h"
 #include "stub-pcap.h"

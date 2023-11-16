@@ -3,7 +3,7 @@
  
  */
 #include "proto-smb.h"
-#include "proto-interactive.h"
+#include "stack-tcp-api.h"
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
@@ -1015,7 +1015,18 @@ smb2_parse_negotiate(struct SMBSTUFF *smb, const unsigned char *px, size_t offse
                 break;
             case N_BOOT1: case N_BOOT2: case N_BOOT3: case N_BOOT4:
             case N_BOOT5: case N_BOOT6: case N_BOOT7: case N_BOOT8:
-                smb->parms.negotiate2.boot_time |= (px[offset]<<((state-N_BOOT1)*8));
+                smb->parms.negotiate2.boot_time |= ((uint64_t)px[offset]<<(uint64_t)((state-N_BOOT1)*8));
+                if (state == N_BOOT8 && !smb->is_printed_boottime) {
+                    char str[64] = "(err)";
+                    time_t timestamp = convert_windows_time(smb->parms.negotiate2.boot_time);
+                    struct tm tm = {0};
+                    size_t len;
+                    
+                    gmtime_s(&tm, &timestamp);
+                    len = strftime(str, sizeof(str), " boottime=%Y-%m-%d %H:%M:%S ", &tm);
+                    banout_append(banout, PROTO_SMB, str, len);
+                    smb->is_printed_boottime = 1;
+                }
                 state++;
                 break;
             case N_BLOB_OFFSET1:
@@ -1229,7 +1240,7 @@ smb2_parse_header(struct SMBSTUFF *smb, const unsigned char *px, size_t offset, 
  *****************************************************************************/
 static size_t
 smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct BannerOutput *banout,
-                 struct InteractiveData *more)
+                 struct stack_handle_t *socket)
 {
     size_t len; /*scratch variables used in a couple places */
     unsigned state = smb->nbt_state;
@@ -1399,7 +1410,7 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
             break;
         case SMB1_PARAMETERS:
             /* Transfer control to a sub-parser, which may consume zero
-             * or more bytes, up to the end of the parameters field
+             * or greater bytes, up to the end of the parameters field
              * (meaning, up to word_count*2 bytes) */
             len = smb_params_parse(smb, px, i, max);
             i += len;
@@ -1440,26 +1451,23 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                     smb->hdr.smb1.byte_state = 0;
                     
                     if (smb->hdr.smb1.flags2 & 0x0800) {
-                        tcp_transmit(more, smb1_null_session_setup_ex, sizeof(smb1_null_session_setup_ex), 0);
+                        tcpapi_send(socket, smb1_null_session_setup_ex, sizeof(smb1_null_session_setup_ex), 0);
                     } else {
                         if (smb->parms.negotiate.SessionKey) {
                             unsigned char *buf;
                             
-                            buf = tcp_transmit_alloc(more, sizeof(smb1_null_session_setup));
+                            buf = malloc(sizeof(smb1_null_session_setup));
                             
                             memcpy(buf, smb1_null_session_setup, sizeof(smb1_null_session_setup));
                             buf[0x2f] = (unsigned char)(smb->parms.negotiate.SessionKey>> 0) & 0xFF;
                             buf[0x30] = (unsigned char)(smb->parms.negotiate.SessionKey>> 8) & 0xFF;
                             buf[0x31] = (unsigned char)(smb->parms.negotiate.SessionKey>>16) & 0xFF;
                             buf[0x32] = (unsigned char)(smb->parms.negotiate.SessionKey>>24) & 0xFF;
-                            tcp_transmit(more, buf, sizeof(smb1_null_session_setup), TCPTRAN_DYNAMIC);
-                            
-                            /* NOTE: the following line is here to silence LLVM warnings about a potential
-                             * memory leak. The 'tcp_transmit' function 'adopts' the pointer and will be
-                             * responsible for freeing it after the packet gets successfully transmitted */
-                            buf = 0;
+                            tcpapi_send(socket, buf, sizeof(smb1_null_session_setup), TCP__copy);
+                            free(buf);
                         } else {
-                            tcp_transmit(more, smb1_null_session_setup, sizeof(smb1_null_session_setup), 0);
+                            tcpapi_send(socket,
+                                        smb1_null_session_setup, sizeof(smb1_null_session_setup), TCP__static);
                         }
                     }
                 
@@ -1504,7 +1512,7 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                 
                 /* close the connection, we've found all we can */
                 if (smb->hdr.smb1.command == 0x73)
-                    tcp_close(more);
+                    tcpapi_close(socket);
             }
             break;
             
@@ -1582,9 +1590,9 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                 switch (smb->hdr.smb2.opcode) {
                     case 0x00: /* negotiate response */
                         if (smb->hdr.smb2.seqno == 0) {
-                            tcp_transmit(more, smb2_negotiate_request, sizeof(smb2_negotiate_request), 0);
+                            tcpapi_send(socket, smb2_negotiate_request, sizeof(smb2_negotiate_request), 0);
                         } else if (smb->hdr.smb2.seqno == 1) {
-                            tcp_transmit(more, smb2_null_session_setup, sizeof(smb2_null_session_setup), 0);
+                            tcpapi_send(socket, smb2_null_session_setup, sizeof(smb2_null_session_setup), 0);
                         }
                         break;
                     default:
@@ -1631,7 +1639,7 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                 
                 /* Close the connection when we get a SessionSetup response */
                 if (smb->hdr.smb2.opcode == 1)
-                    tcp_close(more);
+                    tcpapi_close(socket);
             }
         }
             break;
@@ -1663,10 +1671,10 @@ static void
 smb_parse_record(
                  const struct Banner1 *banner1,
                  void *banner1_private,
-                 struct ProtocolState *pstate,
+                 struct StreamState *pstate,
                  const unsigned char *px, size_t max,
                  struct BannerOutput *banout,
-                 struct InteractiveData *more)
+                 struct stack_handle_t *socket)
 {
     size_t i;
     unsigned state = pstate->state;
@@ -1729,7 +1737,7 @@ smb_parse_record(
                         state = NBT_UNKNOWN;
                         break;
                     case 0x82:
-                        tcp_transmit(more, smb1_hello_template, sizeof(smb1_hello_template), 0);
+                    tcpapi_send(socket, smb1_hello_template, sizeof(smb1_hello_template), 0);
                         state = NBT_DRAIN;
                         break;
                     case 0x85:
@@ -1781,7 +1789,7 @@ smb_parse_record(
                 break;
                 
             case NBT_SMB:
-                i += smb_parse_smb(smb, px+i, max-i, banout, more);
+                i += smb_parse_smb(smb, px+i, max-i, banout, socket);
                 if (smb->nbt_length == 0) {
                     state = 0;
                     i--;
@@ -1884,9 +1892,9 @@ static int
 smb_do_test(const char *substring, const unsigned char *packet_bytes, size_t length)
 {
     struct Banner1 *banner1;
-    struct ProtocolState state[1];
+    struct StreamState state[1];
     struct BannerOutput banout1[1];
-    struct InteractiveData more;
+    struct stack_handle_t socket = {0};
     int x;
     
     banner1 = banner1_create();
@@ -1899,7 +1907,7 @@ smb_do_test(const char *substring, const unsigned char *packet_bytes, size_t len
                      packet_bytes,
                      length,
                      banout1,
-                     &more);
+                     &socket);
     x = banout_is_contains(banout1, PROTO_SMB, substring);
     if (x == 0)
         printf("smb parser failure: %s\n", substring);
@@ -2017,7 +2025,7 @@ smb_selftest(void)
         struct Banner1 *banner1;
         struct ProtocolState state[1];
         struct BannerOutput banout1[1];
-        struct InteractiveData more;
+        struct InteractiveData socket;
         size_t i;
 
         /*
@@ -2045,7 +2053,7 @@ smb_selftest(void)
                                  packet_bytes,
                                  sizeof(packet_bytes),
                                  banout1,
-                                 &more);
+                                 &socket);
                 banner1_destroy(banner1);
                 banout_release(banout1);
                 
@@ -2061,7 +2069,7 @@ smb_selftest(void)
 /*****************************************************************************
  *****************************************************************************/
 static void
-smb_cleanup(struct ProtocolState *pstate)
+smb_cleanup(struct StreamState *pstate)
 {
     struct SMBSTUFF *smb = &pstate->sub.smb;
     if (smb->spnego.ntlmssp.buf)

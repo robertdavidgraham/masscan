@@ -1,6 +1,4 @@
-[![Masscan unittests](https://github.com/robertdavidgraham/masscan/actions/workflows/unittests.yml/badge.svg?branch=master)](https://github.com/robertdavidgraham/masscan/actions/workflows/unittests.yml/?branch=master)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/erratarob.svg?logo=twitter)](https://twitter.com/erratarob)
-[![Follow on Mastodon](https://img.shields.io/mastodon/follow/109293216115833216?domain=https%3A%2F%2Finfosec.exchange&style=social)](https://infosec.exchange/@erratarob)
+[![unittests](https://github.com/robertdavidgraham/masscan/actions/workflows/unittests.yml/badge.svg?branch=master)](https://github.com/robertdavidgraham/masscan/actions/workflows/unittests.yml/?branch=master)
 
 # MASSCAN: Mass IP port scanner
 
