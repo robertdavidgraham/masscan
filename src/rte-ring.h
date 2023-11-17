@@ -95,7 +95,7 @@
 #ifndef EDQUOT
 #define EDQUOT EOVERFLOW
 #endif
-#define rte_snprintf sprintf_s
+#define rte_snprintf snprintf
 #define PRIu32 "u"
 #endif
 

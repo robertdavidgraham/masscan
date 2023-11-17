@@ -3,7 +3,7 @@
 #include "stack-tcp-api.h"
 #include "smack.h"
 #include "unusedparm.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "masscan-app.h"
 #include "util-malloc.h"
 #include "util-bool.h"

@@ -1,7 +1,7 @@
 #ifndef MASSCAN_H
 #define MASSCAN_H
 #include "massip-addr.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "stack-src.h"
 #include "massip.h"
 #include "util-bool.h"

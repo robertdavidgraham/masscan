@@ -1,7 +1,7 @@
 #include "main-ptrace.h"
 #include "proto-preprocess.h"
 #include "pixie-timer.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 
 
 /***************************************************************************
@@ -35,10 +35,10 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
 
     /* format the IP addresses into fixed-width fields */
     fmt = ipaddress_fmt(parsed.src_ip);
-    sprintf_s(from, sizeof(from), "[%s]:%u", fmt.string, parsed.port_src);
+    snprintf(from, sizeof(from), "[%s]:%u", fmt.string, parsed.port_src);
 
     fmt = ipaddress_fmt(parsed.dst_ip);
-    sprintf_s(to, sizeof(to), "[%s]:%u", fmt.string, parsed.port_dst);
+    snprintf(to, sizeof(to), "[%s]:%u", fmt.string, parsed.port_dst);
 
     switch (parsed.found) {
         case FOUND_ARP:
@@ -46,9 +46,9 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
             *strchr(to, ':') = '\0';
             *strchr(from, ':') = '\0';
             switch (type) {
-                case 1:strcpy_s(sz_type, sizeof(sz_type), "request"); break;
-                case 2:strcpy_s(sz_type, sizeof(sz_type), "response"); break;
-                default: sprintf_s(sz_type, sizeof(sz_type), "unknown(%u)", type); break;
+                case 1:safe_strcpy(sz_type, sizeof(sz_type), "request"); break;
+                case 2:safe_strcpy(sz_type, sizeof(sz_type), "response"); break;
+                default: snprintf(sz_type, sizeof(sz_type), "unknown(%u)", type); break;
             }
             fprintf(fp, "%s (%5.4f) ARP  %-21s > %-21s %s\n", direction,
                     timestamp - pt_start, from, to, sz_type);
@@ -65,19 +65,19 @@ packet_trace(FILE *fp, double pt_start, const unsigned char *px, size_t length, 
         case FOUND_TCP:
             type = px[offset+13];
             switch (type) {
-                case 0x00: strcpy_s(sz_type, sizeof(sz_type), "NULL"); break;
-                case 0x01: strcpy_s(sz_type, sizeof(sz_type), "FIN"); break;
-                case 0x11: strcpy_s(sz_type, sizeof(sz_type), "FIN-ACK"); break;
-                case 0x19: strcpy_s(sz_type, sizeof(sz_type), "FIN-ACK-PSH"); break;
-                case 0x02: strcpy_s(sz_type, sizeof(sz_type), "SYN"); break;
-                case 0x12: strcpy_s(sz_type, sizeof(sz_type), "SYN-ACK"); break;
-                case 0x04: strcpy_s(sz_type, sizeof(sz_type), "RST"); break;
-                case 0x14: strcpy_s(sz_type, sizeof(sz_type), "RST-ACK"); break;
-                case 0x15: strcpy_s(sz_type, sizeof(sz_type), "RST-FIN-ACK"); break;
-                case 0x10: strcpy_s(sz_type, sizeof(sz_type), "ACK"); break;
-                case 0x18: strcpy_s(sz_type, sizeof(sz_type), "ACK-PSH"); break;
+                case 0x00: safe_strcpy(sz_type, sizeof(sz_type), "NULL"); break;
+                case 0x01: safe_strcpy(sz_type, sizeof(sz_type), "FIN"); break;
+                case 0x11: safe_strcpy(sz_type, sizeof(sz_type), "FIN-ACK"); break;
+                case 0x19: safe_strcpy(sz_type, sizeof(sz_type), "FIN-ACK-PSH"); break;
+                case 0x02: safe_strcpy(sz_type, sizeof(sz_type), "SYN"); break;
+                case 0x12: safe_strcpy(sz_type, sizeof(sz_type), "SYN-ACK"); break;
+                case 0x04: safe_strcpy(sz_type, sizeof(sz_type), "RST"); break;
+                case 0x14: safe_strcpy(sz_type, sizeof(sz_type), "RST-ACK"); break;
+                case 0x15: safe_strcpy(sz_type, sizeof(sz_type), "RST-FIN-ACK"); break;
+                case 0x10: safe_strcpy(sz_type, sizeof(sz_type), "ACK"); break;
+                case 0x18: safe_strcpy(sz_type, sizeof(sz_type), "ACK-PSH"); break;
                 default:
-                    sprintf_s(sz_type, sizeof(sz_type),
+                    snprintf(sz_type, sizeof(sz_type),
                               "%s%s%s%s%s%s%s%s",
                               (type&0x01)?"FIN":"",
                               (type&0x02)?"SYN":"",

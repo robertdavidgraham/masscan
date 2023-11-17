@@ -55,7 +55,7 @@ getFILETIMEoffset(void)
 }
 
 int
-clock_gettime(int X, struct timeval *tv)
+win_clock_gettime(int X, struct timeval *tv)
 {
     LARGE_INTEGER           t;
     FILETIME            f;

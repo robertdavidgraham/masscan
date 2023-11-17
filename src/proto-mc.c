@@ -54,7 +54,8 @@ mc_parse(  const struct Banner1 *banner1,
 {
     size_t i;
     struct MCSTUFF *mc = &pstate->sub.mc;
-
+    UNUSEDPARM(banner1_private);
+    UNUSEDPARM(banner1);
     for(i = 0; i < length; i++) {
         if(px[i] == '{')
             mc->brackcount++;
@@ -76,7 +77,8 @@ mc_parse(  const struct Banner1 *banner1,
             if(mc->imgstart)
                 mc->imgstart-=(size_t)mc->banmem;
         } else { // we found start but not the end
-            if((mc->imgend = (size_t)memchr(mc->banmem+mc->imgstart,'\"',mc->totalLen-mc->imgstart))){ // we found the end
+            mc->imgend = (size_t)memchr(mc->banmem+mc->imgstart,'\"',mc->totalLen-mc->imgstart);
+            if(mc->imgend){ // we found the end
                 mc->imgend-=(size_t)mc->banmem;
                 memcpy(mc->banmem+mc->imgstart,mc->banmem+mc->imgend,(mc->totalLen-mc->imgend)+1); // copy data after B64
                 mc->totalLen=mc->imgstart+(mc->totalLen-mc->imgend); // shrink length to subtract B64 image

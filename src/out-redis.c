@@ -157,7 +157,7 @@ redis_out_open(struct Output *out, FILE *fp)
     UNUSEDPARM(out);
     if (out->redis.password != NULL)
     {
-        sprintf_s(line, sizeof(line),
+        snprintf(line, sizeof(line),
                   "*2\r\n"
                   "$4\r\nAUTH\r\n"
                   "$%u\r\n%s\r\n",
@@ -233,8 +233,8 @@ redis_out_status(struct Output *out, FILE *fp, time_t timestamp,
     int values_length;
     ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
-    ip_string_length = sprintf_s(ip_string, sizeof(ip_string), "%s", fmt.string);
-    port_string_length = sprintf_s(port_string, sizeof(port_string), "%u/%s", port, name_from_ip_proto(ip_proto));
+    ip_string_length = snprintf(ip_string, sizeof(ip_string), "%s", fmt.string);
+    port_string_length = snprintf(port_string, sizeof(port_string), "%u/%s", port, name_from_ip_proto(ip_proto));
 
 /**3
 $3
@@ -249,7 +249,7 @@ myvalue
      * KEY: "host"
      * VALUE: ip
      */
-    sprintf_s(line, sizeof(line),
+    snprintf(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%d\r\n%s\r\n"
@@ -270,7 +270,7 @@ myvalue
      * KEY: ip
      * VALUE: port
      */
-    sprintf_s(line, sizeof(line),
+    snprintf(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%d\r\n%s\r\n"
@@ -291,9 +291,9 @@ myvalue
      * KEY: ip:port
      * VALUE: timestamp:status:reason:ttl
      */
-    values_length = sprintf_s(values, sizeof(values), "%u:%u:%u:%u",
+    values_length = snprintf(values, sizeof(values), "%u:%u:%u:%u",
         (unsigned)timestamp, status, reason, ttl);
-    line_length = sprintf_s(line, sizeof(line),
+    line_length = snprintf(line, sizeof(line),
             "*3\r\n"
             "$4\r\nSADD\r\n"
             "$%d\r\n%s:%s\r\n"

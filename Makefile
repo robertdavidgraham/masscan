@@ -1,3 +1,10 @@
+# If Windows, then assume the compiler is `gcc` for the
+# MinGW environment. I can't figure out how to tell if it's
+# actually MingGW. FIXME TODO
+ifeq ($(OS),Windows_NT)
+    CC = gcc
+endif
+
 # Try to figure out the default compiler. I dont know the best
 # way to do this with `gmake`. If you have better ideas, please
 # submit a pull request on github.
@@ -55,7 +62,7 @@ endif
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -Ivs10/include
 LIBS = -L vs10/lib -lIPHLPAPI -lWs2_32
-FLAGS2 = -march=i686
+#FLAGS2 = -march=i686
 endif
 
 # Cygwin

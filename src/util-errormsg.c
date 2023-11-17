@@ -9,7 +9,7 @@
 #endif
 
 
-static unsigned long long _entropy = (unsigned long long)&_entropy;
+static unsigned long long _entropy;
 
 void errmsg_init(unsigned long long in_entropy) {
     _entropy = in_entropy;

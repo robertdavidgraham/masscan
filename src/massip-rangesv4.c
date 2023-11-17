@@ -39,6 +39,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable:4204)
+#endif
+
 #define BUCKET_COUNT 16
 
 #define REGRESS(x) if (!(x)) return (fprintf(stderr, "regression failed %s:%d\n", __FILE__, __LINE__)|1)

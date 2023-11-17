@@ -7,7 +7,7 @@
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "unusedparm.h"
 #include <string.h>
 #include <ctype.h>
@@ -1006,7 +1006,7 @@ smb2_parse_negotiate(struct SMBSTUFF *smb, const unsigned char *px, size_t offse
                     struct tm tm = {0};
                     size_t len;
                     
-                    gmtime_s(&tm, &timestamp);
+                    safe_gmtime(&tm, &timestamp);
                     len = strftime(str, sizeof(str), " time=%Y-%m-%d %H:%M:%S ", &tm);
                     banout_append(banout, PROTO_SMB, str, len);
                     smb->is_printed_time = 1;
@@ -1022,7 +1022,7 @@ smb2_parse_negotiate(struct SMBSTUFF *smb, const unsigned char *px, size_t offse
                     struct tm tm = {0};
                     size_t len;
                     
-                    gmtime_s(&tm, &timestamp);
+                    safe_gmtime(&tm, &timestamp);
                     len = strftime(str, sizeof(str), " boottime=%Y-%m-%d %H:%M:%S ", &tm);
                     banout_append(banout, PROTO_SMB, str, len);
                     smb->is_printed_boottime = 1;
@@ -1439,11 +1439,11 @@ smb_parse_smb(struct SMBSTUFF *smb, const unsigned char *px, size_t max, struct 
                         time_t timestamp = convert_windows_time(smb->parms.negotiate.SystemTime);
                         struct tm tm = {0};
                         
-                        gmtime_s(&tm, &timestamp);
+                        safe_gmtime(&tm, &timestamp);
                         
                         len = strftime(str, sizeof(str), " time=%Y-%m-%d %H:%M:%S", &tm);
                         banout_append(banout, PROTO_SMB, str, len);
-                        sprintf_s(str, sizeof(str), " TZ=%+d ", (short)smb->parms.negotiate.ServerTimeZone);
+                        snprintf(str, sizeof(str), " TZ=%+d ", (short)smb->parms.negotiate.ServerTimeZone);
                         banout_append(banout, PROTO_SMB, str, AUTO_LEN);
                         
                         smb->is_printed_time = 1;

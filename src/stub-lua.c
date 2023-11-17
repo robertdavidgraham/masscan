@@ -1,10 +1,13 @@
 #define LUAAPI
 #include "stub-lua.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4133 4113 4047)
+#endif
+
 #if defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#pragma warning(disable: 4133 4113 4047)
 #else
 #include <dlfcn.h>
 #endif

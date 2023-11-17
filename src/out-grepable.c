@@ -4,7 +4,7 @@
 #include "masscan-status.h"
 #include "out-tcp-services.h"
 #include "massip-port.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 
 
 /****************************************************************************
@@ -75,7 +75,7 @@ grepable_out_open(struct Output *out, FILE *fp)
     unsigned count;
 
     
-    gmtime_s(&tm, &out->when_scan_started);
+    safe_gmtime(&tm, &out->when_scan_started);
 
     //Tue Jan 21 20:23:22 2014
     //%a %b %d %H:%M:%S %Y
@@ -122,7 +122,7 @@ grepable_out_close(struct Output *out, FILE *fp)
 
     UNUSEDPARM(out);
 
-    gmtime_s(&tm, &now);
+    safe_gmtime(&tm, &now);
 
     //Tue Jan 21 20:23:22 2014
     //%a %b %d %H:%M:%S %Y
@@ -154,7 +154,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     else
         service = oproto_service_name(ip_proto);
     
-    fprintf(fp, "Timestamp: %lu", timestamp);
+    fprintf(fp, "Timestamp: %llu", (unsigned long long)timestamp);
 
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "\tHost: %s ()", fmt.string);

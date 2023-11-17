@@ -13,7 +13,7 @@
 #include "massip-port.h"
 #include "proto-preprocess.h"
 #include "proto-sctp.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "pixie-timer.h"
 #include "util-logger.h"
 #include "templ-payloads.h"

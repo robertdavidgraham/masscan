@@ -6,7 +6,7 @@
 #include "util-malloc.h"
 #include <ctype.h>
 #include <string.h>
-#include "string_s.h"
+#include "util-safefunc.h"
 
 struct TelnetOptions {
     unsigned num;

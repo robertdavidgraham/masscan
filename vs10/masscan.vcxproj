@@ -115,7 +115,6 @@
     <ClCompile Include="..\src\stack-src.c" />
     <ClCompile Include="..\src\stack-tcp-app.c" />
     <ClCompile Include="..\src\stack-tcp-core.c" />
-    <ClCompile Include="..\src\string_s.c" />
     <ClCompile Include="..\src\stub-lua.c" />
     <ClCompile Include="..\src\stub-pcap.c" />
     <ClCompile Include="..\src\stub-pfring.c" />
@@ -128,6 +127,7 @@
     <ClCompile Include="..\src\util-errormsg.c" />
     <ClCompile Include="..\src\util-logger.c" />
     <ClCompile Include="..\src\util-malloc.c" />
+    <ClCompile Include="..\src\util-safefunc.c" />
     <ClCompile Include="..\src\vulncheck-heartbleed.c" />
     <ClCompile Include="..\src\vulncheck-ntp-monlist.c" />
     <ClCompile Include="..\src\vulncheck-sslv3.c" />
@@ -215,7 +215,6 @@
     <ClInclude Include="..\src\stack-tcp-api.h" />
     <ClInclude Include="..\src\stack-tcp-app.h" />
     <ClInclude Include="..\src\stack-tcp-core.h" />
-    <ClInclude Include="..\src\string_s.h" />
     <ClInclude Include="..\src\stub-lua.h" />
     <ClInclude Include="..\src\stub-pcap.h" />
     <ClInclude Include="..\src\stub-pfring.h" />
@@ -230,6 +229,7 @@
     <ClInclude Include="..\src\util-errormsg.h" />
     <ClInclude Include="..\src\util-logger.h" />
     <ClInclude Include="..\src\util-malloc.h" />
+    <ClInclude Include="..\src\util-safefunc.h" />
     <ClInclude Include="..\src\vulncheck.h" />
     <ClInclude Include="..\src\xring.h" />
   </ItemGroup>

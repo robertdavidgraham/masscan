@@ -11,7 +11,7 @@
 #include "proto-preprocess.h"
 #include "output.h"
 #include "proto-banner1.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -233,7 +233,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
                       | buf[16 + i*8 + 2] << 8
                       | buf[16 + i*8 + 3] << 0;
 
-            sprintf_s(szaddr, sizeof(szaddr), "%u.%u.%u.%u ",
+            snprintf(szaddr, sizeof(szaddr), "%u.%u.%u.%u ",
                     (unsigned char)(ip_found>>24),
                     (unsigned char)(ip_found>>16),
                     (unsigned char)(ip_found>> 8),

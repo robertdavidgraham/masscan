@@ -69,7 +69,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ***************************************************************************/
-#include "string_s.h"
+#include "util-safefunc.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>

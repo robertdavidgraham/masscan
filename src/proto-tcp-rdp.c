@@ -8,7 +8,7 @@
 #include "assert.h"
 #include <ctype.h>
 #include <string.h>
-#include "string_s.h"
+#include "util-safefunc.h"
 
 /***************************************************************************
  * @param length

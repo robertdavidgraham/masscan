@@ -5,7 +5,7 @@
     This works on both Linux and windows.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-malloc.h"
 #include "util-logger.h"
 
@@ -380,7 +380,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
             ipv4 = ntohl(rtInfo->gateWay.s_addr);
             if (ipv4 == 0)
                 continue;
-            strcpy_s(ifname, sizeof_ifname, rtInfo->ifName);
+            safe_strcpy(ifname, sizeof_ifname, rtInfo->ifName);
         }
 
     }
@@ -394,6 +394,15 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 
 
 #if defined(WIN32)
+/* From:
+ * https://stackoverflow.com/questions/10972794/undefined-reference-to-getadaptersaddresses20-but-i-included-liphlpapi
+ * I think this fixed issue #734
+ */
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x501
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x501
+#endif
+
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include "massip-parse.h"
@@ -473,7 +482,7 @@ again:
          * we'll use that one
          */
         if (ipv4) {
-            sprintf_s(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);
+            snprintf(ifname, sizeof_ifname, "\\Device\\NPF_%s", pAdapter->AdapterName);
         }
 
     }

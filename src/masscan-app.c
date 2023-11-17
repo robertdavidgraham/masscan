@@ -1,5 +1,5 @@
 #include "masscan-app.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 
 /******************************************************************************
  * When outputting results, we call this function to print out the type of 
@@ -51,7 +51,7 @@ masscan_app_to_string(enum ApplicationProtocol proto)
     case PROTO_ERROR:           return "error";
             
     default:
-        sprintf_s(tmp, sizeof(tmp), "(%u)", proto);
+        snprintf(tmp, sizeof(tmp), "(%u)", proto);
         return tmp;
     }
 }

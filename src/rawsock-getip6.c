@@ -12,7 +12,7 @@
  I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "massip-parse.h"
 
 /*****************************************************************************
@@ -81,10 +81,18 @@ rawsock_get_adapter_ipv6(const char *ifname)
 /*****************************************************************************
  *****************************************************************************/
 #elif defined(WIN32)
+/* From:
+ * https://stackoverflow.com/questions/10972794/undefined-reference-to-getadaptersaddresses20-but-i-included-liphlpapi
+ */
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x501
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x501
+#endif
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #include <iphlpapi.h>
+
 #ifdef _MSC_VER
 #pragma comment(lib, "IPHLPAPI.lib")
 #endif
@@ -158,24 +166,9 @@ again:
         if (addr->Flags == IP_ADAPTER_ADDRESS_TRANSIENT)
             continue;
 
-#if 0
-/* My first attempt was to use the underlying approved operating system
- * APIs to format this, rather than making assumptions about the 
- * structure of how internals might hold an IPv6 address.
- * But it turns out, "inet_ntop()" has some portability
- * issues. Thus, I'm not going to follow this path */
-        /* Format as a string */
-        inet_ntop(sa->sin6_family, &sa->sin6_addr, buf, sizeof(buf));
-        
-        /* Convert to internal format */
-        ipv6 = massip_parse_ipv6(buf);
-        if (ipv6address_is_invalid(ipv6)) {
-            fprintf(stderr, "[-] corrupt IPv6 address: %s\n", buf);
-            continue;
-        }
-#else
+        /* Don't use operating-system function for this, because they aren't
+         * really portable or safe */
         ipv6 = ipv6address_from_bytes((const unsigned char *)&sa->sin6_addr);
-#endif
 
         if (addr->PrefixOrigin == IpPrefixOriginWellKnown) {
              /* This value applies to an IPv6 link-local address or an IPv6 loopback address */

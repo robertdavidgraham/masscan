@@ -1,15 +1,19 @@
 /*
-    safe "string" functions, like Microsoft's
+    safe "string" functions
 
     This is for the "safe" clib functions, where things like "strcpy()" is
-    replaced with a safer version of the function, like "strcpy_s()". Since
-    these things are non-standard, compilers deal with them differently.
+    replaced with a safer version of the function, like "safe_strcpy()".
+ 
+    NOTE: I tried to based these on Microosft's `..._s()` functions proposed
+    in Annex K, but it's become too hard trying to deal with both my own
+    version and existing versions. Therefore, I've changed this code to
+    use names not used by others.
 
  Reference:
  http://msdn.microsoft.com/en-us/library/bb288454.aspx
 */
-#ifndef STRCPY_S
-#define STRCPY_S
+#ifndef UTIL_SAFEFUNC_H
+#define UTIL_SAFEFUNC_H
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,11 +21,15 @@
 #include <time.h>
 #include <stdint.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
+
 #undef strcpy
 #define strcpy      STRCPY_FUNCTION_IS_BAD
 
-#undef strncpy
-#define strncpy     STRNCPY_FUNCTION_IS_BAD
+/*#undef strncpy
+#define strncpy     STRNCPY_FUNCTION_IS_BAD*/
 
 #undef strcat
 #define strcat      STRCAT_FUNCTION_IS_BAD
@@ -50,10 +58,14 @@
 #undef itoa
 #define itoa        ITOA_FUNCTION_IS_BAD
 
-#undef strerror
-#define strerror    STRERROR_FUNCTION_IS_BAD
+/**
+ * A bounds checking version of strcpy, like `strcpy_s()` on Windows or
+ * `strlcpy()` in glibc.
+ */
+void safe_strcpy(char *dst, size_t sizeof_dst, const char *src);
+int safe_localtime(struct tm* _tm, const time_t *time);
+int safe_gmtime(struct tm* _tm, const time_t *time);
 
-const char *strerror_x(int x);
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900)
 /*Visual Studio 2015 and 2017*/
@@ -71,6 +83,8 @@ const char *strerror_x(int x);
 /*Visual Studio 2010*/
 # include <stdio.h>
 # include <string.h>
+#pragma warning(disable: 4996)
+#define snprintf _snprintf
 # define strcasecmp     _stricmp
 # define memcasecmp     _memicmp
 # ifndef PRIu64
@@ -82,27 +96,14 @@ const char *strerror_x(int x);
 
 #elif defined(_MSC_VER) && (_MSC_VER == 1200)
 /* Visual Studio 6.0 */
-# define sprintf_s      _snprintf
+# define snprintf      _snprintf
 # define strcasecmp     _stricmp
 # define memcasecmp     _memicmp
-# define vsprintf_s     _vsnprintf
- typedef int errno_t;
-errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
+# define vsnprintf     _vsnprintf
 
 #elif defined(__GNUC__) && (__GNUC__ >= 4)
 #include <inttypes.h>
-/* GCC 4 */
-# define sprintf_s      snprintf
-# define vsprintf_s     vsnprintf
- int memcasecmp(const void *lhs, const void *rhs, size_t length);
- typedef int errno_t;
-#if !defined(WIN32) /* mingw */
-errno_t fopen_s(FILE **fp, const char *filename, const char *mode);
-errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src);
-errno_t localtime_s(struct tm* _tm, const time_t *time);
-errno_t gmtime_s(struct tm* _tm, const time_t *time);
-#endif
-#undef strerror
+ int memcasecmp(const void *lhs, const void *rhs, size_t length);;
 
 #else
 # warning unknown compiler

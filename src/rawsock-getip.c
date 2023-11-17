@@ -12,7 +12,7 @@
  I think it'll work the same on any BSD system.
 */
 #include "rawsock.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "massip-parse.h"
 
 /*****************************************************************************
@@ -37,7 +37,7 @@ rawsock_get_adapter_ip(const char *ifname)
     fd = socket(AF_INET, SOCK_DGRAM, 0);
 
     ifr.ifr_addr.sa_family = AF_INET;
-    strcpy_s(ifr.ifr_name, IFNAMSIZ, ifname);
+    safe_strcpy(ifr.ifr_name, IFNAMSIZ, ifname);
 
     x = ioctl(fd, SIOCGIFADDR, &ifr);
     if (x < 0) {
@@ -57,6 +57,15 @@ rawsock_get_adapter_ip(const char *ifname)
 /*****************************************************************************
  *****************************************************************************/
 #elif defined(WIN32)
+ /* From:
+  * https://stackoverflow.com/questions/10972794/undefined-reference-to-getadaptersaddresses20-but-i-included-liphlpapi
+  * I think this fixes issue #734
+  */
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x501
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x501
+#endif
+
 #include <winsock2.h>
 #include <iphlpapi.h>
 #ifdef _MSC_VER

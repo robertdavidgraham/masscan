@@ -82,7 +82,7 @@
 		118D67F52B02DD6F00271F7F /* smack1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CA17DBCC7E00DDFD32 /* smack1.c */; };
 		118D67F62B02DD6F00271F7F /* massip-rangesv4.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2B25A00FA800F5FB0B /* massip-rangesv4.c */; };
 		118D67F72B02DD6F00271F7F /* smackqueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CB17DBCC7E00DDFD32 /* smackqueue.c */; };
-		118D67F82B02DD6F00271F7F /* string_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CD17DBCC7E00DDFD32 /* string_s.c */; };
+		118D67F82B02DD6F00271F7F /* util-safefunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CD17DBCC7E00DDFD32 /* util-safefunc.c */; };
 		118D67F92B02DD6F00271F7F /* stack-ndpv6.c in Sources */ = {isa = PBXBuildFile; fileRef = 11B6297625995AA100D4786F /* stack-ndpv6.c */; };
 		118D67FA2B02DD6F00271F7F /* syn-cookie.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */; };
 		118D67FB2B02DD6F00271F7F /* stack-arpv4.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6D25B4FF3C00EEFC2C /* stack-arpv4.c */; };
@@ -193,7 +193,7 @@
 		11A921F417DBCC7E00DDFD32 /* rte-ring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921C717DBCC7E00DDFD32 /* rte-ring.c */; };
 		11A921F517DBCC7E00DDFD32 /* smack1.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CA17DBCC7E00DDFD32 /* smack1.c */; };
 		11A921F617DBCC7E00DDFD32 /* smackqueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CB17DBCC7E00DDFD32 /* smackqueue.c */; };
-		11A921F717DBCC7E00DDFD32 /* string_s.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CD17DBCC7E00DDFD32 /* string_s.c */; };
+		11A921F717DBCC7E00DDFD32 /* util-safefunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CD17DBCC7E00DDFD32 /* util-safefunc.c */; };
 		11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */; };
 		11A921F917DBCC7E00DDFD32 /* templ-pkt.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D117DBCC7E00DDFD32 /* templ-pkt.c */; };
 		11A921FA17DBCC7E00DDFD32 /* xring.c in Sources */ = {isa = PBXBuildFile; fileRef = 11A921D317DBCC7E00DDFD32 /* xring.c */; };
@@ -397,8 +397,8 @@
 		11A921CA17DBCC7E00DDFD32 /* smack1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = smack1.c; sourceTree = "<group>"; };
 		11A921CB17DBCC7E00DDFD32 /* smackqueue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = smackqueue.c; sourceTree = "<group>"; };
 		11A921CC17DBCC7E00DDFD32 /* smackqueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = smackqueue.h; sourceTree = "<group>"; };
-		11A921CD17DBCC7E00DDFD32 /* string_s.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = string_s.c; sourceTree = "<group>"; };
-		11A921CE17DBCC7E00DDFD32 /* string_s.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = string_s.h; sourceTree = "<group>"; };
+		11A921CD17DBCC7E00DDFD32 /* util-safefunc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-safefunc.c"; sourceTree = "<group>"; };
+		11A921CE17DBCC7E00DDFD32 /* util-safefunc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-safefunc.h"; sourceTree = "<group>"; };
 		11A921CF17DBCC7E00DDFD32 /* syn-cookie.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "syn-cookie.c"; sourceTree = "<group>"; };
 		11A921D017DBCC7E00DDFD32 /* syn-cookie.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "syn-cookie.h"; sourceTree = "<group>"; };
 		11A921D117DBCC7E00DDFD32 /* templ-pkt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "templ-pkt.c"; sourceTree = "<group>"; };
@@ -551,6 +551,8 @@
 		118E114F25859CFD00618314 /* util */ = {
 			isa = PBXGroup;
 			children = (
+				11A921CD17DBCC7E00DDFD32 /* util-safefunc.c */,
+				11A921CE17DBCC7E00DDFD32 /* util-safefunc.h */,
 				118D67C22B02CBA000271F7F /* util-errormsg.c */,
 				118D67C12B02CBA000271F7F /* util-errormsg.h */,
 				115C0CAA18035BC5004E6CD7 /* unusedparm.h */,
@@ -806,8 +808,6 @@
 				11A921CA17DBCC7E00DDFD32 /* smack1.c */,
 				11A921CB17DBCC7E00DDFD32 /* smackqueue.c */,
 				11A921CC17DBCC7E00DDFD32 /* smackqueue.h */,
-				11A921CD17DBCC7E00DDFD32 /* string_s.c */,
-				11A921CE17DBCC7E00DDFD32 /* string_s.h */,
 				11A9219317DBCC7E00DDFD32 /* event-timeout.c */,
 				11A9219417DBCC7E00DDFD32 /* event-timeout.h */,
 				11A9219517DBCC7E00DDFD32 /* util-logger.c */,
@@ -950,7 +950,7 @@
 				118D67F52B02DD6F00271F7F /* smack1.c in Sources */,
 				118D67F62B02DD6F00271F7F /* massip-rangesv4.c in Sources */,
 				118D67F72B02DD6F00271F7F /* smackqueue.c in Sources */,
-				118D67F82B02DD6F00271F7F /* string_s.c in Sources */,
+				118D67F82B02DD6F00271F7F /* util-safefunc.c in Sources */,
 				118D67F92B02DD6F00271F7F /* stack-ndpv6.c in Sources */,
 				118D67FA2B02DD6F00271F7F /* syn-cookie.c in Sources */,
 				118D67FB2B02DD6F00271F7F /* stack-arpv4.c in Sources */,
@@ -1071,7 +1071,7 @@
 				11A921F517DBCC7E00DDFD32 /* smack1.c in Sources */,
 				118B9B3225A00FA900F5FB0B /* massip-rangesv4.c in Sources */,
 				11A921F617DBCC7E00DDFD32 /* smackqueue.c in Sources */,
-				11A921F717DBCC7E00DDFD32 /* string_s.c in Sources */,
+				11A921F717DBCC7E00DDFD32 /* util-safefunc.c in Sources */,
 				11B6297A25995AA100D4786F /* stack-ndpv6.c in Sources */,
 				11A921F817DBCC7E00DDFD32 /* syn-cookie.c in Sources */,
 				1124DD7025B4FF3C00EEFC2C /* stack-arpv4.c in Sources */,

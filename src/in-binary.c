@@ -9,7 +9,7 @@
 #include "masscan-status.h"
 #include "main-globals.h"
 #include "output.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "in-filter.h"
 #include "in-report.h"
 #include "util-malloc.h"
@@ -17,6 +17,10 @@
 
 #include <stdlib.h>
 #include <assert.h>
+
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
 
 static const size_t BUF_MAX = 1024*1024;
 
@@ -474,15 +478,15 @@ _binaryfile_parse(struct Output *out, const char *filename,
     unsigned char *buf = 0;
     size_t bytes_read;
     uint64_t total_records = 0;
-    int x;
 
     /* Allocate a buffer of up to one megabyte per record */
     buf = MALLOC(BUF_MAX);
 
     /* Open the file */
-    x = fopen_s(&fp, filename, "rb");
-    if (x != 0 || fp == NULL) {
-        perror(filename);
+    fp = fopen(filename, "rb");
+    if (fp == NULL) {
+        fprintf(stderr, "[-] FAIL: --readscan\n");
+        fprintf(stderr, "[-] %s: %s\n", filename, strerror(errno));
         goto end;
     }
 

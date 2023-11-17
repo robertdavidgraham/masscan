@@ -50,7 +50,7 @@
 #include "unusedparm.h"
 #include "masscan-app.h"
 #include "crypto-siphash24.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "util-malloc.h"
 #include <string.h>
 #include <ctype.h>
@@ -72,7 +72,7 @@ BANNER_CIPHER(struct BannerOutput *banout, unsigned cipher_suite)
 {
     //const char *notes = "";
     char foo[64];
-    sprintf_s(foo, sizeof(foo), "cipher:0x%x", cipher_suite);
+    snprintf(foo, sizeof(foo), "cipher:0x%x", cipher_suite);
     banout_append(banout, PROTO_SSL3, foo, AUTO_LEN);
     
     /*switch (cipher_suite) {
@@ -110,7 +110,7 @@ BANNER_VERSION(struct BannerOutput *banout, unsigned version_major,
             banout_append(banout, PROTO_SSL3, "TLS/1.3 ", AUTO_LEN);
             break;
         default:
-            sprintf_s(foo, sizeof(foo), "SSLver[%u,%u] ", 
+            snprintf(foo, sizeof(foo), "SSLver[%u,%u] ", 
                       version_major,
                       version_minor);
             banout_append(banout, PROTO_SSL3, foo, strlen(foo));
@@ -392,6 +392,7 @@ parse_server_cert(
 
     UNUSEDPARM(banner1);
     UNUSEDPARM(banner1_private);
+    UNUSEDPARM(socket);
 
     for (i=0; i<length; i++)
     switch (state) {
@@ -836,7 +837,7 @@ parse_alert(
                         default:
                             banout_append(banout, PROTO_SAFE, 
                                           "poodle[no-SSLv3] ", AUTO_LEN);
-                            sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
+                            snprintf(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                                       ssl->x.server_alert.level,
                                       ssl->x.server_alert.description
                                       );
@@ -846,7 +847,7 @@ parse_alert(
                     }
                 } else {
                     char foo[64];
-                    sprintf_s(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
+                    snprintf(foo, sizeof(foo), " ALERT(0x%02x%02x) ",
                               ssl->x.server_alert.level,
                               ssl->x.server_alert.description
                               );

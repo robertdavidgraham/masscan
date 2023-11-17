@@ -8,7 +8,7 @@
 #include "templ-pkt.h"
 #include "util-logger.h"
 #include "main-ptrace.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "stub-pcap.h"
 #include "stub-pfring.h"
 #include "pixie-timer.h"
@@ -110,7 +110,6 @@ rawsock_init(void)
 /* variables used to print DHCP time info */
     //struct tm newtime;
     //char buffer[32];
-    //errno_t error;
 
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
     pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
@@ -145,15 +144,15 @@ rawsock_init(void)
                 if (name == NULL || addr == NULL)
                     exit(1);
 
-                sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+                snprintf(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
 
                 //printf("\tAdapter Desc: \t%s\n", pAdapter->Description);
                 //printf("\tAdapter Addr: \t");
                 for (i = 0; i < pAdapter->AddressLength; i++) {
                     if (i == (pAdapter->AddressLength - 1))
-                        sprintf_s(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
+                        snprintf(addr+i*3, addr_len-i*3, "%.2X", pAdapter->Address[i]);
                     else
-                        sprintf_s(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
+                        snprintf(addr+i*3, addr_len-i*3, "%.2X-", pAdapter->Address[i]);
                 }
                 //printf("%s  ->  %s\n", addr, name);
                 adapter_names[adapter_name_count].easy_name = addr;
@@ -170,8 +169,8 @@ rawsock_init(void)
                 char *addr = (char*)malloc(addr_len);
                 if (name == NULL || addr == NULL)
                     exit(1);
-                sprintf_s(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
-                sprintf_s(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);
+                snprintf(name, name_len, "\\Device\\NPF_%s", pAdapter->AdapterName);
+                snprintf(addr, addr_len, "%s", pAdapter->IpAddressList.IpAddress.String);
                 //printf("%s  ->  %s\n", addr, name);
                 adapter_names[adapter_name_count].easy_name = addr;
                 adapter_names[adapter_name_count].hard_name = name;
@@ -665,7 +664,7 @@ rawsock_init_adapter(const char *adapter_name,
         adapter->link_type = 1;
         if (adapter->ring == NULL) {
             LOG(0, "pfring:'%s': OPEN ERROR: %s\n",
-                adapter_name, strerror_x(errno));
+                adapter_name, strerror(errno));
             return 0;
         } else
             LOG(1, "pfring:'%s': successfully opened\n", adapter_name);
@@ -697,7 +696,7 @@ rawsock_init_adapter(const char *adapter_name,
         err = PFRING.enable_ring(adapter->ring);
         if (err != 0) {
                 LOG(0, "pfring: '%s': ENABLE ERROR: %s\n",
-                    adapter_name, strerror_x(errno));
+                    adapter_name, strerror(errno));
                 PFRING.close(adapter->ring);
                 adapter->ring = 0;
                 return 0;

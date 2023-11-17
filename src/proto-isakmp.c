@@ -76,7 +76,6 @@ isakmp_parse(struct Output *out, time_t timestamp,
     unsigned port_me = parsed->port_dst;
     uint64_t cookie;
     uint64_t resp_cookie;
-    unsigned char i;
     
     /* All responses will be at least 8 bytes */
     if (length < 16)

@@ -41,7 +41,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "smack.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include "output.h"
 #include "masscan-app.h"
 #include "proto-preprocess.h"
@@ -245,7 +245,7 @@ snmp_banner_oid(const unsigned char *oid, size_t oid_length,
         if (x == 0 && i >= oid_length)
             break;
 
-        sprintf_s(foo, sizeof(foo), ".%" PRIu64 "", x);
+        snprintf(foo, sizeof(foo), ".%" PRIu64 "", x);
         banout_append(banout, PROTO_SNMP, foo, strlen(foo));
     }
 }
@@ -275,7 +275,7 @@ snmp_banner(const unsigned char *oid, size_t oid_length,
             uint64_t result = 0;
             for (i=0; i<var_length; i++)
                 result = result<<8 | var[i];
-            sprintf_s(foo, sizeof(foo), "%" PRIu64 "", result);
+            snprintf(foo, sizeof(foo), "%" PRIu64 "", result);
             banout_append(banout, PROTO_SNMP, foo, strlen(foo));
         }
         break;

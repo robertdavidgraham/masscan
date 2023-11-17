@@ -9,7 +9,7 @@
     be redirected to a file.
 */
 #include "util-logger.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -52,7 +52,7 @@ vLOGnet(unsigned port_me, ipaddress ip_them, const char *fmt, va_list marker)
     char sz_ip[64];
     ipaddress_formatted_t fmt1 = ipaddress_fmt(ip_them);
 
-    sprintf_s(sz_ip, sizeof(sz_ip), "%s", fmt1.string);
+    snprintf(sz_ip, sizeof(sz_ip), "%s", fmt1.string);
     fprintf(stderr, "%u:%s: ", port_me, sz_ip);
     vfprintf(stderr, fmt, marker);
     fflush(stderr);
@@ -78,7 +78,7 @@ vLOGip(int level, ipaddress ip, unsigned port, const char *fmt, va_list marker)
         char sz_ip[64];
         ipaddress_formatted_t fmt1 = ipaddress_fmt(ip);
 
-        sprintf_s(sz_ip, sizeof(sz_ip), "%s:%u: ", fmt1.string, port);
+        snprintf(sz_ip, sizeof(sz_ip), "%s:%u: ", fmt1.string, port);
         fprintf(stderr, "%s ", sz_ip);
         vfprintf(stderr, fmt, marker);
         fflush(stderr);

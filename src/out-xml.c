@@ -1,7 +1,7 @@
 #include "output.h"
 #include "masscan-app.h"
 #include "masscan-status.h"
-#include "string_s.h"
+#include "util-safefunc.h"
 
 
 
@@ -39,9 +39,9 @@ xml_out_close(struct Output *out, FILE *fp)
     struct tm tm;
 
     if (out->is_gmt)
-        gmtime_s(&tm, &now);
+        safe_gmtime(&tm, &now);
     else
-        localtime_s(&tm, &now);
+        safe_localtime(&tm, &now);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
 
     fprintf(fp,
