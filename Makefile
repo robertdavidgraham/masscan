@@ -62,7 +62,7 @@ endif
 ifneq (, $(findstring mingw, $(SYS)))
 INCLUDES = -Ivs10/include
 LIBS = -L vs10/lib -lIPHLPAPI -lWs2_32
-FLAGS2 = -march=i686
+#FLAGS2 = -march=i686
 endif
 
 # Cygwin

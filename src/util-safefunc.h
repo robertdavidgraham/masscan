@@ -21,11 +21,15 @@
 #include <time.h>
 #include <stdint.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
+
 #undef strcpy
 #define strcpy      STRCPY_FUNCTION_IS_BAD
 
-#undef strncpy
-#define strncpy     STRNCPY_FUNCTION_IS_BAD
+/*#undef strncpy
+#define strncpy     STRNCPY_FUNCTION_IS_BAD*/
 
 #undef strcat
 #define strcat      STRCAT_FUNCTION_IS_BAD

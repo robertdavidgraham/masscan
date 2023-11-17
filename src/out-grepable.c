@@ -154,7 +154,7 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
     else
         service = oproto_service_name(ip_proto);
     
-    fprintf(fp, "Timestamp: %lu", timestamp);
+    fprintf(fp, "Timestamp: %llu", (unsigned long long)timestamp);
 
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "\tHost: %s ()", fmt.string);

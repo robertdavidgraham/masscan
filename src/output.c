@@ -34,7 +34,6 @@
 #include "output.h"
 #include "masscan.h"
 #include "masscan-status.h"
-#include "util-safefunc.h"
 #include "proto-banner1.h"
 #include "masscan-app.h"
 #include "main-globals.h"
@@ -47,6 +46,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <string.h>
+
+/* Put this at the bottom of the include lists because of warnings */
+#include "util-safefunc.h"
 
 
 /*****************************************************************************

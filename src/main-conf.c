@@ -100,6 +100,10 @@ print_version()
         );
     printf("Compiled on: %s %s\n", __DATE__, __TIME__);
 
+#if defined(__x86_64) || defined(__x86_64__)
+    cpu = "x86";
+#endif
+
 #if defined(_MSC_VER)
     #if defined(_M_AMD64) || defined(_M_X64)
         cpu = "x86";
