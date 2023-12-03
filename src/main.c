@@ -1816,6 +1816,8 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
+            extern int proto_isakmp_selftest(void);
+            
             x += massip_selftest();
             x += ranges6_selftest();
             x += dedup_selftest();
@@ -1830,6 +1832,7 @@ int main(int argc, char *argv[])
             x += siphash24_selftest();
             x += ntp_selftest();
             x += snmp_selftest();
+            x += proto_isakmp_selftest();
             x += templ_payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
