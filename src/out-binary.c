@@ -104,7 +104,7 @@ binary_out_status_ipv6(struct Output *out, FILE *fp, time_t timestamp,
     int status, ipaddress ip, unsigned ip_proto, unsigned port, unsigned reason, unsigned ttl)
 {
     unsigned char buf[256+1];
-    size_t max = sizeof(buf-1);
+    size_t max = sizeof(buf)-1;
     size_t offset = 0;
     size_t bytes_written;
 

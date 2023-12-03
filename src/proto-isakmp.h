@@ -12,4 +12,7 @@ unsigned isakmp_parse(struct Output *out, time_t timestamp,
 
 unsigned isakmp_set_cookie(unsigned char *px, size_t length, uint64_t seqno);
 
+int
+proto_isakmp_selftest(void);
+
 #endif

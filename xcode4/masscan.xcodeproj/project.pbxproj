@@ -147,6 +147,8 @@
 		118D68362B02DD6F00271F7F /* massip-parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 118B9B2F25A00FA900F5FB0B /* massip-parse.c */; };
 		118D68372B02DD6F00271F7F /* out-hostonly.c in Sources */ = {isa = PBXBuildFile; fileRef = 1124DD6A25B4FF1600EEFC2C /* out-hostonly.c */; };
 		118D68382B02DD6F00271F7F /* stub-lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 11DD36362107DE9700CBE1DE /* stub-lua.c */; };
+		118D68412B06C1F900271F7F /* util-extract.c in Sources */ = {isa = PBXBuildFile; fileRef = 118D683F2B06BB9900271F7F /* util-extract.c */; };
+		118D68422B06C1FA00271F7F /* util-extract.c in Sources */ = {isa = PBXBuildFile; fileRef = 118D683F2B06BB9900271F7F /* util-extract.c */; };
 		118E115725859D5300618314 /* util-checksum.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115525859D5300618314 /* util-checksum.c */; };
 		118E115925859E6F00618314 /* rawsock-getip6.c in Sources */ = {isa = PBXBuildFile; fileRef = 118E115825859E6F00618314 /* rawsock-getip6.c */; };
 		119968FC21388A3C00E82767 /* read-service-probes.c in Sources */ = {isa = PBXBuildFile; fileRef = 119968FB21388A3B00E82767 /* read-service-probes.c */; };
@@ -313,6 +315,8 @@
 		118D67C12B02CBA000271F7F /* util-errormsg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "util-errormsg.h"; sourceTree = "<group>"; };
 		118D67C22B02CBA000271F7F /* util-errormsg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "util-errormsg.c"; sourceTree = "<group>"; };
 		118D683E2B02DD6F00271F7F /* masscan copy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "masscan copy"; sourceTree = BUILT_PRODUCTS_DIR; };
+		118D683F2B06BB9900271F7F /* util-extract.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "util-extract.c"; sourceTree = "<group>"; };
+		118D68402B06BB9900271F7F /* util-extract.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "util-extract.h"; sourceTree = "<group>"; };
 		118E115325859D2400618314 /* stack-tcp-api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stack-tcp-api.h"; sourceTree = "<group>"; };
 		118E115425859D5200618314 /* util-bool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "util-bool.h"; sourceTree = "<group>"; };
 		118E115525859D5300618314 /* util-checksum.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "util-checksum.c"; sourceTree = "<group>"; };
@@ -551,6 +555,8 @@
 		118E114F25859CFD00618314 /* util */ = {
 			isa = PBXGroup;
 			children = (
+				118D683F2B06BB9900271F7F /* util-extract.c */,
+				118D68402B06BB9900271F7F /* util-extract.h */,
 				11A921CD17DBCC7E00DDFD32 /* util-safefunc.c */,
 				11A921CE17DBCC7E00DDFD32 /* util-safefunc.h */,
 				118D67C22B02CBA000271F7F /* util-errormsg.c */,
@@ -933,6 +939,7 @@
 				118D67E42B02DD6F00271F7F /* crypto-blackrock.c in Sources */,
 				118D67E52B02DD6F00271F7F /* crypto-lcg.c in Sources */,
 				118D67E62B02DD6F00271F7F /* crypto-primegen.c in Sources */,
+				118D68422B06C1FA00271F7F /* util-extract.c in Sources */,
 				118D67E72B02DD6F00271F7F /* rawsock-getif.c in Sources */,
 				118D67E82B02DD6F00271F7F /* rawsock-getip.c in Sources */,
 				118D67E92B02DD6F00271F7F /* proto-isakmp.c in Sources */,
@@ -1054,6 +1061,7 @@
 				11A921E817DBCC7E00DDFD32 /* crypto-blackrock.c in Sources */,
 				11A921E917DBCC7E00DDFD32 /* crypto-lcg.c in Sources */,
 				11A921EA17DBCC7E00DDFD32 /* crypto-primegen.c in Sources */,
+				118D68412B06C1F900271F7F /* util-extract.c in Sources */,
 				11A921ED17DBCC7E00DDFD32 /* rawsock-getif.c in Sources */,
 				11A921EE17DBCC7E00DDFD32 /* rawsock-getip.c in Sources */,
 				11C000652AFDA179001EB0EB /* proto-isakmp.c in Sources */,

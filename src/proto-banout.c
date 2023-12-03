@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 /***************************************************************************
  ***************************************************************************/
@@ -282,6 +283,41 @@ banout_expand(struct BannerOutput *banout, struct BannerOutput *p)
     }
 
     return n;
+}
+
+
+
+
+
+
+/***************************************************************************
+ ***************************************************************************/
+static void
+banout_vprintf(struct BannerOutput *banout, unsigned proto,
+               const char *fmt, va_list marker) {
+    char str[10];
+    int len;
+    
+    len = vsnprintf(str, sizeof(str), fmt, marker);
+    if (len > sizeof(str)-1) {
+        char *tmp = malloc(len+1);
+        vsnprintf(tmp, len+1, fmt, marker);
+        banout_append(banout, proto, tmp, len);
+        free(tmp);
+    } else {
+        banout_append(banout, proto, str, len);
+    }
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+banout_printf(struct BannerOutput *banout, unsigned proto, const char *fmt, ...) {
+    va_list marker;
+
+    va_start(marker, fmt);
+    banout_vprintf(banout, proto, fmt, marker);
+    va_end(marker);
 }
 
 /***************************************************************************
