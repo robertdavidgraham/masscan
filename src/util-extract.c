@@ -1,10 +1,11 @@
 #include "util-extract.h"
+#include <limits.h>
 
 
 unsigned char
 e_next_byte(struct ebuf_t *ebuf) {
     if (ebuf->offset + 1 > ebuf->max)
-        return -1;
+        return UCHAR_MAX;
     
     return ebuf->buf[ebuf->offset++];
 }
@@ -16,7 +17,7 @@ e_next_short16(struct ebuf_t *ebuf, int endian) {
     unsigned short result;
     
     if (ebuf->offset + 2 > ebuf->max)
-        return -1;
+        return USHRT_MAX;
 
     if (endian == EBUF_BE) {
         result = buf[offset+0]<<8 | buf[offset+1];
@@ -32,7 +33,7 @@ unsigned e_next_int32(struct ebuf_t *ebuf, int endian) {
     unsigned result;
     
     if (ebuf->offset + 4 > ebuf->max)
-        return -1;
+        return UINT_MAX;
 
     if (endian == EBUF_BE) {
         result = buf[offset+0]<<24 | buf[offset+1] << 16
@@ -52,7 +53,7 @@ e_next_long64(struct ebuf_t *ebuf, int endian) {
     unsigned long long lo;
     
     if (ebuf->offset + 8 > ebuf->max)
-        return -1ll;
+        return ULLONG_MAX;
 
     if (endian == EBUF_BE) {
         hi = buf[offset+0]<<24 | buf[offset+1] << 16

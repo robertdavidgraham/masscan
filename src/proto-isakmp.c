@@ -30,6 +30,10 @@
 #include <stdarg.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4204)
+#endif
+
 typedef struct payload_t {
     unsigned char next;
     unsigned char reserved;

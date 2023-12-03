@@ -87,6 +87,11 @@
 #endif
 
 /*
+ * Defs of self-test functions here
+ */
+extern int proto_isakmp_selftest(void);
+
+/*
  * yea I know globals suck
  */
 unsigned volatile is_tx_done = 0;
@@ -1816,7 +1821,6 @@ int main(int argc, char *argv[])
          */
         {
             int x = 0;
-            extern int proto_isakmp_selftest(void);
             
             x += massip_selftest();
             x += ranges6_selftest();

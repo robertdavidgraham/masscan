@@ -396,6 +396,9 @@
     <ClCompile Include="..\src\util-safefunc.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\util-extract.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\proto-arp.h">
