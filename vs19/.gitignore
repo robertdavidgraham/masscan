@@ -1,0 +1,9 @@
+masscan.opensdf
+masscan.suo
+tmp/Debug
+tmp/Release
+masscan.sdf
+masscan.vcxproj.user
+tmp
+ipch
+
