@@ -19,6 +19,117 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\doc\masscan.8.markdown" />
+    <None Include="..\LICENSE" />
+    <None Include="..\Makefile" />
+    <None Include="..\README.md" />
+    <None Include="..\VULNINFO.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\crypto-base64.h" />
+    <ClInclude Include="..\src\crypto-blackrock.h" />
+    <ClInclude Include="..\src\crypto-lcg.h" />
+    <ClInclude Include="..\src\crypto-primegen.h" />
+    <ClInclude Include="..\src\crypto-siphash24.h" />
+    <ClInclude Include="..\src\event-timeout.h" />
+    <ClInclude Include="..\src\in-binary.h" />
+    <ClInclude Include="..\src\in-filter.h" />
+    <ClInclude Include="..\src\in-report.h" />
+    <ClInclude Include="..\src\main-dedup.h" />
+    <ClInclude Include="..\src\main-globals.h" />
+    <ClInclude Include="..\src\main-ptrace.h" />
+    <ClInclude Include="..\src\main-readrange.h" />
+    <ClInclude Include="..\src\main-status.h" />
+    <ClInclude Include="..\src\main-throttle.h" />
+    <ClInclude Include="..\src\masscan-app.h" />
+    <ClInclude Include="..\src\masscan-status.h" />
+    <ClInclude Include="..\src\masscan-version.h" />
+    <ClInclude Include="..\src\masscan.h" />
+    <ClInclude Include="..\src\massip-addr.h" />
+    <ClInclude Include="..\src\massip-parse.h" />
+    <ClInclude Include="..\src\massip-port.h" />
+    <ClInclude Include="..\src\massip-rangesv4.h" />
+    <ClInclude Include="..\src\massip-rangesv6.h" />
+    <ClInclude Include="..\src\massip.h" />
+    <ClInclude Include="..\src\misc-rstfilter.h" />
+    <ClInclude Include="..\src\out-record.h" />
+    <ClInclude Include="..\src\out-tcp-services.h" />
+    <ClInclude Include="..\src\output.h" />
+    <ClInclude Include="..\src\pixie-backtrace.h" />
+    <ClInclude Include="..\src\pixie-file.h" />
+    <ClInclude Include="..\src\pixie-sockets.h" />
+    <ClInclude Include="..\src\pixie-threads.h" />
+    <ClInclude Include="..\src\pixie-timer.h" />
+    <ClInclude Include="..\src\proto-arp.h" />
+    <ClInclude Include="..\src\proto-banner1.h" />
+    <ClInclude Include="..\src\proto-banout.h" />
+    <ClInclude Include="..\src\proto-coap.h" />
+    <ClInclude Include="..\src\proto-dns-parse.h" />
+    <ClInclude Include="..\src\proto-dns.h" />
+    <ClInclude Include="..\src\proto-ftp.h" />
+    <ClInclude Include="..\src\proto-http.h" />
+    <ClInclude Include="..\src\proto-icmp.h" />
+    <ClInclude Include="..\src\proto-imap4.h" />
+    <ClInclude Include="..\src\proto-isakmp.h" />
+    <ClInclude Include="..\src\proto-mc.h" />
+    <ClInclude Include="..\src\proto-memcached.h" />
+    <ClInclude Include="..\src\proto-netbios.h" />
+    <ClInclude Include="..\src\proto-ntlmssp.h" />
+    <ClInclude Include="..\src\proto-ntp.h" />
+    <ClInclude Include="..\src\proto-oproto.h" />
+    <ClInclude Include="..\src\proto-pop3.h" />
+    <ClInclude Include="..\src\proto-preprocess.h" />
+    <ClInclude Include="..\src\proto-sctp.h" />
+    <ClInclude Include="..\src\proto-smb.h" />
+    <ClInclude Include="..\src\proto-smtp.h" />
+    <ClInclude Include="..\src\proto-snmp.h" />
+    <ClInclude Include="..\src\proto-spnego.h" />
+    <ClInclude Include="..\src\proto-ssh.h" />
+    <ClInclude Include="..\src\proto-ssl.h" />
+    <ClInclude Include="..\src\proto-tcp-rdp.h" />
+    <ClInclude Include="..\src\proto-tcp-telnet.h" />
+    <ClInclude Include="..\src\proto-udp.h" />
+    <ClInclude Include="..\src\proto-versioning.h" />
+    <ClInclude Include="..\src\proto-vnc.h" />
+    <ClInclude Include="..\src\proto-x509.h" />
+    <ClInclude Include="..\src\proto-zeroaccess.h" />
+    <ClInclude Include="..\src\rawsock-adapter.h" />
+    <ClInclude Include="..\src\rawsock-pcapfile.h" />
+    <ClInclude Include="..\src\rawsock.h" />
+    <ClInclude Include="..\src\read-service-probes.h" />
+    <ClInclude Include="..\src\rte-ring.h" />
+    <ClInclude Include="..\src\scripting.h" />
+    <ClInclude Include="..\src\smack.h" />
+    <ClInclude Include="..\src\smackqueue.h" />
+    <ClInclude Include="..\src\stack-arpv4.h" />
+    <ClInclude Include="..\src\stack-ndpv6.h" />
+    <ClInclude Include="..\src\stack-queue.h" />
+    <ClInclude Include="..\src\stack-src.h" />
+    <ClInclude Include="..\src\stack-tcp-api.h" />
+    <ClInclude Include="..\src\stack-tcp-app.h" />
+    <ClInclude Include="..\src\stack-tcp-core.h" />
+    <ClInclude Include="..\src\stub-lua.h" />
+    <ClInclude Include="..\src\stub-pcap-dlt.h" />
+    <ClInclude Include="..\src\stub-pcap.h" />
+    <ClInclude Include="..\src\stub-pfring.h" />
+    <ClInclude Include="..\src\syn-cookie.h" />
+    <ClInclude Include="..\src\templ-nmap-payloads.h" />
+    <ClInclude Include="..\src\templ-opts.h" />
+    <ClInclude Include="..\src\templ-payloads.h" />
+    <ClInclude Include="..\src\templ-pkt.h" />
+    <ClInclude Include="..\src\templ-tcp-hdr.h" />
+    <ClInclude Include="..\src\unusedparm.h" />
+    <ClInclude Include="..\src\util-bool.h" />
+    <ClInclude Include="..\src\util-checksum.h" />
+    <ClInclude Include="..\src\util-errormsg.h" />
+    <ClInclude Include="..\src\util-extract.h" />
+    <ClInclude Include="..\src\util-logger.h" />
+    <ClInclude Include="..\src\util-malloc.h" />
+    <ClInclude Include="..\src\util-safefunc.h" />
+    <ClInclude Include="..\src\vulncheck.h" />
+    <ClInclude Include="..\src\xring.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\src\crypto-base64.c" />
     <ClCompile Include="..\src\crypto-blackrock.c" />
     <ClCompile Include="..\src\crypto-blackrock2.c" />
@@ -26,12 +137,18 @@
     <ClCompile Include="..\src\crypto-primegen.c" />
     <ClCompile Include="..\src\crypto-siphash24.c" />
     <ClCompile Include="..\src\event-timeout.c" />
+    <ClCompile Include="..\src\in-binary.c" />
     <ClCompile Include="..\src\in-filter.c" />
     <ClCompile Include="..\src\in-report.c" />
+    <ClCompile Include="..\src\main-conf.c" />
+    <ClCompile Include="..\src\main-dedup.c" />
+    <ClCompile Include="..\src\main-initadapter.c" />
     <ClCompile Include="..\src\main-listscan.c" />
     <ClCompile Include="..\src\main-ptrace.c" />
     <ClCompile Include="..\src\main-readrange.c" />
-    <ClCompile Include="..\src\in-binary.c" />
+    <ClCompile Include="..\src\main-status.c" />
+    <ClCompile Include="..\src\main-throttle.c" />
+    <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\masscan-app.c" />
     <ClCompile Include="..\src\massip-addr.c" />
     <ClCompile Include="..\src\massip-parse.c" />
@@ -51,8 +168,11 @@
     <ClCompile Include="..\src\out-text.c" />
     <ClCompile Include="..\src\out-unicornscan.c" />
     <ClCompile Include="..\src\out-xml.c" />
+    <ClCompile Include="..\src\output.c" />
     <ClCompile Include="..\src\pixie-backtrace.c" />
     <ClCompile Include="..\src\pixie-file.c" />
+    <ClCompile Include="..\src\pixie-threads.c" />
+    <ClCompile Include="..\src\pixie-timer.c" />
     <ClCompile Include="..\src\proto-arp.c" />
     <ClCompile Include="..\src\proto-banner1.c" />
     <ClCompile Include="..\src\proto-banout.c" />
@@ -70,6 +190,7 @@
     <ClCompile Include="..\src\proto-ntp.c" />
     <ClCompile Include="..\src\proto-oproto.c" />
     <ClCompile Include="..\src\proto-pop3.c" />
+    <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\proto-sctp.c" />
     <ClCompile Include="..\src\proto-smb.c" />
     <ClCompile Include="..\src\proto-smtp.c" />
@@ -78,16 +199,6 @@
     <ClCompile Include="..\src\proto-ssl-test.c" />
     <ClCompile Include="..\src\proto-ssl.c" />
     <ClCompile Include="..\src\proto-tcp-rdp.c" />
-    <ClCompile Include="..\src\main-conf.c" />
-    <ClCompile Include="..\src\main-dedup.c" />
-    <ClCompile Include="..\src\main-initadapter.c" />
-    <ClCompile Include="..\src\main-status.c" />
-    <ClCompile Include="..\src\main-throttle.c" />
-    <ClCompile Include="..\src\main.c" />
-    <ClCompile Include="..\src\output.c" />
-    <ClCompile Include="..\src\pixie-threads.c" />
-    <ClCompile Include="..\src\pixie-timer.c" />
-    <ClCompile Include="..\src\proto-preprocess.c" />
     <ClCompile Include="..\src\proto-tcp-telnet.c" />
     <ClCompile Include="..\src\proto-udp.c" />
     <ClCompile Include="..\src\proto-versioning.c" />
@@ -125,6 +236,7 @@
     <ClCompile Include="..\src\templ-tcp-hdr.c" />
     <ClCompile Include="..\src\util-checksum.c" />
     <ClCompile Include="..\src\util-errormsg.c" />
+    <ClCompile Include="..\src\util-extract.c" />
     <ClCompile Include="..\src\util-logger.c" />
     <ClCompile Include="..\src\util-malloc.c" />
     <ClCompile Include="..\src\util-safefunc.c" />
@@ -133,112 +245,6 @@
     <ClCompile Include="..\src\vulncheck-sslv3.c" />
     <ClCompile Include="..\src\vulncheck.c" />
     <ClCompile Include="..\src\xring.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\src\crypto-base64.h" />
-    <ClInclude Include="..\src\crypto-blackrock.h" />
-    <ClInclude Include="..\src\crypto-lcg.h" />
-    <ClInclude Include="..\src\crypto-primegen.h" />
-    <ClInclude Include="..\src\crypto-siphash24.h" />
-    <ClInclude Include="..\src\in-filter.h" />
-    <ClInclude Include="..\src\in-report.h" />
-    <ClInclude Include="..\src\main-globals.h" />
-    <ClInclude Include="..\src\event-timeout.h" />
-    <ClInclude Include="..\src\in-binary.h" />
-    <ClInclude Include="..\src\main-dedup.h" />
-    <ClInclude Include="..\src\main-ptrace.h" />
-    <ClInclude Include="..\src\main-readrange.h" />
-    <ClInclude Include="..\src\main-status.h" />
-    <ClInclude Include="..\src\main-throttle.h" />
-    <ClInclude Include="..\src\masscan-app.h" />
-    <ClInclude Include="..\src\masscan-version.h" />
-    <ClInclude Include="..\src\masscan.h" />
-    <ClInclude Include="..\src\massip-addr.h" />
-    <ClInclude Include="..\src\massip-parse.h" />
-    <ClInclude Include="..\src\massip-rangesv4.h" />
-    <ClInclude Include="..\src\massip-rangesv6.h" />
-    <ClInclude Include="..\src\massip.h" />
-    <ClInclude Include="..\src\misc-rstfilter.h" />
-    <ClInclude Include="..\src\out-record.h" />
-    <ClInclude Include="..\src\out-tcp-services.h" />
-    <ClInclude Include="..\src\output.h" />
-    <ClInclude Include="..\src\packet-queue.h" />
-    <ClInclude Include="..\src\pixie-backtrace.h" />
-    <ClInclude Include="..\src\pixie-file.h" />
-    <ClInclude Include="..\src\pixie-sockets.h" />
-    <ClInclude Include="..\src\pixie-threads.h" />
-    <ClInclude Include="..\src\pixie-timer.h" />
-    <ClInclude Include="..\src\proto-arp.h" />
-    <ClInclude Include="..\src\proto-banner1.h" />
-    <ClInclude Include="..\src\proto-banout.h" />
-    <ClInclude Include="..\src\proto-coap.h" />
-    <ClInclude Include="..\src\proto-dns-parse.h" />
-    <ClInclude Include="..\src\proto-dns.h" />
-    <ClInclude Include="..\src\proto-ftp.h" />
-    <ClInclude Include="..\src\proto-http.h" />
-    <ClInclude Include="..\src\proto-icmp.h" />
-    <ClInclude Include="..\src\proto-imap4.h" />
-    <ClInclude Include="..\src\proto-isakmp.h" />
-    <ClInclude Include="..\src\proto-mc.h" />
-    <ClInclude Include="..\src\proto-memcached.h" />
-    <ClInclude Include="..\src\proto-netbios.h" />
-    <ClInclude Include="..\src\proto-ntlmssp.h" />
-    <ClInclude Include="..\src\proto-ntp.h" />
-    <ClInclude Include="..\src\proto-oproto.h" />
-    <ClInclude Include="..\src\proto-pop3.h" />
-    <ClInclude Include="..\src\proto-preprocess.h" />
-    <ClInclude Include="..\src\proto-sctp.h" />
-    <ClInclude Include="..\src\proto-smb.h" />
-    <ClInclude Include="..\src\proto-smtp.h" />
-    <ClInclude Include="..\src\proto-snmp.h" />
-    <ClInclude Include="..\src\proto-ssh.h" />
-    <ClInclude Include="..\src\proto-ssl.h" />
-    <ClInclude Include="..\src\proto-tcp-rdp.h" />
-    <ClInclude Include="..\src\proto-tcp-telnet.h" />
-    <ClInclude Include="..\src\proto-udp.h" />
-    <ClInclude Include="..\src\proto-versioning.h" />
-    <ClInclude Include="..\src\proto-vnc.h" />
-    <ClInclude Include="..\src\proto-x509.h" />
-    <ClInclude Include="..\src\proto-zeroaccess.h" />
-    <ClInclude Include="..\src\rawsock-adapter.h" />
-    <ClInclude Include="..\src\rawsock-pcapfile.h" />
-    <ClInclude Include="..\src\rawsock.h" />
-    <ClInclude Include="..\src\read-service-probes.h" />
-    <ClInclude Include="..\src\rte-ring.h" />
-    <ClInclude Include="..\src\scripting.h" />
-    <ClInclude Include="..\src\smack.h" />
-    <ClInclude Include="..\src\smackqueue.h" />
-    <ClInclude Include="..\src\stack-arpv4.h" />
-    <ClInclude Include="..\src\stack-ndpv6.h" />
-    <ClInclude Include="..\src\stack-queue.h" />
-    <ClInclude Include="..\src\stack-src.h" />
-    <ClInclude Include="..\src\stack-tcp-api.h" />
-    <ClInclude Include="..\src\stack-tcp-app.h" />
-    <ClInclude Include="..\src\stack-tcp-core.h" />
-    <ClInclude Include="..\src\stub-lua.h" />
-    <ClInclude Include="..\src\stub-pcap.h" />
-    <ClInclude Include="..\src\stub-pfring.h" />
-    <ClInclude Include="..\src\syn-cookie.h" />
-    <ClInclude Include="..\src\templ-nmap-payloads.h" />
-    <ClInclude Include="..\src\templ-opts.h" />
-    <ClInclude Include="..\src\templ-payloads.h" />
-    <ClInclude Include="..\src\templ-pkt.h" />
-    <ClInclude Include="..\src\templ-tcp-hdr.h" />
-    <ClInclude Include="..\src\util-bool.h" />
-    <ClInclude Include="..\src\util-checksum.h" />
-    <ClInclude Include="..\src\util-errormsg.h" />
-    <ClInclude Include="..\src\util-logger.h" />
-    <ClInclude Include="..\src\util-malloc.h" />
-    <ClInclude Include="..\src\util-safefunc.h" />
-    <ClInclude Include="..\src\vulncheck.h" />
-    <ClInclude Include="..\src\xring.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\doc\masscan.8.markdown" />
-    <None Include="..\LICENSE" />
-    <None Include="..\Makefile" />
-    <None Include="..\README.md" />
-    <None Include="..\VULNINFO.md" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C88D7583-254F-4BE6-A9B9-89A5BB52E679}</ProjectGuid>
@@ -250,23 +256,27 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
