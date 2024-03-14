@@ -614,7 +614,6 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
                       struct RangeList *ports, unsigned source_port,
                       SET_COOKIE set_cookie)
 {
-    unsigned count = 1;
     struct PayloadUDP_Item *p;
     uint64_t port_count = rangelist_count(ports);
     uint64_t i;
@@ -646,21 +645,15 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
             }
 
             if (j < payloads->count) {
-                if (p->port == payloads->list[j]->port) {
-                    free(payloads->list[j]);
-                    count = 0; /* don't increment count */
-                } else
-                    memmove(payloads->list + j + 1,
-                            payloads->list + j,
-                            (payloads->count-j) * sizeof(payloads->list[0]));
+                memmove(payloads->list + j + 1,
+                        payloads->list + j,
+                        (payloads->count-j) * sizeof(payloads->list[0]));
             }
             payloads->list[j] = p;
-
-            payloads->count += count;
-            count = 1;
+            payloads->count += 1;
         }
     }
-    return count; /* zero or one */
+    return port_count < UINT32_MAX ? (unsigned)port_count : UINT32_MAX;
 }
 
 static unsigned
