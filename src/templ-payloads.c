@@ -894,7 +894,7 @@ templ_payloads_selftest(void) {
  ***************************************************************************/
 void
 payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloads, unsigned begin, unsigned end) {
-    unsigned i, j, k;
+    unsigned i, j, k, no_payloads;
 
     for (i = 0; i < payloads->count; ++i)
         if (payloads->list[i]->port >= begin)
@@ -905,14 +905,16 @@ payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloa
 
     if (i < j) {
         rangelist_add_range(targets, i + Templ_UDP_payloads, j + Templ_UDP_payloads - 1);
-        LOG(3, "[+] UDP port range %d - %d ==> UDP payloads %d - %d\n", begin, end, i, j - 1);
+        LOG(3, "[+] UDP port range %d - %d --> UDP payloads %d - %d\n", begin, end, i, j - 1);
     }
 
+    no_payloads = targets->count;
     for (k = begin; k <= end; ++k) {
         for(; i < j && payloads->list[i]->port < k; ++i);
-        if (i == j || payloads->list[i]->port != k) {
-            LOG(3, "[-] no payload for UDP port %d\n", k);
+        if (i == j || payloads->list[i]->port != k)
             rangelist_add_range_udp(targets, k, k);
-        }
     }
+    for (k = no_payloads; k < targets->count; ++k)
+        LOG(4, "[-] no payload for UDP ports %d - %d\n",
+            targets->list[k].begin - Templ_UDP, targets->list[k].end - Templ_UDP);
 }
