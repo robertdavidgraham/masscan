@@ -24,6 +24,7 @@
 #include "util-malloc.h"
 #include "massip.h"
 #include "templ-nmap-payloads.h"
+#include "massip-rangesv4.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -501,32 +502,22 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
 int
 payloads_udp_lookup(
                     const struct PayloadsUDP *payloads,
-                    unsigned port,
+                    unsigned payload_index,
                     const unsigned char **px,
                     unsigned *length,
                     unsigned *source_port,
                     uint64_t *xsum,
                     SET_COOKIE *set_cookie)
 {
-    unsigned i;
-    if (payloads == 0)
-        return 0;
+    if (payloads == 0 || payload_index >= payloads->count)
+        return -1;
 
-    port &= 0xFFFF;
-
-    /* This is just a linear search, done once at startup, to search
-     * through all the payloads for the best match. */
-    for (i=0; i<payloads->count; i++) {
-        if (payloads->list[i]->port == port) {
-            *px = payloads->list[i]->buf;
-            *length = payloads->list[i]->length;
-            *source_port = payloads->list[i]->source_port;
-            *xsum = payloads->list[i]->xsum;
-            *set_cookie = payloads->list[i]->set_cookie;
-            return 1;
-        }
-    }
-    return 0;
+    *px = payloads->list[payload_index]->buf;
+    *length = payloads->list[payload_index]->length;
+    *source_port = payloads->list[payload_index]->source_port;
+    *xsum = payloads->list[payload_index]->xsum;
+    *set_cookie = payloads->list[payload_index]->set_cookie;
+    return payloads->list[payload_index]->port;
 }
 
 
@@ -650,7 +641,7 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
             unsigned j;
 
             for (j=0; j<payloads->count; j++) {
-                if (p->port <= payloads->list[j]->port)
+                if (p->port < payloads->list[j]->port)
                     break;
             }
 
@@ -902,4 +893,33 @@ payloads_oproto_create(void)
 int
 templ_payloads_selftest(void) {
     return templ_nmap_selftest();
+}
+
+
+/***************************************************************************
+ * add UDP payloads for the given port range to the targets list
+ ***************************************************************************/
+void
+payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloads, unsigned begin, unsigned end) {
+    unsigned i, j, k;
+
+    for (i = 0; i < payloads->count; ++i)
+        if (payloads->list[i]->port >= begin)
+            break;
+    for (j = i; j < payloads->count; ++j)
+        if (payloads->list[j]->port > end)
+            break;
+
+    if (i < j) {
+        rangelist_add_range(targets, i + Templ_UDP_payloads, j + Templ_UDP_payloads - 1);
+        LOG(3, "[+] UDP port range %d - %d ==> UDP payloads %d - %d\n", begin, end, i, j - 1);
+    }
+
+    for (k = begin; k <= end; ++k) {
+        for(; i < j && payloads->list[i]->port < k; ++i);
+        if (i == j || payloads->list[i]->port != k) {
+            LOG(3, "[-] no payload for UDP port %d\n", k);
+            rangelist_add_range_udp(targets, k, k);
+        }
+    }
 }

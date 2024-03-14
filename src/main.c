@@ -226,6 +226,7 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     uint64_t repeats = 0; /* --infinite repeats */
     uint64_t *status_syn_count;
     uint64_t entropy = masscan->seed;
+    struct RangeList targets = {0};
 
     /* Wait to make sure receive_thread is ready */
     pixie_usleep(1000000);
@@ -248,16 +249,33 @@ transmit_thread(void *v) /*aka. scanning_thread() */
      * --max-rate parameter */
     throttler_start(throttler, masscan->max_rate/masscan->nic_count);
 
+    /* Create a target list with multiple payloads per UDP port. */
+    memset(&targets, 0, sizeof(targets));
+
+    for (i = 0; i < masscan->targets.ports.count; ++i) {
+        if (masscan->targets.ports.list[i].begin > Templ_UDP_last
+                || masscan->targets.ports.list[i].end < Templ_UDP)
+            rangelist_add_range(
+                    &targets, masscan->targets.ports.list[i].begin,
+                    masscan->targets.ports.list[i].end);
+        else
+            payloads_add_targets(
+                    &targets,
+                    masscan->payloads.udp,
+                    masscan->targets.ports.list[i].begin - Templ_UDP,
+                    masscan->targets.ports.list[i].end - Templ_UDP);
+    }
+
 infinite:
-    
+
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
      * ports.
      * IPv6: low index will pick addresses from the IPv6 ranges, and high
      * indexes will pick addresses from the IPv4 ranges. */
-    range = count_ipv4 * rangelist_count(&masscan->targets.ports)
-            + count_ipv6 * rangelist_count(&masscan->targets.ports);
-    range_ipv6 = count_ipv6 * rangelist_count(&masscan->targets.ports);
+    range = count_ipv4 * rangelist_count(&targets)
+            + count_ipv6 * rangelist_count(&targets);
+    range_ipv6 = count_ipv6 * rangelist_count(&targets);
     blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
@@ -340,7 +358,7 @@ infinite:
                 unsigned port_me;
 
                 ip_them = range6list_pick(&masscan->targets.ipv6, xXx % count_ipv6);
-                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv6);
+                port_them = rangelist_pick(&targets, xXx / count_ipv6);
 
                 ip_me = src.ipv6;
                 port_me = src.port;
@@ -369,7 +387,7 @@ infinite:
                 xXx -= range_ipv6;
 
                 ip_them = rangelist_pick(&masscan->targets.ipv4, xXx % count_ipv4);
-                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv4);
+                port_them = rangelist_pick(&targets, xXx / count_ipv4);
 
                 /*
                  * SYN-COOKIE LOGIC
@@ -455,6 +473,9 @@ infinite:
      * This call makes sure they are transmitted.
      */
     rawsock_flush(adapter);
+
+    /* free the list of target ports (including different payloads) */
+    rangelist_remove_all(&targets);
 
     /*
      * Wait until the receive thread realizes the scan is over
