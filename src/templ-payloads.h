@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdint.h>
 struct MassIP;
-struct RangeList;
 
 /**
  * Regression test this module.
@@ -100,8 +99,11 @@ payloads_udp_lookup(
                 uint64_t *xsum,
                 SET_COOKIE *set_cookie);
 
+/**
+ * Called to set up targets->ports_payloads from targets->ports with UDP
+ * payloads where available instead of UDP ports.
+ */
 void
-payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloads, unsigned begin, unsigned end);
-
+payloads_udp_ports_payloads(struct MassIP *targets, const struct PayloadsUDP *payloads);
 
 #endif

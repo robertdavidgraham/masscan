@@ -918,3 +918,21 @@ payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloa
         LOG(4, "[-] no payload for UDP ports %d - %d\n",
             targets->list[k].begin - Templ_UDP, targets->list[k].end - Templ_UDP);
 }
+
+void
+payloads_udp_ports_payloads(struct MassIP *targets, const struct PayloadsUDP *payloads) {
+    unsigned i;
+
+    /* Create a target list with multiple payloads per UDP port. */
+    memset(&targets->ports_payloads, 0, sizeof(targets->ports_payloads));
+
+    for (i = 0; i < targets->ports.count; ++i) {
+        if (targets->ports.list[i].begin > Templ_UDP_last || targets->ports.list[i].end < Templ_UDP)
+            rangelist_add_range(&targets->ports_payloads, targets->ports.list[i].begin, targets->ports.list[i].end);
+        else
+            payloads_add_targets(&targets->ports_payloads, payloads,
+                targets->ports.list[i].begin - Templ_UDP, targets->ports.list[i].end - Templ_UDP);
+    }
+
+    rangelist_optimize(&targets->ports_payloads);
+}
