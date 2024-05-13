@@ -294,7 +294,7 @@ An alternative is with the "resume" feature\. A scan has an internal index that 
 A script can use this to split smaller tasks across many other machines, such as Amazon EC2 instances\. As each instance completes a job, the script might send a request to a central coordinating server for more work\.
 .
 .SH "SPURIOUS RESETS"
-When scanning TCP using the default IP address of your adapter, the built\-in stack will generate RST packets\. This will prevent banner grabbing\. There are are two ways to solve this\. The first way is to create a firewall rule to block that port from being seen by the stack\. How this works is dependent on the operating system, but on Linux this looks something like:
+When scanning TCP using the default IP address of your adapter, the built\-in stack will generate RST packets\. This will prevent banner grabbing\. There are two ways to solve this\. The first way is to create a firewall rule to block that port from being seen by the stack\. How this works is dependent on the operating system, but on Linux this looks something like:
 .
 .IP "" 4
 .
