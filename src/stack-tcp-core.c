@@ -380,13 +380,18 @@ tcpcon_set_http_header(struct TCP_ConnectionTable *tcpcon,
                         enum http_field_t what)
 {
     UNUSEDPARM(tcpcon);
-    banner_http.hello_length = http_change_field(
-                            (unsigned char**)&banner_http.hello,
-                            banner_http.hello_length,
-                            name,
-                            (const unsigned char *)value,
-                            value_length,
-                            what);
+    struct ProtocolParserStream *banner_iter = &banner_http;
+    /* change header on all HTTP banners in the linked-list */
+    while (banner_iter != NULL) {
+        banner_iter->hello_length = http_change_field(
+                                (unsigned char**)&banner_iter->hello,
+                                banner_iter->hello_length,
+                                name,
+                                (const unsigned char *)value,
+                                value_length,
+                                what);
+        banner_iter = banner_iter->next;
+    }
 }
 
 
@@ -401,25 +406,31 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
                         const void *value)
 {
     struct Banner1 *banner1 = tcpcon->banner1;
+    struct ProtocolParserStream *banner_iter = &banner_http;
 
     if (name_equals(name, "http-payload")) {
         char lenstr[64];
         snprintf(lenstr, sizeof(lenstr), "%u", (unsigned)value_length);
 
-        banner_http.hello_length = http_change_requestline(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                (const unsigned char *)value,
-                                value_length,
-                                3); /* payload*/
+        /* change header on all HTTP banners in the linked-list */
+        banner_iter = &banner_http;
+        while (banner_iter != NULL) {
+            banner_iter->hello_length = http_change_requestline(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    (const unsigned char *)value,
+                                    value_length,
+                                    3); /* payload*/
 
-        banner_http.hello_length = http_change_field(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                "Content-Length:",
-                                (const unsigned char *)lenstr,
-                                strlen(lenstr),
-                                http_field_replace);
+            banner_iter->hello_length = http_change_field(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    "Content-Length:",
+                                    (const unsigned char *)lenstr,
+                                    strlen(lenstr),
+                                    http_field_replace);
+            banner_iter = banner_iter->next;
+        }
         return;
     }
 
@@ -430,23 +441,33 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
      * string built into masscan
      */
     if (name_equals(name, "http-user-agent")) {
-        banner_http.hello_length = http_change_field(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                "User-Agent:",
-                                (const unsigned char *)value,
-                                value_length,
-                                http_field_replace);
+        /* change header on all HTTP banners in the linked-list */
+        banner_iter = &banner_http;
+        while (banner_iter != NULL) {
+            banner_iter->hello_length = http_change_field(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    "User-Agent:",
+                                    (const unsigned char *)value,
+                                    value_length,
+                                    http_field_replace);
+            banner_iter = banner_iter->next;
+        }
         return;
     }
     if (name_equals(name, "http-host")) {
-        banner_http.hello_length = http_change_field(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                "Host:",
-                                (const unsigned char *)value,
-                                value_length,
-                                http_field_replace);
+        /* change header on all HTTP banners in the linked-list */
+        banner_iter = &banner_http;
+        while (banner_iter != NULL) {
+            banner_iter->hello_length = http_change_field(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    "Host:",
+                                    (const unsigned char *)value,
+                                    value_length,
+                                    http_field_replace);
+            banner_iter = banner_iter->next;
+        }
         return;
     }
 
@@ -454,30 +475,64 @@ tcpcon_set_parameter(struct TCP_ConnectionTable *tcpcon,
      * Changes the URL
      */
     if (name_equals(name, "http-method")) {
-        banner_http.hello_length = http_change_requestline(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                (const unsigned char *)value,
-                                value_length,
-                                0); /* method*/
+        /* change header on all HTTP banners in the linked-list */
+        banner_iter = &banner_http;
+        while (banner_iter != NULL) {
+            banner_iter->hello_length = http_change_requestline(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    (const unsigned char *)value,
+                                    value_length,
+                                    0); /* method*/
+            banner_iter = banner_iter->next;
+        }
         return;
     }
     if (name_equals(name, "http-url")) {
-        banner_http.hello_length = http_change_requestline(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                (const unsigned char *)value,
-                                value_length,
-                                1); /* url */
+        /* special hack to specify multiple urls separated with ","
+         * e.g. --http-url "/index.html,/index.php" */
+        const char *v = value;
+        unsigned v_len = 0;
+        unsigned nb_probes = 0;
+        struct ProtocolParserStream *banner = &banner_http;
+        while (v + v_len != value + value_length) {
+            v_len += 1;
+            while (v + v_len != value + value_length && v[v_len - 1] != ',' ) {
+                v_len += 1;
+            }
+            if (nb_probes > 0) {
+                banner->next = MALLOC(sizeof(*banner));
+                banner = banner->next;
+                memcpy(banner, &banner_http, sizeof(banner_http));
+                banner->hello = MALLOC(strlen(banner_http.hello) + 1);
+                banner->hello_length = banner_http.hello_length;
+                memcpy((char*)banner->hello, banner_http.hello, banner->hello_length);
+            }
+            banner->hello_length = http_change_requestline(
+                                    (unsigned char**)&banner->hello,
+                                    banner->hello_length,
+                                    (const unsigned char *)v,
+                                    v_len - ((v[v_len - 1] == ',')?1:0),
+                                    1); /* url */
+            banner->next = NULL;
+            nb_probes += 1;
+            v = v + v_len;
+            v_len = 0;
+        }
         return;
     }
     if (name_equals(name, "http-version")) {
-        banner_http.hello_length = http_change_requestline(
-                                (unsigned char**)&banner_http.hello,
-                                banner_http.hello_length,
-                                (const unsigned char *)value,
-                                value_length,
-                                2); /* version */
+        /* change header on all HTTP banners in the linked-list */
+        banner_iter = &banner_http;
+        while (banner_iter != NULL) {
+            banner_iter->hello_length = http_change_requestline(
+                                    (unsigned char**)&banner_iter->hello,
+                                    banner_iter->hello_length,
+                                    (const unsigned char *)value,
+                                    value_length,
+                                    2); /* version */
+            banner_iter = banner_iter->next;
+        }
         return;
     }
 
