@@ -403,6 +403,7 @@ handle_dns(struct Output *out, time_t timestamp,
                          ip_them, 17, port_them,
                          PROTO_DNS_VERSIONBIND,
                          parsed->ip_ttl,
+                         NULL, 0,
                          (const unsigned char*)reason,
                          (unsigned)strlen(reason));
         return 0;
@@ -443,6 +444,7 @@ handle_dns(struct Output *out, time_t timestamp,
                 ip_them, 17, port_them,
                 PROTO_DNS_VERSIONBIND,
                 parsed->ip_ttl,
+                NULL, 0,
                 px + offset, txtlen);
         return 1;
     }

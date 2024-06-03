@@ -51,6 +51,7 @@ cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                 ipaddress ip, unsigned ip_proto, unsigned port,
                 enum ApplicationProtocol proto, 
                 unsigned ttl,
+                const unsigned char *probe, unsigned probe_length,
                 const unsigned char *px, unsigned length)
 {
     unsigned i;
@@ -63,6 +64,8 @@ cert_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ttl);
     UNUSEDPARM(proto);
     UNUSEDPARM(port);
+    UNUSEDPARM(probe);
+    UNUSEDPARM(probe_length);
 
     if (length > 5 && memcmp(px, "cert:", 5) == 0) {
         px += 5;

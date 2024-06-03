@@ -27,6 +27,9 @@ banout_init(struct BannerOutput *banout)
     banout->protocol = 0;
     banout->next = 0;
     banout->max_length = sizeof(banout->banner);
+    banout->probe[0] = '\0';
+    banout->probe_length = 0;
+    banout->probe_max_length = sizeof(banout->probe);
 }
 
 /***************************************************************************
@@ -247,6 +250,8 @@ banout_new_proto(struct BannerOutput *banout, unsigned proto)
     p = CALLOC(1, sizeof(*p));
     p->protocol = proto;
     p->max_length = sizeof(p->banner);
+    p->probe_length = 0;
+    p->probe_max_length = sizeof(p->probe);
     p->next = banout->next;
     banout->next = p;
     return p;
@@ -357,6 +362,42 @@ banout_append(struct BannerOutput *banout, unsigned proto,
     memcpy(p->banner + p->length, px, length);
     p->length = (unsigned)(p->length + length);
 
+}
+
+/***************************************************************************
+ ***************************************************************************/
+void
+banout_set_probe(struct BannerOutput *banout, unsigned proto,
+              const void *probe, size_t length)
+{
+    struct BannerOutput *p;
+
+    if (length == AUTO_LEN)
+        length = strlen((const char*)probe);
+
+    /*
+     * Get the matching record for the protocol (e.g. HTML, SSL, etc.).
+     * If it doesn't already exist, add the protocol object to the linked
+     * list.
+     */
+    p = banout_find_proto(banout, proto);
+    if (p == NULL) {
+        p = banout_new_proto(banout, proto);
+    }
+
+
+    /*
+     * If the current object isn't big enough, expand it
+     */
+    while (length >= p->probe_max_length) {
+        p = banout_expand(banout, p);
+    }
+
+    /*
+     * Now that we are assured there is enough space, do the copy
+     */
+    memcpy(p->probe, probe, length);
+    p->probe_length = length;
 }
 
 /*****************************************************************************

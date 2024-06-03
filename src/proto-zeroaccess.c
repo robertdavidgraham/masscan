@@ -252,6 +252,7 @@ handle_zeroaccess(  struct Output *out, time_t timestamp,
             ip_them, 17, port_them,
             PROTO_UDP_ZEROACCESS,
             parsed->ip_ttl,
+            NULL, 0,
             banout_string(banout, PROTO_UDP_ZEROACCESS),
             banout_string_length(banout, PROTO_UDP_ZEROACCESS));
 

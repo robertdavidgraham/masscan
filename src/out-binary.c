@@ -217,6 +217,7 @@ static void
 binary_out_banner_ipv6(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 {
     unsigned char foo[32768];
@@ -294,6 +295,7 @@ static void
 binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 {
     unsigned char foo[32768];
@@ -302,7 +304,7 @@ binary_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     static const unsigned HeaderLength = 14;
 
     if (ip.version == 6) {
-        binary_out_banner_ipv6(out, fp, timestamp, ip, ip_proto, port, proto, ttl, px, length);
+        binary_out_banner_ipv6(out, fp, timestamp, ip, ip_proto, port, proto, ttl, probe, probe_length, px, length);
         return;
     }
     

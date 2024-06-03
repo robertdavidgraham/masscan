@@ -325,6 +325,7 @@ parse_banner6(struct Output *out, unsigned char *buf, size_t length,
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 record.ttl, /* ttl */
+                NULL, 0,
                 buf+offset, (unsigned)(length-offset)
                 );
 }
@@ -364,6 +365,7 @@ parse_banner3(struct Output *out, unsigned char *buf, size_t buf_length)
                 record.port,
                 record.app_proto,
                 0, /* ttl */
+                NULL, 0,
                 buf+12, (unsigned)buf_length-12
                 );
 }
@@ -404,6 +406,7 @@ parse_banner4(struct Output *out, unsigned char *buf, size_t buf_length)
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 0, /* ttl */
+                NULL, 0,
                 buf+13, (unsigned)buf_length-13
                 );
 }
@@ -462,6 +465,7 @@ parse_banner9(struct Output *out, unsigned char *buf, size_t buf_length,
                 record.port,
                 record.app_proto,   /* HTTP, SSL, SNMP, etc. */
                 record.ttl, /* ttl */
+                NULL, 0,
                 data, (unsigned)data_length
                 );
 }

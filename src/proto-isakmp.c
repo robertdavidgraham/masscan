@@ -433,6 +433,7 @@ isakmp_parse(struct Output *out, time_t timestamp,
             ip_them, 17, port_them,
             PROTO_ISAKMP,
             parsed->ip_ttl,
+            NULL, 0,
             banout_string(banout, PROTO_ISAKMP),
             banout_string_length(banout, PROTO_ISAKMP));
         

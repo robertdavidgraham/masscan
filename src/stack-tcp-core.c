@@ -70,6 +70,7 @@
 #include "pixie-timer.h"
 #include "stack-queue.h"
 #include "proto-banner1.h"
+#include "proto-banout.h"
 #include "proto-ssl.h"
 #include "proto-http.h"
 #include "proto-smb.h"
@@ -872,6 +873,8 @@ banner_flush(struct stack_handle_t *socket)
                                   tcb->port_them,
                                   banout->protocol & 0x0FFFFFFF,
                                   tcb->ttl,
+                                  banout->probe,
+                                  banout->probe_length,
                                   banout->banner,
                                   banout->length);
         }
@@ -1615,6 +1618,14 @@ void
 banner_set_small_window(struct stack_handle_t *socket, bool is_true) {
     struct TCP_Control_Block *tcb = socket->tcb;
     tcb->is_small_window = is_true;
+}
+
+void
+banner_set_probe(struct stack_handle_t *socket, int proto, const unsigned char *probe, unsigned probe_length) {
+    struct TCP_Control_Block *tcb = socket->tcb;
+    struct BannerOutput *banout = &(tcb->banout);
+    banout_set_probe(banout, proto, probe, probe_length);
+
 }
 
 bool
