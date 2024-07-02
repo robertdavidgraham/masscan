@@ -277,6 +277,7 @@ struct StreamState {
     unsigned short port;
     unsigned short app_proto;
     unsigned is_sent_sslhello:1;
+    unsigned is_sent_tls13:1;
     struct BannerBase64 base64;
 
     union {

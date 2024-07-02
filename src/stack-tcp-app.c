@@ -160,6 +160,7 @@ again:
                  * I don't even know what this does any longer
                  */
                 banner_set_sslhello(socket, true);
+                banner_set_ssltls13(socket, stream == &banner_tls_13);
             }
 
             if (banner_is_heartbleed(socket)) {

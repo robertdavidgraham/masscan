@@ -1557,6 +1557,12 @@ banner_set_sslhello(struct stack_handle_t *socket, bool is_true) {
 }
 
 void
+banner_set_ssltls13(struct stack_handle_t *socket, bool is_true) {
+    struct TCP_Control_Block *tcb = socket->tcb;
+    tcb->banner1_state.is_sent_tls13 = is_true;
+}
+
+void
 banner_set_small_window(struct stack_handle_t *socket, bool is_true) {
     struct TCP_Control_Block *tcb = socket->tcb;
     tcb->is_small_window = is_true;

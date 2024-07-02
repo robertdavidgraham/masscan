@@ -256,7 +256,16 @@ banner1_parse(
                         socket);
         break;
     case PROTO_SSL3:
-        banner_ssl.parse(
+        if (tcb_state->is_sent_tls13)
+            banner_tls_13.parse(
+                        banner1,
+                        banner1->http_fields,
+                        tcb_state,
+                        px, length,
+                        banout,
+                        socket);
+        else
+            banner_ssl.parse(
                         banner1,
                         banner1->http_fields,
                         tcb_state,
