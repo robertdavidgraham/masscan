@@ -297,13 +297,10 @@ int ipv6address_selftest(void)
   struct ipaddress_formatted fmt;
 
   for (int i = 0; tests[i].name != NULL; i++) {
-    printf("Expected: %s\n", tests[i].name);
     fmt = ipaddress_fmt(tests[i].ip_addr);
-    printf("Actual: %s\n", fmt.string);
     if (strcmp(fmt.string, tests[i].name) != 0)
       x++;
   }
-  printf("ERRORS: %d\n", x);
   return x;
 }
 
