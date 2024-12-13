@@ -1100,7 +1100,7 @@ smack_stage3_sort(struct SMACK *smack)
  * This function currently only works in a very narrow case, for the SMB
  * parser, where all the patterns are "anchored" and none overlap with
  * the SMB patterns. This allows us to modify existing states with
- * the wildcards, without adding new states. Do do this right we need
+ * the wildcards, without adding new states. Do this right we need
  * to duplicate states in order to track wildcards
  ****************************************************************************/
 static void
