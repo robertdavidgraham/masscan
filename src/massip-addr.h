@@ -194,5 +194,6 @@ unsigned massint128_bitcount(massint128_t num);
  * @return 0 on success, 1 on failure
  */
 int ipv6address_selftest(void);
+int ipv4address_selftest(void);
 
 #endif

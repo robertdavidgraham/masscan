@@ -1822,6 +1822,7 @@ int main(int argc, char *argv[])
             x += ranges6_selftest();
             x += dedup_selftest();
             x += checksum_selftest();
+            x += ipv4address_selftest();
             x += ipv6address_selftest();
             x += proto_coap_selftest();
             x += smack_selftest();

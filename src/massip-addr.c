@@ -275,6 +275,37 @@ ipv6address_t ipv6address_add(ipv6address_t lhs, ipv6address_t rhs) {
 
 int ipv6address_selftest(void)
 {
+  struct test_pair {
+    const char *name;             // Human-readable IPv6 address string
+    struct ipaddress ip_addr;     // IP address (union)
+  };
+  /* Probably overkill, added while investigating issue #796 */
+  struct test_pair tests[] = {
+      {"2001:db8:ac10:fe01::2", {.ipv6 = {0x20010db8ac10fe01, 0x0000000000000002}, .version = 6}},
+      {"2607:f8b0:4000::1", {.ipv6 = {0x2607f8b040000000, 0x0000000000000001}, .version = 6}},
+      {"fd12:3456:7890:abcd:ef00::1", {.ipv6 = {0xfd1234567890abcd, 0xef00000000000001}, .version = 6}},
+      {"::1", {.ipv6 = {0x0000000000000000, 0x0000000000000001}, .version = 6}},
+      {"1::", {.ipv6 = {0x0001000000000000, 0x0000000000000000}, .version = 6}},
+      {"1::2", {.ipv6 = {0x0001000000000000, 0x0000000000000002}, .version = 6}},
+      {"2::1", {.ipv6 = {0x0002000000000000, 0x0000000000000001}, .version = 6}},
+      {"1:2::", {.ipv6 = {0x0001000200000000, 0x0000000000000000}, .version = 6}},
+      {NULL, {{0, 0}, 0}}
+  };
+
+  int x = 0;
+  ipaddress ip;
+  struct ipaddress_formatted fmt;
+
+  for (int i = 0; tests[i].name != NULL; i++) {
+    fmt = ipaddress_fmt(tests[i].ip_addr);
+    if (strcmp(fmt.string, tests[i].name) != 0)
+      x++;
+  }
+  return x;
+}
+
+int ipv4address_selftest(void)
+{
     int x = 0;
     ipaddress ip;
     struct ipaddress_formatted fmt;
