@@ -5,6 +5,8 @@
 #define RAWSOCK_H
 #include "massip-addr.h"
 #include <stdio.h>
+#include <iostream>
+#include <memory>
 struct Adapter;
 struct TemplateSet;
 #include "stack-queue.h"
