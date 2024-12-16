@@ -15,6 +15,9 @@ struct BannerBase64;
 struct BannerOutput {
     struct BannerOutput *next;
     unsigned protocol;
+    unsigned probe_length;
+    unsigned probe_max_length;
+    unsigned char probe[200];
     unsigned length;
     unsigned max_length;
     unsigned char banner[200];
@@ -59,6 +62,9 @@ void
 banout_append(struct BannerOutput *banout, unsigned proto, const void *px, size_t length);
 #define AUTO_LEN ((size_t)~0)
 
+void
+banout_set_probe(struct BannerOutput *banout, unsigned proto,
+              const void *probe, size_t length);
 void
 banout_printf(struct BannerOutput *banout, unsigned proto, const char *fmt, ...);
 

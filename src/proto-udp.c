@@ -44,6 +44,7 @@ default_udp_parse(struct Output *out, time_t timestamp,
                          ip_them, 17, port_them,
                          PROTO_NONE,
                          parsed->ip_ttl,
+                         NULL, 0,
                          px, length);
 
     return 0;
@@ -126,6 +127,7 @@ handle_udp(struct Output *out, time_t timestamp,
                     port_them,
                     PROTO_NONE,
                     parsed->ip_ttl,
+                    NULL, 0,
                     px + parsed->app_offset,
                     parsed->app_length);
     }

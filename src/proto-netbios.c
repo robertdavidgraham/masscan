@@ -99,6 +99,7 @@ handle_nbtstat_rr(struct Output *out, time_t timestamp, unsigned ttl,
             ip_them, 17, port_them,
             PROTO_NBTSTAT,
             ttl,
+            NULL, 0,
             banner, banner_length);
     return 0;
 }

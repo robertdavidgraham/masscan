@@ -206,6 +206,7 @@ struct Masscan
     unsigned is_hello_http:1;    /* --hello=http, use HTTP on all ports */
     unsigned is_scripting:1;    /* whether scripting is needed */
     unsigned is_capture_servername:1; /* --capture servername */
+    unsigned is_output_probes:1; /* --output-probes */
 
     /** Packet template options, such as whether we should add a TCP MSS
      * value, or remove it from the packet */

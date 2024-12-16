@@ -6,6 +6,7 @@
 #include "util-malloc.h"
 #include "util-logger.h"
 #include "util-errormsg.h"
+#include <string.h>
 #include <stdlib.h>
 
 enum {
@@ -154,6 +155,9 @@ again:
         case App_SendFirst:
             /* This isn't called from the outside, but from one of the
              * states internally whhen we transmit for the first time */
+            banner_set_probe(socket, masscan_string_to_app(stream->name),
+                    stream->hello, stream->hello_length);
+
             if (stream == &banner_ssl || stream == &banner_ssl_12) {
                 /*
                  * Kludge, extreme kludge

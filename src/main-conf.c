@@ -2345,6 +2345,19 @@ static int SET_debug_tcp(struct Masscan *masscan, const char *name, const char *
 }
 
 
+static int SET_output_probes(struct Masscan *masscan, const char *name, const char *value)
+{
+    UNUSEDPARM(name);
+    if (masscan->echo) {
+        if (masscan->is_output_probes || masscan->echo_all)
+            fprintf(masscan->echo, "output-probes = %s\n", masscan->is_output_probes?"true":"false");
+       return 0;
+    }
+    masscan->is_output_probes = parseBoolean(value);
+    return CONF_OK;
+}
+
+
 
 struct ConfigParameter {
     const char *name;
@@ -2395,6 +2408,7 @@ struct ConfigParameter config_parameters[] = {
     {"output-noshow",   SET_output_noshow,      0,      {"noshow",0}},
     {"output-show-open",SET_output_show_open,   F_BOOL, {"open", "open-only", 0}},
     {"output-append",   SET_output_append,      0,      {"append-output",0}},
+    {"output-probes",   SET_output_probes,      F_BOOL, {0}},
     {"rotate",          SET_rotate_time,        0,      {"output-rotate", "rotate-output", "rotate-time", 0}},
     {"rotate-dir",      SET_rotate_directory,   0,      {"output-rotate-dir", "rotate-directory", 0}},
     {"rotate-offset",   SET_rotate_offset,      0,      {"output-rotate-offset", 0}},
