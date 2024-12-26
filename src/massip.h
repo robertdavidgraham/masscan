@@ -16,6 +16,7 @@ struct MassIP {
      * range 64k-128k, thus, allowing us to scan both at the same time.
      */
     struct RangeList ports;
+    struct RangeList ports_payloads;
 
     /**
      * Used internally to differentiate between indexes selecting an

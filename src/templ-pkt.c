@@ -614,11 +614,12 @@ tcp_create_packet(
 
 /***************************************************************************
  ***************************************************************************/
-static void
-udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
+static int
+udp_payload_fixup(struct TemplatePacket *tmpl, unsigned payload_index, unsigned seqno)
 {
     const unsigned char *px2 = 0;
     unsigned length2 = 0;
+    int port;
     unsigned source_port2 = 0x1000;
     uint64_t xsum2 = 0;
     //unsigned char *px = tmpl->packet;
@@ -626,8 +627,8 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
 
     UNUSEDPARM(seqno);
 
-    payloads_udp_lookup(tmpl->payloads,
-                    port,
+    port = payloads_udp_lookup(tmpl->payloads,
+                    payload_index,
                     &px2,
                     &length2,
                     &source_port2,
@@ -656,6 +657,8 @@ udp_payload_fixup(struct TemplatePacket *tmpl, unsigned port, unsigned seqno)
 
     tmpl->ipv4.length = tmpl->ipv4.offset_app + length2;
     tmpl->ipv6.length = tmpl->ipv6.offset_app + length2;
+
+    return port;
 }
 
 void
@@ -673,6 +676,7 @@ template_set_target_ipv6(
     struct TemplatePacket *tmpl = NULL;
     uint64_t entropy = tmplset->entropy;
     unsigned payload_length;
+    int maybe_port_them;
 
     *r_length = sizeof_px;
 
@@ -687,7 +691,7 @@ template_set_target_ipv6(
     else if (port_them < Templ_UDP + 65536) {
         tmpl = &tmplset->pkts[Proto_UDP];
         port_them &= 0xFFFF;
-        udp_payload_fixup(tmpl, port_them, seqno);
+        udp_payload_fixup(tmpl, UINT32_MAX, seqno);
     } else if (port_them < Templ_SCTP + 65536) {
         tmpl = &tmplset->pkts[Proto_SCTP];
         port_them &= 0xFFFF;
@@ -705,7 +709,11 @@ template_set_target_ipv6(
         tmpl = &tmplset->pkts[Proto_VulnCheck];
         port_them &= 0xFFFF;
     } else {
-        return;
+        tmpl = &tmplset->pkts[Proto_UDP];
+        maybe_port_them = udp_payload_fixup(tmpl, port_them - Templ_UDP_payloads, seqno);
+        if (maybe_port_them < 0)
+            return;
+        port_them = (unsigned)maybe_port_them;
     }
 
     /* Create some shorter local variables to work with */
@@ -889,6 +897,7 @@ template_set_target_ipv4(
     struct TemplatePacket *tmpl = NULL;
     unsigned xsum2;
     uint64_t entropy = tmplset->entropy;
+    int maybe_port_them;
     
     *r_length = sizeof_px;
 
@@ -903,7 +912,7 @@ template_set_target_ipv4(
     else if (port_them < Templ_UDP + 65536) {
         tmpl = &tmplset->pkts[Proto_UDP];
         port_them &= 0xFFFF;
-        udp_payload_fixup(tmpl, port_them, seqno);
+        udp_payload_fixup(tmpl, UINT32_MAX, seqno);
     } else if (port_them < Templ_SCTP + 65536) {
         tmpl = &tmplset->pkts[Proto_SCTP];
         port_them &= 0xFFFF;
@@ -930,7 +939,11 @@ template_set_target_ipv4(
         tmpl = &tmplset->pkts[Proto_VulnCheck];
         port_them &= 0xFFFF;
     } else {
-        return;
+        tmpl = &tmplset->pkts[Proto_UDP];
+        maybe_port_them = udp_payload_fixup(tmpl, port_them - Templ_UDP_payloads, seqno);
+        if (maybe_port_them < 0)
+            return;
+        port_them = (unsigned)maybe_port_them;
     }
 
     /* Create some shorter local variables to work with */
