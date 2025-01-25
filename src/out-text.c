@@ -13,6 +13,7 @@ text_out_open(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
     fprintf(fp, "#masscan\n");
+    fflush(fp);
 }
 
 /****************************************************************************
@@ -22,6 +23,7 @@ text_out_close(struct Output *out, FILE *fp)
 {
     UNUSEDPARM(out);
     fprintf(fp, "# end\n");
+    fflush(fp);
 }
 
 /****************************************************************************
@@ -43,6 +45,7 @@ text_out_status(struct Output *out, FILE *fp, time_t timestamp,
         fmt.string,
         (unsigned)timestamp
         );
+    fflush(fp);
 }
 
 
@@ -70,6 +73,7 @@ text_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         masscan_app_to_string(proto),
         normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
         );
+    fflush(fp);
 }
 
 
