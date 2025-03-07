@@ -970,7 +970,7 @@ receive_thread(void *v)
             if (TCP_IS_SYNACK(px, parsed.transport_offset)) {
                 if (cookie != seqno_me - 1) {
                     ipaddress_formatted_t fmt = ipaddress_fmt(ip_them);
-                    LOG(0, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
+                    LOG(2, "%s - bad cookie: ackno=0x%08x expected=0x%08x\n",
                         fmt.string, seqno_me-1, cookie);
                     continue;
                 }
