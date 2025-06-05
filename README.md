@@ -95,7 +95,7 @@ Masscan supports banner checking on the following protocols:
   * POP3
   * SMTP
   * SSH
-  * SSL
+  * SSL/TLS
   * SMBv1
   * SMBv2
   * Telnet
