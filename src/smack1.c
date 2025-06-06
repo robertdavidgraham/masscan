@@ -399,9 +399,9 @@ row_shift_from_symbol_count(unsigned symbol_count)
 struct SMACK *
 smack_create(const char *name, unsigned nocase)
 {
-    struct SMACK *smack;
-
-    smack = (struct SMACK *)malloc(sizeof (struct SMACK));
+    // struct SMACK *smack;
+    // smack = (struct SMACK *)malloc(sizeof (struct SMACK));
+    std::unique_ptr<struct SMACK> smack = std::make_ptr<struct SMACK>();
     if (smack == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
@@ -424,9 +424,9 @@ smack_create(const char *name, unsigned nocase)
 static void
 create_intermediate_table(struct SMACK *smack, unsigned size)
 {
-    struct SmackRow *x;
-
-    x = (struct SmackRow *)malloc(sizeof(*x) * size);
+    // struct SmackRow *x;
+    // x = (struct SmackRow *)malloc(sizeof(*x) * size);
+    std::unique_ptr<struct SmackRow> x = std::make_ptr<struct SmackRow>();
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
@@ -452,9 +452,9 @@ destroy_intermediate_table(struct SMACK *smack)
 static void
 create_matches_table(struct SMACK *smack, unsigned size)
 {
-    struct SmackMatches *x;
-
-    x = (struct SmackMatches *)malloc(sizeof(*x) * size);
+    // struct SmackMatches *x;
+    // x = (struct SmackMatches *)malloc(sizeof(*x) * size);
+    std::unique_ptr<struct SmackMatches> x = std::make_ptr<struct SmackMatches>(size);
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);

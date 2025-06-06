@@ -102,7 +102,8 @@ rawsock_init(void)
 // first entry for the IP address/mask, and gateway, and
 // the primary and secondary WINS server for each adapter.
 
-    PIP_ADAPTER_INFO pAdapterInfo;
+    // PIP_ADAPTER_INFO pAdapterInfo;
+    std::unique_ptr<PIP_ADAPTER_INFO> pAdapterInfo;
     PIP_ADAPTER_INFO pAdapter = NULL;
     DWORD dwRetVal = 0;
     UINT i;
@@ -112,7 +113,8 @@ rawsock_init(void)
     //char buffer[32];
 
     ULONG ulOutBufLen = sizeof (IP_ADAPTER_INFO);
-    pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
+    // pAdapterInfo = (IP_ADAPTER_INFO *) malloc(sizeof (IP_ADAPTER_INFO));
+    pAdapterInfo = std::make_unique<IP_ADAPTER_INFO>();
     if (pAdapterInfo == NULL) {
         printf("Error allocating memory needed to call GetAdaptersinfo\n");
         return;
@@ -121,7 +123,8 @@ rawsock_init(void)
 // the necessary size into the ulOutBufLen variable
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
         free(pAdapterInfo);
-        pAdapterInfo = (IP_ADAPTER_INFO *) malloc(ulOutBufLen);
+        // pAdapterInfo = (IP_ADAPTER_INFO *) malloc(ulOutBufLen);
+        pAdapterInfo = std::make_unique<IP_ADAPTER_INFO>(ulOutBufLen);
         if (pAdapterInfo == NULL) {
             printf("Error allocating memory needed to call GetAdaptersinfo\n");
             return;
