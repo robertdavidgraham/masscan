@@ -860,6 +860,9 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * and so on.
      */
     out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
+
+    if (fp == stdout)
+        fflush(fp);
 }
 
 
