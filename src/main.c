@@ -249,15 +249,15 @@ transmit_thread(void *v) /*aka. scanning_thread() */
     throttler_start(throttler, masscan->max_rate/masscan->nic_count);
 
 infinite:
-    
+
     /* Create the shuffler/randomizer. This creates the 'range' variable,
      * which is simply the number of IP addresses times the number of
      * ports.
      * IPv6: low index will pick addresses from the IPv6 ranges, and high
      * indexes will pick addresses from the IPv4 ranges. */
-    range = count_ipv4 * rangelist_count(&masscan->targets.ports)
-            + count_ipv6 * rangelist_count(&masscan->targets.ports);
-    range_ipv6 = count_ipv6 * rangelist_count(&masscan->targets.ports);
+    range = count_ipv4 * rangelist_count(&masscan->targets.ports_payloads)
+            + count_ipv6 * rangelist_count(&masscan->targets.ports_payloads);
+    range_ipv6 = count_ipv6 * rangelist_count(&masscan->targets.ports_payloads);
     blackrock_init(&blackrock, range, seed, masscan->blackrock_rounds);
 
     /* Calculate the 'start' and 'end' of a scan. One reason to do this is
@@ -340,7 +340,7 @@ infinite:
                 unsigned port_me;
 
                 ip_them = range6list_pick(&masscan->targets.ipv6, xXx % count_ipv6);
-                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv6);
+                port_them = rangelist_pick(&masscan->targets.ports_payloads, xXx / count_ipv6);
 
                 ip_me = src.ipv6;
                 port_me = src.port;
@@ -369,7 +369,7 @@ infinite:
                 xXx -= range_ipv6;
 
                 ip_them = rangelist_pick(&masscan->targets.ipv4, xXx % count_ipv4);
-                port_them = rangelist_pick(&masscan->targets.ports, xXx / count_ipv4);
+                port_them = rangelist_pick(&masscan->targets.ports_payloads, xXx / count_ipv4);
 
                 /*
                  * SYN-COOKIE LOGIC
@@ -1215,8 +1215,6 @@ main_scan(struct Masscan *masscan)
         LOG(0, " [hint] try something like \"--ports 0-65535\"\n");
         return 1;
     }
-    range = count_ips * count_ports;
-    range += (uint64_t)(masscan->retries * range);
 
     /*
      * If doing an ARP scan, then don't allow port scanning
@@ -1246,6 +1244,15 @@ main_scan(struct Masscan *masscan)
     payloads_udp_trim(masscan->payloads.udp, &masscan->targets);
     payloads_oproto_trim(masscan->payloads.oproto, &masscan->targets);
 
+    /*
+     * Convert all UDP port targets with one or more payloads into UDP payload
+     * targets. This allows multiple payloads to be sent for per port.
+     */
+    payloads_udp_ports_payloads(&masscan->targets, masscan->payloads.udp);
+
+    count_ports = rangelist_count(&masscan->targets.ports_payloads);
+    range = count_ips * count_ports;
+    range += (uint64_t)(masscan->retries * range);
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
   __AFL_INIT();

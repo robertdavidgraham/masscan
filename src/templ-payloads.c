@@ -24,6 +24,7 @@
 #include "util-malloc.h"
 #include "massip.h"
 #include "templ-nmap-payloads.h"
+#include "massip-rangesv4.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -501,32 +502,22 @@ partial_checksum(const unsigned char *px, size_t icmp_length)
 int
 payloads_udp_lookup(
                     const struct PayloadsUDP *payloads,
-                    unsigned port,
+                    unsigned payload_index,
                     const unsigned char **px,
                     unsigned *length,
                     unsigned *source_port,
                     uint64_t *xsum,
                     SET_COOKIE *set_cookie)
 {
-    unsigned i;
-    if (payloads == 0)
-        return 0;
+    if (payloads == 0 || payload_index >= payloads->count)
+        return -1;
 
-    port &= 0xFFFF;
-
-    /* This is just a linear search, done once at startup, to search
-     * through all the payloads for the best match. */
-    for (i=0; i<payloads->count; i++) {
-        if (payloads->list[i]->port == port) {
-            *px = payloads->list[i]->buf;
-            *length = payloads->list[i]->length;
-            *source_port = payloads->list[i]->source_port;
-            *xsum = payloads->list[i]->xsum;
-            *set_cookie = payloads->list[i]->set_cookie;
-            return 1;
-        }
-    }
-    return 0;
+    *px = payloads->list[payload_index]->buf;
+    *length = payloads->list[payload_index]->length;
+    *source_port = payloads->list[payload_index]->source_port;
+    *xsum = payloads->list[payload_index]->xsum;
+    *set_cookie = payloads->list[payload_index]->set_cookie;
+    return payloads->list[payload_index]->port;
 }
 
 
@@ -623,7 +614,6 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
                       struct RangeList *ports, unsigned source_port,
                       SET_COOKIE set_cookie)
 {
-    unsigned count = 1;
     struct PayloadUDP_Item *p;
     uint64_t port_count = rangelist_count(ports);
     uint64_t i;
@@ -650,26 +640,20 @@ payloads_datagram_add(struct PayloadsUDP *payloads,
             unsigned j;
 
             for (j=0; j<payloads->count; j++) {
-                if (p->port <= payloads->list[j]->port)
+                if (p->port < payloads->list[j]->port)
                     break;
             }
 
             if (j < payloads->count) {
-                if (p->port == payloads->list[j]->port) {
-                    free(payloads->list[j]);
-                    count = 0; /* don't increment count */
-                } else
-                    memmove(payloads->list + j + 1,
-                            payloads->list + j,
-                            (payloads->count-j) * sizeof(payloads->list[0]));
+                memmove(payloads->list + j + 1,
+                        payloads->list + j,
+                        (payloads->count-j) * sizeof(payloads->list[0]));
             }
             payloads->list[j] = p;
-
-            payloads->count += count;
-            count = 1;
+            payloads->count += 1;
         }
     }
-    return count; /* zero or one */
+    return port_count < UINT32_MAX ? (unsigned)port_count : UINT32_MAX;
 }
 
 static unsigned
@@ -902,4 +886,53 @@ payloads_oproto_create(void)
 int
 templ_payloads_selftest(void) {
     return templ_nmap_selftest();
+}
+
+
+/***************************************************************************
+ * add UDP payloads for the given port range to the targets list
+ ***************************************************************************/
+void
+payloads_add_targets(struct RangeList *targets, const struct PayloadsUDP *payloads, unsigned begin, unsigned end) {
+    unsigned i, j, k, no_payloads;
+
+    for (i = 0; i < payloads->count; ++i)
+        if (payloads->list[i]->port >= begin)
+            break;
+    for (j = i; j < payloads->count; ++j)
+        if (payloads->list[j]->port > end)
+            break;
+
+    if (i < j) {
+        rangelist_add_range(targets, i + Templ_UDP_payloads, j + Templ_UDP_payloads - 1);
+        LOG(3, "[+] UDP port range %d - %d --> UDP payloads %d - %d\n", begin, end, i, j - 1);
+    }
+
+    no_payloads = targets->count;
+    for (k = begin; k <= end; ++k) {
+        for(; i < j && payloads->list[i]->port < k; ++i);
+        if (i == j || payloads->list[i]->port != k)
+            rangelist_add_range_udp(targets, k, k);
+    }
+    for (k = no_payloads; k < targets->count; ++k)
+        LOG(4, "[-] no payload for UDP ports %d - %d\n",
+            targets->list[k].begin - Templ_UDP, targets->list[k].end - Templ_UDP);
+}
+
+void
+payloads_udp_ports_payloads(struct MassIP *targets, const struct PayloadsUDP *payloads) {
+    unsigned i;
+
+    /* Create a target list with multiple payloads per UDP port. */
+    memset(&targets->ports_payloads, 0, sizeof(targets->ports_payloads));
+
+    for (i = 0; i < targets->ports.count; ++i) {
+        if (targets->ports.list[i].begin > Templ_UDP_last || targets->ports.list[i].end < Templ_UDP)
+            rangelist_add_range(&targets->ports_payloads, targets->ports.list[i].begin, targets->ports.list[i].end);
+        else
+            payloads_add_targets(&targets->ports_payloads, payloads,
+                targets->ports.list[i].begin - Templ_UDP, targets->ports.list[i].end - Templ_UDP);
+    }
+
+    rangelist_optimize(&targets->ports_payloads);
 }
