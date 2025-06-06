@@ -71,7 +71,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
     
     UNUSEDPARM(out);
     fprintf(fp, "<host endtime=\"%u\">"
-                    "<address addr=\"%s\" addrtype=\"ipv4\"/>"
+                    "<address addr=\"%s\" addrtype=\"%s\"/>"
                     "<ports>"
                     "<port protocol=\"%s\" portid=\"%u\">"
                     "<state state=\"%s\" reason=\"%s\" reason_ttl=\"%u\"/>"
@@ -81,6 +81,7 @@ xml_out_status(struct Output *out, FILE *fp, time_t timestamp, int status,
                 "\r\n",
         (unsigned)timestamp,
         fmt.string,
+        ip.version == 6 ? "ipv6" : "ipv4",
         name_from_ip_proto(ip_proto),
         port,
         status_string(status),
