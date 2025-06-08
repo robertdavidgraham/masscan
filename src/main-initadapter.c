@@ -193,7 +193,7 @@ masscan_initialize_adapter(
             if (macaddress_is_zero(*router_mac_ipv4)) {
                 fmt = ipv4address_fmt(masscan->nic[index].router_ip);
                 LOG(0, "[-] FAIL: ARP timed-out resolving MAC address for router %s: \"%s\"\n", ifname, fmt.string);
-                LOG(0, "    [hint] try \"--router ip 192.0.2.1\" to specify different router\n");
+                LOG(0, "    [hint] try \"--router-ip 192.0.2.1\" to specify different router\n");
                 LOG(0, "    [hint] try \"--router-mac 66-55-44-33-22-11\" instead to bypass ARP\n");
                 LOG(0, "    [hint] try \"--interface eth0\" to change interface\n");
                 return -1;
