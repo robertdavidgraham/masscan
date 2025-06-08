@@ -1,0 +1,80 @@
+name: Build and release C/C++ build
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    permissions: write-all
+    name: ${{ matrix.platform.os_name }} Build
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+        
+          - os_name: macOS-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+            name: ${{ github.event.repository.name }}-macOS-x86_64-apple-darwin.tar.gz
+
+          - os_name: Linux-x86_64-gnu
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: ${{ github.event.repository.name }}-x86_64-unknown-linux-gnu.tar.gz
+          
+          - os_name: Windows-x86_64-MinGW
+            os: windows-latest
+            target: x64
+            name: ${{ github.event.repository.name }}-x86_64-pc-windows-mingw.zip
+
+          - os_name: Windows-x86_64-MSVC
+            os: windows-latest
+            target: x64
+            name: ${{ github.event.repository.name }}-x86_64-pc-windows-msvc.zip
+
+          - os_name: Windows-x86_32-MSVC
+            os: windows-latest
+            target: Win32
+            name: ${{ github.event.repository.name }}-x86_32-pc-windows-msvc.zip
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: make
+        run: make
+        if: contains(matrix.platform.name, 'gnu') || contains(matrix.platform.name, 'mingw') || contains(matrix.platform.name, 'apple')
+        
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+        if: contains(matrix.platform.name, 'msvc')
+        
+      - name: Build VS2022 Release
+        run: msbuild vs143/masscan.sln -t:rebuild -verbosity:diag /p:Configuration=Release /p:Platform=${{ matrix.platform.target }}
+        if: contains(matrix.platform.name, 'msvc')
+
+      - name: Package as archive
+        shell: bash
+        run: |
+          echo running archive
+          cd bin
+          if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
+            7z a ../${{ matrix.platform.name }} ${{ github.event.repository.name }}.exe
+            7z a ../${{ matrix.platform.name }}.with_dll.zip ${{ github.event.repository.name }}.exe ./${{ matrix.platform.target }}/*
+          else
+            tar czvf ../${{ matrix.platform.name }} ${{ github.event.repository.name }}
+          fi
+          cd -
+        if: |
+          ( startsWith( github.ref, 'refs/tags/v' ) ||
+            github.ref == 'refs/tags/test-release' )
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: "${{ github.event.repository.name }}-*"
+          body_path: Changes.md
+        if: startsWith( github.ref, 'refs/tags/v' )
