@@ -35,7 +35,9 @@ one port.
 
   * `--banners`: specifies that banners should be grabbed after establishing
 	a TCP connection. Protocols supported include HTTP, FTP, IMAP4, memcached,
-	POP3, SMTP, SSH, SSL, SMB, Telnet, RDP, and VNC.
+	POP3, SMTP, SSH, SSL, SMB, Telnet, RDP, and VNC. Note that banner will be
+  grabbed on standard port of the service only.
+  You may change this behavior with `--hello-string` or `--hello-file` options.
 
   * `--rate RATE`: specifies the desired rate for transmitting
     packets. This can be very small numbers, like `0.1` for transmitting 
