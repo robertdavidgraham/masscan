@@ -860,6 +860,13 @@ output_report_status(struct Output *out, time_t timestamp, int status,
      * and so on.
      */
     out->funcs->status(out, fp, timestamp, status, ip, ip_proto, port, reason, ttl);
+
+    /*
+     * If outputting to stdout, flush the buffer immediately
+     */
+    if (fp == stdout)
+        fflush(fp);
+
 }
 
 
@@ -933,6 +940,12 @@ output_report_banner(struct Output *out, time_t now,
      * and so on.
      */
     out->funcs->banner(out, fp, now, ip, ip_proto, port, proto, ttl, px, length);
+
+    /*
+     * If outputting to stdout, flush the buffer immediately
+     */
+    if (fp == stdout)
+        fflush(fp);
 
 }
 
