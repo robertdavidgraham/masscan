@@ -245,6 +245,8 @@ read_nmap_payloads(FILE *fp, const char *filename,
             p = parse_c_string(buf, &buf_length, sizeof(buf), line);
             memmove(line, p, strlen(p)+1);
             trim(line, sizeof(line));
+            if (*line == '#')
+                line[0] = '\0';
         }
 
         /* [source] */
