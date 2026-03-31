@@ -1,0 +1,7 @@
+.gitignore
+Dockerfile
+README.md
+
+# Ignore local build artifacts
+bin/
+tmp/*.o
