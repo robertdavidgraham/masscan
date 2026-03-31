@@ -6,7 +6,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN make -j && make install
+RUN make -j"$(nproc)" && make install
 
 
 FROM ubuntu:25.10
