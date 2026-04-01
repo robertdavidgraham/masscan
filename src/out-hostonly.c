@@ -46,6 +46,7 @@ static void
 hostonly_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 { /* SYN only - no banner */
     ipaddress_formatted_t fmt = ipaddress_fmt(ip);
@@ -57,6 +58,8 @@ hostonly_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ip);
     UNUSEDPARM(ip_proto);
     UNUSEDPARM(proto);
+    UNUSEDPARM(probe);
+    UNUSEDPARM(probe_length);
     UNUSEDPARM(px);
     UNUSEDPARM(length);
     fprintf(fp, "%s\n", fmt.string);

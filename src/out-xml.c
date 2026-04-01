@@ -1,4 +1,5 @@
 #include "output.h"
+#include "masscan.h"
 #include "masscan-app.h"
 #include "masscan-status.h"
 #include "util-safefunc.h"
@@ -96,9 +97,11 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, 
         unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[MAX_BANNER_LENGTH];
+    char probe_buffer[MAX_PROBE_LENGTH];
     const char *reason;
     ipaddress_formatted_t fmt = ipaddress_fmt(ip);
 
@@ -109,24 +112,45 @@ xml_out_banner(struct Output *out, FILE *fp, time_t timestamp,
 
     UNUSEDPARM(out);
 
-    fprintf(fp, "<host endtime=\"%u\">"
-                    "<address addr=\"%s\" addrtype=\"ipv4\"/>"
-                    "<ports>"
-                    "<port protocol=\"%s\" portid=\"%u\">"
-                      "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
-                      "<service name=\"%s\" banner=\"%s\"></service>"
-                    "</port>"
-                    "</ports>"
-                "</host>"
-                "\r\n",
-        (unsigned)timestamp,
-        fmt.string,
-        name_from_ip_proto(ip_proto),
-        port,
-        reason, ttl,
-        masscan_app_to_string(proto),
-        normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
-        );
+    if (out->masscan->is_output_probes)
+        fprintf(fp, "<host endtime=\"%u\">"
+                        "<address addr=\"%s\" addrtype=\"ipv4\"/>"
+                        "<ports>"
+                        "<port protocol=\"%s\" portid=\"%u\">"
+                          "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
+                          "<service name=\"%s\" probe=\"%s\" banner=\"%s\"></service>"
+                        "</port>"
+                        "</ports>"
+                    "</host>"
+                    "\r\n",
+            (unsigned)timestamp,
+            fmt.string,
+            name_from_ip_proto(ip_proto),
+            port,
+            reason, ttl,
+            masscan_app_to_string(proto),
+            normalize_string(probe, probe_length, probe_buffer, sizeof(probe_buffer)),
+            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
+            );
+    else
+        fprintf(fp, "<host endtime=\"%u\">"
+                        "<address addr=\"%s\" addrtype=\"ipv4\"/>"
+                        "<ports>"
+                        "<port protocol=\"%s\" portid=\"%u\">"
+                          "<state state=\"open\" reason=\"%s\" reason_ttl=\"%u\" />"
+                          "<service name=\"%s\" banner=\"%s\"></service>"
+                        "</port>"
+                        "</ports>"
+                    "</host>"
+                    "\r\n",
+            (unsigned)timestamp,
+            fmt.string,
+            name_from_ip_proto(ip_proto),
+            port,
+            reason, ttl,
+            masscan_app_to_string(proto),
+            normalize_string(px, length, banner_buffer, sizeof(banner_buffer))
+            );
 }
 
 /****************************************************************************

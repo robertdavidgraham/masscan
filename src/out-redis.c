@@ -321,6 +321,7 @@ static void
 redis_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 {
     UNUSEDPARM(ttl);
@@ -331,6 +332,8 @@ redis_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     UNUSEDPARM(ip_proto);
     UNUSEDPARM(port);
     UNUSEDPARM(proto);
+    UNUSEDPARM(probe);
+    UNUSEDPARM(probe_length);
     UNUSEDPARM(px);
     UNUSEDPARM(length);
 

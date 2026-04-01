@@ -179,9 +179,11 @@ static void
 grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
         ipaddress ip, unsigned ip_proto, unsigned port,
         enum ApplicationProtocol proto, unsigned ttl,
+        const unsigned char *probe, unsigned probe_length,
         const unsigned char *px, unsigned length)
 {
     char banner_buffer[MAX_BANNER_LENGTH];
+    char probe_buffer[MAX_PROBE_LENGTH];
     ipaddress_formatted_t fmt;
 
     UNUSEDPARM(ttl);
@@ -194,6 +196,12 @@ grepable_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     fprintf(fp, "\tPort: %u", port);
 
     fprintf(fp, "\tService: %s", masscan_app_to_string(proto));
+
+    if (out->masscan->is_output_probes) {
+        normalize_string(probe, probe_length, probe_buffer, sizeof(probe_buffer));
+
+        fprintf(fp, "\tProbe: %s\n", probe_buffer);
+    }
 
     normalize_string(px, length, banner_buffer, sizeof(banner_buffer));
 

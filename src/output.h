@@ -10,6 +10,7 @@
 #include "masscan-app.h"
 
 #define MAX_BANNER_LENGTH 8192
+#define MAX_PROBE_LENGTH  8192
 
 struct Masscan;
 struct Output;
@@ -37,6 +38,7 @@ struct OutputType {
                    time_t timestamp, ipaddress ip, unsigned ip_proto,
                    unsigned port, enum ApplicationProtocol proto,
                    unsigned ttl,
+                   const unsigned char *probe, unsigned probe_length,
                    const unsigned char *px, unsigned length);
 };
 
@@ -174,6 +176,7 @@ typedef void (*OUTPUT_REPORT_BANNER)(
                 struct Output *output, time_t timestamp,
                 ipaddress ip, unsigned ip_proto, unsigned port,
                 unsigned proto, unsigned ttl,
+                unsigned char *probe, unsigned probe_length,
                 const unsigned char *px, unsigned length);
 
 void output_report_banner(
@@ -182,6 +185,7 @@ void output_report_banner(
                 ipaddress ip, unsigned ip_proto, unsigned port,
                 unsigned proto,
                 unsigned ttl,
+                unsigned char *probe, unsigned probe_length,
                 const unsigned char *px, unsigned length);
 
 /**

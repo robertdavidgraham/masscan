@@ -34,6 +34,13 @@ banner_set_sslhello(struct stack_handle_t *socket, bool is_true);
 void
 banner_set_small_window(struct stack_handle_t *socket, bool is_true);
 
+void
+banner_set_probe(
+                    struct stack_handle_t *socket,
+                    int proto,
+                    const unsigned char *probe,
+                    unsigned probe_length
+                    );
 bool
 banner_is_heartbleed(const struct stack_handle_t *socket);
 

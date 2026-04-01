@@ -1,4 +1,5 @@
 #include "output.h"
+#include "masscan.h"
 #include "masscan-app.h"
 #include "masscan-status.h"
 #include "util-safefunc.h"
@@ -103,6 +104,7 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
                ipaddress ip, unsigned ip_proto, unsigned port,
                enum ApplicationProtocol proto,
                unsigned ttl,
+               const unsigned char *probe, unsigned probe_length,
                const unsigned char *px, unsigned length)
 {
     char banner_buffer[65536];
@@ -121,13 +123,23 @@ json_out_banner(struct Output *out, FILE *fp, time_t timestamp,
     fprintf(fp, "{ ");
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "  \"ip\": \"%s\", ", fmt.string);
-    fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
-            (int) timestamp,
-            port,
-            name_from_ip_proto(ip_proto),
-            masscan_app_to_string(proto),
-            normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
-            );
+    if (out->masscan->is_output_probes)
+        fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"probe\": \"%s\", \"banner\": \"%s\"} } ] ",
+                (int) timestamp,
+                port,
+                name_from_ip_proto(ip_proto),
+                masscan_app_to_string(proto),
+                normalize_json_string(probe, probe_length, banner_buffer, sizeof(banner_buffer)),
+                normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
+                );
+    else
+        fprintf(fp, "  \"timestamp\": \"%d\", \"ports\": [ {\"port\": %u, \"proto\": \"%s\", \"service\": {\"name\": \"%s\", \"banner\": \"%s\"} } ] ",
+                (int) timestamp,
+                port,
+                name_from_ip_proto(ip_proto),
+                masscan_app_to_string(proto),
+                normalize_json_string(px, length, banner_buffer, sizeof(banner_buffer))
+                );
     fprintf(fp, "}\n");
 
     UNUSEDPARM(out);
