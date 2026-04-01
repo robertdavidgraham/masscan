@@ -32,6 +32,9 @@ void
 banner_set_sslhello(struct stack_handle_t *socket, bool is_true);
 
 void
+banner_set_ssltls13(struct stack_handle_t *socket, bool is_true);
+
+void
 banner_set_small_window(struct stack_handle_t *socket, bool is_true);
 
 bool
