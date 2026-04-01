@@ -375,7 +375,7 @@ infinite:
                  * SYN-COOKIE LOGIC
                  *  Figure out the source IP/port, and the SYN cookie
                  */
-                if (src.ipv4_mask > 1 || src.port_mask > 1) {
+                if (src.ipv4_mask != 0 || src.port_mask != 0) {
                     uint64_t ck = syn_cookie_ipv4((unsigned)(i+repeats),
                                             (unsigned)((i+repeats)>>32),
                                             (unsigned)xXx, (unsigned)(xXx>>32),
