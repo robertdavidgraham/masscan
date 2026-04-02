@@ -449,6 +449,9 @@ output_create(const struct Masscan *masscan, unsigned thread_index)
     case Output_Hostonly:
         out->funcs = &hostonly_output;
         break;
+    case Output_IPPort:
+        out->funcs = &ipport_output;
+        break;
     case Output_None:
         out->funcs = &null_output;
         break;

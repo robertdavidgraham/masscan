@@ -212,10 +212,10 @@ print_nmap_help(void)
 "  --ttl <val>: Set IP time-to-live field\n"
 "  --spoof-mac <mac address/prefix/vendor name>: Spoof your MAC address\n"
 "OUTPUT:\n"
-"  --output-format <format>: Sets output to binary/list/unicornscan/json/ndjson/grepable/xml\n"
+"  --output-format <format>: Sets output to binary/list/unicornscan/json/ndjson/grepable/xml/ipport\n"
 "  --output-file <file>: Write scan results to file. If --output-format is\n"
 "     not given default is xml\n"
-"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan format,\n"
+"  -oL/-oJ/-oD/-oG/-oB/-oX/-oU/-oI <file>: Output scan in List/JSON/nDjson/Grepable/Binary/XML/Unicornscan/IPPort format,\n"
 "     respectively, to the given filename. Shortcut for\n"
 "     --output-format <format> --output-file <file>\n"
 "  -v: Increase verbosity level (use -vv or more for greater effect)\n"
@@ -1663,6 +1663,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
             case Output_Certs:      fprintf(fp, "output-format = certs\n"); break;
             case Output_None:       fprintf(fp, "output-format = none\n"); break;
             case Output_Hostonly:   fprintf(fp, "output-format = hostonly\n"); break;
+            case Output_IPPort:     fprintf(fp, "output-format = ipport\n"); break;
             case Output_Redis:
                 fmt = ipaddress_fmt(masscan->redis.ip);
                 fprintf(fp, "output-format = redis\n");
@@ -1689,6 +1690,7 @@ static int SET_output_format(struct Masscan *masscan, const char *name, const ch
     else if (EQUALS("none", value))         x = Output_None;
     else if (EQUALS("redis", value))        x = Output_Redis;
     else if (EQUALS("hostonly", value))     x = Output_Hostonly;
+    else if (EQUALS("ipport", value))       x = Output_IPPort;
     else {
         LOG(0, "FAIL: unknown output-format: %s\n", value);
         LOG(0, "  hint: 'binary', 'xml', 'grepable', ...\n");
@@ -3429,6 +3431,9 @@ masscan_command_line(struct Masscan *masscan, int argc, char *argv[])
                     break;
                 case 'H':
                     masscan_set_parameter(masscan, "output-format", "hostonly");
+                    break;
+                case 'I':
+                    masscan_set_parameter(masscan, "output-format", "ipport");
                     break;
                 default:
                     fprintf(stderr, "nmap(%s): unknown output format\n", argv[i]);

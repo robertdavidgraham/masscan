@@ -147,6 +147,7 @@ extern const struct OutputType null_output;
 extern const struct OutputType redis_output;
 extern const struct OutputType hostonly_output;
 extern const struct OutputType grepable_output;
+extern const struct OutputType ipport_output;
 
 /**
  * Creates an "output" object. This is called by the receive thread in order
