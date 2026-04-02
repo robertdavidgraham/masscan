@@ -96,6 +96,9 @@
     <ClCompile Include="..\src\out-text.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\out-ipport.c">
+      <Filter>Source Files\output</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\out-xml.c">
       <Filter>Source Files\output</Filter>
     </ClCompile>
