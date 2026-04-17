@@ -409,12 +409,15 @@ smack_create(const char *name, unsigned nocase)
     memset (smack, 0, sizeof (struct SMACK));
 
     smack->is_nocase = nocase;
-    smack->name = (char*)malloc(strlen(name)+1);
-    if (smack->name == NULL) {
-        fprintf(stderr, "%s: out of memory error\n", "smack");
-        exit(1);
+    {
+        size_t name_len = strlen(name);
+        smack->name = (char*)malloc(name_len + 1);
+        if (smack->name == NULL) {
+            fprintf(stderr, "%s: out of memory error\n", "smack");
+            exit(1);
+        }
+        memcpy(smack->name, name, name_len + 1);
     }
-    memcpy(smack->name, name, strlen(name)+1);
     return smack;
 }
 
@@ -426,12 +429,11 @@ create_intermediate_table(struct SMACK *smack, unsigned size)
 {
     struct SmackRow *x;
 
-    x = (struct SmackRow *)malloc(sizeof(*x) * size);
+    x = (struct SmackRow *)calloc(size, sizeof(*x));
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(x, 0, sizeof(*x) * size);
     smack->m_state_table = x;
 }
 
@@ -454,7 +456,7 @@ create_matches_table(struct SMACK *smack, unsigned size)
 {
     struct SmackMatches *x;
 
-    x = (struct SmackMatches *)malloc(sizeof(*x) * size);
+    x = (struct SmackMatches *)calloc(size, sizeof(*x));
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
