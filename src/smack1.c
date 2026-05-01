@@ -409,12 +409,15 @@ smack_create(const char *name, unsigned nocase)
     memset (smack, 0, sizeof (struct SMACK));
 
     smack->is_nocase = nocase;
-    smack->name = (char*)malloc(strlen(name)+1);
-    if (smack->name == NULL) {
-        fprintf(stderr, "%s: out of memory error\n", "smack");
-        exit(1);
+    {
+        size_t name_len = strlen(name);
+        smack->name = (char*)malloc(name_len + 1);
+        if (smack->name == NULL) {
+            fprintf(stderr, "%s: out of memory error\n", "smack");
+            exit(1);
+        }
+        memcpy(smack->name, name, name_len + 1);
     }
-    memcpy(smack->name, name, strlen(name)+1);
     return smack;
 }
 
@@ -426,12 +429,11 @@ create_intermediate_table(struct SMACK *smack, unsigned size)
 {
     struct SmackRow *x;
 
-    x = (struct SmackRow *)malloc(sizeof(*x) * size);
+    x = (struct SmackRow *)calloc(size, sizeof(*x));
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(x, 0, sizeof(*x) * size);
     smack->m_state_table = x;
 }
 
@@ -454,12 +456,11 @@ create_matches_table(struct SMACK *smack, unsigned size)
 {
     struct SmackMatches *x;
 
-    x = (struct SmackMatches *)malloc(sizeof(*x) * size);
+    x = (struct SmackMatches *)calloc(size, sizeof(*x));
     if (x == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(x, 0, sizeof(*x) * size);
 
     smack->m_match = x;
 }
@@ -571,7 +572,11 @@ smack_copy_matches(
     unsigned i;
 
     /* Allocate space for both lists */
-    total_ids = (size_t *)malloc((old_count + new_count)*sizeof(*total_ids));
+    if (new_count > (size_t)-1 - old_count) {
+        fprintf(stderr, "%s: integer overflow in allocation\n", "smack");
+        exit(1);
+    }
+    total_ids = (size_t *)calloc(old_count + new_count, sizeof(*total_ids));
     if (total_ids == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
@@ -742,7 +747,7 @@ smack_add_pattern(
         unsigned new_max;
 
         new_max = smack->m_pattern_max * 2 + 1;
-        new_list = (struct SmackPattern **)malloc(sizeof(*new_list)*new_max);
+        new_list = (struct SmackPattern **)calloc(new_max, sizeof(*new_list));
         if (new_list == NULL) {
             fprintf(stderr, "%s: out of memory error\n", "smack");
             exit(1);
@@ -1011,12 +1016,15 @@ smack_stage4_make_final_table(struct SMACK *smack)
      * Allocate table:
      * rows*columns
      */
-    table = malloc(sizeof(transition_t) * row_count * column_count);
+    if (row_count > 0 && column_count > (size_t)-1 / row_count) {
+        fprintf(stderr, "%s: integer overflow in allocation\n", "smack");
+        exit(1);
+    }
+    table = calloc((size_t)row_count * column_count, sizeof(transition_t));
     if (table == NULL) {
         fprintf(stderr, "%s: out of memory error\n", "smack");
         exit(1);
     }
-    memset(table, 0, sizeof(transition_t) * row_count * column_count);
 
 
     for (row=0; row<row_count; row++) {
