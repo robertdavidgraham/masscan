@@ -3,7 +3,7 @@
 #include "proto-banner1.h"
 
 extern struct ProtocolParserStream banner_ssl;
-extern struct ProtocolParserStream banner_ssl_12;
+extern struct ProtocolParserStream banner_tls_13;
 
 extern const char *ssl_hello_heartbeat_template;
 extern const char *ssl_hello_ticketbleed_template;

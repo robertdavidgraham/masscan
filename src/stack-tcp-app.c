@@ -154,12 +154,13 @@ again:
         case App_SendFirst:
             /* This isn't called from the outside, but from one of the
              * states internally whhen we transmit for the first time */
-            if (stream == &banner_ssl || stream == &banner_ssl_12) {
+            if (stream == &banner_ssl || stream == &banner_tls_13) {
                 /*
                  * Kludge, extreme kludge
                  * I don't even know what this does any longer
                  */
                 banner_set_sslhello(socket, true);
+                banner_set_ssltls13(socket, stream == &banner_tls_13);
             }
 
             if (banner_is_heartbleed(socket)) {

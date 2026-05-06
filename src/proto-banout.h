@@ -78,6 +78,14 @@ banout_append_hexint(struct BannerOutput *banout, unsigned proto, unsigned long 
 void
 banout_append_unicode(struct BannerOutput *banout, unsigned proto, unsigned c);
 
+/*
+ * Replace first occurence of string with another string inside the banner.
+ * This function should only be used when banout represents a string,
+ * and not a X.509 certificate.
+ */
+unsigned
+banout_replacefirst(struct BannerOutput *banout, unsigned proto, const char *string, const char *replace);
+
 /**
  * Select a specific string (of the specified protocol).
  * The "banner output" can have multiple protocol objects associated

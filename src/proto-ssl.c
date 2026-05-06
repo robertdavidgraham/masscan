@@ -52,11 +52,15 @@
 #include "crypto-siphash24.h"
 #include "util-safefunc.h"
 #include "util-malloc.h"
+
+#include "crypto-aes256.h"
+#include "crypto-curve25519.h"
+#include "crypto-rfc6234.h"
+
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-
-
 
 /**
  * Fugly macro for doing state-machine parsing. I know it's bad, but
@@ -117,6 +121,115 @@ BANNER_VERSION(struct BannerOutput *banout, unsigned version_major,
     }
 }
 
+/*****************************************************************************
+ *****************************************************************************/
+/*
+ * This key is the private key hardcoded for all X25519 exchanges
+ */
+static const unsigned char
+tls_x25519_privkey[] =
+"\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
+"\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f";
+
+#define iv_length 12
+
+/*
+ * HKDF-Expand-Label as per RFC 8446 sect 7.1.
+ * This is made to be compatible with crypto-rfc6234
+ */
+int hkdfExpandLabel(SHAversion whichSha, const uint8_t prk[ ], int prk_len,
+    const char *label, uint8_t label_len,
+    const unsigned char *ctx, uint8_t ctx_len,
+    uint8_t okm[ ], uint16_t okm_len)
+{
+    if (label_len > 0xf9) {
+        // too big
+        return shaBadParam;
+    }
+    uint16_t info_len = label_len + ctx_len + 10;
+    if (info_len > 514) {
+        // impossible
+        return shaBadParam;
+    }
+    unsigned char info[514];
+    memset(info, 0, 514);
+    info[0] = (okm_len) >> 8;
+    info[1] = (okm_len) & 0xff;
+    info[2] = 6 + label_len;
+    memcpy(info + 3, "tls13 ", 6);
+    memcpy(info + 9, label, label_len);
+    info[9 + label_len] = ctx_len;
+    if (ctx != NULL) {
+        memcpy(info + 10 + label_len, ctx, ctx_len);
+    }
+    return hkdfExpand(whichSha,
+                      prk, prk_len,
+                      info, info_len,
+                      okm, okm_len);
+}
+
+/*
+ * This computes the TLS 1.3 keys, using x25519 + TLS_AES_256_GCM_SHA384.
+ * The ciphers used and the client keys are all hardcoded.
+ */
+
+unsigned char derived_secret[48] =
+"\x15\x91\xda\xc5\xcb\xbf\x03\x30\xa4\xa8\x4d\xe9\xc7\x53\x33\x0e"
+"\x92\xd0\x1f\x0a\x88\x21\x4b\x44\x64\x97\x2f\xd6\x68\x04\x9e\x93"
+"\xe5\x2f\x2b\x16\xfa\xd9\x22\xfd\xc0\x58\x44\x78\x42\x8f\x28\x2b";
+
+enum {
+    NEGO_NONE,
+    NEGO_HANDSHAKE_KEYS,
+    NEGO_APPLICATION_KEYS,
+};
+
+static void
+compute_tls_handshake_keys(
+    struct StreamState *pstate
+)
+{
+    unsigned char pre_master_secret[32];
+    unsigned char hello_hash[48];
+    unsigned char handhake_secret[64]; // usable size: 48 bytes
+    unsigned char client_secret[48];
+    unsigned char server_secret[48];
+
+    // Compute the PreMasterKey
+    curve25519_donna(pre_master_secret,
+                     tls_x25519_privkey,
+                     pstate->sub.ssl.x.server_hello.kx_data);
+
+    // Finalize the SHA-384 hash
+    SHA384Result(&pstate->sub.ssl.handshake.sha384ctx,
+                 hello_hash);
+
+    // Compute the derived secret: HARDCODED for speed
+
+    // static const unsigned char _zerokey[48] = {0};
+    // unsigned char early_secret[48];
+    // hkdfExtract(SHA384, NULL, 0, _zerokey, 48, early_secret);
+    // unsigned char empty_hash[48];
+    // SHA384Context empty_hashctx;
+    // SHA384Reset(&empty_hashctx);
+    // SHA384Result(&empty_hashctx, empty_hash);
+    // hkdfExpandLabel(SHA384, early_secret, 48, "derived", 7, empty_hash, 48, derived_secret, 48);
+
+    // Compute the handshake secret
+    hkdfExtract(SHA384, derived_secret, 48, pre_master_secret, 32, handhake_secret);
+
+    // compute client and server secret
+    hkdfExpandLabel(SHA384, handhake_secret, 48, "c hs traffic", 12, hello_hash, 48, client_secret, 48);
+    hkdfExpandLabel(SHA384, handhake_secret, 48, "s hs traffic", 12, hello_hash, 48, server_secret, 48);
+
+    // compute handshake keys
+    hkdfExpandLabel(SHA384, client_secret, 48, "key", 3, NULL, 0, pstate->sub.ssl.handshake.client_handshake_key.raw, 32);
+    hkdfExpandLabel(SHA384, server_secret, 48, "key", 3, NULL, 0, pstate->sub.ssl.handshake.server_handshake_key.raw, 32);
+    hkdfExpandLabel(SHA384, client_secret, 48, "iv", 2, NULL, 0, pstate->sub.ssl.handshake.client_handshake_iv, 12);
+    hkdfExpandLabel(SHA384, server_secret, 48, "iv", 2, NULL, 0, pstate->sub.ssl.handshake.server_handshake_iv, 12);
+
+    pstate->sub.ssl.handshake.negotiation_state = NEGO_HANDSHAKE_KEYS;
+}
 
 /*****************************************************************************
  * This parses the "Server Hello" packet, the response to our "ClientHello"
@@ -149,6 +262,8 @@ parse_server_hello(
         EXT_LEN0, EXT_LEN1,
         EXT_DATA,
         EXT_DATA_HEARTBEAT,
+        EXT_DATA_SUPPORTED_VERSIONS,
+        EXT_DATA_KEY_SHARE,
         UNKNOWN,
     };
 
@@ -268,50 +383,50 @@ parse_server_hello(
         remaining |= px[i];
         DROPDOWN(i,length,state);
   
+    /* Handling of the various TLS extensions */
+
     case EXT_TAG0:
     ext_tag:
         if (remaining < 4) {
             state = UNKNOWN;
             continue;
         }
-        hello->ext_tag = px[i]<<8;
+        hello->ext.i = 0;
+        hello->ext.tag = px[i]<<8;
         remaining--;
         DROPDOWN(i,length,state);
             
     case EXT_TAG1:
-        hello->ext_tag |= px[i];
+        hello->ext.tag |= px[i];
         remaining--;
         DROPDOWN(i,length,state);
 
     case EXT_LEN0:
-        hello->ext_remaining = px[i]<<8;
+        hello->ext.len = px[i]<<8;
         remaining--;
         DROPDOWN(i,length,state);
     case EXT_LEN1:
-        hello->ext_remaining |= px[i];
+        hello->ext.len |= px[i];
         remaining--;
-        switch (hello->ext_tag) {
+        // Next step depends on the tag
+        switch (hello->ext.tag) {
             case 0x000f: /* heartbeat */
                 state = EXT_DATA_HEARTBEAT;
                 continue;
+            case 0x002b: /* supported_versions */
+                state = EXT_DATA_SUPPORTED_VERSIONS;
+                continue;
+            case 0x0033: /* key_share */
+                state = EXT_DATA_KEY_SHARE;
+                continue;
         }
         DROPDOWN(i,length,state);
-        
+
     case EXT_DATA:
-        if (hello->ext_remaining == 0) {
-            state = EXT_TAG0;
-            goto ext_tag;
-        }
-        if (remaining == 0) {
-            state = UNKNOWN;
-            continue;
-        }
-        remaining--;
-        hello->ext_remaining--;
-        continue;
-
     case EXT_DATA_HEARTBEAT:
-        if (hello->ext_remaining == 0) {
+    case EXT_DATA_SUPPORTED_VERSIONS:
+    case EXT_DATA_KEY_SHARE:
+        if (hello->ext.i >= hello->ext.len) {
             state = EXT_TAG0;
             goto ext_tag;
         }
@@ -320,18 +435,48 @@ parse_server_hello(
             continue;
         }
         remaining--;
-        hello->ext_remaining--;
-        if (px[i]) {
-            banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
-        }
-        state = EXT_DATA;
-        continue;
+        hello->ext.i++;
 
-    
+        switch (state) {
+            case EXT_DATA_HEARTBEAT:
+                if (px[i]) {
+                    banout_append(  banout, PROTO_VULN, "SSL[heartbeat] ", 15);
+                }
+                state = EXT_DATA;
+                continue;
+            case EXT_DATA_SUPPORTED_VERSIONS:
+                if (hello->ext.i == 1) {
+                    hello->version_major = px[i];
+                } else if (hello->ext.i == 2) {
+                    hello->version_minor = px[i];
+                    if ((hello->version_major<<8 | hello->version_minor) == 0x0304) { // TLS 1.3
+                        banout_replacefirst(banout, PROTO_SSL3, "TLS/1.2", "TLS/1.3");
+                    }
+                }
+                continue;
+            case EXT_DATA_KEY_SHARE:
+                // This is a TLS 1.3 only extension
+                // get the 32bytes (x25519) of the server public key
+                if (hello->ext.i > 4 && hello->ext.i <= 36) {
+                    hello->kx_data[hello->ext.i - 5] = px[i];
+                }
+                continue;
+            default:
+                // skip unknown extension
+                hello->ext.i = hello->ext.len;
+                i += hello->ext.len;
+                remaining -= (hello->ext.len - 1);
+        }
+        continue;
 
     case UNKNOWN:
     default:
         i = (unsigned)length;
+    }
+
+    if (remaining == 0) {
+        /* end of the serverhello */
+        state = 0;
     }
 
     hello->state = state;
@@ -374,7 +519,8 @@ parse_server_cert(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *socket)
+        struct stack_handle_t *socket,
+        bool tls_13)
 {
     struct SSL_SERVER_CERT *data = &pstate->sub.ssl.x.server_cert;
     unsigned state = data->state;
@@ -382,11 +528,13 @@ parse_server_cert(
     unsigned cert_remaining = data->sub.remaining;
     unsigned i;
     enum {
+        CTXTLEN, CTXT, // TLS 1.3 cert only
         LEN0, LEN1, LEN2,
         CLEN0, CLEN1, CLEN2,
         CERT,
         CALEN0, CALEN1, CALEN2,
         CACERT,
+        EXTLEN1, EXTLEN2, EXT, // TLS 1.3 cert only
         UNKNOWN,
     };
 
@@ -394,8 +542,30 @@ parse_server_cert(
     UNUSEDPARM(banner1_private);
     UNUSEDPARM(socket);
 
+    if (state == CTXTLEN && !tls_13) {
+        // If not on TLS 1.3, skip to LEN0 directly
+        state = LEN0;
+    }
+
     for (i=0; i<length; i++)
     switch (state) {
+    /* This is specific to TLS 1.3 certificate */
+    case CTXTLEN:
+        remaining = px[i];
+        DROPDOWN(i,length,state);
+    case CTXT:
+        {
+            unsigned len = (unsigned)length-i;
+            if (len > remaining)
+                len = remaining;
+
+            // skip
+            remaining -= len;
+            i += len-1;
+            if (remaining != 0)
+                break;
+        }
+        DROPDOWN(i,length,state);
     case LEN0:
         remaining = px[i];
         DROPDOWN(i,length,state);
@@ -441,7 +611,7 @@ parse_server_cert(
     case CACERT:
         {
             unsigned len = (unsigned)length-i;
-	    unsigned proto = (state == CERT ? PROTO_X509_CERT : PROTO_X509_CACERT);
+            unsigned proto = (state == CERT ? PROTO_X509_CERT : PROTO_X509_CACERT);
             if (len > remaining)
                 len = remaining;
             if (len > cert_remaining)
@@ -471,18 +641,49 @@ parse_server_cert(
                                            &pstate->base64);        
                     banout_end(banout, proto);
                 }
-                state = CALEN0;
-                if (remaining == 0) {
-                    /* FIXME: reduce this logic, it should only flush the
-                     * FIXME: ertificate, not close the connection*/
-                    if (!banner1->is_heartbleed) {
-                        ; //tcpapi_close(socket);
+                if (tls_13) {
+                    // TLS 1.3 has a 2 extra fields
+                    state = EXTLEN1;
+                } else {
+                    state = CALEN0;
+                    if (remaining == 0) {
+                        /* FIXME: reduce this logic, it should only flush the
+                        * FIXME: ertificate, not close the connection*/
+                        if (!banner1->is_heartbleed) {
+                            ; //tcpapi_close(socket);
+                        }
                     }
                 }
             }
         }
         break;
 
+    /* TLS 1.3 only */
+    case EXTLEN1:
+        // we use cert_remaining to store extlen
+        cert_remaining = px[i] << 8;
+        remaining--;
+        DROPDOWN(i,length,state);
+    case EXTLEN2:
+        cert_remaining |= px[i];
+        remaining--;
+        DROPDOWN(i,length,state);
+    case EXT:
+        {
+            unsigned len = (unsigned)length-i;
+            if (len > remaining)
+                len = remaining;
+            if (len > cert_remaining)
+                len = cert_remaining;
+            // skip
+            remaining -= len;
+            cert_remaining -= len;
+            i += len-1;
+            if (!cert_remaining || !remaining) {
+                state = CALEN0;
+                break;
+            }
+        }
 
     case UNKNOWN:
     default:
@@ -526,7 +727,9 @@ parse_handshake(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *socket)
+        struct stack_handle_t *socket,
+        const unsigned char *client_hello, size_t client_hello_length,
+        bool tls_13)
 {
     struct SSLRECORD *ssl = &pstate->sub.ssl;
     unsigned state = ssl->handshake.state;
@@ -538,6 +741,23 @@ parse_handshake(
         CONTENTS,
         UNKNOWN,
     };
+
+    /*
+     * TLS 1.3 needs to SHA384 the client hello + server hello
+     */
+    if (tls_13) {
+        if (state == START && client_hello != NULL) {
+            SHA384Reset(&ssl->handshake.sha384ctx);
+            // dump client hello (skip record)
+            SHA384Input(&ssl->handshake.sha384ctx,
+                        client_hello + 5,
+                        client_hello_length - 5);
+        }
+        // dump server hello as it comes
+        SHA384Input(&ssl->handshake.sha384ctx,
+                    px,
+                    length);
+    }
 
     /*
      * `for all bytes in the segment`
@@ -617,7 +837,7 @@ parse_handshake(
                     break;
                     
                 case 2: /* server hello */
-                    parse_server_hello( banner1,
+                    parse_server_hello(banner1,
                                        banner1_private,
                                        pstate,
                                        px+i, len,
@@ -630,15 +850,25 @@ parse_handshake(
                                       pstate,
                                       px+i, len,
                                       banout,
-                                      socket);
+                                      socket,
+                                      tls_13);
                     break;
             }
 
             remaining -= len;
             i += len-1;
 
-            if (remaining == 0)
+            if (remaining == 0) {
+                /* end of handshake record */
                 state = START;
+                /* reset the sequence number */
+                ssl->seqnum = 0;
+                if (tls_13 && ssl->handshake.type == 2) {
+                    // we should have everything to compute the
+                    // TLS 1.3 keys by now.
+                    compute_tls_handshake_keys(pstate);
+                }
+            }
         }
 
         break;
@@ -726,7 +956,6 @@ parse_heartbeat(
             /* if we've been configured to "capture" the heartbleed contents,
              * then initialize the BASE64 encoder */
             if (banner1->is_capture_heartbleed) {
-                banout_init_base64(&pstate->base64);
                 banout_append(banout, PROTO_HEARTBLEED, "", 0);
             }
         }
@@ -866,6 +1095,134 @@ parse_alert(
     ssl->handshake.remaining = remaining;
 }
 
+/*****************************************************************************
+ * Called to decrypt encrypted application_data.
+ *
+ * This is mainly used to retrieve the server certificate, which is encrypted
+ * in the case of TLS 1.3. Note that to stick to masscan's paradigm, the TLS
+ * fragments are not reassembled: instead only the minimum 128 bits of data are
+ * aggregated in the AES state, which is decrypted and sent to banout directly.
+ * Unlike normal AES this requires an additional offset that allows to handle
+ * cross-packet skips.
+ *
+ *****************************************************************************/
+static void
+parse_application_data(
+        const struct Banner1 *banner1,
+        void *banner1_private,
+        struct StreamState *pstate,
+        const unsigned char *px, size_t length,
+        struct BannerOutput *banout,
+        struct stack_handle_t *socket,
+        bool record_end,
+        bool tls_13)
+{
+    struct SSLRECORD *ssl = &pstate->sub.ssl;
+    unsigned state = ssl->application_data.state;
+    struct AES_CTR_STATE *aes = &ssl->application_data.aes;
+    unsigned i,j;
+    enum {
+        START,
+        DATA,
+        UNKNOWN,
+    };
+
+    if (ssl->handshake.negotiation_state != NEGO_HANDSHAKE_KEYS) {
+        /* We don't have the handshake keys */
+        return;
+    }
+
+    if (tls_13 && state == START) {
+        /* We perform AES decryption bloc by bloc, so that we don't
+            * ever aggregate more than 128 bits at a time. However when
+            * fragmented, we must remember what's left in the current
+            * AES buffer. This is what 'offset' is for.
+            */
+        aes->offset = 0;
+        /* Initialize aes key */
+        aes256_init(&aes->key, &ssl->handshake.server_handshake_key);
+        /* Calculate the ICB: last 64 bits are seqnum as big endian */
+        memset(aes->counter, 0, 16);
+        for (i=0; i<8; i++)
+            aes->counter[iv_length-1-i] = (ssl->seqnum >> (8*i)) & 0xFF;
+        /* XOR with iv */
+        for (i = 0; i < iv_length; i++)
+            aes->counter[i] ^= ssl->handshake.server_handshake_iv[i];
+        /* HERE aes->counter is the ICB */
+        /* Increment the counter once (as the counter 0 is only for Auth tag) */
+        aes256_ctr_inc(aes->counter);
+        state = DATA;
+    }
+
+    switch(state) {
+        case DATA:
+            {
+                /* This is a TLS 1.3 encrypted certificate */
+                unsigned remaining = length;
+                aes256_blk_t temp;
+                uint8_t len;
+                i = 0;
+                do {
+                    /* Fill the 128 bits buffer: len is how much we want */
+                    len = 16 - aes->offset;
+                    if (len > remaining) {
+                        if (!record_end) {
+                            /* Not the end of the record + remaining */
+                            memcpy(aes->buf+aes->offset, px+i, remaining);
+                            aes->offset += (uint8_t) remaining;
+                            break;
+                        } else {
+                            /* End of record: pad and continue */
+                            memset(aes->buf+aes->offset+remaining, 0, len - remaining);
+                            len = remaining;
+                        }
+                    }
+                    memcpy(aes->buf+aes->offset, px+i, len);
+
+                    // Reminder of how GCM works (but we ignore the authTag part. yolo)
+                    // https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Galois/counter_(GCM)
+
+                    /* Increment the counter */
+                    aes256_ctr_inc(aes->counter);
+
+                    /* Perform encryption of the counter */
+                    memcpy(temp.raw, aes->counter, 16);
+                    aes256_encrypt_ecb(&aes->key, &temp);
+
+                    /* XOR the result with the ciphertext */
+                    for (j = 0; j < 16; j++)
+                        temp.raw[j] ^= aes->buf[j];
+
+                    /* Parse the decrypted data */
+                    parse_handshake(banner1,
+                                    banner1_private,
+                                    pstate,
+                                    temp.raw, len+aes->offset,
+                                    banout,
+                                    socket,
+                                    NULL,
+                                    0,
+                                    tls_13);
+
+                    i += len;
+                    remaining -= len;
+                    aes->offset = 0;
+                } while(remaining);
+            }
+            break;
+    }
+
+    /* End of current application_data record */
+    if(record_end) {
+        state = START;
+        ssl->seqnum += 1;
+    }
+
+    /* Any data we don't handle is discarded by ssl_parse_record */
+
+    ssl->application_data.state = state;
+}
+
 
 /*****************************************************************************
  * This is the main SSL parsing function.
@@ -896,7 +1253,9 @@ ssl_parse_record(
         struct StreamState *pstate,
         const unsigned char *px, size_t length,
         struct BannerOutput *banout,
-        struct stack_handle_t *socket)
+        struct stack_handle_t *socket,
+        const unsigned char *client_hello, size_t client_hello_length,
+        bool tls_13)
 {
     unsigned state = pstate->state;
     unsigned remaining = pstate->remaining;
@@ -1011,10 +1370,33 @@ ssl_parse_record(
                                     pstate,
                                     px+i, len,
                                     banout,
-                                    socket);
+                                    socket,
+                                    client_hello,
+                                    client_hello_length,
+                                    tls_13);
                     break;
                 case 23: /* application data */
-                    /* encrypted, always*/
+                    /* encrypted, always */
+
+                     /* IMPORTANT !
+                      * We are using an AEAD cipher.
+                      * Therefore the last 16 bytes are the Auth tag, which
+                      * we currently simply IGNORE. This is obviously crytographically
+                      * broken, but faster to compute, and we just 'trust' the server. */
+                    if (remaining <= 16)
+                        break;
+                    unsigned data_len = len;
+                    if (data_len > remaining - 16)
+                        data_len = remaining - 16;
+
+                    parse_application_data(banner1,
+                                           banner1_private,
+                                           pstate,
+                                           px+i, data_len,
+                                           banout,
+                                           socket,
+                                           (data_len == remaining - 16),
+                                           tls_13);
                     break;
                 case 24: /* heartbeat */
                     /* encrypted, in theory, but not practice */
@@ -1073,7 +1455,13 @@ ssl_init(struct Banner1 *banner1)
  * TODO: we need to make this dynamically generated, so that users can
  * select various options.
  *****************************************************************************/
-static const char
+
+/*
+ * By setting the TLS record version to 1.0, and the ClientHello version to 1.2,
+ * this packet support for TLS 1.0, 1.1 and 1.2.
+ */
+
+static const unsigned char
 ssl_hello_template[] =
 "\x16\x03\x01\x00\xc1"          /* TLSv1.0 record layer */
 "\x01" /* type = client-hello */
@@ -1103,21 +1491,82 @@ ssl_hello_template[] =
 "\x04\x01\x05\x01\x06\x01\x03\x03\x02\x03\x03\x01\x02\x01\x03\x02"
 "\x02\x02\x04\x02\x05\x02\x06\x02"
 ;
+static const size_t ssl_hello_template_length = sizeof(ssl_hello_template) - 1;
+
+
+/*
+ * If the previous packet didn't work, the server is most likely TLS 1.3 only.
+ *
+ * The following is:
+ * - ciphers supported: [TLS_AES_256_GCM_SHA384]
+ * - ec_point_formats: [uncompressed]
+ * - supported_groups: [x25519]
+ * - key_share: x25519
+ *
+ * Client x25519:
+ * - privkey: 202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
+ * - pubkey: 358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254
+ *
+ * (why x25519 and not a simpler FFDHE? Because openssl<3.0 doesn't support it)
+ *
+ * to debug this string:
+ *      $ scapy
+ *      >>> load_layer("tls")
+ *      >>> TLS(b"\x16\x03\x01.....").show()
+ */
+static const unsigned char
+tls_13_hello_template[] =
+"\x16\x03\x01\x00\xd4"
+"\x01"
+"\x00\x00\xd0"
+"\x03\x03\x02\x58\x33\x79\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff\x00\x02\x13\x02\x01\x00\x00\x85\x00\x0b\x00\x02\x01\x00\x00\x0a\x00\x04\x00\x02\x00\x1d\x00\x23\x00\x00\x00\x16\x00\x00\x00\x17\x00\x00\x00\x0d\x00\x2a\x00\x28\x04\x03\x05\x03\x06\x03\x08\x07\x08\x08\x08\x09\x08\x0a\x08\x0b\x08\x04\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x03\x03\x03\x01\x03\x02\x04\x02\x05\x02\x06\x02\x00\x2b\x00\x09\x08\x03\x04\x03\x03\x03\x02\x03\x01\x00\x2d\x00\x02\x01\x01\x00\x33\x00\x26\x00\x24\x00\x1d\x00\x20\x35\x80\x72\xd6\x36\x58\x80\xd1\xae\xea\x32\x9a\xdf\x91\x21\x38\x38\x51\xed\x21\xa2\x8e\x3b\x75\xe9\x65\xd0\xd2\xcd\x16\x62\x54";
+static const size_t tls_13_hello_template_length = sizeof(tls_13_hello_template) - 1;
 
 /*****************************************************************************
- * This is the template "Client Hello" packet that is sent to the server
- * to initiate the SSL connection. Right now, it's statically just transmitted
- * on to the wire.
- * TODO: we need to make this dynamically generated, so that users can
- * select various options.
+ * Those functions are stubs that call ssl_parse_record slightly differently
+ * depending on whether the client hello sent was for TLS1.3 or not.
  *****************************************************************************/
-static const char
-ssl_12_hello_template[] =
-"\x16\x03\x01\x01\x1a"
-"\x01"
-"\x00\x01\x16"
-"\x03\x03\x02\x58\x33\x79\x5f\x71\x03\xef\x07\xfe\x36\x61\xb0\x32\x81\xaa\x99\x10\x87\x6a\x8e\x5b\xf9\x03\x93\x44\x58\x4b\x19\xff\x42\x6a\x20\x64\x84\xcd\x28\x9c\xe9\xb1\x9d\xcd\x8a\x11\x4c\x3b\x40\x1c\x90\x02\xf2\xb5\x1a\xf1\x7e\x5d\xb8\x42\xc2\x1e\x17\x1e\x59\xa4\xac\x00\x3e\x13\x02\x13\x03\x13\x01\xc0\x2c\xc0\x30\x00\x9f\xcc\xa9\xcc\xa8\xcc\xaa\xc0\x2b\xc0\x2f\x00\x9e\xc0\x24\xc0\x28\x00\x6b\xc0\x23\xc0\x27\x00\x67\xc0\x0a\xc0\x14\x00\x39\xc0\x09\xc0\x13\x00\x33\x00\x9d\x00\x9c\x00\x3d\x00\x3c\x00\x35\x00\x2f\x00\xff\x01\x00\x00\x8f\x00\x0b\x00\x04\x03\x00\x01\x02\x00\x0a\x00\x0c\x00\x0a\x00\x1d\x00\x17\x00\x1e\x00\x19\x00\x18\x00\x23\x00\x00\x00\x16\x00\x00\x00\x17\x00\x00\x00\x0d\x00\x2a\x00\x28\x04\x03\x05\x03\x06\x03\x08\x07\x08\x08\x08\x09\x08\x0a\x08\x0b\x08\x04\x08\x05\x08\x06\x04\x01\x05\x01\x06\x01\x03\x03\x03\x01\x03\x02\x04\x02\x05\x02\x06\x02\x00\x2b\x00\x09\x08\x03\x04\x03\x03\x03\x02\x03\x01\x00\x2d\x00\x02\x01\x01\x00\x33\x00\x26\x00\x24\x00\x1d\x00\x20\xb6\x87\xb7\x72\xb9\xcb\x07\xe0\x14\x0a\x14\x81\x3f\x3f\x0a\xcc\xc4\x7d\x80\xf7\xe8\xaa\x1e\x73\xb0\xa9\xad\xb8\x3a\xa7\x3c\x64";
-;
+
+static void
+ssl_parse_record_tls13(
+        const struct Banner1 *banner1,
+        void *banner1_private,
+        struct StreamState *pstate,
+        const unsigned char *px, size_t length,
+        struct BannerOutput *banout,
+        struct stack_handle_t *socket)
+{
+    ssl_parse_record(banner1,
+                     banner1_private,
+                     pstate,
+                     px, length,
+                     banout,
+                     socket,
+                     tls_13_hello_template,
+                     tls_13_hello_template_length,
+                     true);
+}
+
+static void
+ssl_parse_record_tls1(
+        const struct Banner1 *banner1,
+        void *banner1_private,
+        struct StreamState *pstate,
+        const unsigned char *px, size_t length,
+        struct BannerOutput *banout,
+        struct stack_handle_t *socket)
+{
+    ssl_parse_record(banner1,
+                     banner1_private,
+                     pstate,
+                     px, length,
+                     banout,
+                     socket,
+                     ssl_hello_template,
+                     ssl_hello_template_length,
+                     false);
+}
+
 /*****************************************************************************
  *****************************************************************************/
 static char *
@@ -1262,7 +1711,21 @@ extern unsigned char google_cert[];
 extern size_t google_cert_size;
 extern unsigned char yahoo_cert[];
 extern size_t yahoo_cert_size;
-
+extern unsigned char tls13_test_case_1_clienthello[];
+extern size_t tls13_test_case_1_clienthello_size;
+extern unsigned char tls13_test_case_1_kxdata[32];
+extern unsigned char tls13_test_case_1_serverhello[];
+extern size_t tls13_test_case_1_serverhello_size;
+extern unsigned char tls13_test_case_1_server_handshake_key[32];
+extern unsigned char tls13_test_case_1_client_handshake_key[32];
+extern unsigned char tls13_test_case_1_server_handshake_iv[12];
+extern unsigned char tls13_test_case_1_client_handshake_iv[12];
+extern unsigned char tls13_test_case_2_certs[];
+extern size_t tls13_test_case_2_certs_size;
+extern char tls13_test_case_2_result_cert1[];
+extern char tls13_test_case_2_result_cert2[];
+extern char tls13_test_case_2_result_cert3[];
+extern char tls13_test_case_2_result_cert4[];
 
 /*****************************************************************************
  *****************************************************************************/
@@ -1296,7 +1759,7 @@ ssl_selftest(void)
         x = banout_is_contains(banout1, PROTO_SSL3,
                             ", fr.yahoo.com, ");
         if (!x) {
-            printf("x.509 parser failure: google.com\n");
+            printf("x.509 parser failure: fr.yahoo.com\n");
             return 1;
         }
         
@@ -1332,7 +1795,6 @@ ssl_selftest(void)
         banout_release(banout1);
     }
 
-
     /*
      * Do the normal parse
      */
@@ -1343,14 +1805,14 @@ ssl_selftest(void)
     {
         size_t i;
         for (i=0; i<ssl_test_case_3_size; i++)
-        ssl_parse_record(  banner1,
-                         0,
-                         state,
-                         ssl_test_case_3+i,
-                         1,
-                         banout1,
-                         0
-                         );
+        ssl_parse_record_tls1(  banner1,
+                                0,
+                                state,
+                                ssl_test_case_3+i,
+                                1,
+                                banout1,
+                                0
+                                );
     }
     /*if (0) {
         const char *foo = (char*)banout_string(banout1, PROTO_X509_CERT);
@@ -1378,14 +1840,14 @@ ssl_selftest(void)
     memset(state, 0, sizeof(state));
     banout_init(banout2);
     for (ii=0; ii<ssl_test_case_3_size; ii++)
-    ssl_parse_record(  banner1,
-                0,
-                state,
-                (const unsigned char *)ssl_test_case_3+ii,
-                1,
-                banout2,
-                0
-                );
+    ssl_parse_record_tls1(  banner1,
+                            0,
+                            state,
+                            (const unsigned char *)ssl_test_case_3+ii,
+                            1,
+                            banout2,
+                            0
+                            );
     banner1_destroy(banner1);
     banout_release(banout2);
 
@@ -1424,7 +1886,119 @@ ssl_selftest(void)
         }
     }
 #endif
-
+    /* Test aes256_ctr_inc as it's a masscan addition */
+    {
+        unsigned char ctr[16] = "\x87\xd6\x12\x00\x87\xd6\x12\x00\x87\xd6\x12\x00\x00\x00\xff\xff";
+        aes256_ctr_inc(ctr);
+        if(memcmp(ctr, "\x87\xd6\x12\x00\x87\xd6\x12\x00\x87\xd6\x12\x00\x00\x01\x00\x00", 16) != 0)
+        {
+            printf("Error: aes256_ctr_inc is wrong !\n");
+            return 1;
+        }
+    }
+    /* TLS 1.3 key computation */
+    {
+        banner1 = banner1_create();
+        banner1->is_capture_cert = 1;
+        memset(state, 0, sizeof(state));
+        banout_init(banout1);
+        // set the private key
+        memcpy(state->sub.ssl.x.server_hello.kx_data, tls13_test_case_1_kxdata, 32);
+        // parse the handshake
+        size_t i;
+        for (i=0; i<tls13_test_case_1_serverhello_size; i++)
+        ssl_parse_record(banner1,
+                         0,
+                         state,
+                         tls13_test_case_1_serverhello+i,
+                         1,
+                         banout1,
+                         0,
+                         tls13_test_case_1_clienthello,
+                         tls13_test_case_1_clienthello_size,
+                         true);
+        // Assert correct handshake keys
+        if(memcmp(state->sub.ssl.handshake.server_handshake_key.raw,
+                  tls13_test_case_1_server_handshake_key,
+                  32) != 0)
+        {
+            printf("Error: server handshake key is wrong !\n");
+            return 1;
+        }
+        if(memcmp(state->sub.ssl.handshake.client_handshake_key.raw,
+                  tls13_test_case_1_client_handshake_key,
+                  32) != 0)
+        {
+            printf("Error: client handshake key is wrong !\n");
+            return 1;
+        }
+        if(memcmp(state->sub.ssl.handshake.server_handshake_iv,
+                  tls13_test_case_1_server_handshake_iv,
+                  12) != 0)
+        {
+            printf("Error: server handshake iv is wrong !\n");
+            return 1;
+        }
+        if(memcmp(state->sub.ssl.handshake.client_handshake_iv,
+                  tls13_test_case_1_client_handshake_iv,
+                  12) != 0)
+        {
+            printf("Error: client handshake iv is wrong !\n");
+            return 1;
+        }
+        banner1_destroy(banner1);
+        banout_release(banout1);
+    }
+    /* TLS 1.3 certificates parsing.
+     * This test payload contains 4 different certs */
+    {
+        banner1 = banner1_create();
+        banner1->is_capture_cert = 1;
+        memset(state, 0, sizeof(state));
+        banout_init(banout1);
+        size_t i;
+        for (i=0; i<tls13_test_case_2_certs_size; i++)
+        parse_server_cert(banner1,
+                          0,
+                          state,
+                          tls13_test_case_2_certs+i,
+                          1,
+                          banout1,
+                          0,
+                          true);
+        const unsigned char *str;
+        size_t strsize;
+        str = banout1->next->banner;
+        strsize = banout1->next->length;
+        if(memcmp(str, tls13_test_case_2_result_cert1, strsize) != 0)
+        {
+            printf("TLS 1.3 certificate n°1 is wrong !\n");
+            return 1;
+        }
+        str = banout1->next->next->banner;
+        strsize = banout1->next->next->length;
+        if(memcmp(str, tls13_test_case_2_result_cert2, strsize) != 0)
+        {
+            printf("TLS 1.3 certificate n°2 is wrong !\n");
+            return 1;
+        }
+        str = banout1->next->next->next->banner;
+        strsize = banout1->next->next->next->length;
+        if(memcmp(str, tls13_test_case_2_result_cert3, strsize) != 0)
+        {
+            printf("TLS 1.3 certificate n°3 is wrong !\n");
+            return 1;
+        }
+        str = banout1->next->next->next->next->banner;
+        strsize = banout1->next->next->next->next->length;
+        if(memcmp(str, tls13_test_case_2_result_cert4, strsize) != 0)
+        {
+            printf("TLS 1.3 certificate n°4 is wrong !\n");
+            return 1;
+        }
+        banner1_destroy(banner1);
+        banout_release(banout1);
+    }
     return 0;
 }
 
@@ -1432,20 +2006,23 @@ ssl_selftest(void)
  * This is the 'plugin' structure that registers callbacks for this parser in
  * the main system.
  *****************************************************************************/
-struct ProtocolParserStream banner_ssl_12 = {
-    "ssl", 443, ssl_12_hello_template, sizeof(ssl_12_hello_template)-1, 0,
+
+// if TLS 1.0-1.2 didn't work, try TLS 1.3
+struct ProtocolParserStream banner_tls_13 = {
+    "ssl", 443, tls_13_hello_template, tls_13_hello_template_length, 0,
     ssl_selftest,
     ssl_init,
-    ssl_parse_record,
+    ssl_parse_record_tls13,
 };
 
+// this will be tried first: try TLS 1.0-TLS 1.2
 struct ProtocolParserStream banner_ssl = {
-    "ssl", 443, ssl_hello_template, sizeof(ssl_hello_template)-1,
+    "ssl", 443, ssl_hello_template, ssl_hello_template_length,
     SF__close, /* send FIN after the hello */
     ssl_selftest,
     ssl_init,
-    ssl_parse_record,
+    ssl_parse_record_tls1,
     0,
     0,
-    &banner_ssl_12,
+    &banner_tls_13,
 };
