@@ -92,23 +92,18 @@ typedef unsigned (*SET_COOKIE)(unsigned char *px, size_t length,
 int
 payloads_udp_lookup(
                 const struct PayloadsUDP *payloads,
-                unsigned port,
+                unsigned payload_index,
                 const unsigned char **px,
                 unsigned *length,
                 unsigned *source_port,
                 uint64_t *xsum,
                 SET_COOKIE *set_cookie);
 
-int
-payloads_oproto_lookup(
-                    const struct PayloadsUDP *payloads,
-                    unsigned port,
-                    const unsigned char **px,
-                    unsigned *length,
-                    unsigned *source_port,
-                    uint64_t *xsum,
-                    SET_COOKIE *set_cookie);
-
-
+/**
+ * Called to set up targets->ports_payloads from targets->ports with UDP
+ * payloads where available instead of UDP ports.
+ */
+void
+payloads_udp_ports_payloads(struct MassIP *targets, const struct PayloadsUDP *payloads);
 
 #endif
