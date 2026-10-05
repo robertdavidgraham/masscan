@@ -1734,7 +1734,7 @@ static int SET_output_noshow(struct Masscan *masscan, const char *name, const ch
             masscan->output.is_show_open = 0;
         else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
             masscan->output.is_show_closed = 0;
-        else if (EQUALSx("open", val2, val2_len))
+        else if (EQUALSx("host", val2, val2_len))
             masscan->output.is_show_host = 0;
         else if (EQUALSx("all",val2,val2_len)) {
             masscan->output.is_show_open = 0;
@@ -1774,7 +1774,7 @@ static int SET_output_show(struct Masscan *masscan, const char *name, const char
             masscan->output.is_show_open = 1;
         else if (EQUALSx("closed", val2, val2_len) || EQUALSx("close", val2, val2_len))
             masscan->output.is_show_closed = 1;
-        else if (EQUALSx("open", val2, val2_len))
+        else if (EQUALSx("host", val2, val2_len))
             masscan->output.is_show_host = 1;
         else if (EQUALSx("all",val2,val2_len)) {
             masscan->output.is_show_open = 1;
