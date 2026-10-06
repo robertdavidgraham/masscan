@@ -427,12 +427,34 @@ tcp_create_packet(
         unsigned char *px, size_t px_length)
 {
     uint64_t xsum;
-  
+    /* The shared TCP template is a SYN packet with options. For non-SYN
+     * segments we emit a bare 20-byte TCP header instead of reusing the
+     * template's options area.
+     *
+     * RFC compliance: RFC 9293 MUST-65 forbids the MSS option on non-SYN
+     * segments, so stripping it is mandatory. The current template only
+     * carries MSS, so MUST-65 is the only RFC constraint actually in
+     * play here. (If Window Scale [RFC 7323 §2.2] or SACK-Permitted
+     * [RFC 2018 §2] were ever added to the template, they would also
+     * need to be stripped, since both are likewise SYN-only.)
+     *
+     * Implementation note: masscan is stateless and does not negotiate
+     * TCP Timestamps (RFC 7323 §3), Window Scale, or SACK, so there is
+     * nothing meaningful to put in a non-SYN options area regardless of
+     * what the RFCs would permit. Emitting a bare 20-byte header is the
+     * simplest correct behavior. Note that Timestamps, if negotiated,
+     * are NOT SYN-only -- RFC 7323 requires them on every non-RST
+     * segment of a connection -- but that case does not arise here. */
+    int is_syn = (flags & 0x02) != 0;
+
     if (ip_them.version == 4) {
         unsigned ip_id = ip_them.ipv4 ^ port_them ^ seqno;
         unsigned offset_ip = tmpl->ipv4.offset_ip;
         unsigned offset_tcp = tmpl->ipv4. offset_tcp;
-        unsigned offset_payload = offset_tcp + ((tmpl->ipv4.packet[offset_tcp+12]&0xF0)>>2);
+        unsigned tcp_hdr_len = is_syn
+            ? ((tmpl->ipv4.packet[offset_tcp+12]&0xF0)>>2)
+            : 20;
+        unsigned offset_payload = offset_tcp + tcp_hdr_len;
         size_t new_length = offset_payload + payload_length;
         size_t ip_len = (offset_payload - offset_ip) + payload_length;
         unsigned old_len;
@@ -442,9 +464,18 @@ tcp_create_packet(
             return 0;
         }
 
-        memcpy(px + 0,              tmpl->ipv4.packet,   tmpl->ipv4.length);
-        memcpy(px + offset_payload, payload,        payload_length);
+        /* Copy the Ethernet/IP/TCP base header. For SYN, also copy the
+         * options that are baked into the template; for non-SYN, stop at
+         * the end of the 20-byte TCP base header so options are excluded. */
+        memcpy(px + 0,              tmpl->ipv4.packet,   offset_tcp + tcp_hdr_len);
+        memcpy(px + offset_payload, payload,             payload_length);
         old_len = px[offset_ip+2]<<8 | px[offset_ip+3];
+
+        /* For non-SYN, rewrite the TCP data-offset nibble to 5 (=20 bytes),
+         * since we just dropped the options. The lower 4 bits (reserved)
+         * are preserved from the template. */
+        if (!is_syn)
+            px[offset_tcp+12] = (px[offset_tcp+12] & 0x0F) | 0x50;
 
         /*
          * Fill in the empty fields in the IP header and then re-calculate
@@ -515,7 +546,10 @@ tcp_create_packet(
     } else {
         unsigned offset_ip = tmpl->ipv6.offset_ip;
         unsigned offset_tcp = tmpl->ipv6.offset_tcp;
-        unsigned offset_app = tmpl->ipv6.offset_app;
+        unsigned tcp_hdr_len = is_syn
+            ? ((tmpl->ipv6.packet[offset_tcp+12]&0xF0)>>2)
+            : 20;
+        unsigned offset_app = offset_tcp + tcp_hdr_len;
 
         /* Make sure the new packet won't exceed buffer size */
         if (offset_app + payload_length > px_length) {
@@ -523,17 +557,23 @@ tcp_create_packet(
             return 0;
         }
 
-        /* Copy over everything up to the new application-layer-payload */
-        memcpy(px, tmpl->ipv6.packet, tmpl->ipv6.offset_app);
+        /* Copy the Ethernet/IPv6/TCP base header. For SYN, this includes the
+         * options baked into the template; for non-SYN, only the 20-byte TCP
+         * base header is copied, dropping the SYN-only options. */
+        memcpy(px, tmpl->ipv6.packet, offset_app);
 
         /* Replace the template's application-layer-payload with the new app-payload */
-        memcpy(px + tmpl->ipv6.offset_app, payload, payload_length);
+        memcpy(px + offset_app, payload, payload_length);
+
+        /* For non-SYN, rewrite the TCP data-offset nibble to 5 (=20 bytes). */
+        if (!is_syn)
+            px[offset_tcp+12] = (px[offset_tcp+12] & 0x0F) | 0x50;
 
         /* Fixup the "payload length" field in the IPv6 header. This is everything
          * after the IPv6 header. There may be additional headers between the IPv6
          * and TCP headers, so the calculation isn't simply the length of the TCP portion */
         {
-            size_t len = tmpl->ipv6.offset_app + payload_length - tmpl->ipv6.offset_ip - 40;
+            size_t len = offset_app + payload_length - offset_ip - 40;
             px[offset_ip + 4] = (unsigned char)(len>>8) & 0xFF;
             px[offset_ip + 5] = (unsigned char)(len>>0) & 0xFF;
         }
@@ -1553,6 +1593,104 @@ template_selftest(void)
     failures += tmplset->pkts[Proto_ICMP_ping].proto != Proto_ICMP_ping;
     //failures += tmplset->pkts[Proto_ICMP_timestamp].proto != Proto_ICMP_timestamp;
     //failures += tmplset->pkts[Proto_ARP].proto  != Proto_ARP;
+
+    /*
+     * Verify that tcp_create_packet() carries the template's MSS option
+     * on SYN segments and strips it on RST/ACK/FIN/PSH-ACK, per
+     * RFC 9293 MUST-65: "MSS Option [...] MUST NOT be sent in [non-SYN]
+     * segments." The template currently carries only MSS; if other
+     * SYN-only options (Window Scale, SACK-Permitted) are ever added,
+     * the non-SYN checks below will still catch them via the data-offset
+     * assertion (data-offset must be exactly 5 = no options).
+     */
+    {
+        ipaddress ip_them = {0}, ip_me = {0};
+        unsigned char buf[256];
+        size_t len;
+        unsigned offset_tcp;
+        ip_them.version = 4;
+        ip_them.ipv4 = 0x01020304;
+        ip_me.version = 4;
+        ip_me.ipv4 = 0x05060708;
+        offset_tcp = tmplset->pkts[Proto_TCP].ipv4.offset_tcp;
+
+        /* SYN: data-offset must indicate options present (>5) and the
+         * MSS option (kind=2) must appear in the options area. */
+        len = tcp_create_packet(&tmplset->pkts[Proto_TCP],
+                                ip_them, 80, ip_me, 12345,
+                                0xdeadbeef, 0,
+                                0x02 /*SYN*/, 0, 0,
+                                buf, sizeof(buf));
+        if (len == 0 || ((buf[offset_tcp+12] & 0xF0) >> 4) <= 5) {
+            fprintf(stderr, "[-] tcp_create_packet: SYN missing options\n");
+            failures++;
+        } else {
+            unsigned hdr_len = ((buf[offset_tcp+12] & 0xF0) >> 4) * 4;
+            unsigned i, found_mss = 0, bad_opt = 0;
+            for (i = 20; i + 1 < hdr_len; ) {
+                unsigned kind = buf[offset_tcp+i];
+                unsigned opt_len;
+                if (kind == 0) break;
+                if (kind == 1) { i++; continue; }
+                if (kind == 2) { found_mss = 1; break; }
+                opt_len = buf[offset_tcp+i+1];
+                /* Defensive: a valid multi-byte option has length >= 2
+                 * (kind + length bytes) and must fit within the header.
+                 * Without this check, a length byte of 0 would cause an
+                 * infinite loop, masking the very regression this test
+                 * exists to detect. */
+                if (opt_len < 2 || i + opt_len > hdr_len) {
+                    bad_opt = 1;
+                    break;
+                }
+                i += opt_len;
+            }
+            if (bad_opt) {
+                fprintf(stderr, "[-] tcp_create_packet: SYN has malformed TCP option\n");
+                failures++;
+            } else if (!found_mss) {
+                fprintf(stderr, "[-] tcp_create_packet: SYN missing MSS option\n");
+                failures++;
+            }
+        }
+
+        /* RST: data-offset must be exactly 5 (no options). */
+        len = tcp_create_packet(&tmplset->pkts[Proto_TCP],
+                                ip_them, 80, ip_me, 12345,
+                                0xdeadbeef, 0,
+                                0x04 /*RST*/, 0, 0,
+                                buf, sizeof(buf));
+        if (len == 0 || ((buf[offset_tcp+12] & 0xF0) >> 4) != 5) {
+            fprintf(stderr, "[-] tcp_create_packet: RST has options (RFC 9293 MUST-65)\n");
+            failures++;
+        }
+
+        /* ACK: data-offset must be exactly 5 (no options). */
+        len = tcp_create_packet(&tmplset->pkts[Proto_TCP],
+                                ip_them, 80, ip_me, 12345,
+                                0xdeadbeef, 0xcafebabe,
+                                0x10 /*ACK*/, 0, 0,
+                                buf, sizeof(buf));
+        if (len == 0 || ((buf[offset_tcp+12] & 0xF0) >> 4) != 5) {
+            fprintf(stderr, "[-] tcp_create_packet: ACK has options (RFC 9293 MUST-65)\n");
+            failures++;
+        }
+
+        /* PSH-ACK with payload: data-offset must be 5; payload follows. */
+        len = tcp_create_packet(&tmplset->pkts[Proto_TCP],
+                                ip_them, 80, ip_me, 12345,
+                                0xdeadbeef, 0xcafebabe,
+                                0x18 /*PSH|ACK*/,
+                                (const unsigned char *)"GET /\r\n\r\n", 9,
+                                buf, sizeof(buf));
+        if (len == 0 || ((buf[offset_tcp+12] & 0xF0) >> 4) != 5) {
+            fprintf(stderr, "[-] tcp_create_packet: PSH-ACK has options (RFC 9293 MUST-65)\n");
+            failures++;
+        } else if (memcmp(buf + offset_tcp + 20, "GET /\r\n\r\n", 9) != 0) {
+            fprintf(stderr, "[-] tcp_create_packet: PSH-ACK payload misplaced\n");
+            failures++;
+        }
+    }
 
     if (failures)
         fprintf(stderr, "template: failed\n");
