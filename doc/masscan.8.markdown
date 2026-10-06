@@ -233,7 +233,7 @@ one port.
     no effect if used with --output-format or --output-filename.		
   
   * `--output-format FMT`: indicates the format of the output file, which
-    can be `xml`, `binary`, `grepable`, `list`, or `JSON`. The 
+    can be `xml`, `binary`, `grepable`, `list`, `json`, or `ipport`. The 
 	option `--output-filename` must be specified.
 
   * `--output-filename FILE`: the file which to save results to. If
@@ -262,6 +262,10 @@ one port.
   * `-oL FILE`: sets the output format to a simple list format and saves 
 	  the output in the given filename. This is equivalent to using 
 	  the --output-format list and --output-filename parameters.
+
+  * `-oI FILE`: sets the output format to IP:PORT format and saves 
+	  the output in the given filename. This is equivalent to using 
+	  the --output-format ipport and --output-filename parameters.
 
   *  `--readscan FILE`: reads the files created by the `-oB` option
     from a scan, then outputs them in one of the other formats, depending

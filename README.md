@@ -266,6 +266,14 @@ per line. Just use the parameter `-oL <filename>`. Or, use the parameters
 	```
 	<port state> <protocol> <port number> <IP address> <POSIX timestamp>  
 	open tcp 80 XXX.XXX.XXX.XXX 1390380064
+	```
+
+6. ipport: This is a simple list with IP:PORT pairs for open ports.
+Just use the parameter `-oI <filename>`. Or, use the parameters 
+`--output-format ipport` and `--output-filename <filename>`. The format is:
+
+	```
+	XXX.XXX.XXX.XXX:80
 	```	
 
 

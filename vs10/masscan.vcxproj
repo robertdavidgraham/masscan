@@ -49,6 +49,7 @@
     <ClCompile Include="..\src\out-redis.c" />
     <ClCompile Include="..\src\out-tcp-services.c" />
     <ClCompile Include="..\src\out-text.c" />
+    <ClCompile Include="..\src\out-ipport.c" />
     <ClCompile Include="..\src\out-unicornscan.c" />
     <ClCompile Include="..\src\out-xml.c" />
     <ClCompile Include="..\src\pixie-backtrace.c" />
