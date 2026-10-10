@@ -102,7 +102,7 @@ timeouts_add(struct Timeouts *timeouts, struct TimeoutEntry *entry,
                   size_t offset, uint64_t timestamp_expires);
 
 /**
- * Remove an object from the timestamp system that is older than than
+ * Remove an object from the timestamp system that is older than
  * the specified timestamp. This function must be called repeatedly
  * until it returns NULL to remove all the objects that are older
  * than the given timestamp.
