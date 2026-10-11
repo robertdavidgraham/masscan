@@ -237,7 +237,7 @@ rdp_parse(  const struct Banner1 *banner1,
                 state++;
                 break;
             case TPKT_LENGTH0:
-                rdp->tpkt_length = rdp->tpkt_length;
+                rdp->tpkt_length = c;
                 state++;
                 break;
             case TPKT_LENGTH1:
@@ -300,7 +300,7 @@ rdp_init(struct Banner1 *banner1)
 /***************************************************************************
  ***************************************************************************/
 static int
-rdp_selftest_item(const char *input, size_t length, const char *expect)
+rdp_selftest_item(const char *input, size_t length, const char *expect, size_t split)
 {
     struct Banner1 *banner1;
     struct StreamState pstate[1];
@@ -318,11 +318,14 @@ rdp_selftest_item(const char *input, size_t length, const char *expect)
     /*
      * Parse the input payload
      */
+    if (split)
+        rdp_parse(banner1, 0, pstate, (const unsigned char *)input,
+                  split, banout1, &more);
     rdp_parse(banner1,
               0,
               pstate,
-              (const unsigned char *)input,
-              length,
+              (const unsigned char *)input + split,
+              length - split,
               banout1,
               &more
               );
@@ -352,10 +355,16 @@ rdp_selftest(void)
     static const char test2[] = "\x03\x00\x00\x13"
         "\x0e\xd0\x00\x00\x12\x34\x00\x03\x00\x08\x00\x05\x00\x00\x00";
 
+    /* The first fragment of a 259-byte TPKT connection confirm. */
+    static const char test3[] = "\x03\x00\x01\x03"
+        "\xfe\xd0\x00\x00\x12\x34\x00\x02\x0f\x08\x00\x02\x00\x00\x00";
+    size_t split;
     int result = 0;
     
-    result += rdp_selftest_item(test1, sizeof(test1) - 1, "NLA-sup");
-    result += rdp_selftest_item(test2, sizeof(test2) - 1, "NLA-unsup");
+    result += rdp_selftest_item(test1, sizeof(test1) - 1, "NLA-sup", 0);
+    result += rdp_selftest_item(test2, sizeof(test2) - 1, "NLA-unsup", 0);
+    for (split = 0; split < sizeof(test3) - 1; split++)
+        result += rdp_selftest_item(test3, sizeof(test3) - 1, "NLA-sup", split);
 
     return result;
 }
