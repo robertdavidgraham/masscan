@@ -125,6 +125,7 @@
     <ClCompile Include="..\src\templ-tcp-hdr.c" />
     <ClCompile Include="..\src\util-checksum.c" />
     <ClCompile Include="..\src\util-errormsg.c" />
+    <ClCompile Include="..\src\util-extract.c" />
     <ClCompile Include="..\src\util-logger.c" />
     <ClCompile Include="..\src\util-malloc.c" />
     <ClCompile Include="..\src\util-safefunc.c" />
