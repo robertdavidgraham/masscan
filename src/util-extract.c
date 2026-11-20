@@ -35,10 +35,10 @@ unsigned e_next_int32(struct ebuf_t *ebuf, int endian) {
         return -1;
 
     if (endian == EBUF_BE) {
-        result = buf[offset+0]<<24 | buf[offset+1] << 16
+        result = (unsigned)buf[offset+0]<<24 | buf[offset+1] << 16
                     | buf[offset+2]<<8 | buf[offset+3] << 0;
     } else {
-        result = buf[offset+3]<<24 | buf[offset+2] << 16
+        result = (unsigned)buf[offset+3]<<24 | buf[offset+2] << 16
                     | buf[offset+1]<<8 | buf[offset+0] << 0;
     }
     ebuf->offset += 4;
@@ -55,19 +55,39 @@ e_next_long64(struct ebuf_t *ebuf, int endian) {
         return -1ll;
 
     if (endian == EBUF_BE) {
-        hi = buf[offset+0]<<24 | buf[offset+1] << 16
+        hi = (unsigned)buf[offset+0]<<24 | buf[offset+1] << 16
                     | buf[offset+2]<<8 | buf[offset+3] << 0;
-        lo = buf[offset+4]<<24 | buf[offset+5] << 16
+        lo = (unsigned)buf[offset+4]<<24 | buf[offset+5] << 16
                     | buf[offset+6]<<8 | buf[offset+7] << 0;
     } else {
-        lo = buf[offset+3]<<24 | buf[offset+2] << 16
+        lo = (unsigned)buf[offset+3]<<24 | buf[offset+2] << 16
                     | buf[offset+1]<<8 | buf[offset+0] << 0;
-        hi = buf[offset+7]<<24 | buf[offset+6] << 16
+        hi = (unsigned)buf[offset+7]<<24 | buf[offset+6] << 16
                     | buf[offset+5]<<8 | buf[offset+4] << 0;
     }
     ebuf->offset += 8;
     return hi<<32ull | lo;
 
+}
+
+int util_extract_selftest(void)
+{
+    static const unsigned char data[] = {0x80, 0x01, 0x02, 0x03, 0xfe, 0xdc, 0xba, 0x98};
+    struct ebuf_t ebuf = {data, 0, sizeof(data)};
+
+    if (e_next_int32(&ebuf, EBUF_BE) != 0x80010203u)
+        return 1;
+    if (e_next_int32(&ebuf, EBUG_LE) != 0x98badcfeu)
+        return 1;
+
+    ebuf.offset = 0;
+    if (e_next_long64(&ebuf, EBUF_BE) != 0x80010203fedcba98ull)
+        return 1;
+    ebuf.offset = 0;
+    if (e_next_long64(&ebuf, EBUG_LE) != 0x98badcfe03020180ull)
+        return 1;
+
+    return 0;
 }
 
 

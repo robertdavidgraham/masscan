@@ -66,6 +66,7 @@
 #include "proto-oproto.h"       /* Other protocols on top of IP */
 #include "util-malloc.h"
 #include "util-checksum.h"
+#include "util-extract.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -1834,6 +1835,7 @@ int main(int argc, char *argv[])
             x += ntp_selftest();
             x += snmp_selftest();
             x += proto_isakmp_selftest();
+            x += util_extract_selftest();
             x += templ_payloads_selftest();
             x += blackrock_selftest();
             x += rawsock_selftest();
