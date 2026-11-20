@@ -17,6 +17,7 @@ unsigned char e_next_byte(struct ebuf_t *ebuf);
 unsigned short e_next_short16(struct ebuf_t *ebuf, int endian);
 unsigned e_next_int32(struct ebuf_t *ebuf, int endian);
 unsigned long long e_next_long64(struct ebuf_t *ebuf, int endian);
+int util_extract_selftest(void);
 
 
 #endif
